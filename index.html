@@ -6,6 +6,7 @@
     <title>Moonpop - Messages Released By The Moon</title>
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -482,6 +483,85 @@
 
         .onboarding-skip:hover {
             color: var(--blue);
+        }
+
+        /* Auth Flow Styles */
+        .auth-step {
+            display: none;
+        }
+        .auth-step.active {
+            display: block;
+        }
+        .auth-email-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0dcd4;
+            border-radius: 8px;
+            font-family: 'Satoshi', sans-serif;
+            font-size: 15px;
+            transition: border-color 0.2s;
+            margin-bottom: 16px;
+        }
+        .auth-email-input:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+        .auth-note {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        .auth-check-inbox {
+            text-align: center;
+        }
+        .auth-check-inbox .inbox-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .auth-check-inbox h2 {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--blue);
+            margin-bottom: 12px;
+        }
+        .auth-check-inbox p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        .auth-email-highlight {
+            font-weight: 700;
+            color: var(--blue);
+        }
+        .auth-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 24px;
+        }
+        .auth-link-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-family: 'Satoshi', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .auth-link-btn:hover {
+            background: rgba(53, 125, 197, 0.1);
+            color: var(--blue);
+        }
+        .auth-error {
+            color: var(--coral);
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
         }
 
         /* Moon Down Modal */
@@ -3893,29 +3973,62 @@
 
             <h1>Messages released by the moon</h1>
             <p class="onboarding-tagline">Write now. It unlocks when the moon rises where they are.</p>
-            
-            <div class="onboarding-form">
-                <div class="form-group">
-                    <label>Your location</label>
-                    <div class="location-input-wrapper">
-                        <input type="text" id="onboardingLocation" placeholder="Start typing a city..." autocomplete="off" oninput="filterCities(this.value)">
-                        <div class="city-dropdown" id="cityDropdown"></div>
+
+            <!-- Step 1: Email login -->
+            <div class="auth-step active" id="authStepEmail">
+                <div class="onboarding-form">
+                    <div class="form-group">
+                        <label>Enter your email</label>
+                        <input type="email" class="auth-email-input" id="authEmail" placeholder="you@email.com" autocomplete="email">
+                        <div class="auth-error" id="authError"></div>
                     </div>
-                    <button class="location-detect-btn" id="geolocateBtn" onclick="detectOnboardingLocation()" style="display:none;">
-                        Use my current location
-                    </button>
                 </div>
-                
-                <div class="form-group">
-                    <label>Your name (optional)</label>
-                    <input type="text" id="onboardingName" placeholder="What should we call you?">
+                <button class="onboarding-primary" id="authSendBtn" onclick="sendMoonKey()">
+                    Send Moon Key 🌙
+                </button>
+                <p class="auth-note">No password needed. We'll send a magic link to your inbox.</p>
+            </div>
+
+            <!-- Step 2: Check inbox -->
+            <div class="auth-step" id="authStepInbox">
+                <div class="auth-check-inbox">
+                    <div class="inbox-icon">📬</div>
+                    <h2>Check your inbox</h2>
+                    <p>We sent a moon key to</p>
+                    <p class="auth-email-highlight" id="authEmailSent"></p>
+                    <p>Click the link to enter MoonPop.</p>
+                    <div class="auth-actions">
+                        <button class="auth-link-btn" onclick="resendMoonKey()">Resend</button>
+                        <button class="auth-link-btn" onclick="changeEmail()">Change email</button>
+                    </div>
                 </div>
             </div>
-            
-            <button class="onboarding-primary" id="onboardingPrimary" onclick="completeOnboarding()">
-                Start composing
-            </button>
-            <button class="onboarding-skip" onclick="skipOnboarding()">Skip for now</button>
+
+            <!-- Step 3: Profile setup (after auth) -->
+            <div class="auth-step" id="authStepProfile">
+                <div class="onboarding-form">
+                    <div class="form-group">
+                        <label>Your location</label>
+                        <div class="location-input-wrapper">
+                            <input type="text" id="onboardingLocation" placeholder="Start typing a city..." autocomplete="off" oninput="filterCities(this.value)">
+                            <div class="city-dropdown" id="cityDropdown"></div>
+                        </div>
+                        <button class="location-detect-btn" id="geolocateBtn" onclick="detectOnboardingLocation()" style="display:none;">
+                            Use my current location
+                        </button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Your name (optional)</label>
+                        <input type="text" id="onboardingName" placeholder="What should we call you?">
+                    </div>
+                </div>
+                
+                <button class="onboarding-primary" id="onboardingPrimary" onclick="completeOnboarding()">
+                    Start composing
+                </button>
+                <button class="onboarding-skip" onclick="skipOnboarding()">Skip for now</button>
+            </div>
         </div>
     </div>
 
@@ -5452,8 +5565,121 @@
         let selectedRecipient = null;
         let isNewContact = false;
 
+        // ============================================
+        // SUPABASE AUTH
+        // ============================================
+        const SUPABASE_URL = 'https://znfqqehthxcrizcixzpu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuZnFxZWh0aHhjcml6Y2l4enB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MzMyMDgsImV4cCI6MjA4NjAwOTIwOH0.Twf3d9QEhVq6j9yVKaS9QNhnvygYgxPj0zg6Ug5pAq0';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentAuthUser = null;
+
+        // Send magic link
+        async function sendMoonKey() {
+            const email = document.getElementById('authEmail').value.trim();
+            const errorEl = document.getElementById('authError');
+            const btn = document.getElementById('authSendBtn');
+
+            if (!email || !email.includes('@')) {
+                errorEl.textContent = 'Please enter a valid email address.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            errorEl.style.display = 'none';
+            btn.textContent = 'Sending...';
+            btn.disabled = true;
+
+            const { error } = await supabase.auth.signInWithOtp({
+                email,
+                options: {
+                    emailRedirectTo: window.location.origin
+                }
+            });
+
+            if (error) {
+                errorEl.textContent = error.message || 'Something went wrong. Please try again.';
+                errorEl.style.display = 'block';
+                btn.textContent = 'Send Moon Key 🌙';
+                btn.disabled = false;
+                return;
+            }
+
+            // Show check inbox step
+            document.getElementById('authEmailSent').textContent = email;
+            document.getElementById('authStepEmail').classList.remove('active');
+            document.getElementById('authStepInbox').classList.add('active');
+        }
+
+        async function resendMoonKey() {
+            const email = document.getElementById('authEmailSent').textContent;
+            const { error } = await supabase.auth.signInWithOtp({
+                email,
+                options: {
+                    emailRedirectTo: window.location.origin
+                }
+            });
+            if (!error) {
+                alert('Moon key resent! Check your inbox.');
+            }
+        }
+
+        function changeEmail() {
+            document.getElementById('authStepInbox').classList.remove('active');
+            document.getElementById('authStepEmail').classList.add('active');
+            document.getElementById('authSendBtn').textContent = 'Send Moon Key 🌙';
+            document.getElementById('authSendBtn').disabled = false;
+            document.getElementById('authEmail').focus();
+        }
+
+        // Show profile setup step after auth
+        function showProfileSetup() {
+            document.getElementById('authStepEmail').classList.remove('active');
+            document.getElementById('authStepInbox').classList.remove('active');
+            document.getElementById('authStepProfile').classList.add('active');
+            checkGeolocationSupport();
+            autoDetectFromTimezone();
+        }
+
+        // Handle auth state changes
+        supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                currentAuthUser = session.user;
+
+                // Check if user has a profile with location set
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (profile && profile.city) {
+                    // Returning user — load their profile and go to app
+                    if (profile.username) {
+                        document.getElementById('userInitials').textContent = profile.username.charAt(0).toUpperCase();
+                        const userNameField = document.getElementById('userName');
+                        if (userNameField) userNameField.value = profile.username;
+                        localStorage.setItem('moonpop_username', profile.username);
+                    }
+                    if (profile.city) {
+                        const city = cities.find(c => c.name === profile.city);
+                        if (city) {
+                            updateLocationDisplay(city.name, city.country);
+                            onLocationObtained(city.lat, city.lon, city.tz);
+                            localStorage.setItem('moonpop_location', JSON.stringify({ name: city.name, country: city.country }));
+                        }
+                    }
+                    localStorage.setItem('moonpop_seen', 'true');
+                    hideOnboarding();
+                } else {
+                    // New user — show profile setup
+                    showProfileSetup();
+                }
+            }
+        });
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             // Check for saved location first
             const savedLocation = localStorage.getItem('moonpop_location');
             if (savedLocation) {
@@ -5465,22 +5691,23 @@
                         onLocationObtained(city.lat, city.lon, city.tz);
                     }
                 } catch (e) {
-                    // Invalid saved data, fall through to auto-detect
                     autoDetectFromTimezone();
                 }
             } else {
-                // Auto-detect location from browser timezone (no permission needed)
                 autoDetectFromTimezone();
             }
-            
-            // Check for first-time user
-            const isFirstRun = !localStorage.getItem('moonpop_seen');
-            
-            if (isFirstRun) {
-                showOnboarding();
-                checkGeolocationSupport();
-            } else {
+
+            // Check for existing Supabase session
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (session) {
+                // User is logged in — hide onboarding
+                currentAuthUser = session.user;
+                localStorage.setItem('moonpop_seen', 'true');
                 hideOnboarding();
+            } else {
+                // No session — show auth flow
+                showOnboarding();
             }
 
             updateMoonDisplay();
@@ -5490,7 +5717,6 @@
             renderMessageDots();
             renderMessages();
             renderCircleRows();
-            // Populate shared sky preview
             if (globalTransmissions.length > 0) {
                 const latest = globalTransmissions[0];
                 const previewEl = document.getElementById('sharedSkyPreview');
@@ -5499,9 +5725,6 @@
                 if (badgeEl) badgeEl.textContent = globalTransmissions.length;
             }
 
-            // renderGlobalTransmissions removed (signals section removed)
-            
-            // Start live countdown
             setInterval(() => {
                 updateOrbitCenter();
             }, 1000);
@@ -5558,14 +5781,12 @@
             if (!overlay) return;
             overlay.classList.remove('hidden');
             
-            // Update button text based on moon state
-            const btn = document.getElementById('onboardingPrimary');
-            if (btn) {
-                if (moonData.isVisible) {
-                    btn.textContent = 'Start composing';
-                } else {
-                    btn.textContent = 'See moonrise countdown';
-                }
+            // Add Enter key handler for email input
+            const emailInput = document.getElementById('authEmail');
+            if (emailInput) {
+                emailInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') sendMoonKey();
+                });
             }
         }
 
@@ -5777,7 +5998,7 @@
             );
         }
 
-        function completeOnboarding() {
+        async function completeOnboarding() {
             const location = document.getElementById('onboardingLocation').value.trim();
             const name = document.getElementById('onboardingName').value.trim();
             
@@ -5786,7 +6007,7 @@
                 return;
             }
 
-            // Save to state and UI - try to find full city info
+            // Save to state and UI
             const city = cities.find(c => c.name.toLowerCase() === location.toLowerCase());
             if (city) {
                 updateLocationDisplay(city.name, city.country);
@@ -5801,22 +6022,37 @@
                 localStorage.setItem('moonpop_username', name);
             }
 
-            // If lat/lon not already set (city selected or geolocation), try to match city
             if (!moonData.userLat && city) {
                 onLocationObtained(city.lat, city.lon, city.tz);
             }
 
-            // Mark as seen
+            // Save profile to Supabase
+            if (currentAuthUser && city) {
+                await supabase.from('profiles').update({
+                    username: name || currentAuthUser.email.split('@')[0],
+                    city: city.name,
+                    latitude: city.lat,
+                    longitude: city.lon,
+                    timezone: city.tz
+                }).eq('id', currentAuthUser.id);
+            }
+
             localStorage.setItem('moonpop_seen', 'true');
+            localStorage.setItem('moonpop_location', JSON.stringify({ name: city ? city.name : location, country: city ? city.country : '' }));
             hideOnboarding();
 
-            // If moon is up, open compose modal after a moment
             if (moonData.isVisible) {
                 setTimeout(() => openModal(), 400);
             }
         }
 
         function skipOnboarding() {
+            // Save minimal profile to Supabase
+            if (currentAuthUser) {
+                supabase.from('profiles').update({
+                    username: currentAuthUser.email.split('@')[0]
+                }).eq('id', currentAuthUser.id);
+            }
             localStorage.setItem('moonpop_seen', 'true');
             hideOnboarding();
         }
