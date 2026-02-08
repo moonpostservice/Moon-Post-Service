@@ -5533,14 +5533,27 @@
             }
         ];
 
-        // Contacts database
-        const contacts = [
-            { name: 'Barbara Thompson', location: 'New York', moonrise: '19:45', isOnMoonpop: true },
-            { name: 'Jonah Doyle', location: 'London', moonrise: '17:30', isOnMoonpop: true },
-            { name: 'Sam Rivera', location: 'Tokyo', moonrise: '05:15', isOnMoonpop: true },
-            { name: 'Polly Foldesh', location: 'Sydney', moonrise: '20:00', isOnMoonpop: true },
-            { name: 'Maya Chen', location: 'Paris', moonrise: '18:00', isOnMoonpop: false, email: 'maya@example.com' }
-        ];
+        // Contacts database — loaded from Supabase
+        let contacts = [];
+
+        async function loadContacts() {
+            if (!currentAuthUser) return;
+            const { data, error } = await sb.from('contacts')
+                .select('*')
+                .eq('owner_id', currentAuthUser.id)
+                .order('created_at', { ascending: false });
+            
+            if (data) {
+                contacts = data.map(c => ({
+                    id: c.id,
+                    name: c.name,
+                    location: c.city || 'Unknown',
+                    email: c.email,
+                    isOnMoonpop: c.is_on_moonpop,
+                    linkedProfileId: c.linked_profile_id
+                }));
+            }
+        }
 
         // Messages - with type for filtering (sent = transmitted, received = incoming)
         const messages = [
@@ -5671,6 +5684,7 @@
                     }
                     localStorage.setItem('moonpop_seen', 'true');
                     hideOnboarding();
+                    await loadContacts();
                 } else {
                     // New user — show profile setup
                     showProfileSetup();
@@ -5705,6 +5719,7 @@
                 currentAuthUser = session.user;
                 localStorage.setItem('moonpop_seen', 'true');
                 hideOnboarding();
+                await loadContacts();
             } else {
                 // No session — show auth flow
                 showOnboarding();
@@ -7418,12 +7433,24 @@
                 const email = pendingMessage.recipientEmail || 
                     (pendingMessage.recipientType === 'email' ? pendingMessage.recipient : null);
                 
-                contacts.push({
+                const newContact = {
                     name: pendingMessage.recipient,
                     location: pendingMessage.location,
                     email: email,
                     isOnMoonpop: false
-                });
+                };
+                contacts.push(newContact);
+
+                // Save to Supabase
+                if (currentAuthUser) {
+                    sb.from('contacts').insert({
+                        owner_id: currentAuthUser.id,
+                        name: pendingMessage.recipient,
+                        city: pendingMessage.location,
+                        email: email,
+                        is_on_moonpop: false
+                    });
+                }
                 
                 // Send email notification
                 if (email) {
