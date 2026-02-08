@@ -5660,7 +5660,7 @@
                 currentAuthUser = session.user;
 
                 // Check if user has a profile with location set
-                const { data: profile } = await supabase
+                const { data: profile } = await sb
                     .from('profiles')
                     .select('*')
                     .eq('id', session.user.id)
