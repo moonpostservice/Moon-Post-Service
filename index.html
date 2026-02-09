@@ -5656,9 +5656,9 @@
             autoDetectFromTimezone();
         }
 
-        // Handle auth state changes
+        // Handle auth state changes — this is the SINGLE source of truth for auth
         sb.auth.onAuthStateChange(async (event, session) => {
-            if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+            if (session) {
                 currentAuthUser = session.user;
 
                 try {
@@ -5694,14 +5694,19 @@
                     }
                 } catch (e) {
                     console.error('Profile check failed:', e);
-                    // If profile check fails, still show profile setup
                     showProfileSetup();
                 }
+            } else if (event === 'INITIAL_SESSION') {
+                // No session on page load — show login
+                showOnboarding();
+            } else if (event === 'SIGNED_OUT') {
+                currentAuthUser = null;
+                showOnboarding();
             }
         });
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             // Check for saved location first
             const savedLocation = localStorage.getItem('moonpop_location');
             if (savedLocation) {
@@ -5719,26 +5724,8 @@
                 autoDetectFromTimezone();
             }
 
-            // Check for existing Supabase session
-            const { data: { session } } = await sb.auth.getSession();
-
-            // Check if URL has auth tokens (magic link callback)
-            const hasAuthTokens = window.location.hash.includes('access_token') || 
-                                   window.location.search.includes('code=');
-
-            if (session) {
-                // User is logged in — hide onboarding
-                currentAuthUser = session.user;
-                localStorage.setItem('moonpop_seen', 'true');
-                hideOnboarding();
-                await loadContacts();
-            } else if (hasAuthTokens) {
-                // Magic link callback — wait for onAuthStateChange to handle it
-                // Don't show email form, just show a loading state
-            } else {
-                // No session, no tokens — show auth flow
-                showOnboarding();
-            }
+            // Auth is handled entirely by onAuthStateChange above
+            // Don't show or hide onboarding here — let onAuthStateChange decide
 
             updateMoonDisplay();
             initCountdown();
