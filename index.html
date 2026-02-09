@@ -5647,6 +5647,8 @@
 
         // Show profile setup step after auth
         function showProfileSetup() {
+            const overlay = document.getElementById('onboardingOverlay');
+            if (overlay) overlay.classList.remove('hidden');
             document.getElementById('authStepEmail').classList.remove('active');
             document.getElementById('authStepInbox').classList.remove('active');
             document.getElementById('authStepProfile').classList.add('active');
@@ -5656,37 +5658,43 @@
 
         // Handle auth state changes
         sb.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session) {
+            if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
                 currentAuthUser = session.user;
 
-                // Check if user has a profile with location set
-                const { data: profile } = await sb
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
+                try {
+                    // Check if user has a profile with location set
+                    const { data: profile, error } = await sb
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
 
-                if (profile && profile.city) {
-                    // Returning user — load their profile and go to app
-                    if (profile.username) {
-                        document.getElementById('userInitials').textContent = profile.username.charAt(0).toUpperCase();
-                        const userNameField = document.getElementById('userName');
-                        if (userNameField) userNameField.value = profile.username;
-                        localStorage.setItem('moonpop_username', profile.username);
-                    }
-                    if (profile.city) {
-                        const city = cities.find(c => c.name === profile.city);
-                        if (city) {
-                            updateLocationDisplay(city.name, city.country);
-                            onLocationObtained(city.lat, city.lon, city.tz);
-                            localStorage.setItem('moonpop_location', JSON.stringify({ name: city.name, country: city.country }));
+                    if (profile && profile.city) {
+                        // Returning user — load their profile and go to app
+                        if (profile.username) {
+                            document.getElementById('userInitials').textContent = profile.username.charAt(0).toUpperCase();
+                            const userNameField = document.getElementById('userName');
+                            if (userNameField) userNameField.value = profile.username;
+                            localStorage.setItem('moonpop_username', profile.username);
                         }
+                        if (profile.city) {
+                            const city = cities.find(c => c.name === profile.city);
+                            if (city) {
+                                updateLocationDisplay(city.name, city.country);
+                                onLocationObtained(city.lat, city.lon, city.tz);
+                                localStorage.setItem('moonpop_location', JSON.stringify({ name: city.name, country: city.country }));
+                            }
+                        }
+                        localStorage.setItem('moonpop_seen', 'true');
+                        hideOnboarding();
+                        await loadContacts();
+                    } else {
+                        // New user or no city — show profile setup
+                        showProfileSetup();
                     }
-                    localStorage.setItem('moonpop_seen', 'true');
-                    hideOnboarding();
-                    await loadContacts();
-                } else {
-                    // New user — show profile setup
+                } catch (e) {
+                    console.error('Profile check failed:', e);
+                    // If profile check fails, still show profile setup
                     showProfileSetup();
                 }
             }
@@ -5714,14 +5722,21 @@
             // Check for existing Supabase session
             const { data: { session } } = await sb.auth.getSession();
 
+            // Check if URL has auth tokens (magic link callback)
+            const hasAuthTokens = window.location.hash.includes('access_token') || 
+                                   window.location.search.includes('code=');
+
             if (session) {
                 // User is logged in — hide onboarding
                 currentAuthUser = session.user;
                 localStorage.setItem('moonpop_seen', 'true');
                 hideOnboarding();
                 await loadContacts();
+            } else if (hasAuthTokens) {
+                // Magic link callback — wait for onAuthStateChange to handle it
+                // Don't show email form, just show a loading state
             } else {
-                // No session — show auth flow
+                // No session, no tokens — show auth flow
                 showOnboarding();
             }
 
