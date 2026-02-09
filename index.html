@@ -5656,10 +5656,21 @@
             autoDetectFromTimezone();
         }
 
+        // Check if URL has auth tokens (magic link callback)
+        const hasAuthTokensInUrl = window.location.hash.includes('access_token') || 
+                                    window.location.search.includes('code=') ||
+                                    window.location.search.includes('token=') ||
+                                    window.location.hash.includes('type=magiclink');
+
         // Handle auth state changes — this is the SINGLE source of truth for auth
         sb.auth.onAuthStateChange(async (event, session) => {
             if (session) {
                 currentAuthUser = session.user;
+
+                // Clean up URL hash if present
+                if (window.location.hash.includes('access_token')) {
+                    history.replaceState(null, '', window.location.pathname);
+                }
 
                 try {
                     // Check if user has a profile with location set
@@ -5696,13 +5707,15 @@
                     console.error('Profile check failed:', e);
                     showProfileSetup();
                 }
-            } else if (event === 'INITIAL_SESSION') {
-                // No session on page load — show login
+            } else if (event === 'INITIAL_SESSION' && !hasAuthTokensInUrl) {
+                // No session AND no tokens in URL — truly not logged in
                 showOnboarding();
             } else if (event === 'SIGNED_OUT') {
                 currentAuthUser = null;
                 showOnboarding();
             }
+            // If INITIAL_SESSION with no session but URL has tokens,
+            // do nothing — wait for SIGNED_IN to fire after token exchange
         });
 
         // Initialize
