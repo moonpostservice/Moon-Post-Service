@@ -4453,7 +4453,7 @@
         </div>
     </div>
 
-    <!-- Moon Reveal Page (recipient view - for demo purposes) -->
+    <!-- Moon Reveal Page (recipient view) -->
     <div class="moon-reveal-page" id="moonRevealPage">
         <button class="close-reveal-page" onclick="closeMoonRevealPage()">&times;</button>
         
@@ -4472,37 +4472,53 @@
         </div>
 
         <div class="moon-reveal-content">
-            <p class="moon-reveal-sender">From <strong id="revealSenderName">A Friend</strong></p>
-            
-            <!-- Countdown (shown before moonrise) -->
-            <div class="moon-reveal-countdown" id="revealCountdown">
-                <div class="countdown-label-reveal">Your moon rises in</div>
-                <div class="countdown-time-reveal" id="revealCountdownTime">2h 34m</div>
-                <div class="countdown-note">The message will be revealed then</div>
+            <!-- Loading state -->
+            <div id="revealLoading" style="text-align:center;padding:40px;color:rgba(255,255,255,0.6);">
+                Loading your moon message...
             </div>
 
-            <!-- Message (blurred before moonrise, visible after) -->
-            <div class="moon-reveal-message" id="revealMessage">
-                <p class="reveal-message-text" id="revealMessageText">
-                    Hey, have you seen the moon tonight? I wonder if you're looking at the same sky right now. I miss you.
-                </p>
-                <div class="reveal-message-meta">
-                    Released under a <span id="revealPhaseName">waxing gibbous</span> moon
+            <!-- Error state -->
+            <div id="revealError" style="display:none;text-align:center;padding:40px;">
+                <p style="color:rgba(255,255,255,0.7);font-size:16px;">Message not found</p>
+                <p style="color:rgba(255,255,255,0.4);font-size:13px;margin-top:8px;">This link may have expired or the message doesn't exist.</p>
+            </div>
+
+            <!-- Real content (hidden until loaded) -->
+            <div id="revealLoaded" style="display:none;">
+                <p class="moon-reveal-sender">From <strong id="revealSenderName">A Friend</strong></p>
+                
+                <!-- Countdown (shown before moonrise) -->
+                <div class="moon-reveal-countdown" id="revealCountdown" style="display:none;">
+                    <div class="countdown-label-reveal">Your moon message arrives in</div>
+                    <div class="countdown-time-reveal" id="revealCountdownTime">--:--:--</div>
+                    <div class="countdown-note">The message will be revealed at moonrise over <span id="revealCity">your city</span></div>
+                    <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1);">
+                        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:12px;">While you wait — join MoonPop so you can reply when it arrives</p>
+                        <button class="cta-primary" onclick="revealSignupToReply()" style="font-size:14px;padding:10px 24px;">Sign up now</button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Toggle for demo (before/after moonrise) -->
-            <div class="reveal-state-toggle" id="revealStateToggle">
-                <button onclick="setRevealState('before')" id="beforeBtn" class="active">Before Moonrise</button>
-                <button onclick="setRevealState('after')" id="afterBtn">After Moonrise</button>
-            </div>
+                <!-- Message (shown after release) -->
+                <div class="moon-reveal-message" id="revealMessage" style="display:none;">
+                    <p class="reveal-message-text" id="revealMessageText"></p>
+                    <div id="revealLunarNote" style="display:none;">
+                        <div style="margin-top:20px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;border-left:3px solid rgba(255,255,255,0.2);">
+                            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:8px;">🌙 Lunar Note</div>
+                            <p id="revealLunarText" style="white-space:pre-line;color:rgba(255,255,255,0.85);"></p>
+                            <p id="revealLunarClosing" style="color:rgba(255,255,255,0.5);font-style:italic;margin-top:8px;"></p>
+                        </div>
+                    </div>
+                    <div class="reveal-message-meta">
+                        Sent under a <span id="revealPhaseName">waxing gibbous</span> moon
+                    </div>
+                </div>
 
-            <!-- CTA (shown only after reading) -->
-            <div class="moon-reveal-cta" id="revealCta">
-                <p>This message traveled through lunar time.<br>Moonpop lets you send messages like this.</p>
-                <div class="moon-reveal-cta-buttons">
-                    <button class="cta-primary" onclick="alert('This would open signup to reply')">Create account to reply</button>
-                    <button class="cta-secondary" onclick="closeMoonRevealPage()">Save & Close</button>
+                <!-- CTA -->
+                <div class="moon-reveal-cta" id="revealCta">
+                    <p>This message traveled through lunar time.<br>Join MoonPop to reply and send your own.</p>
+                    <div class="moon-reveal-cta-buttons">
+                        <button class="cta-primary" id="revealReplyBtn" onclick="revealSignupToReply()">Join MoonPop to reply</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -4606,7 +4622,7 @@
         })();
         
         // Send invite email to new recipient
-        async function sendMoonPostEmail(recipientEmail, recipientLocation, messageText, senderName) {
+        async function sendMoonPostEmail(recipientEmail, recipientLocation, messageText, senderName, dbMessageId) {
             // Always use stored username
             senderName = senderName || localStorage.getItem('moonpop_username') || 'Someone on MoonPop';
             if (typeof emailjs === 'undefined') {
@@ -4628,11 +4644,9 @@
             const words = messageText.trim().split(/\s+/);
             const preview = words.slice(0, 3).join(' ');
             
-            // Generate a simple message ID (in production, this would be a real unique ID)
-            const messageId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-            
-            // For MVP, link to current page. In production: moonpostservice.com/m/{messageId}
-            const revealLink = window.location.href.split('?')[0] + '?m=' + messageId;
+            // Use the real database message ID
+            const messageId = dbMessageId || (Date.now().toString(36) + Math.random().toString(36).substr(2, 5));
+            const revealLink = window.location.origin + '?m=' + messageId;
             
             const templateParams = {
                 to_email: recipientEmail,
@@ -5785,6 +5799,10 @@
         // AUTH INITIALIZATION
         // ============================================
         async function initAuth() {
+            // Check if this is a message reveal link (?m=xxx)
+            const isMessageLink = await checkMessageLink();
+            if (isMessageLink) return; // Don't load the app, just show the reveal page
+
             // If URL has magic link tokens, Supabase needs a moment to process them
             if (window.location.hash.includes('access_token')) {
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -7787,7 +7805,8 @@
                         email,
                         pendingMessage.location,
                         pendingMessage.message,
-                        senderName
+                        senderName,
+                        dbMessage?.id
                     );
                 }
             }
@@ -7919,52 +7938,130 @@
 
         // Update dot positions based on time-to-release
         // 270° = 12h away, 0° = 6h away, 90° = imminent
-        // Moon Reveal Page Functions (for demo - showing what recipients see)
-        let revealState = 'before'; // 'before' or 'after' moonrise
+        // ============================================
+        // MOON REVEAL PAGE (recipient landing page)
+        // ============================================
+        let revealCountdownInterval = null;
 
-        function openMoonRevealPage(messageData) {
+        async function checkMessageLink() {
+            const params = new URLSearchParams(window.location.search);
+            const messageId = params.get('m');
+            if (!messageId) return false;
+
+            // Show the reveal page immediately
             const page = document.getElementById('moonRevealPage');
-            const phase = moonData.phase || getMoonPhase();
-            
-            // Set sender name
-            document.getElementById('revealSenderName').textContent = messageData?.sender || 'A Friend';
-            
-            // Set phase name
-            document.getElementById('revealPhaseName').textContent = phase.phaseName.toLowerCase();
-            
-            // Set message text
-            document.getElementById('revealMessageText').textContent = 
-                messageData?.message || "Hey, have you seen the moon tonight? I wonder if you're looking at the same sky right now. I miss you.";
-            
-            // Start with "before moonrise" state
-            setRevealState('before');
-            
             page.classList.add('active');
+            document.getElementById('revealLoading').style.display = 'block';
+            document.getElementById('revealError').style.display = 'none';
+            document.getElementById('revealLoaded').style.display = 'none';
+
+            // Fetch the message from Supabase (public read via RLS)
+            const { data: msg, error } = await sb.from('messages')
+                .select('*, sender:profiles!sender_id(username, city)')
+                .eq('id', messageId)
+                .single();
+
+            document.getElementById('revealLoading').style.display = 'none';
+
+            if (error || !msg) {
+                console.error('Message fetch error:', error);
+                document.getElementById('revealError').style.display = 'block';
+                return true;
+            }
+
+            // Populate the reveal page
+            const senderName = msg.sender?.username || 'Someone';
+            document.getElementById('revealSenderName').textContent = senderName;
+            document.getElementById('revealPhaseName').textContent = msg.moon_phase || 'waxing gibbous';
+            document.getElementById('revealCity').textContent = msg.recipient_city || 'your city';
+
+            const isReleased = msg.status === 'released' || 
+                (msg.release_at && new Date(msg.release_at) <= new Date());
+
+            if (isReleased) {
+                // Message is released — show it!
+                showRevealedMessage(msg);
+            } else if (msg.release_at) {
+                // Not yet released — show countdown
+                showRevealCountdown(msg);
+            } else {
+                // No release time set — show message anyway
+                showRevealedMessage(msg);
+            }
+
+            document.getElementById('revealLoaded').style.display = 'block';
+
+            return true;
         }
 
-        function setRevealState(state) {
-            revealState = state;
-            
-            const countdown = document.getElementById('revealCountdown');
-            const message = document.getElementById('revealMessage');
-            const cta = document.getElementById('revealCta');
-            const beforeBtn = document.getElementById('beforeBtn');
-            const afterBtn = document.getElementById('afterBtn');
-            
-            if (state === 'before') {
-                // Before moonrise: show countdown, blur message, hide CTA
-                countdown.style.display = 'block';
-                message.classList.add('moon-reveal-blurred');
-                cta.style.display = 'none';
-                beforeBtn.classList.add('active');
-                afterBtn.classList.remove('active');
-            } else {
-                // After moonrise: hide countdown, show clear message, show CTA
-                countdown.style.display = 'none';
-                message.classList.remove('moon-reveal-blurred');
-                cta.style.display = 'block';
-                beforeBtn.classList.remove('active');
-                afterBtn.classList.add('active');
+        function showRevealedMessage(msg) {
+            document.getElementById('revealCountdown').style.display = 'none';
+            document.getElementById('revealMessage').style.display = 'block';
+            document.getElementById('revealMessage').classList.remove('moon-reveal-blurred');
+            document.getElementById('revealCta').style.display = 'block';
+
+            // Set message text
+            document.getElementById('revealMessageText').textContent = msg.message_text || '';
+
+            // Show lunar note if present
+            if (msg.lunar_note_text) {
+                document.getElementById('revealLunarNote').style.display = 'block';
+                document.getElementById('revealLunarText').textContent = msg.lunar_note_text;
+                document.getElementById('revealLunarClosing').textContent = msg.lunar_note_closing || '';
+            }
+        }
+
+        function showRevealCountdown(msg) {
+            document.getElementById('revealCountdown').style.display = 'block';
+            document.getElementById('revealMessage').style.display = 'block';
+            document.getElementById('revealMessage').classList.add('moon-reveal-blurred');
+            document.getElementById('revealCta').style.display = 'none';
+
+            // Set blurred message text (it's blurred via CSS so it's not readable)
+            document.getElementById('revealMessageText').textContent = msg.message_text || 'A message is waiting for you...';
+            if (msg.lunar_note_text) {
+                document.getElementById('revealLunarNote').style.display = 'block';
+                document.getElementById('revealLunarText').textContent = msg.lunar_note_text;
+                document.getElementById('revealLunarClosing').textContent = msg.lunar_note_closing || '';
+            }
+
+            const releaseDate = new Date(msg.release_at);
+
+            function updateCountdown() {
+                const now = new Date();
+                const diff = releaseDate - now;
+
+                if (diff <= 0) {
+                    // Time's up! Reveal the message
+                    clearInterval(revealCountdownInterval);
+                    showRevealedMessage(msg);
+                    return;
+                }
+
+                const hours = Math.floor(diff / 3600000);
+                const minutes = Math.floor((diff % 3600000) / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+                const pad = n => String(n).padStart(2, '0');
+                document.getElementById('revealCountdownTime').textContent = 
+                    `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+            }
+
+            updateCountdown();
+            revealCountdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        function revealSignupToReply() {
+            // Close reveal page and show the signup flow
+            closeMoonRevealPage();
+            history.replaceState(null, '', window.location.pathname);
+            showOnboarding();
+        }
+
+        function closeMoonRevealPage() {
+            document.getElementById('moonRevealPage').classList.remove('active');
+            if (revealCountdownInterval) {
+                clearInterval(revealCountdownInterval);
+                revealCountdownInterval = null;
             }
         }
 
@@ -8346,9 +8443,6 @@
             renderCircleRows();
         }
 
-        function closeMoonRevealPage() {
-            document.getElementById('moonRevealPage').classList.remove('active');
-        }
     </script>
 </body>
 </html>
