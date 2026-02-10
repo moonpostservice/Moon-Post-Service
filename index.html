@@ -3676,7 +3676,7 @@
             right: 0;
             bottom: 0;
             background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            z-index: 2000;
+            z-index: 6000;
             overflow-y: auto;
         }
 
@@ -3958,7 +3958,7 @@
     </header>
 
     <!-- First-time Onboarding Overlay -->
-    <div class="onboarding-overlay" id="onboardingOverlay">
+    <div class="onboarding-overlay hidden" id="onboardingOverlay">
         <div class="onboarding-card">
             <!-- Logo -->
             <svg class="onboarding-logo" viewBox="0 0 529.49 72.65" xmlns="http://www.w3.org/2000/svg">
@@ -5822,6 +5822,11 @@
                         .single();
 
                     if (profile) {
+                        // Ensure email is saved to profile (for contact lookup)
+                        if (!profile.email && session.user.email) {
+                            sb.from('profiles').update({ email: session.user.email }).eq('id', session.user.id);
+                        }
+
                         // Load saved profile data
                         if (profile.username) {
                             document.getElementById('userInitials').textContent = profile.username.charAt(0).toUpperCase();
@@ -6865,8 +6870,11 @@
             if (!box || !selectedRecipient) { if(box) box.style.display='none'; return; }
             
             const contact = contacts.find(c => c.name === selectedRecipient.name);
-            if (contact && contact.isOnMoonpop) {
-                const info = getRecipientMoonrise(contact.location);
+            const isOnMps = selectedRecipient.isOnMoonpop || (contact && contact.isOnMoonpop);
+            
+            if (isOnMps) {
+                const loc = selectedRecipient.location || contact?.location;
+                const info = getRecipientMoonrise(loc);
                 let eta = '';
                 if (info && info.hoursUntil) {
                     const h = Math.floor(info.hoursUntil);
@@ -6874,7 +6882,7 @@
                     eta = h > 0 ? `${h}h ${m}m` : `${m} minutes`;
                 }
                 box.className = 'delivery-info-box known';
-                box.innerHTML = `<span class="delivery-icon">🌕</span> <strong>${contact.name}</strong> is on MoonPop. They'll receive this at moonrise over <strong>${contact.location}</strong>${eta ? ' — in about <strong>' + eta + '</strong>' : ''}.`;
+                box.innerHTML = `<span class="delivery-icon">🌕</span> <strong>${selectedRecipient.name || contact?.name}</strong> is on MoonPop. They'll receive this at moonrise over <strong>${loc}</strong>${eta ? ' — in about <strong>' + eta + '</strong>' : ''}.`;
                 box.style.display = 'block';
             } else if (selectedRecipient.isNew || (contact && !contact.isOnMoonpop)) {
                 const email = selectedRecipient.email || contact?.email || '';
@@ -6981,6 +6989,7 @@
                         <div class="empty-contacts-icon"></div>
                         <h4>No contacts yet</h4>
                         <p>Send your first moon message to someone special</p>
+                        <button onclick="showNewContactForm()" style="margin-top:12px;padding:8px 20px;background:var(--blue);color:white;border:none;border-radius:20px;font-size:14px;cursor:pointer;">+ Add a contact</button>
                     </div>
                     ${query.length > 0 ? `
                         <div class="recipient-option new-contact" onclick="selectNewContact('${query}')">
@@ -7193,7 +7202,7 @@
             if (btn) btn.disabled = !(name && email && city);
         }
 
-        function confirmNewContact() {
+        async function confirmNewContact() {
             const name = document.getElementById('newContactName').value.trim();
             const email = document.getElementById('newContactEmail').value.trim();
             const city = document.getElementById('newContactCity').value.trim();
@@ -7202,9 +7211,24 @@
             if (!email) { alert('Please enter their email'); return; }
             if (!email.includes('@') || !email.includes('.')) { alert('Please enter a valid email'); return; }
             if (!city) { alert('Please enter their location'); return; }
+
+            // Check if this email belongs to an existing MPS user
+            let isOnMps = false;
+            let linkedProfileId = null;
+            if (currentAuthUser) {
+                const { data: existingProfile } = await sb.from('profiles')
+                    .select('id, username')
+                    .eq('email', email)
+                    .maybeSingle();
+                
+                if (existingProfile) {
+                    isOnMps = true;
+                    linkedProfileId = existingProfile.id;
+                }
+            }
             
             // Store as selected recipient
-            selectedRecipient = { name, email, location: city, isNew: true };
+            selectedRecipient = { name, email, location: city, isNew: true, isOnMoonpop: isOnMps, linkedProfileId };
             
             // Go to recipient step with name filled
             document.getElementById('recipient').value = name;
@@ -7589,6 +7613,8 @@
                 lunarClosing: lunarClosing,
                 location: location,
                 isKnown: !selectedRecipient?.isNew,
+                isOnMoonpop: selectedRecipient?.isOnMoonpop || false,
+                linkedProfileId: selectedRecipient?.linkedProfileId || null,
                 song: songVal
             };
             
@@ -7724,6 +7750,7 @@
                     sender_id: currentAuthUser.id,
                     recipient_name: pendingMessage.recipient,
                     recipient_email: pendingMessage.recipientEmail || null,
+                    recipient_id: pendingMessage.linkedProfileId || null,
                     recipient_city: pendingMessage.location,
                     message_text: pendingMessage.textMessage || null,
                     lunar_note_text: pendingMessage.lunarNoteText || null,
@@ -7777,11 +7804,13 @@
                 const email = pendingMessage.recipientEmail || 
                     (pendingMessage.recipientType === 'email' ? pendingMessage.recipient : null);
                 
+                const recipientIsOnMps = pendingMessage.isOnMoonpop || false;
+
                 const newContact = {
                     name: pendingMessage.recipient,
                     location: pendingMessage.location,
                     email: email,
-                    isOnMoonpop: false
+                    isOnMoonpop: recipientIsOnMps
                 };
                 contacts.push(newContact);
 
@@ -7792,14 +7821,15 @@
                         name: pendingMessage.recipient,
                         city: pendingMessage.location,
                         email: email,
-                        is_on_moonpop: false
+                        is_on_moonpop: recipientIsOnMps,
+                        linked_profile_id: pendingMessage.linkedProfileId || null
                     });
                     if (contactError) console.error('Contact save failed:', contactError);
                     else console.log('Contact saved successfully');
                 }
                 
-                // Send email notification
-                if (email) {
+                // Only send invite email to NON-MPS users
+                if (email && !recipientIsOnMps) {
                     const senderName = localStorage.getItem('moonpop_username') || 'Someone';
                     sendMoonPostEmail(
                         email,
