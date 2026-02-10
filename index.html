@@ -6059,13 +6059,15 @@
 
             // Save profile to Supabase
             if (currentAuthUser && city) {
-                await sb.from('profiles').update({
+                const { error: profileError } = await sb.from('profiles').update({
                     username: name || currentAuthUser.email.split('@')[0],
                     city: city.name,
                     latitude: city.lat,
                     longitude: city.lon,
                     timezone: city.tz
                 }).eq('id', currentAuthUser.id);
+                if (profileError) console.error('Profile save failed:', profileError);
+                else console.log('Profile saved successfully');
             }
 
             localStorage.setItem('moonpop_seen', 'true');
@@ -7421,7 +7423,7 @@
         function confirmSendToNewRecipient() { completeSend(true); }
 
         // Complete the send process
-        function completeSend(isNewRecipient) {
+        async function completeSend(isNewRecipient) {
             if (!pendingMessage) return;
 
             const phase = moonData.phase || getMoonPhase();
@@ -7459,13 +7461,15 @@
 
                 // Save to Supabase
                 if (currentAuthUser) {
-                    sb.from('contacts').insert({
+                    const { error: contactError } = await sb.from('contacts').insert({
                         owner_id: currentAuthUser.id,
                         name: pendingMessage.recipient,
                         city: pendingMessage.location,
                         email: email,
                         is_on_moonpop: false
                     });
+                    if (contactError) console.error('Contact save failed:', contactError);
+                    else console.log('Contact saved successfully');
                 }
                 
                 // Send email notification
