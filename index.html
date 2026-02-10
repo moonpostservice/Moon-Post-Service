@@ -5656,70 +5656,68 @@
             autoDetectFromTimezone();
         }
 
-        // Check if URL has auth tokens (magic link callback)
-        const hasAuthTokensInUrl = window.location.hash.includes('access_token') || 
-                                    window.location.search.includes('code=') ||
-                                    window.location.search.includes('token=') ||
-                                    window.location.hash.includes('type=magiclink');
+        // ============================================
+        // AUTH INITIALIZATION
+        // ============================================
+        async function initAuth() {
+            // If URL has magic link tokens, Supabase needs a moment to process them
+            if (window.location.hash.includes('access_token')) {
+                // Small delay to let Supabase client process the hash
+                await new Promise(resolve => setTimeout(resolve, 500));
+                // Clean up the URL
+                history.replaceState(null, '', window.location.pathname);
+            }
 
-        // Handle auth state changes — this is the SINGLE source of truth for auth
-        sb.auth.onAuthStateChange(async (event, session) => {
+            // Now check the session
+            const { data: { session } } = await sb.auth.getSession();
+
             if (session) {
                 currentAuthUser = session.user;
-
-                // Clean up URL hash if present
-                if (window.location.hash.includes('access_token')) {
-                    history.replaceState(null, '', window.location.pathname);
-                }
-
                 try {
-                    // Check if user has a profile with location set
-                    const { data: profile, error } = await sb
+                    const { data: profile } = await sb
                         .from('profiles')
                         .select('*')
                         .eq('id', session.user.id)
                         .single();
 
                     if (profile && profile.city) {
-                        // Returning user — load their profile and go to app
                         if (profile.username) {
                             document.getElementById('userInitials').textContent = profile.username.charAt(0).toUpperCase();
                             const userNameField = document.getElementById('userName');
                             if (userNameField) userNameField.value = profile.username;
                             localStorage.setItem('moonpop_username', profile.username);
                         }
-                        if (profile.city) {
-                            const city = cities.find(c => c.name === profile.city);
-                            if (city) {
-                                updateLocationDisplay(city.name, city.country);
-                                onLocationObtained(city.lat, city.lon, city.tz);
-                                localStorage.setItem('moonpop_location', JSON.stringify({ name: city.name, country: city.country }));
-                            }
+                        const city = cities.find(c => c.name === profile.city);
+                        if (city) {
+                            updateLocationDisplay(city.name, city.country);
+                            onLocationObtained(city.lat, city.lon, city.tz);
+                            localStorage.setItem('moonpop_location', JSON.stringify({ name: city.name, country: city.country }));
                         }
                         localStorage.setItem('moonpop_seen', 'true');
                         hideOnboarding();
                         await loadContacts();
                     } else {
-                        // New user or no city — show profile setup
                         showProfileSetup();
                     }
                 } catch (e) {
                     console.error('Profile check failed:', e);
                     showProfileSetup();
                 }
-            } else if (event === 'INITIAL_SESSION' && !hasAuthTokensInUrl) {
-                // No session AND no tokens in URL — truly not logged in
+            } else {
                 showOnboarding();
-            } else if (event === 'SIGNED_OUT') {
+            }
+        }
+
+        // Also handle future auth changes (e.g. signing out)
+        sb.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_OUT') {
                 currentAuthUser = null;
                 showOnboarding();
             }
-            // If INITIAL_SESSION with no session but URL has tokens,
-            // do nothing — wait for SIGNED_IN to fire after token exchange
         });
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             // Check for saved location first
             const savedLocation = localStorage.getItem('moonpop_location');
             if (savedLocation) {
@@ -5739,6 +5737,9 @@
 
             // Auth is handled entirely by onAuthStateChange above
             // Don't show or hide onboarding here — let onAuthStateChange decide
+
+            // Initialize auth
+            await initAuth();
 
             updateMoonDisplay();
             initCountdown();
