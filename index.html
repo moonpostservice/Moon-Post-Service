@@ -5257,7 +5257,8 @@
         // Moonrise at recipient location = delivery time.
         // Calculate moonrise at a given city
         function getRecipientMoonrise(cityName) {
-            const city = cities.find(c => c.name === cityName);
+            if (!cityName || cityName === 'Unknown') return null;
+            const city = cities.find(c => c.name.toLowerCase() === cityName.toLowerCase());
             if (!city) return null;
             
             const now = new Date();
@@ -5290,10 +5291,14 @@
             
             // Get messages in transit (sent but not yet delivered)
             const inTransitMessages = messages.filter(m => m.type === 'sent' && m.status === 'In Transit');
+            console.log('Dots: in-transit messages:', inTransitMessages.length, inTransitMessages.map(m => m.location));
             
             inTransitMessages.forEach((msg) => {
                 const info = getRecipientMoonrise(msg.location);
-                if (!info) return;
+                if (!info) {
+                    console.log('Dots: no moonrise info for', msg.location);
+                    return;
+                }
                 
                 const deg = deliveryTimeToRingDegrees(info.date);
                 const isReleasing = info.hoursUntil < 2;
@@ -5464,48 +5469,91 @@
         // ============================================
         // MOON CIRCLES
         // ============================================
-        const moonCircles = [
-            {
-                id: 'circle1',
-                name: 'Close Friends',
-                emoji: '🔥',
-                members: ['Barbara Thompson', 'Jonah Doyle', 'Polly Foldesh'],
-                nights: [
-                    {
-                        date: '2026-02-06',
-                        promptSetIndex: 2,
-                        contributions: [
-                            { member: 'Barbara Thompson', location: 'New York', note: { text: "Something small I like: coffee rings on paper.\nA place: the bench by the lake.\nA kind of weather: the kind before snow.", closing: "— stay a while" } },
-                            { member: 'Jonah Doyle', location: 'London', note: { text: "Something small I like: the sound of keys.\nA place: my grandmother's kitchen.\nA kind of weather: fog that stays.", closing: "— stay a while" } },
-                            { member: 'Polly Foldesh', location: 'Sydney', note: { text: "Something small I like: eyelashes on cheeks.\nA place: the space between songs.\nA kind of weather: warm rain.", closing: "— stay a while" } },
-                            { member: 'You', note: { text: "Something small I like: the way old books smell.\nA place: the roof at midnight.\nA kind of weather: still air before thunder.", closing: "— stay a while" } }
-                        ]
-                    },
-                    {
-                        date: '2026-02-07',
-                        promptSetIndex: 3,
-                        contributions: [
-                            { member: 'Jonah Doyle', location: 'London', note: { text: "Quiet walked in.\nWonder sat down.\nSmall rain waved from across the room.", closing: "— classic" } },
-                        ],
-                        yourTurn: true
-                    }
-                ]
-            },
-            {
-                id: 'circle2',
-                name: 'Sisters',
-                emoji: '🌸',
-                members: ['Maya Chen', 'Sam Rivera'],
-                nights: [
-                    {
-                        date: '2026-02-07',
-                        promptSetIndex: 5,
-                        contributions: [],
-                        yourTurn: true
-                    }
-                ]
+        // Moon Circles - loaded from Supabase
+        let moonCircles = [];
+
+        async function loadMoonCircles() {
+            if (!currentAuthUser) return;
+
+            // Get circles the user is a member of
+            const { data: memberships, error: memErr } = await sb.from('circle_members')
+                .select('circle_id')
+                .eq('user_id', currentAuthUser.id);
+
+            if (memErr || !memberships || memberships.length === 0) return;
+
+            const circleIds = memberships.map(m => m.circle_id);
+
+            // Get circle details
+            const { data: circlesData, error: circErr } = await sb.from('moon_circles')
+                .select('*')
+                .in('id', circleIds);
+
+            if (circErr || !circlesData) return;
+
+            // Get members for each circle
+            const { data: allMembers } = await sb.from('circle_members')
+                .select('*, profile:profiles!user_id(username, city)')
+                .in('circle_id', circleIds);
+
+            // Get nights for each circle
+            const { data: allNights } = await sb.from('circle_nights')
+                .select('*')
+                .in('circle_id', circleIds)
+                .order('date', { ascending: false });
+
+            // Get contributions for those nights
+            let allContributions = [];
+            if (allNights && allNights.length > 0) {
+                const nightIds = allNights.map(n => n.id);
+                const { data: contribs } = await sb.from('circle_contributions')
+                    .select('*, author:profiles!user_id(username, city)')
+                    .in('night_id', nightIds);
+                if (contribs) allContributions = contribs;
             }
-        ];
+
+            // Assemble circles
+            moonCircles = circlesData.map(circle => {
+                const members = (allMembers || [])
+                    .filter(m => m.circle_id === circle.id)
+                    .map(m => m.profile?.username || 'Unknown');
+
+                const nights = (allNights || [])
+                    .filter(n => n.circle_id === circle.id)
+                    .map(night => {
+                        const contributions = allContributions
+                            .filter(c => c.night_id === night.id)
+                            .map(c => ({
+                                member: c.author?.username || 'Unknown',
+                                location: c.author?.city || 'Unknown',
+                                note: c.note_text ? {
+                                    text: c.note_text,
+                                    closing: c.note_closing || ''
+                                } : null
+                            }));
+
+                        const hasUserContribution = allContributions.some(
+                            c => c.night_id === night.id && c.user_id === currentAuthUser.id
+                        );
+
+                        return {
+                            dbId: night.id,
+                            date: night.date,
+                            promptSetIndex: night.prompt_set_index,
+                            contributions: contributions,
+                            yourTurn: !hasUserContribution
+                        };
+                    });
+
+                return {
+                    id: circle.id,
+                    name: circle.name,
+                    emoji: circle.emoji || '🔥',
+                    members: members,
+                    nights: nights
+                };
+            });
+        }
 
         // Contacts database — loaded from Supabase
         let contacts = [];
@@ -5796,8 +5844,10 @@
                 await loadContacts();
                 await loadMessages();
                 await loadSharedSky();
+                await loadMoonCircles();
                 renderMessages();
                 renderMessageDots();
+                renderCircleRows();
                 if (globalTransmissions.length > 0) {
                     const latest = globalTransmissions[0];
                     const previewEl = document.getElementById('sharedSkyPreview');
@@ -8113,7 +8163,7 @@
             }
         }
 
-        function submitCircleNote() {
+        async function submitCircleNote() {
             const circle = moonCircles[currentCircleIndex];
             const night = circle.nights[circle.nights.length - 1];
             
@@ -8128,6 +8178,20 @@
                 note: { text: result.lines, closing: result.closing }
             });
             night.yourTurn = false;
+
+            // Save to Supabase
+            if (currentAuthUser && night.dbId) {
+                const { error } = await sb.from('circle_contributions').insert({
+                    night_id: night.dbId,
+                    user_id: currentAuthUser.id,
+                    input_1: v1,
+                    input_2: v2,
+                    input_3: v3,
+                    note_text: result.lines,
+                    note_closing: result.closing
+                });
+                if (error) console.error('Circle contribution save failed:', error);
+            }
             
             circleContribStep = 1;
             renderCircleDetail(circle);
@@ -8220,24 +8284,65 @@
             if (nameInput) nameInput.addEventListener('input', checkCreateCircle);
         });
 
-        function createCircle() {
+        async function createCircle() {
             const name = document.getElementById('newCircleName').value.trim();
             if (!name || newCircleMembers.length < 1) return;
             
             const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-            
-            moonCircles.push({
-                id: 'circle' + Date.now(),
-                name: name,
-                emoji: newCircleEmoji,
-                members: [...newCircleMembers],
-                nights: [{
+
+            if (currentAuthUser) {
+                // Create circle in Supabase
+                const { data: circle, error: circleErr } = await sb.from('moon_circles')
+                    .insert({ name: name, emoji: newCircleEmoji, creator_id: currentAuthUser.id })
+                    .select()
+                    .single();
+
+                if (circleErr || !circle) {
+                    console.error('Create circle failed:', circleErr);
+                    return;
+                }
+
+                // Add creator as member
+                await sb.from('circle_members').insert({
+                    circle_id: circle.id,
+                    user_id: currentAuthUser.id
+                });
+
+                // Create first night
+                await sb.from('circle_nights').insert({
+                    circle_id: circle.id,
                     date: new Date().toISOString().split('T')[0],
-                    promptSetIndex: dayOfYear % PROMPT_SETS.length,
-                    contributions: [],
-                    yourTurn: true
-                }]
-            });
+                    prompt_set_index: dayOfYear % PROMPT_SETS.length
+                });
+
+                // Add to local array
+                const username = localStorage.getItem('moonpop_username') || 'You';
+                moonCircles.push({
+                    id: circle.id,
+                    name: name,
+                    emoji: newCircleEmoji,
+                    members: [username, ...newCircleMembers],
+                    nights: [{
+                        date: new Date().toISOString().split('T')[0],
+                        promptSetIndex: dayOfYear % PROMPT_SETS.length,
+                        contributions: [],
+                        yourTurn: true
+                    }]
+                });
+            } else {
+                moonCircles.push({
+                    id: 'circle' + Date.now(),
+                    name: name,
+                    emoji: newCircleEmoji,
+                    members: [...newCircleMembers],
+                    nights: [{
+                        date: new Date().toISOString().split('T')[0],
+                        promptSetIndex: dayOfYear % PROMPT_SETS.length,
+                        contributions: [],
+                        yourTurn: true
+                    }]
+                });
+            }
             
             closeCreateCircle();
             renderCircleRows();
