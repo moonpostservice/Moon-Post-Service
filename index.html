@@ -3926,6 +3926,12 @@
                 gap: 8px 16px;
             }
         }
+        /* Compose split: stack on mobile */
+        @media (max-width: 640px) {
+            .compose-split {
+                flex-direction: column !important;
+            }
+        }
     </style>
     <!-- EmailJS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -4219,19 +4225,43 @@
             <button class="modal-close" onclick="closeSettings()">&times;</button>
             <div class="modal-header">
                 <h2>Settings</h2>
-                <p class="modal-subtitle">Tune your relationship with the moon</p>
+                <p class="modal-subtitle">Your MoonPop profile</p>
             </div>
             
+            <!-- Profile Picture -->
+            <div class="form-group" style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px;">
+                <div id="profilePicPreview" style="width:80px;height:80px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:white;font-size:28px;font-weight:700;overflow:hidden;cursor:pointer;position:relative;" onclick="document.getElementById('profilePicInput').click()">
+                    <span id="profilePicInitial">?</span>
+                    <img id="profilePicImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
+                </div>
+                <input type="file" id="profilePicInput" accept="image/*" capture="user" style="display:none;" onchange="handleProfilePic(this)">
+                <a href="#" onclick="event.preventDefault();document.getElementById('profilePicInput').click();" style="font-size:13px;color:var(--blue);margin-top:8px;">Change photo</a>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>First name</label>
+                    <input type="text" id="settingsFirstName" placeholder="First name">
+                </div>
+                <div class="form-group">
+                    <label>Last name</label>
+                    <input type="text" id="settingsLastName" placeholder="Last name">
+                </div>
+            </div>
+
             <div class="form-group">
-                <label>Your name</label>
-                <input type="text" id="userName" placeholder="How should we call you?" value="Adi">
-                <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+                <label>Sender name</label>
+                <input type="text" id="userName" placeholder="How recipients see you">
+                <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">
                     Displayed to recipients of your messages.
                 </p>
             </div>
             
             <div class="form-group">
                 <label>Your location</label>
+                <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.4;">
+                    Moonrise and release times depend on location.
+                </p>
                 <!-- Current location display -->
                 <div class="settings-location-display" id="settingsLocationDisplay">
                     <svg class="settings-location-pin" viewBox="0 0 78.91 105.29" xmlns="http://www.w3.org/2000/svg">
@@ -4239,17 +4269,16 @@
                     </svg>
                     <span class="settings-location-name" id="settingsLocationName">Set your location</span>
                 </div>
-                <button class="location-btn" onclick="requestLocation()">
-                    Use my current location
-                </button>
-                <div style="height:10px"></div>
-                <div class="location-input-wrapper">
-                    <input type="text" id="manualLocation" placeholder="Or type a city (e.g. Lisbon)" autocomplete="off" oninput="filterSettingsCities(this.value)">
-                    <div class="city-dropdown" id="settingsCityDropdown"></div>
+                <div style="display:flex;gap:16px;margin-top:10px;">
+                    <a href="#" onclick="event.preventDefault();requestLocation();" style="font-size:13px;color:var(--blue);">Use my current location</a>
+                    <a href="#" id="typeLocationLink" onclick="event.preventDefault();showManualLocationInput();" style="font-size:13px;color:var(--blue);">Type a different location</a>
                 </div>
-                <p style="font-size:12px;color:var(--text-muted);margin-top:8px;line-height:1.4;">
-                    Moonrise and release times depend on location.
-                </p>
+                <div id="manualLocationWrapper" style="display:none;margin-top:10px;">
+                    <div class="location-input-wrapper">
+                        <input type="text" id="manualLocation" placeholder="Type a city (e.g. Lisbon)" autocomplete="off" oninput="filterSettingsCities(this.value)">
+                        <div class="city-dropdown" id="settingsCityDropdown"></div>
+                    </div>
+                </div>
             </div>
             
             <div class="form-group">
@@ -4261,119 +4290,129 @@
             </div>
             
             <button class="send-button" onclick="saveSettings()">Save Settings</button>
+
+            <div style="margin-top:24px;padding-top:16px;border-top:1px solid #eee;text-align:center;">
+                <a href="#" onclick="event.preventDefault();deleteAccount();" style="font-size:13px;color:#cc3333;">Delete my account</a>
+            </div>
         </div>
     </div>
 
     <!-- New Moon Message (Full Page) -->
     <div class="message-page" id="messageModal">
         <div class="message-page-inner">
-            <div class="message-page-header" style="justify-content:space-between;">
-                <button class="message-page-back" onclick="closeModal()">←</button>
-                <span style="font-weight:700;color:var(--blue);font-size:15px;">New Moon Message</span>
+            <div class="message-page-header" id="composeHeader" style="justify-content:space-between;">
                 <span style="width:34px;"></span>
+                <span style="font-weight:700;color:var(--blue);font-size:15px;">New Moon Message</span>
+                <button class="message-page-back" onclick="closeModal()" style="font-size:20px;">&times;</button>
             </div>
             <div class="message-page-body" style="padding:20px 24px;overflow-y:auto;">
             
             <!-- Step 1: Compose your message + Lunar Note -->
             <div id="composeStep1">
-                <p class="modal-subtitle" style="text-align:center;margin-bottom:16px;">Write something, add a Lunar Note, or both</p>
+                <p class="modal-subtitle" style="text-align:center;margin-bottom:20px;color:var(--text-muted);font-size:13px;">Write something, add a Lunar Note, or both</p>
                 
-                <!-- Lunar Note toggle pill -->
-                <div class="lunar-note-toggle-area">
-                    <button class="lunar-note-pill" id="lunarNotePill" onclick="toggleLunarNote()">
-                        <span class="lunar-pill-icon">🌙</span>
-                        <span class="lunar-pill-text" id="lunarPillText">Add a Lunar Note</span>
-                    </button>
-                </div>
-                
-                <!-- Lunar Note step-through panel (hidden by default) -->
-                <div class="lunar-note-panel" id="lunarNotePanel" style="display: none;">
-                    <div class="lunar-panel-header">
-                        <span class="lunar-panel-label">🌙 Today's Lunar Note</span>
-                        <button class="lunar-panel-close" onclick="toggleLunarNote()" title="Remove Lunar Note">&times;</button>
-                    </div>
-                    <p class="lunar-intro">Give me three things. The moon does the rest.</p>
-                    
-                    <!-- Step-through input cards -->
-                    <div class="lunar-step-container" id="lunarStepContainer">
-                        <!-- Card 1 -->
-                        <div class="lunar-step-card active" id="lunarStep1">
-                            <div class="lunar-step-dots">
-                                <span class="lunar-dot active"></span>
-                                <span class="lunar-dot"></span>
-                                <span class="lunar-dot"></span>
-                            </div>
-                            <label class="lunar-step-label" id="lunarLabel1">an emotion</label>
-                            <input type="text" id="lunarInput1" class="lunar-input" placeholder="anything that comes to mind" autocomplete="off">
-                            <button class="lunar-step-next" id="lunarNext1" onclick="goLunarStep(2)" disabled>Next →</button>
-                        </div>
-                        <!-- Card 2 -->
-                        <div class="lunar-step-card" id="lunarStep2">
-                            <div class="lunar-step-dots">
-                                <span class="lunar-dot done"></span>
-                                <span class="lunar-dot active"></span>
-                                <span class="lunar-dot"></span>
-                            </div>
-                            <label class="lunar-step-label" id="lunarLabel2">a different emotion</label>
-                            <input type="text" id="lunarInput2" class="lunar-input" placeholder="something else entirely" autocomplete="off">
-                            <div class="lunar-step-nav">
-                                <button class="lunar-step-back" onclick="goLunarStep(1)">← Back</button>
-                                <button class="lunar-step-next" id="lunarNext2" onclick="goLunarStep(3)" disabled>Next →</button>
-                            </div>
-                        </div>
-                        <!-- Card 3 -->
-                        <div class="lunar-step-card" id="lunarStep3">
-                            <div class="lunar-step-dots">
-                                <span class="lunar-dot done"></span>
-                                <span class="lunar-dot done"></span>
-                                <span class="lunar-dot active"></span>
-                            </div>
-                            <label class="lunar-step-label" id="lunarLabel3">something you pretend not to care about</label>
-                            <input type="text" id="lunarInput3" class="lunar-input" placeholder="you know the one" autocomplete="off">
-                            <div class="lunar-step-nav">
-                                <button class="lunar-step-back" onclick="goLunarStep(2)">← Back</button>
-                                <button class="lunar-step-next" id="lunarNext3" onclick="revealLunarNote()" disabled>Reveal 🌙</button>
-                            </div>
+                <div class="compose-split" style="display:flex;gap:16px;">
+                    <!-- Left: Text message -->
+                    <div style="flex:1;min-width:0;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <textarea id="messageText" placeholder="Write a message..." style="min-height:160px;"></textarea>
                         </div>
                     </div>
                     
-                    <!-- Generated result card (revealed after all 3 inputs) -->
-                    <div class="lunar-result-card" id="lunarResultCard" style="display: none;">
-                        <div class="lunar-result-label">Lunar Note</div>
-                        <div class="lunar-result-text" id="lunarResultText"></div>
-                        <div class="lunar-result-closing" id="lunarResultClosing"></div>
-                        <div class="lunar-result-actions">
-                            <button class="lunar-action-btn" onclick="regenerateLunarNote()">↻ try another version</button>
-                            <button class="lunar-action-btn" onclick="editLunarInputs()">✎ change answers</button>
+                    <!-- Right: Lunar Note -->
+                    <div style="flex:1;min-width:0;">
+                        <div class="lunar-note-inline" id="lunarNoteInline">
+                            <!-- Default: toggle pill -->
+                            <div class="lunar-note-toggle-area" id="lunarToggleArea">
+                                <button class="lunar-note-pill" id="lunarNotePill" onclick="toggleLunarNote()" style="width:100%;">
+                                    <span class="lunar-pill-icon">🌙</span>
+                                    <span class="lunar-pill-text" id="lunarPillText">Add a Lunar Note</span>
+                                </button>
+                            </div>
+                
+                            <!-- Lunar Note step-through panel (hidden by default) -->
+                            <div class="lunar-note-panel" id="lunarNotePanel" style="display: none;">
+                                <div class="lunar-panel-header">
+                                    <span class="lunar-panel-label">🌙 Today's Lunar Note</span>
+                                    <button class="lunar-panel-close" onclick="toggleLunarNote()" title="Remove Lunar Note">&times;</button>
+                                </div>
+                                <p class="lunar-intro">Give me three things. The moon does the rest.</p>
+                    
+                                <!-- Step-through input cards -->
+                                <div class="lunar-step-container" id="lunarStepContainer">
+                                    <!-- Card 1 -->
+                                    <div class="lunar-step-card active" id="lunarStep1">
+                                        <div class="lunar-step-dots">
+                                            <span class="lunar-dot active"></span>
+                                            <span class="lunar-dot"></span>
+                                            <span class="lunar-dot"></span>
+                                        </div>
+                                        <label class="lunar-step-label" id="lunarLabel1">an emotion</label>
+                                        <input type="text" id="lunarInput1" class="lunar-input" placeholder="anything that comes to mind" autocomplete="off">
+                                        <button class="lunar-step-next" id="lunarNext1" onclick="goLunarStep(2)" disabled>Next →</button>
+                                    </div>
+                                    <!-- Card 2 -->
+                                    <div class="lunar-step-card" id="lunarStep2">
+                                        <div class="lunar-step-dots">
+                                            <span class="lunar-dot done"></span>
+                                            <span class="lunar-dot active"></span>
+                                            <span class="lunar-dot"></span>
+                                        </div>
+                                        <label class="lunar-step-label" id="lunarLabel2">a different emotion</label>
+                                        <input type="text" id="lunarInput2" class="lunar-input" placeholder="something else entirely" autocomplete="off">
+                                        <div class="lunar-step-nav">
+                                            <button class="lunar-step-back" onclick="goLunarStep(1)">← Back</button>
+                                            <button class="lunar-step-next" id="lunarNext2" onclick="goLunarStep(3)" disabled>Next →</button>
+                                        </div>
+                                    </div>
+                                    <!-- Card 3 -->
+                                    <div class="lunar-step-card" id="lunarStep3">
+                                        <div class="lunar-step-dots">
+                                            <span class="lunar-dot done"></span>
+                                            <span class="lunar-dot done"></span>
+                                            <span class="lunar-dot active"></span>
+                                        </div>
+                                        <label class="lunar-step-label" id="lunarLabel3">something you pretend not to care about</label>
+                                        <input type="text" id="lunarInput3" class="lunar-input" placeholder="you know the one" autocomplete="off">
+                                        <div class="lunar-step-nav">
+                                            <button class="lunar-step-back" onclick="goLunarStep(2)">← Back</button>
+                                            <button class="lunar-step-next" id="lunarNext3" onclick="revealLunarNote()" disabled>Reveal 🌙</button>
+                                        </div>
+                                    </div>
+                                </div>
+                    
+                                <!-- Generated result card -->
+                                <div class="lunar-result-card" id="lunarResultCard" style="display: none;">
+                                    <div class="lunar-result-label">Lunar Note</div>
+                                    <div class="lunar-result-text" id="lunarResultText"></div>
+                                    <div class="lunar-result-closing" id="lunarResultClosing"></div>
+                                    <div class="lunar-result-actions">
+                                        <button class="lunar-action-btn" onclick="regenerateLunarNote()">↻ try another version</button>
+                                        <button class="lunar-action-btn" onclick="editLunarInputs()">✎ change answers</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Text message (always visible) -->
-                <div class="form-group">
-                    <textarea id="messageText" placeholder="Write a message... (optional)"></textarea>
-                </div>
-                
-                <!-- Song (optional) -->
-                <div class="song-toggle-area">
-                    <button class="song-pill" id="songPill" onclick="toggleSongPicker()">
+                <!-- Song link (always visible) -->
+                <div class="form-group" style="margin-top:16px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
                         <span>🎵</span>
-                        <span id="songPillText">Add a song</span>
-                    </button>
-                </div>
-                <div class="song-picker" id="songPicker" style="display: none;">
-                    <input type="text" id="songInput" class="lunar-input" placeholder="Paste a YouTube link or search..." oninput="onSongInput()">
-                    <div class="song-suggestions" id="songSuggestions">
+                        <input type="text" id="songInput" placeholder="Paste a YouTube link to attach a song (optional)" style="flex:1;" oninput="onSongInput()">
+                    </div>
+                    <div class="song-suggestions" id="songSuggestions" style="margin-top:8px;">
                         <span class="song-suggestion" onclick="selectSong('https://youtu.be/xbvNODMfNHM', 'Talking to the Moon — Bruno Mars')">🌙 Talking to the Moon</span>
                         <span class="song-suggestion" onclick="selectSong('https://youtu.be/nVMOlosNeMM', 'Moon River — Audrey Hepburn')">🌙 Moon River</span>
                         <span class="song-suggestion" onclick="selectSong('https://youtu.be/ZEcqHA7dbwM', 'Fly Me to the Moon — Sinatra')">🌙 Fly Me to the Moon</span>
                         <span class="song-suggestion" onclick="selectSong('https://youtu.be/4Tr0otuiQuU', 'Moonlight Sonata — Beethoven')">🌙 Moonlight Sonata</span>
-                        <span class="song-suggestion" onclick="selectSong('https://youtu.be/0yBnIUX0QAE', 'Dancing in the Moonlight')">🌙 Dancing in the Moonlight</span>
-                        <span class="song-suggestion" onclick="selectSong('https://youtu.be/5BmEGm-mraE', 'Bad Moon Rising — CCR')">🌙 Bad Moon Rising</span>
                     </div>
                 </div>
                 
-                <button class="send-button" onclick="goToRecipientStep()">Continue →</button>
+                <div style="display:flex;justify-content:center;margin-top:16px;">
+                    <button class="send-button" onclick="goToRecipientStep()" style="max-width:280px;">Continue →</button>
+                </div>
             </div>
             
             <!-- Step 2: Choose recipient -->
@@ -4397,7 +4436,6 @@
                 
                 <div class="delivery-info-box" id="deliveryInfoBox" style="display:none;"></div>
                 <button class="send-button" onclick="handleComposeSend()">Release to the Moon</button>
-                <button class="back-btn" onclick="backToStep1()">← Back to message</button>
             </div>
             
             <!-- New Contact view -->
@@ -4843,6 +4881,25 @@
         // Settings functions
         function openSettings() {
             document.getElementById('settingsModal').classList.add('active');
+            
+            // Populate profile pic
+            const savedPic = localStorage.getItem('moonpop_profilepic');
+            const userName = document.getElementById('userName')?.value || localStorage.getItem('moonpop_username') || '';
+            const picInitial = document.getElementById('profilePicInitial');
+            const picImg = document.getElementById('profilePicImg');
+            if (savedPic && picImg) {
+                picImg.src = savedPic;
+                picImg.style.display = 'block';
+                if (picInitial) picInitial.style.display = 'none';
+            } else if (picInitial) {
+                picInitial.textContent = userName ? userName.charAt(0).toUpperCase() : '?';
+                picInitial.style.display = '';
+                if (picImg) picImg.style.display = 'none';
+            }
+
+            // Hide manual location input by default
+            const wrapper = document.getElementById('manualLocationWrapper');
+            if (wrapper) wrapper.style.display = 'none';
         }
 
         function closeSettings() {
@@ -4872,11 +4929,45 @@
             );
         }
 
+        function showManualLocationInput() {
+            const wrapper = document.getElementById('manualLocationWrapper');
+            wrapper.style.display = wrapper.style.display === 'none' ? 'block' : 'none';
+            if (wrapper.style.display === 'block') {
+                document.getElementById('manualLocation').focus();
+            }
+        }
+
+        function handleProfilePic(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.getElementById('profilePicImg');
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                    document.getElementById('profilePicInitial').style.display = 'none';
+                    localStorage.setItem('moonpop_profilepic', e.target.result);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function deleteAccount() {
+            if (!confirm('Are you sure you want to delete your account? This cannot be undone.')) return;
+            if (!confirm('This will permanently delete all your messages, contacts, and data. Continue?')) return;
+            
+            // Sign out
+            await sb.auth.signOut();
+            localStorage.clear();
+            window.location.reload();
+        }
+
         function saveSettings() {
             // Get values
             const manualLoc = document.getElementById('manualLocation')?.value;
             const timeFormat = document.getElementById('timeFormat')?.value;
             const userName = document.getElementById('userName')?.value;
+            const firstName = document.getElementById('settingsFirstName')?.value?.trim();
+            const lastName = document.getElementById('settingsLastName')?.value?.trim();
             
             // Update location and recalculate moon
             if (manualLoc) {
@@ -4897,6 +4988,25 @@
             // Update user initials
             if (userName) {
                 document.getElementById('userInitials').textContent = userName.charAt(0).toUpperCase();
+                localStorage.setItem('moonpop_username', userName);
+            }
+
+            // Save to Supabase
+            if (currentAuthUser) {
+                const updateData = { username: userName };
+                if (firstName) updateData.first_name = firstName;
+                if (lastName) updateData.last_name = lastName;
+                
+                sb.from('profiles').update(updateData).eq('id', currentAuthUser.id);
+            }
+
+            // Load saved profile pic
+            const savedPic = localStorage.getItem('moonpop_profilepic');
+            if (savedPic) {
+                const img = document.getElementById('profilePicImg');
+                if (img) { img.src = savedPic; img.style.display = 'block'; }
+                const initial = document.getElementById('profilePicInitial');
+                if (initial) initial.style.display = 'none';
             }
             
             closeSettings();
@@ -5833,6 +5943,14 @@
                             const userNameField = document.getElementById('userName');
                             if (userNameField) userNameField.value = profile.username;
                             localStorage.setItem('moonpop_username', profile.username);
+                        }
+                        if (profile.first_name) {
+                            const fn = document.getElementById('settingsFirstName');
+                            if (fn) fn.value = profile.first_name;
+                        }
+                        if (profile.last_name) {
+                            const ln = document.getElementById('settingsLastName');
+                            if (ln) ln.value = profile.last_name;
                         }
                         if (profile.city) {
                             const city = cities.find(c => c.name === profile.city);
@@ -6850,9 +6968,9 @@
                         <button class="yt-embed-remove" onclick="clearSong()" title="Remove">×</button>
                     </div>
                 `;
-                // Insert after the suggestions
-                const picker = document.getElementById('songPicker');
-                picker.appendChild(embed);
+                // Insert after the song input
+                const songContainer = document.getElementById('songInput').closest('.form-group');
+                if (songContainer) songContainer.appendChild(embed);
             }
         }
         
@@ -7180,6 +7298,14 @@
             
             document.getElementById('composeStep1').style.display = 'none';
             document.getElementById('composeStep2').style.display = 'block';
+
+            // Switch header: X → ← back
+            const header = document.getElementById('composeHeader');
+            header.innerHTML = `
+                <button class="message-page-back" onclick="backToStep1()">←</button>
+                <span style="font-weight:700;color:var(--blue);font-size:15px;">Send to</span>
+                <span style="width:34px;"></span>
+            `;
         }
         
         function goToComposeStep2() {
@@ -7190,6 +7316,14 @@
         function backToStep1() {
             document.getElementById('composeStep1').style.display = 'block';
             document.getElementById('composeStep2').style.display = 'none';
+
+            // Restore header: ← back → X close
+            const header = document.getElementById('composeHeader');
+            header.innerHTML = `
+                <span style="width:34px;"></span>
+                <span style="font-weight:700;color:var(--blue);font-size:15px;">New Moon Message</span>
+                <button class="message-page-back" onclick="closeModal()" style="font-size:20px;">&times;</button>
+            `;
         }
         
         // Confirm new contact and go to compose
@@ -7421,6 +7555,7 @@
             const panel = document.getElementById('lunarNotePanel');
             const pill = document.getElementById('lunarNotePill');
             const pillText = document.getElementById('lunarPillText');
+            const toggleArea = document.getElementById('lunarToggleArea');
             
             if (lunarNoteActive) {
                 // Set today's prompts
@@ -7432,6 +7567,7 @@
                 }
                 
                 panel.style.display = 'block';
+                if (toggleArea) toggleArea.style.display = 'none';
                 pill.classList.add('active');
                 pillText.textContent = 'Lunar Note added';
                 
@@ -7442,6 +7578,7 @@
                 setTimeout(() => document.getElementById('lunarInput1').focus(), 100);
             } else {
                 panel.style.display = 'none';
+                if (toggleArea) toggleArea.style.display = '';
                 pill.classList.remove('active');
                 pillText.textContent = 'Add a Lunar Note';
                 document.getElementById('lunarResultCard').style.display = 'none';
@@ -7541,21 +7678,8 @@
         
         // Song picker
         function toggleSongPicker() {
-            const picker = document.getElementById('songPicker');
-            const pill = document.getElementById('songPill');
-            const pillText = document.getElementById('songPillText');
-            
-            if (picker.style.display === 'none') {
-                picker.style.display = 'block';
-                pill.classList.add('active');
-                pillText.textContent = 'Song added';
-                document.getElementById('songInput').focus();
-            } else {
-                picker.style.display = 'none';
-                pill.classList.remove('active');
-                pillText.textContent = 'Add a song';
-                clearSong();
-            }
+            // Song input is now always visible, no toggle needed
+            document.getElementById('songInput')?.focus();
         }
         
         function selectSong(urlOrName, title) {
@@ -7640,14 +7764,13 @@
             lunarNoteActive = false;
             currentLunarTemplate = -1;
             document.getElementById('lunarNotePanel').style.display = 'none';
+            const toggleArea = document.getElementById('lunarToggleArea');
+            if (toggleArea) toggleArea.style.display = '';
             document.getElementById('lunarNotePill').classList.remove('active');
             document.getElementById('lunarPillText').textContent = 'Add a Lunar Note';
             
             // Reset song
             if (document.getElementById('songInput')) document.getElementById('songInput').value = '';
-            if (document.getElementById('songPicker')) document.getElementById('songPicker').style.display = 'none';
-            if (document.getElementById('songPill')) document.getElementById('songPill').classList.remove('active');
-            if (document.getElementById('songPillText')) document.getElementById('songPillText').textContent = 'Add a song';
             selectedSongTitle = '';
             const ytEmbed = document.getElementById('ytEmbed');
             if (ytEmbed) ytEmbed.remove();
@@ -7663,6 +7786,16 @@
             document.getElementById('newContactEmail').value = '';
             document.getElementById('newContactCity').value = '';
             document.getElementById('newContactCityDropdown').classList.remove('active');
+            
+            // Restore header to X close
+            const header = document.getElementById('composeHeader');
+            if (header) {
+                header.innerHTML = `
+                    <span style="width:34px;"></span>
+                    <span style="font-weight:700;color:var(--blue);font-size:15px;">New Moon Message</span>
+                    <button class="message-page-back" onclick="closeModal()" style="font-size:20px;">&times;</button>
+                `;
+            }
             
             // Switch back to step 1
             showDefaultCompose();
