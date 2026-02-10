@@ -223,6 +223,8 @@
             justify-content: center;
             cursor: pointer;
             transition: transform 0.2s, background 0.2s;
+            overflow: hidden;
+            position: relative;
         }
 
         .user-btn:hover {
@@ -234,6 +236,15 @@
             font-weight: 800;
             font-size: 12px;
             color: var(--blue);
+        }
+
+        .user-avatar-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
         }
 
         .moon-phase-dropdown {
@@ -1449,6 +1460,22 @@
             color: var(--blue);
         }
 
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: white;
+            background: var(--blue);
+            overflow: hidden;
+        }
+
         .message-content {
             flex: 1;
         }
@@ -2534,7 +2561,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: var(--white);
+            background: #e8e4dc;
             z-index: 500;
             animation: msgPageIn 0.25s ease;
         }
@@ -2550,10 +2577,13 @@
 
         .message-page-inner {
             width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
             height: 100%;
             display: flex;
             flex-direction: column;
             background: var(--white);
+            box-shadow: 0 0 40px rgba(0,0,0,0.08);
         }
 
         .message-page-header {
@@ -2597,6 +2627,8 @@
             font-weight: 700;
             font-size: 16px;
             flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
         }
 
         .message-page-info h3 {
@@ -3959,6 +3991,7 @@
             <!-- User / Settings -->
             <button class="user-btn" onclick="openSettings()" aria-label="Settings">
                 <span class="user-initials" id="userInitials">A</span>
+                <img class="user-avatar-img" id="headerAvatarImg" style="display:none;">
             </button>
         </div>
     </header>
@@ -4315,25 +4348,16 @@
                     <!-- Left: Text message -->
                     <div style="flex:1;min-width:0;">
                         <div class="form-group" style="margin-bottom:0;">
-                            <textarea id="messageText" placeholder="Write a message..." style="min-height:160px;"></textarea>
+                            <textarea id="messageText" placeholder="Write a message..." style="min-height:180px;"></textarea>
                         </div>
                     </div>
                     
-                    <!-- Right: Lunar Note -->
+                    <!-- Right: Lunar Note (open by default) -->
                     <div style="flex:1;min-width:0;">
                         <div class="lunar-note-inline" id="lunarNoteInline">
-                            <!-- Default: toggle pill -->
-                            <div class="lunar-note-toggle-area" id="lunarToggleArea">
-                                <button class="lunar-note-pill" id="lunarNotePill" onclick="toggleLunarNote()" style="width:100%;">
-                                    <span class="lunar-pill-icon">🌙</span>
-                                    <span class="lunar-pill-text" id="lunarPillText">Add a Lunar Note</span>
-                                </button>
-                            </div>
-                
-                            <!-- Lunar Note step-through panel (hidden by default) -->
-                            <div class="lunar-note-panel" id="lunarNotePanel" style="display: none;">
+                            <div class="lunar-note-panel" id="lunarNotePanel" style="display: block;">
                                 <div class="lunar-panel-header">
-                                    <span class="lunar-panel-label">🌙 Today's Lunar Note</span>
+                                    <span class="lunar-panel-label">🌙 Lunar Note</span>
                                     <button class="lunar-panel-close" onclick="toggleLunarNote()" title="Remove Lunar Note">&times;</button>
                                 </div>
                                 <p class="lunar-intro">Give me three things. The moon does the rest.</p>
@@ -4392,25 +4416,49 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Re-add pill (hidden, shown when note is closed) -->
+                            <div class="lunar-note-toggle-area" id="lunarToggleArea" style="display:none;">
+                                <button class="lunar-note-pill" id="lunarNotePill" onclick="toggleLunarNote()" style="width:100%;margin-top:8px;">
+                                    <span class="lunar-pill-icon">🌙</span>
+                                    <span class="lunar-pill-text" id="lunarPillText">Add a Lunar Note</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Song link (always visible) -->
-                <div class="form-group" style="margin-top:16px;">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <span>🎵</span>
-                        <input type="text" id="songInput" placeholder="Paste a YouTube link to attach a song (optional)" style="flex:1;" oninput="onSongInput()">
+                <!-- Attachments row -->
+                <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;align-items:flex-start;">
+                    <!-- Song link -->
+                    <div style="flex:1;min-width:200px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                            <span>🎵</span>
+                            <input type="text" id="songInput" placeholder="Paste a YouTube link (optional)" style="flex:1;" oninput="onSongInput()">
+                        </div>
+                        <div class="song-suggestions" id="songSuggestions">
+                            <span class="song-suggestion" onclick="selectSong('https://youtu.be/xbvNODMfNHM', 'Talking to the Moon — Bruno Mars')">🌙 Talking to the Moon</span>
+                            <span class="song-suggestion" onclick="selectSong('https://youtu.be/nVMOlosNeMM', 'Moon River — Audrey Hepburn')">🌙 Moon River</span>
+                            <span class="song-suggestion" onclick="selectSong('https://youtu.be/ZEcqHA7dbwM', 'Fly Me to the Moon — Sinatra')">🌙 Fly Me to the Moon</span>
+                            <span class="song-suggestion" onclick="selectSong('https://youtu.be/4Tr0otuiQuU', 'Moonlight Sonata — Beethoven')">🌙 Moonlight Sonata</span>
+                        </div>
+                        <div id="ytEmbedContainer" style="margin-top:8px;"></div>
                     </div>
-                    <div class="song-suggestions" id="songSuggestions" style="margin-top:8px;">
-                        <span class="song-suggestion" onclick="selectSong('https://youtu.be/xbvNODMfNHM', 'Talking to the Moon — Bruno Mars')">🌙 Talking to the Moon</span>
-                        <span class="song-suggestion" onclick="selectSong('https://youtu.be/nVMOlosNeMM', 'Moon River — Audrey Hepburn')">🌙 Moon River</span>
-                        <span class="song-suggestion" onclick="selectSong('https://youtu.be/ZEcqHA7dbwM', 'Fly Me to the Moon — Sinatra')">🌙 Fly Me to the Moon</span>
-                        <span class="song-suggestion" onclick="selectSong('https://youtu.be/4Tr0otuiQuU', 'Moonlight Sonata — Beethoven')">🌙 Moonlight Sonata</span>
+                    <!-- Moon photo -->
+                    <div style="min-width:140px;">
+                        <label for="moonPhotoInput" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;border:1px dashed #ccc;border-radius:10px;font-size:13px;color:var(--text-muted);transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='#ccc'">
+                            <span style="font-size:18px;">🌕</span>
+                            <span id="moonPhotoLabel">Attach a moon photo</span>
+                        </label>
+                        <input type="file" id="moonPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleMoonPhoto(this)">
+                        <div id="moonPhotoPreview" style="margin-top:8px;display:none;position:relative;">
+                            <img id="moonPhotoImg" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;">
+                            <button onclick="clearMoonPhoto()" style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+                        </div>
                     </div>
                 </div>
                 
-                <div style="display:flex;justify-content:center;margin-top:16px;">
+                <div style="display:flex;justify-content:center;margin-top:20px;">
                     <button class="send-button" onclick="goToRecipientStep()" style="max-width:280px;">Continue →</button>
                 </div>
             </div>
@@ -4568,7 +4616,7 @@
         <div class="message-page-inner">
             <div class="message-page-header">
                 <button class="message-page-back" onclick="closeMessageDetail()">←</button>
-                <div class="message-page-avatar" id="detailAvatar">J</div>
+                <div class="message-page-avatar" id="detailAvatar"><span id="detailAvatarInitial">J</span><img id="detailAvatarImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;display:none;"></div>
                 <div class="message-page-info">
                     <h3 id="detailSender">Jonah Doyle</h3>
                     <p id="detailLocation">London · Received under waxing gibbous</p>
@@ -4937,15 +4985,35 @@
             }
         }
 
+        function updateAvatarEverywhere(dataUrl) {
+            // Header avatar
+            const headerImg = document.getElementById('headerAvatarImg');
+            const headerInitials = document.getElementById('userInitials');
+            if (dataUrl) {
+                if (headerImg) { headerImg.src = dataUrl; headerImg.style.display = 'block'; }
+                if (headerInitials) headerInitials.style.display = 'none';
+            } else {
+                if (headerImg) headerImg.style.display = 'none';
+                if (headerInitials) headerInitials.style.display = '';
+            }
+            // Settings avatar
+            const settingsImg = document.getElementById('profilePicImg');
+            const settingsInitial = document.getElementById('profilePicInitial');
+            if (dataUrl) {
+                if (settingsImg) { settingsImg.src = dataUrl; settingsImg.style.display = 'block'; }
+                if (settingsInitial) settingsInitial.style.display = 'none';
+            } else {
+                if (settingsImg) settingsImg.style.display = 'none';
+                if (settingsInitial) settingsInitial.style.display = '';
+            }
+        }
+
         function handleProfilePic(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const img = document.getElementById('profilePicImg');
-                    img.src = e.target.result;
-                    img.style.display = 'block';
-                    document.getElementById('profilePicInitial').style.display = 'none';
                     localStorage.setItem('moonpop_profilepic', e.target.result);
+                    updateAvatarEverywhere(e.target.result);
                 };
                 reader.readAsDataURL(input.files[0]);
             }
@@ -5000,14 +5068,8 @@
                 sb.from('profiles').update(updateData).eq('id', currentAuthUser.id);
             }
 
-            // Load saved profile pic
-            const savedPic = localStorage.getItem('moonpop_profilepic');
-            if (savedPic) {
-                const img = document.getElementById('profilePicImg');
-                if (img) { img.src = savedPic; img.style.display = 'block'; }
-                const initial = document.getElementById('profilePicInitial');
-                if (initial) initial.style.display = 'none';
-            }
+            // Sync avatar everywhere
+            updateAvatarEverywhere(localStorage.getItem('moonpop_profilepic'));
             
             closeSettings();
         }
@@ -5983,6 +6045,7 @@
                 // Always go straight to the app
                 localStorage.setItem('moonpop_seen', 'true');
                 hideOnboarding();
+                updateAvatarEverywhere(localStorage.getItem('moonpop_profilepic'));
                 await loadContacts();
                 await loadMessages();
                 await loadSharedSky();
@@ -6463,6 +6526,8 @@
         // Render all messages chronologically (IM-style)
         function renderMessages() {
             const list = document.getElementById('messageList');
+            const myPic = localStorage.getItem('moonpop_profilepic');
+            const myInitial = (localStorage.getItem('moonpop_username') || '?').charAt(0).toUpperCase();
             
             // All messages, already in chronological order (most recent first)
             list.innerHTML = messages.map((msg, index) => {
@@ -6480,16 +6545,21 @@
                     badge = `<span class="message-status-badge received">From ${msg.location}</span>`;
                 }
                 
-                // Direction arrow
-                const dirIcon = msg.type === 'sent' ? '↗' : '↙';
-                const dirClass = msg.type === 'sent' ? 'sent-arrow' : 'recv-arrow';
+                // Avatar: for sent = my pic, for received = sender initial
+                let avatar;
+                if (msg.type === 'sent' && myPic) {
+                    avatar = `<div class="msg-avatar"><img src="${myPic}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>`;
+                } else {
+                    const initial = (msg.sender || '?').charAt(0).toUpperCase();
+                    avatar = `<div class="msg-avatar"><span>${initial}</span></div>`;
+                }
                 
                 return `
                     <li class="message-item" data-type="${msg.type}" data-sender="${msg.sender}" data-orbiting="${isOrbiting}" 
                         onclick="openMessageDetail(${index})"
                         onmouseenter="highlightOrbitDot('${msg.sender}', true)"
                         onmouseleave="highlightOrbitDot('${msg.sender}', false)">
-                        <div class="message-direction ${dirClass}">${dirIcon}</div>
+                        ${avatar}
                         <div class="message-content">
                             <div class="message-sender">${msg.sender}</div>
                             ${badge}
@@ -6524,7 +6594,22 @@
             currentMessageIndex = index;
 
             const page = document.getElementById('messagePageView');
-            document.getElementById('detailAvatar').textContent = msg.sender.charAt(0);
+            document.getElementById('detailAvatarInitial').textContent = msg.sender.charAt(0);
+            // Show profile pic for sent messages (sender is me)
+            const detailImg = document.getElementById('detailAvatarImg');
+            if (msg.type === 'sent') {
+                const myPic = localStorage.getItem('moonpop_profilepic');
+                if (myPic) {
+                    detailImg.src = myPic; detailImg.style.display = 'block';
+                    document.getElementById('detailAvatarInitial').style.display = 'none';
+                } else {
+                    detailImg.style.display = 'none';
+                    document.getElementById('detailAvatarInitial').style.display = '';
+                }
+            } else {
+                detailImg.style.display = 'none';
+                document.getElementById('detailAvatarInitial').style.display = '';
+            }
             document.getElementById('detailSender').textContent = msg.sender;
             
             const phase = moonData.phase ? moonData.phase.phaseName : 'waxing gibbous';
@@ -6962,15 +7047,16 @@
                 embed.className = 'yt-embed';
                 embed.id = 'ytEmbed';
                 embed.innerHTML = `
-                    <iframe src="https://www.youtube.com/embed/${videoId}?rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                    <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;">
+                        <iframe src="https://www.youtube.com/embed/${videoId}?rel=0" allow="autoplay; encrypted-media" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
+                    </div>
                     <div class="yt-embed-bar">
                         <span class="yt-embed-title">${title || 'youtu.be/' + videoId}</span>
                         <button class="yt-embed-remove" onclick="clearSong()" title="Remove">×</button>
                     </div>
                 `;
-                // Insert after the song input
-                const songContainer = document.getElementById('songInput').closest('.form-group');
-                if (songContainer) songContainer.appendChild(embed);
+                const container = document.getElementById('ytEmbedContainer');
+                if (container) container.appendChild(embed);
             }
         }
         
@@ -6979,6 +7065,33 @@
             selectedSongTitle = '';
             const embed = document.getElementById('ytEmbed');
             if (embed) embed.remove();
+        }
+
+        // Moon photo attachment
+        let pendingMoonPhoto = null;
+
+        function handleMoonPhoto(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    pendingMoonPhoto = e.target.result;
+                    document.getElementById('moonPhotoImg').src = e.target.result;
+                    document.getElementById('moonPhotoPreview').style.display = 'block';
+                    document.getElementById('moonPhotoLabel').textContent = 'Photo attached ✓';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearMoonPhoto() {
+            pendingMoonPhoto = null;
+            const preview = document.getElementById('moonPhotoPreview');
+            if (preview) preview.style.display = 'none';
+            const input = document.getElementById('moonPhotoInput');
+            if (input) input.value = '';
+            const label = document.getElementById('moonPhotoLabel');
+            if (label) label.textContent = 'Attach a moon photo';
         }
 
 
@@ -7215,6 +7328,18 @@
             showDefaultCompose();
             document.getElementById('messageModal').classList.add('active');
             document.body.style.overflow = 'hidden';
+            
+            // Auto-activate lunar note (panel is open by default)
+            if (!lunarNoteActive) {
+                lunarNoteActive = true;
+                currentPromptSet = getTodaysPromptSet();
+                const ps = PROMPT_SETS[currentPromptSet];
+                for (let i = 0; i < 3; i++) {
+                    document.getElementById('lunarLabel' + (i+1)).textContent = ps.prompts[i].label;
+                    document.getElementById('lunarInput' + (i+1)).placeholder = ps.prompts[i].placeholder;
+                }
+                goLunarStep(1);
+            }
         }
 
         function openMoonDownModal() {
@@ -7739,7 +7864,8 @@
                 isKnown: !selectedRecipient?.isNew,
                 isOnMoonpop: selectedRecipient?.isOnMoonpop || false,
                 linkedProfileId: selectedRecipient?.linkedProfileId || null,
-                song: songVal
+                song: songVal,
+                moonPhoto: pendingMoonPhoto || null
             };
             
             if (selectedRecipient?.isNew) {
@@ -7758,22 +7884,23 @@
             // Reset message
             document.getElementById('messageText').value = '';
             
-            // Reset lunar note
+            // Reset lunar note back to open/step1 (open by default)
             for (let i = 1; i <= 3; i++) document.getElementById('lunarInput' + i).value = '';
             document.getElementById('lunarResultCard').style.display = 'none';
             lunarNoteActive = false;
             currentLunarTemplate = -1;
-            document.getElementById('lunarNotePanel').style.display = 'none';
+            document.getElementById('lunarNotePanel').style.display = 'block';
             const toggleArea = document.getElementById('lunarToggleArea');
-            if (toggleArea) toggleArea.style.display = '';
-            document.getElementById('lunarNotePill').classList.remove('active');
-            document.getElementById('lunarPillText').textContent = 'Add a Lunar Note';
+            if (toggleArea) toggleArea.style.display = 'none';
             
             // Reset song
             if (document.getElementById('songInput')) document.getElementById('songInput').value = '';
             selectedSongTitle = '';
             const ytEmbed = document.getElementById('ytEmbed');
             if (ytEmbed) ytEmbed.remove();
+
+            // Reset moon photo
+            clearMoonPhoto();
             
             // Reset next buttons
             for (let i = 1; i <= 3; i++) {
