@@ -5296,12 +5296,13 @@
             inTransitMessages.forEach((msg) => {
                 const info = getRecipientMoonrise(msg.location);
                 if (!info) {
-                    console.log('Dots: no moonrise info for', msg.location);
+                    console.log('Dots: no moonrise info for "' + msg.location + '" - city not found in list');
                     return;
                 }
                 
                 const deg = deliveryTimeToRingDegrees(info.date);
                 const isReleasing = info.hoursUntil < 2;
+                console.log('Dots: placing dot for', msg.location, 'at', deg, 'degrees, releasing:', isReleasing);
                 
                 const orbit = document.createElement('div');
                 orbit.className = 'dot-orbit';
@@ -5890,23 +5891,15 @@
             // Auth is handled entirely by onAuthStateChange above
             // Don't show or hide onboarding here — let onAuthStateChange decide
 
-            // Initialize auth
+            // Initialize auth (loads data and renders everything)
             await initAuth();
 
             updateMoonDisplay();
             initCountdown();
             updateMoonPosition();
             updateOrbitCenter();
+            // Re-render after moon display is calculated (moon cycle data now available)
             renderMessageDots();
-            renderMessages();
-            renderCircleRows();
-            if (globalTransmissions.length > 0) {
-                const latest = globalTransmissions[0];
-                const previewEl = document.getElementById('sharedSkyPreview');
-                if (previewEl) previewEl.textContent = latest.location + ': ' + latest.message;
-                const badgeEl = document.getElementById('sharedSkyBadge');
-                if (badgeEl) badgeEl.textContent = globalTransmissions.length;
-            }
 
             setInterval(() => {
                 updateOrbitCenter();
