@@ -5529,25 +5529,124 @@
             }
         }
 
-        // Messages - with type for filtering (sent = transmitted, received = incoming)
-        const messages = [
-            { sender: 'Barbara Thompson', preview: '', status: 'In Transit', type: 'sent', location: 'New York', reactions: [] },
-            { sender: 'Jonah Doyle', preview: 'Hey, have you seen the moon tonight? I wonder..', status: '', type: 'received', time: 'Yesterday', location: 'London', hasMoonPhoto: true, reactions: [{emoji: '🌕', count: 2, mine: true}] },
-            { sender: 'Sam Rivera', preview: '', status: 'In Transit', type: 'sent', location: 'Tokyo', reactions: [] },
-            { sender: 'Polly Foldesh', preview: 'Miss you under the same sky', status: '', type: 'received', time: '2 days ago', location: 'Sydney', hasMoonPhoto: true, reactions: [{emoji: '🌓', count: 1, mine: false}, {emoji: '❤️', count: 3, mine: true}], lunarNote: { text: "A little calm, a lot of embarrassed,\nand somewhere in the middle:\nreply time.", closing: "— not bad for tonight" } },
-            { sender: 'Maya Chen', preview: '', status: 'In Transit', type: 'sent', location: 'Paris', reactions: [] },
-            { sender: 'David Kim', preview: 'The moon was beautiful last night', status: '', type: 'received', time: '3 days ago', location: 'Seoul', hasMoonPhoto: false, reactions: [{emoji: '🌕', count: 1, mine: false}] },
-            { sender: 'Sarah Walsh', preview: '', status: 'Released', type: 'sent', location: 'Dublin', reactions: [] },
-            { sender: 'Tom Anderson', preview: 'Thinking of you from across the ocean', status: '', type: 'received', time: 'Last week', location: 'Melbourne', hasMoonPhoto: true, reactions: [], lunarNote: { text: "Started with gratitude.\nEnded up at wonder.\nSilence was there the whole time.", closing: "— sounds about right" } },
-        ];
+        // Messages - loaded from Supabase
+        let messages = [];
 
-        const globalTransmissions = [
-            { location: 'Tokyo', time: '18 min ago', message: '"Can\'t sleep. The moon understands."' },
-            { location: 'Miami', time: 'Just now', message: '"Sending peace to anyone looking up."' },
-            { location: 'London', time: '1h ago', message: '"Thinking of everyone under the same sky."' },
-            { location: 'São Paulo', time: '3h ago', message: '"The clouds finally cleared."' },
-            { location: 'Berlin', time: '5h ago', message: '"Writing to someone far away tonight."' }
-        ];
+        // Helper: relative time string
+        function timeAgo(dateStr) {
+            const now = new Date();
+            const date = new Date(dateStr);
+            const diffMs = now - date;
+            const diffMin = Math.floor(diffMs / 60000);
+            const diffHrs = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            if (diffMin < 1) return 'Just now';
+            if (diffMin < 60) return diffMin + 'm ago';
+            if (diffHrs < 24) return diffHrs + 'h ago';
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return diffDays + ' days ago';
+            return 'Last week';
+        }
+
+        async function loadMessages() {
+            if (!currentAuthUser) return;
+
+            // Fetch messages I sent
+            const { data: sent, error: sentErr } = await sb.from('messages')
+                .select('*')
+                .eq('sender_id', currentAuthUser.id)
+                .order('created_at', { ascending: false });
+
+            // Fetch messages I received (by profile id or by email)
+            const { data: received, error: recvErr } = await sb.from('messages')
+                .select('*, sender:profiles!sender_id(username, city)')
+                .or(`recipient_id.eq.${currentAuthUser.id},recipient_email.eq.${currentAuthUser.email}`)
+                .order('created_at', { ascending: false });
+
+            if (sentErr) console.error('Load sent messages failed:', sentErr);
+            if (recvErr) console.error('Load received messages failed:', recvErr);
+
+            const allMessages = [];
+
+            // Map sent messages
+            if (sent) {
+                sent.forEach(m => {
+                    let statusDisplay = '';
+                    if (m.status === 'in_transit') statusDisplay = 'In Transit';
+                    else if (m.status === 'released') statusDisplay = 'Released';
+
+                    allMessages.push({
+                        dbId: m.id,
+                        sender: m.recipient_name || 'Unknown',
+                        preview: '',
+                        status: statusDisplay,
+                        type: 'sent',
+                        location: m.recipient_city || 'Unknown',
+                        time: timeAgo(m.created_at),
+                        createdAt: m.created_at,
+                        phaseName: m.moon_phase || '',
+                        messageText: m.message_text || '',
+                        lunarNote: m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
+                        songUrl: m.song_url,
+                        songTitle: m.song_title,
+                        reactions: [],
+                        replies: []
+                    });
+                });
+            }
+
+            // Map received messages
+            if (received) {
+                received.forEach(m => {
+                    const senderName = m.sender?.username || m.recipient_name || 'Unknown';
+                    const senderCity = m.sender?.city || 'Unknown';
+
+                    allMessages.push({
+                        dbId: m.id,
+                        sender: senderName,
+                        preview: m.message_text || '',
+                        status: '',
+                        type: 'received',
+                        location: senderCity,
+                        time: timeAgo(m.created_at),
+                        createdAt: m.created_at,
+                        phaseName: m.moon_phase || '',
+                        messageText: m.message_text || '',
+                        lunarNote: m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
+                        songUrl: m.song_url,
+                        songTitle: m.song_title,
+                        hasMoonPhoto: !!m.lunar_note_text,
+                        reactions: [],
+                        replies: []
+                    });
+                });
+            }
+
+            // Sort by created_at descending
+            allMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            messages = allMessages;
+
+            // Update message stats
+            moonData.messagesInTransit = messages.filter(m => m.type === 'sent' && m.status === 'In Transit').length;
+        }
+
+        let globalTransmissions = [];
+
+        async function loadSharedSky() {
+            const { data, error } = await sb.from('shared_sky')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(20);
+            
+            if (error) { console.error('Load shared sky failed:', error); return; }
+            if (data) {
+                globalTransmissions = data.map(s => ({
+                    location: s.city || 'Unknown',
+                    time: timeAgo(s.created_at),
+                    message: '"' + s.message + '"'
+                }));
+            }
+        }
 
         let selectedRecipient = null;
         let isNewContact = false;
@@ -5695,6 +5794,17 @@
                 localStorage.setItem('moonpop_seen', 'true');
                 hideOnboarding();
                 await loadContacts();
+                await loadMessages();
+                await loadSharedSky();
+                renderMessages();
+                renderMessageDots();
+                if (globalTransmissions.length > 0) {
+                    const latest = globalTransmissions[0];
+                    const previewEl = document.getElementById('sharedSkyPreview');
+                    if (previewEl) previewEl.textContent = latest.location + ': ' + latest.message;
+                    const badgeEl = document.getElementById('sharedSkyBadge');
+                    if (badgeEl) badgeEl.textContent = globalTransmissions.length;
+                }
             } else {
                 showOnboarding();
             }
@@ -6224,7 +6334,7 @@
         // ========================
         let currentMessageIndex = -1;
         
-        function openMessageDetail(index) {
+        async function openMessageDetail(index) {
             const msg = messages[index];
             if (!msg) return;
             currentMessageIndex = index;
@@ -6235,6 +6345,38 @@
             
             const phase = moonData.phase ? moonData.phase.phaseName : 'waxing gibbous';
             document.getElementById('detailLocation').textContent = `${msg.location || 'Unknown'} · ${msg.type === 'received' ? 'Received' : 'Sent'} under ${phase.toLowerCase()}`;
+
+            // Load replies from Supabase
+            if (msg.dbId && currentAuthUser) {
+                const { data: replies } = await sb.from('replies')
+                    .select('*, sender:profiles!sender_id(username)')
+                    .eq('message_id', msg.dbId)
+                    .order('created_at', { ascending: true });
+                
+                if (replies) {
+                    msg.replies = replies.map(r => ({
+                        text: r.text,
+                        time: timeAgo(r.created_at),
+                        sent: r.sender_id === currentAuthUser.id,
+                        isLunarNote: r.is_lunar_note || false
+                    }));
+                }
+
+                // Load reactions from Supabase
+                const { data: reactions } = await sb.from('reactions')
+                    .select('*')
+                    .eq('message_id', msg.dbId);
+                
+                if (reactions) {
+                    const emojiMap = {};
+                    reactions.forEach(r => {
+                        if (!emojiMap[r.emoji]) emojiMap[r.emoji] = { emoji: r.emoji, count: 0, mine: false };
+                        emojiMap[r.emoji].count++;
+                        if (r.user_id === currentAuthUser.id) emojiMap[r.emoji].mine = true;
+                    });
+                    msg.reactions = Object.values(emojiMap);
+                }
+            }
 
             renderDetailContent(index);
             page.classList.add('active');
@@ -6263,6 +6405,13 @@
                         <p>${msg.preview}</p>
                         <div class="message-bubble-time">${msg.time || 'Recently'}</div>
                         ${renderReactionsBar(index, 'text')}
+                    </div>
+                `;
+            } else if (msg.messageText && msg.type === 'sent') {
+                html += `
+                    <div class="message-bubble sent">
+                        <p>${msg.messageText}</p>
+                        <div class="message-bubble-time">${msg.time || 'Recently'}</div>
                     </div>
                 `;
             }
@@ -6376,7 +6525,7 @@
             }
         }
 
-        function sendThreadLunarNote() {
+        async function sendThreadLunarNote() {
             if (!threadLunarGenerated || currentMessageIndex < 0) return;
             const msg = messages[currentMessageIndex];
             
@@ -6395,13 +6544,26 @@
                 text: threadLunarGenerated.lines,
                 closing: threadLunarGenerated.closing
             });
+
+            // Save to Supabase
+            if (currentAuthUser && msg.dbId) {
+                const { error } = await sb.from('replies').insert({
+                    message_id: msg.dbId,
+                    sender_id: currentAuthUser.id,
+                    text: '🌙 ' + threadLunarGenerated.lines + '\n' + threadLunarGenerated.closing,
+                    is_lunar_note: true,
+                    lunar_note_text: threadLunarGenerated.lines,
+                    lunar_note_closing: threadLunarGenerated.closing
+                });
+                if (error) console.error('Lunar note reply save failed:', error);
+            }
             
             closeThreadLunar();
             renderDetailContent(currentMessageIndex);
             document.getElementById('detailContent').scrollTop = document.getElementById('detailContent').scrollHeight;
         }
 
-        function sendSharedSkyMessage() {
+        async function sendSharedSkyMessage() {
             const input = document.getElementById('sharedSkyInput');
             const text = input.value.trim();
             if (!text) return;
@@ -6418,6 +6580,16 @@
                 time: 'Just now',
                 message: '"' + text + '"'
             });
+
+            // Save to Supabase
+            if (currentAuthUser) {
+                const { error } = await sb.from('shared_sky').insert({
+                    user_id: currentAuthUser.id,
+                    city: locName,
+                    message: text
+                });
+                if (error) console.error('Shared sky save failed:', error);
+            }
             
             input.value = '';
             renderSharedSkySignals();
@@ -6428,13 +6600,25 @@
             const badgeEl = document.getElementById('sharedSkyBadge');
             if (badgeEl) badgeEl.textContent = globalTransmissions.length;
         }
-        function sendReply() {
+        async function sendReply() {
             const input = document.getElementById('replyInput');
             if (!input.value.trim() || currentMessageIndex < 0) return;
             
             const msg = messages[currentMessageIndex];
             if (!msg.replies) msg.replies = [];
-            msg.replies.push({ text: input.value.trim(), time: 'Just now', sent: true });
+            
+            const replyText = input.value.trim();
+            msg.replies.push({ text: replyText, time: 'Just now', sent: true });
+
+            // Save to Supabase
+            if (currentAuthUser && msg.dbId) {
+                const { error } = await sb.from('replies').insert({
+                    message_id: msg.dbId,
+                    sender_id: currentAuthUser.id,
+                    text: replyText
+                });
+                if (error) console.error('Reply save failed:', error);
+            }
             
             input.value = '';
             renderDetailContent(currentMessageIndex);
@@ -6480,7 +6664,7 @@
             if (!wasActive) picker.classList.add('active');
         }
         
-        function addReaction(msgIndex, emoji, btn) {
+        async function addReaction(msgIndex, emoji, btn) {
             const msg = messages[msgIndex];
             if (!msg.reactions) msg.reactions = [];
             
@@ -6490,19 +6674,42 @@
                     existing.count--;
                     existing.mine = false;
                     if (existing.count <= 0) msg.reactions = msg.reactions.filter(r => r !== existing);
+                    // Remove from Supabase
+                    if (currentAuthUser && msg.dbId) {
+                        sb.from('reactions').delete()
+                            .eq('message_id', msg.dbId)
+                            .eq('user_id', currentAuthUser.id)
+                            .eq('emoji', emoji);
+                    }
                 } else {
                     existing.count++;
                     existing.mine = true;
+                    // Add to Supabase
+                    if (currentAuthUser && msg.dbId) {
+                        sb.from('reactions').insert({
+                            message_id: msg.dbId,
+                            user_id: currentAuthUser.id,
+                            emoji: emoji
+                        });
+                    }
                 }
             } else {
                 msg.reactions.push({ emoji, count: 1, mine: true });
+                // Add to Supabase
+                if (currentAuthUser && msg.dbId) {
+                    sb.from('reactions').insert({
+                        message_id: msg.dbId,
+                        user_id: currentAuthUser.id,
+                        emoji: emoji
+                    });
+                }
             }
             
             document.querySelectorAll('.reaction-picker').forEach(p => p.classList.remove('active'));
             if (currentMessageIndex >= 0) renderDetailContent(currentMessageIndex);
         }
         
-        function toggleReaction(msgIndex, reactionIndex) {
+        async function toggleReaction(msgIndex, reactionIndex) {
             const msg = messages[msgIndex];
             if (!msg.reactions || !msg.reactions[reactionIndex]) return;
             
@@ -6511,9 +6718,24 @@
                 r.count--;
                 r.mine = false;
                 if (r.count <= 0) msg.reactions.splice(reactionIndex, 1);
+                // Remove from Supabase
+                if (currentAuthUser && msg.dbId) {
+                    sb.from('reactions').delete()
+                        .eq('message_id', msg.dbId)
+                        .eq('user_id', currentAuthUser.id)
+                        .eq('emoji', r.emoji);
+                }
             } else {
                 r.count++;
                 r.mine = true;
+                // Add to Supabase
+                if (currentAuthUser && msg.dbId) {
+                    sb.from('reactions').insert({
+                        message_id: msg.dbId,
+                        user_id: currentAuthUser.id,
+                        emoji: r.emoji
+                    });
+                }
             }
             
             if (currentMessageIndex >= 0) renderDetailContent(currentMessageIndex);
@@ -7301,6 +7523,9 @@
                 recipientEmail: selectedRecipient?.email || null,
                 recipientType: selectedRecipient?.email ? 'email' : 'contact',
                 message: fullMessage,
+                textMessage: textMessage,
+                lunarNoteText: lunarNoteText,
+                lunarClosing: lunarClosing,
                 location: location,
                 isKnown: !selectedRecipient?.isNew,
                 song: songVal
@@ -7427,8 +7652,39 @@
             const phase = moonData.phase || getMoonPhase();
             const phaseName = phase.phaseName.toLowerCase();
 
-            // Add to messages
+            // Save to Supabase
+            let dbMessage = null;
+            if (currentAuthUser) {
+                const insertData = {
+                    sender_id: currentAuthUser.id,
+                    recipient_name: pendingMessage.recipient,
+                    recipient_email: pendingMessage.recipientEmail || null,
+                    recipient_city: pendingMessage.location,
+                    message_text: pendingMessage.textMessage || null,
+                    lunar_note_text: pendingMessage.lunarNoteText || null,
+                    lunar_note_closing: pendingMessage.lunarClosing || null,
+                    song_url: pendingMessage.song || null,
+                    song_title: pendingMessage.song ? pendingMessage.song : null,
+                    moon_phase: phaseName,
+                    moon_illumination: moonData.illumination || null,
+                    status: 'in_transit'
+                };
+
+                const { data: msgData, error: msgError } = await sb.from('messages')
+                    .insert(insertData)
+                    .select()
+                    .single();
+
+                if (msgError) console.error('Message save failed:', msgError);
+                else {
+                    console.log('Message saved successfully');
+                    dbMessage = msgData;
+                }
+            }
+
+            // Add to local messages array
             messages.unshift({
+                dbId: dbMessage?.id || null,
                 sender: pendingMessage.recipient,
                 preview: '',
                 status: 'In Transit',
@@ -7436,7 +7692,13 @@
                 location: pendingMessage.location,
                 isNewRecipient: isNewRecipient,
                 phaseName: phaseName,
-                reactions: []
+                time: 'Just now',
+                createdAt: new Date().toISOString(),
+                messageText: pendingMessage.textMessage || '',
+                lunarNote: pendingMessage.lunarNoteText ? { text: pendingMessage.lunarNoteText, closing: pendingMessage.lunarClosing || '' } : null,
+                songUrl: pendingMessage.song || null,
+                reactions: [],
+                replies: []
             });
 
             // Update stats
