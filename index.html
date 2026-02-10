@@ -7695,6 +7695,10 @@
             const phase = moonData.phase || getMoonPhase();
             const phaseName = phase.phaseName.toLowerCase();
 
+            // Calculate when the message should be released (recipient's next moonrise)
+            const recipientMoonrise = getRecipientMoonrise(pendingMessage.location);
+            const releaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
+
             // Save to Supabase
             let dbMessage = null;
             if (currentAuthUser) {
@@ -7710,7 +7714,8 @@
                     song_title: pendingMessage.song ? pendingMessage.song : null,
                     moon_phase: phaseName,
                     moon_illumination: moonData.illumination || null,
-                    status: 'in_transit'
+                    status: 'in_transit',
+                    release_at: releaseAt
                 };
 
                 const { data: msgData, error: msgError } = await sb.from('messages')
