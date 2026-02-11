@@ -247,6 +247,53 @@
             border-radius: 50%;
         }
 
+        .settings-arrow {
+            font-size: 11px;
+            color: var(--blue);
+            cursor: pointer;
+            margin-left: 2px;
+            user-select: none;
+            transition: transform 0.2s;
+        }
+
+        .settings-arrow.open {
+            transform: rotate(180deg);
+        }
+
+        .settings-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 320px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: var(--white);
+            border-radius: 14px;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+            z-index: 600;
+            padding-bottom: 4px;
+        }
+
+        .settings-dropdown.active {
+            display: block;
+            animation: dropdownIn 0.18s ease;
+        }
+
+        @keyframes dropdownIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .settings-dropdown .form-group {
+            margin-bottom: 10px;
+        }
+
+        .settings-dropdown label {
+            font-size: 11px;
+            margin-bottom: 3px;
+        }
+
         .moon-phase-dropdown {
             position: absolute;
             top: 100%;
@@ -3984,15 +4031,82 @@
         <div class="header-moon" id="headerMoon">
             <svg class="header-moon-svg" id="headerMoonSvg" viewBox="0 0 100 100"></svg>
         </div>
-        <div class="header-right">
+        <div class="header-right" style="position:relative;">
             <!-- Hidden location element (used by JS) -->
             <span id="userLocation" style="display:none;">—</span>
             
             <!-- User / Settings -->
-            <button class="user-btn" onclick="openSettings()" aria-label="Settings">
+            <button class="user-btn" onclick="toggleSettings()" aria-label="Settings">
                 <span class="user-initials" id="userInitials">A</span>
                 <img class="user-avatar-img" id="headerAvatarImg" style="display:none;">
             </button>
+            <span class="settings-arrow" id="settingsArrow" onclick="toggleSettings()">▾</span>
+
+            <!-- Settings Dropdown -->
+            <div class="settings-dropdown" id="settingsDropdown">
+                <!-- Profile Picture -->
+                <div style="display:flex;flex-direction:column;align-items:center;padding:16px 0 12px;">
+                    <div id="profilePicPreview" style="width:64px;height:64px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:700;overflow:hidden;cursor:pointer;position:relative;" onclick="document.getElementById('profilePicInput').click()">
+                        <span id="profilePicInitial">?</span>
+                        <img id="profilePicImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
+                    </div>
+                    <input type="file" id="profilePicInput" accept="image/*" capture="user" style="display:none;" onchange="handleProfilePic(this)">
+                    <a href="#" onclick="event.preventDefault();document.getElementById('profilePicInput').click();" style="font-size:12px;color:var(--blue);margin-top:6px;">Change photo</a>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px;">
+                    <div class="form-group" style="margin-bottom:8px;">
+                        <label style="font-size:11px;">First name</label>
+                        <input type="text" id="settingsFirstName" placeholder="First" style="font-size:13px;padding:6px 8px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px;">
+                        <label style="font-size:11px;">Last name</label>
+                        <input type="text" id="settingsLastName" placeholder="Last" style="font-size:13px;padding:6px 8px;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:8px;padding:0 16px;">
+                    <label style="font-size:11px;">Sender name</label>
+                    <input type="text" id="userName" placeholder="How recipients see you" style="font-size:13px;padding:6px 8px;">
+                </div>
+                
+                <div class="form-group" style="margin-bottom:8px;padding:0 16px;">
+                    <label style="font-size:11px;">Location</label>
+                    <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Moonrise and release times depend on location.</p>
+                    <div class="settings-location-display" id="settingsLocationDisplay" style="margin-bottom:6px;">
+                        <svg class="settings-location-pin" viewBox="0 0 78.91 105.29" xmlns="http://www.w3.org/2000/svg" style="width:14px;">
+                            <path fill="#ff5558" d="M78.91,36.19v7.4c-.97,6.37-2.55,12.5-5.3,18.54-2.89,6.37-6.36,12.25-10.44,17.96-6.41,8.97-13.71,17.16-21.79,24.61-.43.4-1.03.2-1.32.59h-1.41c-.28-.38-.83-.3-1.25-.69C20.39,88.86-1.46,61.73.08,37.25c.67-10.75,5.65-20.69,13.76-27.7C26.22-1.16,43.98-3.04,58.27,4.82c11.84,6.52,19.05,18.13,20.64,31.37ZM38.22,17.59c-12.26.7-21.41,11.29-20.65,23.28s11.12,21.18,23.11,20.51,21.34-11.07,20.65-23.14-10.91-21.35-23.11-20.65Z"/>
+                        </svg>
+                        <span class="settings-location-name" id="settingsLocationName" style="font-size:13px;">Set your location</span>
+                    </div>
+                    <div style="display:flex;gap:12px;">
+                        <a href="#" onclick="event.preventDefault();requestLocation();" style="font-size:12px;color:var(--blue);">Use current</a>
+                        <a href="#" onclick="event.preventDefault();showManualLocationInput();" style="font-size:12px;color:var(--blue);">Type location</a>
+                    </div>
+                    <div id="manualLocationWrapper" style="display:none;margin-top:6px;">
+                        <div class="location-input-wrapper">
+                            <input type="text" id="manualLocation" placeholder="City (e.g. Lisbon)" autocomplete="off" oninput="filterSettingsCities(this.value)" style="font-size:13px;padding:6px 8px;">
+                            <div class="city-dropdown" id="settingsCityDropdown"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="margin-bottom:10px;padding:0 16px;">
+                    <label style="font-size:11px;">Time format</label>
+                    <select id="timeFormat" class="settings-select" style="font-size:13px;padding:6px 8px;">
+                        <option value="24" selected>24-hour (18:00)</option>
+                        <option value="12">12-hour (6:00 PM)</option>
+                    </select>
+                </div>
+                
+                <div style="padding:0 16px 12px;">
+                    <button class="send-button" onclick="saveSettings()" style="font-size:13px;padding:8px;">Save</button>
+                </div>
+
+                <div style="padding:8px 16px;border-top:1px solid #eee;text-align:center;">
+                    <a href="#" onclick="event.preventDefault();deleteAccount();" style="font-size:12px;color:#cc3333;">Delete my account</a>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -4182,7 +4296,15 @@
                 <!-- Populated by JS -->
             </div>
             <div class="message-page-footer">
+                <div id="sharedSkyPhotoPreview" style="display:none;padding:8px 8px 0;">
+                    <div style="position:relative;display:inline-block;">
+                        <img id="sharedSkyPhotoImg" style="max-height:100px;border-radius:8px;">
+                        <button onclick="clearSharedSkyPhoto()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:12px;cursor:pointer;">&times;</button>
+                    </div>
+                </div>
                 <div class="reply-row">
+                    <label for="sharedSkyPhotoInput" style="cursor:pointer;font-size:20px;padding:4px;">🌕</label>
+                    <input type="file" id="sharedSkyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleSharedSkyPhoto(this)">
                     <input type="text" class="message-page-input" placeholder="Share something with the sky..." id="sharedSkyInput" onkeydown="if(event.key==='Enter')sendSharedSkyMessage()">
                     <button class="message-page-send" onclick="sendSharedSkyMessage()">↑</button>
                 </div>
@@ -4253,83 +4375,6 @@
     </div>
 
     <!-- Settings Modal -->
-    <div class="modal-overlay" id="settingsModal">
-        <div class="modal">
-            <button class="modal-close" onclick="closeSettings()">&times;</button>
-            <div class="modal-header">
-                <h2>Settings</h2>
-                <p class="modal-subtitle">Your MoonPop profile</p>
-            </div>
-            
-            <!-- Profile Picture -->
-            <div class="form-group" style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px;">
-                <div id="profilePicPreview" style="width:80px;height:80px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:white;font-size:28px;font-weight:700;overflow:hidden;cursor:pointer;position:relative;" onclick="document.getElementById('profilePicInput').click()">
-                    <span id="profilePicInitial">?</span>
-                    <img id="profilePicImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
-                </div>
-                <input type="file" id="profilePicInput" accept="image/*" capture="user" style="display:none;" onchange="handleProfilePic(this)">
-                <a href="#" onclick="event.preventDefault();document.getElementById('profilePicInput').click();" style="font-size:13px;color:var(--blue);margin-top:8px;">Change photo</a>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div class="form-group">
-                    <label>First name</label>
-                    <input type="text" id="settingsFirstName" placeholder="First name">
-                </div>
-                <div class="form-group">
-                    <label>Last name</label>
-                    <input type="text" id="settingsLastName" placeholder="Last name">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Sender name</label>
-                <input type="text" id="userName" placeholder="How recipients see you">
-                <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">
-                    Displayed to recipients of your messages.
-                </p>
-            </div>
-            
-            <div class="form-group">
-                <label>Your location</label>
-                <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.4;">
-                    Moonrise and release times depend on location.
-                </p>
-                <!-- Current location display -->
-                <div class="settings-location-display" id="settingsLocationDisplay">
-                    <svg class="settings-location-pin" viewBox="0 0 78.91 105.29" xmlns="http://www.w3.org/2000/svg">
-                        <path fill="#ff5558" d="M78.91,36.19v7.4c-.97,6.37-2.55,12.5-5.3,18.54-2.89,6.37-6.36,12.25-10.44,17.96-6.41,8.97-13.71,17.16-21.79,24.61-.43.4-1.03.2-1.32.59h-1.41c-.28-.38-.83-.3-1.25-.69C20.39,88.86-1.46,61.73.08,37.25c.67-10.75,5.65-20.69,13.76-27.7C26.22-1.16,43.98-3.04,58.27,4.82c11.84,6.52,19.05,18.13,20.64,31.37ZM38.22,17.59c-12.26.7-21.41,11.29-20.65,23.28s11.12,21.18,23.11,20.51,21.34-11.07,20.65-23.14-10.91-21.35-23.11-20.65Z"/>
-                    </svg>
-                    <span class="settings-location-name" id="settingsLocationName">Set your location</span>
-                </div>
-                <div style="display:flex;gap:16px;margin-top:10px;">
-                    <a href="#" onclick="event.preventDefault();requestLocation();" style="font-size:13px;color:var(--blue);">Use my current location</a>
-                    <a href="#" id="typeLocationLink" onclick="event.preventDefault();showManualLocationInput();" style="font-size:13px;color:var(--blue);">Type a different location</a>
-                </div>
-                <div id="manualLocationWrapper" style="display:none;margin-top:10px;">
-                    <div class="location-input-wrapper">
-                        <input type="text" id="manualLocation" placeholder="Type a city (e.g. Lisbon)" autocomplete="off" oninput="filterSettingsCities(this.value)">
-                        <div class="city-dropdown" id="settingsCityDropdown"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label>Time format</label>
-                <select id="timeFormat" class="settings-select">
-                    <option value="24" selected>24-hour (18:00)</option>
-                    <option value="12">12-hour (6:00 PM)</option>
-                </select>
-            </div>
-            
-            <button class="send-button" onclick="saveSettings()">Save Settings</button>
-
-            <div style="margin-top:24px;padding-top:16px;border-top:1px solid #eee;text-align:center;">
-                <a href="#" onclick="event.preventDefault();deleteAccount();" style="font-size:13px;color:#cc3333;">Delete my account</a>
-            </div>
-        </div>
-    </div>
-
     <!-- New Moon Message (Full Page) -->
     <div class="message-page" id="messageModal">
         <div class="message-page-inner">
@@ -4488,13 +4533,21 @@
             
             <!-- New Contact view -->
             <div id="composeNewContact" style="display: none;">
-                <div class="modal-header">
-                    <h2>New Contact</h2>
-                    <p class="modal-subtitle">Send to someone new</p>
-                </div>
-                
                 <div class="form-group">
-                    <label>Name</label>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div>
+                            <label>First name</label>
+                            <input type="text" id="newContactFirstName" placeholder="First name" oninput="checkNewContactForm()">
+                        </div>
+                        <div>
+                            <label>Last name</label>
+                            <input type="text" id="newContactLastName" placeholder="Last name" oninput="checkNewContactForm()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="display:none;">
+                    <label>Display name</label>
                     <input type="text" id="newContactName" placeholder="Their name" oninput="checkNewContactForm()">
                 </div>
                 
@@ -4509,8 +4562,7 @@
                     <div class="city-dropdown" id="newContactCityDropdown"></div>
                 </div>
                 
-                <button class="send-button" id="saveContactBtn" onclick="confirmNewContact()" disabled>Save</button>
-                <button class="back-btn" onclick="showDefaultCompose()">← Back</button>
+                <button class="send-button" id="saveContactBtn" onclick="confirmNewContact()" disabled>Save & Continue</button>
             </div>
             </div>
         </div>
@@ -4923,36 +4975,57 @@
         function toggleMoonPhaseDropdown() { }
 
         function goToSettings() {
-            openSettings();
+            toggleSettings();
         }
 
         // Settings functions
-        function openSettings() {
-            document.getElementById('settingsModal').classList.add('active');
+        function toggleSettings() {
+            const dd = document.getElementById('settingsDropdown');
+            const arrow = document.getElementById('settingsArrow');
+            const isOpen = dd.classList.contains('active');
             
-            // Populate profile pic
-            const savedPic = localStorage.getItem('moonpop_profilepic');
-            const userName = document.getElementById('userName')?.value || localStorage.getItem('moonpop_username') || '';
-            const picInitial = document.getElementById('profilePicInitial');
-            const picImg = document.getElementById('profilePicImg');
-            if (savedPic && picImg) {
-                picImg.src = savedPic;
-                picImg.style.display = 'block';
-                if (picInitial) picInitial.style.display = 'none';
-            } else if (picInitial) {
-                picInitial.textContent = userName ? userName.charAt(0).toUpperCase() : '?';
-                picInitial.style.display = '';
-                if (picImg) picImg.style.display = 'none';
-            }
+            if (isOpen) {
+                dd.classList.remove('active');
+                arrow.classList.remove('open');
+            } else {
+                dd.classList.add('active');
+                arrow.classList.add('open');
+                
+                // Populate profile pic
+                const savedPic = localStorage.getItem('moonpop_profilepic');
+                const userName = document.getElementById('userName')?.value || localStorage.getItem('moonpop_username') || '';
+                const picInitial = document.getElementById('profilePicInitial');
+                const picImg = document.getElementById('profilePicImg');
+                if (savedPic && picImg) {
+                    picImg.src = savedPic;
+                    picImg.style.display = 'block';
+                    if (picInitial) picInitial.style.display = 'none';
+                } else if (picInitial) {
+                    picInitial.textContent = userName ? userName.charAt(0).toUpperCase() : '?';
+                    picInitial.style.display = '';
+                    if (picImg) picImg.style.display = 'none';
+                }
 
-            // Hide manual location input by default
-            const wrapper = document.getElementById('manualLocationWrapper');
-            if (wrapper) wrapper.style.display = 'none';
+                // Hide manual location input by default
+                const wrapper = document.getElementById('manualLocationWrapper');
+                if (wrapper) wrapper.style.display = 'none';
+            }
         }
 
         function closeSettings() {
-            document.getElementById('settingsModal').classList.remove('active');
+            const dd = document.getElementById('settingsDropdown');
+            const arrow = document.getElementById('settingsArrow');
+            if (dd) dd.classList.remove('active');
+            if (arrow) arrow.classList.remove('open');
         }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dd = document.getElementById('settingsDropdown');
+            if (!dd || !dd.classList.contains('active')) return;
+            const headerRight = e.target.closest('.header-right');
+            if (!headerRight) closeSettings();
+        });
 
         function requestLocation() {
             if (!navigator.geolocation) {
@@ -4968,8 +5041,6 @@
                     // Store coords and fetch real moon data
                     const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
                     onLocationObtained(latitude, longitude, browserTz);
-                    
-                    closeSettings();
                 },
                 () => {
                     alert('Location permission denied. You can enter a city manually.');
@@ -5878,6 +5949,7 @@
                 globalTransmissions = data.map(s => ({
                     location: s.city || 'Unknown',
                     time: timeAgo(s.created_at),
+                    createdAt: s.created_at,
                     message: '"' + s.message + '"'
                 }));
             }
@@ -6058,7 +6130,7 @@
                     const previewEl = document.getElementById('sharedSkyPreview');
                     if (previewEl) previewEl.textContent = latest.location + ': ' + latest.message;
                     const badgeEl = document.getElementById('sharedSkyBadge');
-                    if (badgeEl) badgeEl.textContent = globalTransmissions.length;
+                    updateSharedSkyBadge();
                 }
             } else {
                 showOnboarding();
@@ -6484,7 +6556,7 @@
                 centerEl.innerHTML = `
                     <p class="visibility-text">Set your location to begin</p>
                     <p class="visibility-subtitle">The moon needs to know where you are.</p>
-                    <button class="cta-button" onclick="openSettings()">Set Location</button>
+                    <button class="cta-button" onclick="toggleSettings()">Set Location</button>
                 `;
                 return;
             }
@@ -6526,10 +6598,7 @@
         // Render all messages chronologically (IM-style)
         function renderMessages() {
             const list = document.getElementById('messageList');
-            const myPic = localStorage.getItem('moonpop_profilepic');
-            const myInitial = (localStorage.getItem('moonpop_username') || '?').charAt(0).toUpperCase();
             
-            // All messages, already in chronological order (most recent first)
             list.innerHTML = messages.map((msg, index) => {
                 const isOrbiting = msg.type === 'sent' && msg.status === 'In Transit';
                 const isReleased = msg.type === 'sent' && msg.status === 'Released';
@@ -6545,14 +6614,9 @@
                     badge = `<span class="message-status-badge received">From ${msg.location}</span>`;
                 }
                 
-                // Avatar: for sent = my pic, for received = sender initial
-                let avatar;
-                if (msg.type === 'sent' && myPic) {
-                    avatar = `<div class="msg-avatar"><img src="${myPic}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>`;
-                } else {
-                    const initial = (msg.sender || '?').charAt(0).toUpperCase();
-                    avatar = `<div class="msg-avatar"><span>${initial}</span></div>`;
-                }
+                // Avatar: always show the OTHER person (recipient for sent, sender for received)
+                const initial = (msg.sender || '?').charAt(0).toUpperCase();
+                const avatar = `<div class="msg-avatar"><span>${initial}</span></div>`;
                 
                 return `
                     <li class="message-item" data-type="${msg.type}" data-sender="${msg.sender}" data-orbiting="${isOrbiting}" 
@@ -6595,21 +6659,10 @@
 
             const page = document.getElementById('messagePageView');
             document.getElementById('detailAvatarInitial').textContent = msg.sender.charAt(0);
-            // Show profile pic for sent messages (sender is me)
+            // Always show the other person's initial (no profile pic for now)
             const detailImg = document.getElementById('detailAvatarImg');
-            if (msg.type === 'sent') {
-                const myPic = localStorage.getItem('moonpop_profilepic');
-                if (myPic) {
-                    detailImg.src = myPic; detailImg.style.display = 'block';
-                    document.getElementById('detailAvatarInitial').style.display = 'none';
-                } else {
-                    detailImg.style.display = 'none';
-                    document.getElementById('detailAvatarInitial').style.display = '';
-                }
-            } else {
-                detailImg.style.display = 'none';
-                document.getElementById('detailAvatarInitial').style.display = '';
-            }
+            detailImg.style.display = 'none';
+            document.getElementById('detailAvatarInitial').style.display = '';
             document.getElementById('detailSender').textContent = msg.sender;
             
             const phase = moonData.phase ? moonData.phase.phaseName : 'waxing gibbous';
@@ -6832,10 +6885,30 @@
             document.getElementById('detailContent').scrollTop = document.getElementById('detailContent').scrollHeight;
         }
 
+        let pendingSharedSkyPhoto = null;
+
+        function handleSharedSkyPhoto(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    pendingSharedSkyPhoto = e.target.result;
+                    document.getElementById('sharedSkyPhotoImg').src = e.target.result;
+                    document.getElementById('sharedSkyPhotoPreview').style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function clearSharedSkyPhoto() {
+            pendingSharedSkyPhoto = null;
+            document.getElementById('sharedSkyPhotoPreview').style.display = 'none';
+            document.getElementById('sharedSkyPhotoInput').value = '';
+        }
+
         async function sendSharedSkyMessage() {
             const input = document.getElementById('sharedSkyInput');
             const text = input.value.trim();
-            if (!text) return;
+            if (!text && !pendingSharedSkyPhoto) return;
             
             const userName = localStorage.getItem('moonpop_username') || 'Anonymous';
             const userLoc = localStorage.getItem('moonpop_location');
@@ -6844,30 +6917,37 @@
                 try { locName = JSON.parse(userLoc).name || 'Unknown'; } catch(e) {}
             }
             
-            globalTransmissions.unshift({
+            const transmission = {
                 location: locName,
                 time: 'Just now',
-                message: '"' + text + '"'
-            });
+                createdAt: new Date().toISOString(),
+                message: text ? '"' + text + '"' : '',
+                photo: pendingSharedSkyPhoto || null
+            };
+            globalTransmissions.unshift(transmission);
 
             // Save to Supabase
             if (currentAuthUser) {
-                const { error } = await sb.from('shared_sky').insert({
+                const insertData = {
                     user_id: currentAuthUser.id,
                     city: locName,
-                    message: text
-                });
+                    message: text || '🌕'
+                };
+                const { error } = await sb.from('shared_sky').insert(insertData);
                 if (error) console.error('Shared sky save failed:', error);
             }
             
             input.value = '';
+            clearSharedSkyPhoto();
             renderSharedSkySignals();
             
             // Update inbox preview
             const previewEl = document.getElementById('sharedSkyPreview');
-            if (previewEl) previewEl.textContent = locName + ': "' + text + '"';
+            if (previewEl) previewEl.textContent = locName + ': ' + (text ? '"' + text + '"' : '🌕 Photo');
             const badgeEl = document.getElementById('sharedSkyBadge');
-            if (badgeEl) badgeEl.textContent = globalTransmissions.length;
+            updateSharedSkyBadge();
+            // Mark as seen since we're in shared sky already
+            localStorage.setItem('moonpop_shared_sky_seen', new Date().toISOString());
         }
         async function sendReply() {
             const input = document.getElementById('replyInput');
@@ -7133,7 +7213,7 @@
                 const previewEl = document.getElementById('sharedSkyPreview');
                 if (previewEl) previewEl.textContent = latest.location + ': ' + latest.message;
                 const badgeEl = document.getElementById('sharedSkyBadge');
-                if (badgeEl) badgeEl.textContent = globalTransmissions.length;
+                updateSharedSkyBadge();
             }
 
         }
@@ -7173,7 +7253,8 @@
                         <span style="font-size:12px;font-weight:700;color:var(--blue);">${t.location}</span>
                         <span style="font-size:11px;color:var(--text-muted);">${t.time}</span>
                     </div>
-                    <p style="font-size:14px;color:var(--text-dark);line-height:1.5;margin:0;">${t.message}</p>
+                    ${t.message ? `<p style="font-size:14px;color:var(--text-dark);line-height:1.5;margin:0;">${t.message}</p>` : ''}
+                    ${t.photo ? `<img src="${t.photo}" style="max-width:100%;max-height:240px;border-radius:10px;margin-top:8px;object-fit:cover;">` : ''}
                 </div>
             `).join('');
         }
@@ -7182,11 +7263,36 @@
             renderSharedSkySignals();
             document.getElementById('sharedSkyPage').classList.add('active');
             document.body.style.overflow = 'hidden';
+            // Mark all as seen
+            localStorage.setItem('moonpop_shared_sky_seen', new Date().toISOString());
+            const badgeEl = document.getElementById('sharedSkyBadge');
+            if (badgeEl) { badgeEl.textContent = ''; badgeEl.style.display = 'none'; }
         }
 
         function closeSharedSkyModal() {
             document.getElementById('sharedSkyPage').classList.remove('active');
             document.body.style.overflow = '';
+        }
+
+        function updateSharedSkyBadge() {
+            const lastSeen = localStorage.getItem('moonpop_shared_sky_seen');
+            const badgeEl = document.getElementById('sharedSkyBadge');
+            if (!badgeEl) return;
+            
+            if (!lastSeen) {
+                // Never seen — all are new
+                const count = globalTransmissions.length;
+                if (count > 0) { badgeEl.textContent = count; badgeEl.style.display = ''; }
+                else { badgeEl.style.display = 'none'; }
+            } else {
+                const seenDate = new Date(lastSeen);
+                const newCount = globalTransmissions.filter(t => {
+                    const tDate = t.createdAt ? new Date(t.createdAt) : null;
+                    return tDate && tDate > seenDate;
+                }).length;
+                if (newCount > 0) { badgeEl.textContent = newCount; badgeEl.style.display = ''; }
+                else { badgeEl.textContent = ''; badgeEl.style.display = 'none'; }
+            }
         }
 
         // Recipient dropdown
@@ -7395,6 +7501,30 @@
             document.getElementById('newContactEmail').value = '';
             document.getElementById('newContactCity').value = '';
             document.getElementById('newContactCityDropdown').classList.remove('active');
+            const firstNameEl = document.getElementById('newContactFirstName');
+            const lastNameEl = document.getElementById('newContactLastName');
+            if (firstNameEl) firstNameEl.value = '';
+            if (lastNameEl) lastNameEl.value = '';
+
+            // Update header
+            const header = document.getElementById('composeHeader');
+            header.innerHTML = `
+                <button class="message-page-back" onclick="backFromNewContact()">←</button>
+                <span style="font-weight:700;color:var(--blue);font-size:15px;">New Contact</span>
+                <span style="width:34px;"></span>
+            `;
+        }
+
+        function backFromNewContact() {
+            document.getElementById('composeNewContact').style.display = 'none';
+            document.getElementById('composeStep2').style.display = 'block';
+            // Restore step 2 header
+            const header = document.getElementById('composeHeader');
+            header.innerHTML = `
+                <button class="message-page-back" onclick="backToStep1()">←</button>
+                <span style="font-weight:700;color:var(--blue);font-size:15px;">Send to</span>
+                <span style="width:34px;"></span>
+            `;
         }
         
         // Compose step navigation (now: message=step1, recipient=step2)
@@ -7441,8 +7571,9 @@
         function backToStep1() {
             document.getElementById('composeStep1').style.display = 'block';
             document.getElementById('composeStep2').style.display = 'none';
+            document.getElementById('composeNewContact').style.display = 'none';
 
-            // Restore header: ← back → X close
+            // Restore header: X close
             const header = document.getElementById('composeHeader');
             header.innerHTML = `
                 <span style="width:34px;"></span>
@@ -7454,19 +7585,25 @@
         // Confirm new contact and go to compose
         // Enable/disable save button for new contact
         function checkNewContactForm() {
-            const name = document.getElementById('newContactName').value.trim();
+            const firstName = document.getElementById('newContactFirstName')?.value.trim() || '';
+            const lastName = document.getElementById('newContactLastName')?.value.trim() || '';
             const email = document.getElementById('newContactEmail').value.trim();
             const city = document.getElementById('newContactCity').value.trim();
+            // Auto-compose display name
+            const displayName = (firstName + ' ' + lastName).trim();
+            document.getElementById('newContactName').value = displayName;
             const btn = document.getElementById('saveContactBtn');
-            if (btn) btn.disabled = !(name && email && city);
+            if (btn) btn.disabled = !(firstName && email && city);
         }
 
         async function confirmNewContact() {
-            const name = document.getElementById('newContactName').value.trim();
+            const firstName = document.getElementById('newContactFirstName')?.value.trim() || '';
+            const lastName = document.getElementById('newContactLastName')?.value.trim() || '';
+            const name = (firstName + ' ' + lastName).trim();
             const email = document.getElementById('newContactEmail').value.trim();
             const city = document.getElementById('newContactCity').value.trim();
             
-            if (!name) { alert('Please enter their name'); return; }
+            if (!firstName) { alert('Please enter their first name'); return; }
             if (!email) { alert('Please enter their email'); return; }
             if (!email.includes('@') || !email.includes('.')) { alert('Please enter a valid email'); return; }
             if (!city) { alert('Please enter their location'); return; }
@@ -8108,7 +8245,7 @@
                 const previewEl = document.getElementById('sharedSkyPreview');
                 if (previewEl) previewEl.textContent = latest.location + ': ' + latest.message;
                 const badgeEl = document.getElementById('sharedSkyBadge');
-                if (badgeEl) badgeEl.textContent = globalTransmissions.length;
+                updateSharedSkyBadge();
             }
 
             renderMessageDots(); // Update orbit dots
