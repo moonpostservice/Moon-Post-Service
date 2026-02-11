@@ -5983,25 +5983,51 @@
         async function loadMessages() {
             if (!currentAuthUser) return;
 
-            // Fetch messages I sent (join recipient profile for avatar)
+            // *** NO FK JOINS — they silently fail if FK missing or value is NULL ***
+
+            // 1. Fetch messages I sent (plain select)
             const { data: sent, error: sentErr } = await sb.from('messages')
-                .select('*, recipient_profile:profiles!recipient_id(username, avatar_url)')
+                .select('*')
                 .eq('sender_id', currentAuthUser.id)
                 .order('created_at', { ascending: false });
+            if (sentErr) console.error('Load sent failed:', sentErr);
 
-            // Fetch messages I received - check by profile id AND email
-            let recvFilter = `recipient_id.eq.${currentAuthUser.id}`;
-            if (currentAuthUser.email) {
-                recvFilter += `,recipient_email.eq.${currentAuthUser.email}`;
-            }
+            // 2. Fetch messages sent TO me — two separate safe queries
+            let received = [];
             
-            const { data: received, error: recvErr } = await sb.from('messages')
-                .select('*, sender:profiles!sender_id(username, city, avatar_url)')
-                .or(recvFilter)
+            // 2a. By recipient_id
+            const { data: recvById, error: err1 } = await sb.from('messages')
+                .select('*')
+                .eq('recipient_id', currentAuthUser.id)
                 .order('created_at', { ascending: false });
+            if (err1) console.error('Load recv by id failed:', err1);
+            if (recvById) received = received.concat(recvById);
 
-            if (sentErr) console.error('Load sent messages failed:', sentErr);
-            if (recvErr) console.error('Load received messages failed:', recvErr);
+            // 2b. By recipient_email (catches messages sent before profile was linked)
+            if (currentAuthUser.email) {
+                const { data: recvByEmail, error: err2 } = await sb.from('messages')
+                    .select('*')
+                    .eq('recipient_email', currentAuthUser.email)
+                    .order('created_at', { ascending: false });
+                if (err2) console.error('Load recv by email failed:', err2);
+                if (recvByEmail) {
+                    const existingIds = new Set(received.map(m => m.id));
+                    recvByEmail.forEach(m => { if (!existingIds.has(m.id)) received.push(m); });
+                }
+            }
+
+            // 3. Batch-fetch profiles for senders and recipients
+            const profileIds = new Set();
+            (sent || []).forEach(m => { if (m.recipient_id) profileIds.add(m.recipient_id); });
+            received.forEach(m => { if (m.sender_id) profileIds.add(m.sender_id); });
+
+            const profileMap = {};
+            if (profileIds.size > 0) {
+                const { data: profiles } = await sb.from('profiles')
+                    .select('id, username, first_name, last_name, city, avatar_url')
+                    .in('id', Array.from(profileIds));
+                if (profiles) profiles.forEach(p => { profileMap[p.id] = p; });
+            }
 
             const allMessages = [];
 
@@ -6012,14 +6038,17 @@
                     if (m.status === 'in_transit') statusDisplay = 'In Transit';
                     else if (m.status === 'released') statusDisplay = 'Released';
 
+                    const rp = m.recipient_id ? profileMap[m.recipient_id] : null;
+
                     allMessages.push({
                         dbId: m.id,
-                        sender: m.recipient_name || 'Unknown',
-                        senderAvatar: m.recipient_profile?.avatar_url || null,
+                        sender: m.recipient_name || rp?.username || 'Unknown',
+                        senderAvatar: rp?.avatar_url || null,
+                        recipientEmail: m.recipient_email,
                         preview: '',
                         status: statusDisplay,
                         type: 'sent',
-                        location: m.recipient_city || 'Unknown',
+                        location: m.recipient_city || rp?.city || 'Unknown',
                         time: timeAgo(m.created_at),
                         createdAt: m.created_at,
                         phaseName: m.moon_phase || '',
@@ -6034,32 +6063,30 @@
             }
 
             // Map received messages
-            if (received) {
-                received.forEach(m => {
-                    const senderName = m.sender?.username || m.recipient_name || 'Unknown';
-                    const senderCity = m.sender?.city || 'Unknown';
+            received.forEach(m => {
+                const sp = m.sender_id ? profileMap[m.sender_id] : null;
+                const senderName = sp?.username || m.recipient_name || 'Someone';
+                const senderCity = sp?.city || 'Unknown';
 
-                    allMessages.push({
-                        dbId: m.id,
-                        sender: senderName,
-                        senderAvatar: m.sender?.avatar_url || null,
-                        preview: m.message_text || '',
-                        status: '',
-                        type: 'received',
-                        location: senderCity,
-                        time: timeAgo(m.created_at),
-                        createdAt: m.created_at,
-                        phaseName: m.moon_phase || '',
-                        messageText: m.message_text || '',
-                        lunarNote: m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
-                        songUrl: m.song_url,
-                        songTitle: m.song_title,
-                        hasMoonPhoto: !!m.lunar_note_text,
-                        reactions: [],
-                        replies: []
-                    });
+                allMessages.push({
+                    dbId: m.id,
+                    sender: senderName,
+                    senderAvatar: sp?.avatar_url || null,
+                    preview: m.message_text || '',
+                    status: '',
+                    type: 'received',
+                    location: senderCity,
+                    time: timeAgo(m.created_at),
+                    createdAt: m.created_at,
+                    phaseName: m.moon_phase || '',
+                    messageText: m.message_text || '',
+                    lunarNote: m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
+                    songUrl: m.song_url,
+                    songTitle: m.song_title,
+                    reactions: [],
+                    replies: []
                 });
-            }
+            });
 
             // Sort by created_at descending
             allMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -6067,6 +6094,8 @@
 
             // Update message stats
             moonData.messagesInTransit = messages.filter(m => m.type === 'sent' && m.status === 'In Transit').length;
+            
+            console.log('Messages loaded:', messages.length, '(sent:', (sent||[]).length, ', received:', received.length, ')');
         }
 
         let globalTransmissions = [];
@@ -6276,29 +6305,44 @@
         function setupRealtimeMessages() {
             if (!currentAuthUser) return;
             
-            // Listen for new incoming messages
+            // Listen for ALL new messages (no filter — filter is unreliable when recipient_id is null)
             sb.channel('inbox-messages')
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
-                    table: 'messages',
-                    filter: `recipient_id=eq.${currentAuthUser.id}`
+                    table: 'messages'
                 }, async (payload) => {
-                    console.log('New message received!', payload);
-                    await loadMessages();
-                    renderMessages();
-                    renderMessageDots();
+                    const m = payload.new;
+                    // Check if this message is for me (by id or email) or from me
+                    const isForMe = m.recipient_id === currentAuthUser.id || 
+                                    (m.recipient_email && m.recipient_email.toLowerCase() === (currentAuthUser.email || '').toLowerCase());
+                    const isFromMe = m.sender_id === currentAuthUser.id;
+                    
+                    if (isForMe || isFromMe) {
+                        console.log('Realtime: new message', isForMe ? 'received' : 'sent', m.id);
+                        await loadMessages();
+                        renderMessages();
+                        renderMessageDots();
+                    }
                 })
                 .on('postgres_changes', {
                     event: 'UPDATE',
                     schema: 'public',
                     table: 'messages'
                 }, async (payload) => {
-                    await loadMessages();
-                    renderMessages();
-                    renderMessageDots();
+                    const m = payload.new;
+                    const isRelevant = m.sender_id === currentAuthUser.id || 
+                                       m.recipient_id === currentAuthUser.id ||
+                                       (m.recipient_email && m.recipient_email.toLowerCase() === (currentAuthUser.email || '').toLowerCase());
+                    if (isRelevant) {
+                        await loadMessages();
+                        renderMessages();
+                        renderMessageDots();
+                    }
                 })
-                .subscribe();
+                .subscribe((status) => {
+                    console.log('Realtime messages channel:', status);
+                });
 
             // Listen for new replies (live chat)
             sb.channel('live-replies')
@@ -6987,13 +7031,14 @@
             const phase = moonData.phase ? moonData.phase.phaseName : 'waxing gibbous';
             document.getElementById('detailLocation').textContent = `${msg.location || 'Unknown'} · ${msg.type === 'received' ? 'Received' : 'Sent'} under ${phase.toLowerCase()}`;
 
-            // Load replies from Supabase
+            // Load replies from Supabase (no FK join — plain select)
             if (msg.dbId && currentAuthUser) {
-                const { data: replies } = await sb.from('replies')
-                    .select('*, sender:profiles!sender_id(username)')
+                const { data: replies, error: replErr } = await sb.from('replies')
+                    .select('*')
                     .eq('message_id', msg.dbId)
                     .order('created_at', { ascending: true });
                 
+                if (replErr) console.error('Load replies failed:', replErr);
                 if (replies) {
                     msg.replies = replies.map(r => ({
                         text: r.text,
@@ -8834,9 +8879,40 @@
             const phase = moonData.phase || getMoonPhase();
             const phaseName = phase.phaseName.toLowerCase();
 
+            // ALWAYS resolve recipient by email lookup (don't trust cached data)
+            let recipientId = pendingMessage.linkedProfileId || null;
+            let recipientEmail = pendingMessage.recipientEmail || null;
+            
+            // If we have an email but no profile ID, try to resolve
+            if (recipientEmail && !recipientId) {
+                try {
+                    const { data: found } = await sb.rpc('lookup_user_by_email', { lookup_email: recipientEmail });
+                    if (found && found.length > 0) {
+                        recipientId = found[0].id;
+                        pendingMessage.isOnMoonpop = true;
+                        pendingMessage.linkedProfileId = recipientId;
+                    }
+                } catch(e) { console.error('Recipient resolve failed:', e); }
+            }
+            
+            // Also check contacts as fallback for email
+            if (!recipientEmail) {
+                const contact = contacts.find(c => c.name === pendingMessage.recipient);
+                if (contact) {
+                    recipientEmail = contact.email || null;
+                    if (!recipientId) recipientId = contact.linkedProfileId || null;
+                    if (contact.isOnMoonpop) pendingMessage.isOnMoonpop = true;
+                }
+            }
+
             // Calculate when the message should be released (recipient's next moonrise)
             const recipientMoonrise = getRecipientMoonrise(pendingMessage.location);
             const releaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
+            
+            // If recipient is on MoonPop AND is online right now, deliver instantly
+            const recipientOnline = recipientId && onlineUsers[recipientId];
+            const instantDeliver = pendingMessage.isOnMoonpop && recipientOnline;
+            const messageStatus = instantDeliver ? 'released' : 'in_transit';
 
             // Save to Supabase
             let dbMessage = null;
@@ -8844,8 +8920,8 @@
                 const insertData = {
                     sender_id: currentAuthUser.id,
                     recipient_name: pendingMessage.recipient,
-                    recipient_email: pendingMessage.recipientEmail || null,
-                    recipient_id: pendingMessage.linkedProfileId || null,
+                    recipient_email: recipientEmail,
+                    recipient_id: recipientId,
                     recipient_city: pendingMessage.location,
                     message_text: pendingMessage.textMessage || null,
                     lunar_note_text: pendingMessage.lunarNoteText || null,
@@ -8854,9 +8930,11 @@
                     song_title: pendingMessage.song ? pendingMessage.song : null,
                     moon_phase: phaseName,
                     moon_illumination: moonData.illumination || null,
-                    status: 'in_transit',
-                    release_at: releaseAt
+                    status: messageStatus,
+                    release_at: instantDeliver ? new Date().toISOString() : releaseAt
                 };
+
+                console.log('Sending message:', { recipientId, recipientEmail, status: messageStatus, instantDeliver });
 
                 const { data: msgData, error: msgError } = await sb.from('messages')
                     .insert(insertData)
@@ -8865,7 +8943,7 @@
 
                 if (msgError) console.error('Message save failed:', msgError);
                 else {
-                    console.log('Message saved successfully');
+                    console.log('Message saved successfully, id:', msgData.id);
                     dbMessage = msgData;
                 }
             }
@@ -8875,7 +8953,7 @@
                 dbId: dbMessage?.id || null,
                 sender: pendingMessage.recipient,
                 preview: '',
-                status: 'In Transit',
+                status: instantDeliver ? 'Released' : 'In Transit',
                 type: 'sent',
                 location: pendingMessage.location,
                 isNewRecipient: isNewRecipient,
@@ -8895,17 +8973,14 @@
 
             // Add contact if new
             if (isNewRecipient) {
-                // Get email - either from dedicated email field or from recipient if it's an email
-                const email = pendingMessage.recipientEmail || 
-                    (pendingMessage.recipientType === 'email' ? pendingMessage.recipient : null);
-                
-                const recipientIsOnMps = pendingMessage.isOnMoonpop || false;
+                const recipientIsOnMps = pendingMessage.isOnMoonpop || !!recipientId;
 
                 const newContact = {
                     name: pendingMessage.recipient,
                     location: pendingMessage.location,
-                    email: email,
-                    isOnMoonpop: recipientIsOnMps
+                    email: recipientEmail,
+                    isOnMoonpop: recipientIsOnMps,
+                    linkedProfileId: recipientId
                 };
                 contacts.push(newContact);
                 renderContactsList();
@@ -8916,19 +8991,19 @@
                         owner_id: currentAuthUser.id,
                         name: pendingMessage.recipient,
                         city: pendingMessage.location,
-                        email: email,
+                        email: recipientEmail,
                         is_on_moonpop: recipientIsOnMps,
-                        linked_profile_id: pendingMessage.linkedProfileId || null
+                        linked_profile_id: recipientId
                     });
                     if (contactError) console.error('Contact save failed:', contactError);
                     else console.log('Contact saved successfully');
                 }
                 
                 // Only send invite email to NON-MPS users
-                if (email && !recipientIsOnMps) {
+                if (recipientEmail && !recipientIsOnMps) {
                     const senderName = localStorage.getItem('moonpop_username') || 'Someone';
                     sendMoonPostEmail(
-                        email,
+                        recipientEmail,
                         pendingMessage.location,
                         pendingMessage.message,
                         senderName,
@@ -9083,7 +9158,7 @@
 
             // Fetch the message from Supabase (public read via RLS)
             const { data: msg, error } = await sb.from('messages')
-                .select('*, sender:profiles!sender_id(username, city)')
+                .select('*')
                 .eq('id', messageId)
                 .single();
 
@@ -9095,8 +9170,18 @@
                 return true;
             }
 
+            // Fetch sender profile separately
+            let senderProfile = null;
+            if (msg.sender_id) {
+                const { data: sp } = await sb.from('profiles')
+                    .select('username, city')
+                    .eq('id', msg.sender_id)
+                    .maybeSingle();
+                senderProfile = sp;
+            }
+
             // Populate the reveal page
-            const senderName = msg.sender?.username || 'Someone';
+            const senderName = senderProfile?.username || 'Someone';
             document.getElementById('revealSenderName').textContent = senderName;
             document.getElementById('revealPhaseName').textContent = msg.moon_phase || 'waxing gibbous';
             document.getElementById('revealCity').textContent = msg.recipient_city || 'your city';
