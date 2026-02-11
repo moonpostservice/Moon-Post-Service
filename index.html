@@ -5902,86 +5902,63 @@
 
         async function loadContacts() {
             if (!currentAuthUser) return;
+            
+            // Load raw contacts (no FK join — it's unreliable)
             const { data, error } = await sb.from('contacts')
-                .select('*, profile:profiles!linked_profile_id(username, first_name, last_name, city, avatar_url, email)')
+                .select('*')
                 .eq('owner_id', currentAuthUser.id)
                 .order('created_at', { ascending: false });
             
-            if (!data) return;
+            if (!data) { console.error('Load contacts failed:', error); return; }
 
-            contacts = [];
-            const needsRelink = [];
+            // First pass: build contacts array from DB
+            contacts = data.map(c => ({
+                id: c.id,
+                name: c.name,
+                location: c.city || 'Unknown',
+                email: c.email,
+                avatar: null,
+                isOnMoonpop: c.is_on_moonpop || false,
+                linkedProfileId: c.linked_profile_id || null
+            }));
 
-            for (const c of data) {
-                const p = c.profile; // linked profile (null if linked_profile_id was null or profile deleted)
+            // Second pass: for every contact with an email, check if they're on MoonPop
+            // This catches contacts that were added before the user signed up
+            for (let i = 0; i < contacts.length; i++) {
+                const c = contacts[i];
+                if (!c.email) continue;
                 
-                if (p) {
-                    // Linked profile found — use their live data
-                    const displayName = p.username || [p.first_name, p.last_name].filter(Boolean).join(' ') || c.name;
-                    contacts.push({
-                        id: c.id,
-                        name: displayName,
-                        location: p.city || c.city || 'Unknown',
-                        email: p.email || c.email,
-                        avatar: p.avatar_url || null,
-                        isOnMoonpop: true,
-                        linkedProfileId: c.linked_profile_id
-                    });
-                } else if (c.email && !c.linked_profile_id) {
-                    // No linked profile but has email — queue for re-lookup
-                    contacts.push({
-                        id: c.id,
-                        name: c.name,
-                        location: c.city || 'Unknown',
-                        email: c.email,
-                        avatar: null,
-                        isOnMoonpop: c.is_on_moonpop || false,
-                        linkedProfileId: null
-                    });
-                    needsRelink.push({ contactIdx: contacts.length - 1, dbId: c.id, email: c.email });
-                } else {
-                    contacts.push({
-                        id: c.id,
-                        name: c.name,
-                        location: c.city || 'Unknown',
-                        email: c.email,
-                        avatar: null,
-                        isOnMoonpop: c.is_on_moonpop || false,
-                        linkedProfileId: c.linked_profile_id
-                    });
-                }
-            }
-
-            // Re-link contacts that have email but no linked profile
-            for (const item of needsRelink) {
                 try {
-                    const { data: found } = await sb.rpc('lookup_user_by_email', { lookup_email: item.email });
+                    const { data: found, error: lookupErr } = await sb.rpc('lookup_user_by_email', { lookup_email: c.email });
+                    if (lookupErr) { console.error('Contact lookup error:', lookupErr); continue; }
+                    
                     if (found && found.length > 0) {
                         const user = found[0];
-                        const displayName = user.username || [user.first_name, user.last_name].filter(Boolean).join(' ') || item.email;
+                        const displayName = user.username || [user.first_name, user.last_name].filter(Boolean).join(' ') || c.name;
                         
-                        // Update local contact
-                        contacts[item.contactIdx].name = displayName;
-                        contacts[item.contactIdx].location = user.city || contacts[item.contactIdx].location;
-                        contacts[item.contactIdx].avatar = user.avatar_url || null;
-                        contacts[item.contactIdx].isOnMoonpop = true;
-                        contacts[item.contactIdx].linkedProfileId = user.id;
+                        // Update local contact with live profile data
+                        contacts[i].name = displayName;
+                        contacts[i].location = user.city || c.location;
+                        contacts[i].avatar = user.avatar_url || null;
+                        contacts[i].isOnMoonpop = true;
+                        contacts[i].linkedProfileId = user.id;
 
-                        // Update DB contact (fire and forget for speed)
-                        sb.from('contacts').update({
-                            linked_profile_id: user.id,
-                            is_on_moonpop: true,
-                            name: displayName,
-                            city: user.city || null
-                        }).eq('id', item.dbId).then(({ error }) => {
-                            if (error) console.error('Contact re-link failed:', error);
-                            else console.log('Re-linked contact:', displayName);
-                        });
+                        // Update DB if needed (fire and forget)
+                        if (!c.linkedProfileId || c.linkedProfileId !== user.id) {
+                            sb.from('contacts').update({
+                                linked_profile_id: user.id,
+                                is_on_moonpop: true,
+                                name: displayName,
+                                city: user.city || null
+                            }).eq('id', c.id);
+                        }
                     }
                 } catch(e) {
-                    console.error('Contact re-link lookup failed:', e);
+                    console.error('Contact lookup failed for', c.email, e);
                 }
             }
+            
+            console.log('Contacts loaded:', contacts.length, 'on MoonPop:', contacts.filter(c => c.isOnMoonpop).length);
         }
 
         // Messages - loaded from Supabase
