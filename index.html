@@ -4259,7 +4259,10 @@
     <section class="inbox-section">
         <div class="inbox-card">
             <div class="inbox-header">
-                <span class="inbox-title">INBOX</span>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="inbox-title">INBOX</span>
+                    <button onclick="openContactsPage()" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 6px;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Contacts">👥</button>
+                </div>
                 <button class="new-message-btn" onclick="openModal()">+</button>
             </div>
             <!-- Shared Sky as first row (public chat) -->
@@ -4277,15 +4280,6 @@
             <div class="create-circle-option" onclick="openCreateCircle()">
                 <div class="create-circle-icon">+</div>
                 <span>New Moon Circle</span>
-            </div>
-            <!-- Contacts -->
-            <div class="shared-sky-row" onclick="openContactsPage()" style="border-bottom:1px solid #e8e4dc;">
-                <div class="shared-sky-row-icon">👥</div>
-                <div class="shared-sky-row-content">
-                    <div class="shared-sky-row-title">Contacts</div>
-                    <div class="shared-sky-row-preview" id="contactsPreview">Your MoonPop connections</div>
-                </div>
-                <span class="shared-sky-row-badge" id="contactsBadge" style="display:none;"></span>
             </div>
             <ul class="message-list" id="messageList">
                 <!-- Populated by JS -->
@@ -4327,8 +4321,16 @@
         <div class="message-page-inner">
             <div class="message-page-header" style="justify-content:space-between;">
                 <button class="message-page-back" onclick="closeContactsPage()">←</button>
-                <span style="font-weight:700;color:var(--blue);font-size:15px;">👥 Contacts</span>
-                <span style="width:34px;"></span>
+                <span style="font-weight:700;color:var(--blue);font-size:15px;">Contacts</span>
+                <button onclick="toggleContactsAddView()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--blue);padding:4px 8px;" id="contactsAddBtn" title="Add contact">+</button>
+            </div>
+            <!-- Add/Search new contact view (hidden by default) -->
+            <div id="contactsAddView" style="display:none;padding:16px 20px;border-bottom:2px solid rgba(53,125,197,0.1);background:rgba(53,125,197,0.03);">
+                <input type="text" id="contactSearchInput" placeholder="Search by name or email..." autocomplete="off" oninput="debouncedContactSearch()" style="width:100%;box-sizing:border-box;margin-bottom:8px;">
+                <div id="contactSearchResults" style="max-height:200px;overflow-y:auto;"></div>
+                <div style="text-align:center;margin-top:10px;">
+                    <button onclick="openAddContactFromContacts()" style="background:none;border:1px dashed var(--blue);color:var(--blue);padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer;">+ Add new contact manually</button>
+                </div>
             </div>
             <div class="message-page-body" id="contactsListBody" style="padding:0;">
                 <!-- Populated by JS -->
@@ -5109,9 +5111,36 @@
                 reader.onload = (e) => {
                     localStorage.setItem('moonpop_profilepic', e.target.result);
                     updateAvatarEverywhere(e.target.result);
+                    // Compress and save small avatar to Supabase for other users to see
+                    compressAvatar(e.target.result).then(smallAvatar => {
+                        if (currentAuthUser && smallAvatar) {
+                            sb.from('profiles').update({ avatar_url: smallAvatar }).eq('id', currentAuthUser.id);
+                        }
+                    });
                 };
                 reader.readAsDataURL(input.files[0]);
             }
+        }
+
+        function compressAvatar(dataUrl) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const size = 80; // 80x80 thumbnail
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    // Crop to square center
+                    const minDim = Math.min(img.width, img.height);
+                    const sx = (img.width - minDim) / 2;
+                    const sy = (img.height - minDim) / 2;
+                    ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+                    resolve(canvas.toDataURL('image/jpeg', 0.6));
+                };
+                img.onerror = () => resolve(null);
+                img.src = dataUrl;
+            });
         }
 
         async function deleteAccount() {
@@ -5124,13 +5153,13 @@
             window.location.reload();
         }
 
-        function saveSettings() {
+        async function saveSettings() {
             // Get values
             const manualLoc = document.getElementById('manualLocation')?.value;
             const timeFormat = document.getElementById('timeFormat')?.value;
-            const userName = document.getElementById('userName')?.value;
-            const firstName = document.getElementById('settingsFirstName')?.value?.trim();
-            const lastName = document.getElementById('settingsLastName')?.value?.trim();
+            const userName = document.getElementById('userName')?.value?.trim();
+            const firstName = document.getElementById('settingsFirstName')?.value?.trim() || '';
+            const lastName = document.getElementById('settingsLastName')?.value?.trim() || '';
             
             // Update location and recalculate moon
             if (manualLoc) {
@@ -5154,13 +5183,31 @@
                 localStorage.setItem('moonpop_username', userName);
             }
 
-            // Save to Supabase
+            // Save to Supabase (await to ensure it persists)
             if (currentAuthUser) {
-                const updateData = { username: userName };
-                if (firstName) updateData.first_name = firstName;
-                if (lastName) updateData.last_name = lastName;
+                const updateData = { 
+                    username: userName || null,
+                    first_name: firstName,
+                    last_name: lastName
+                };
                 
-                sb.from('profiles').update(updateData).eq('id', currentAuthUser.id);
+                // Also save location if set
+                const savedLoc = localStorage.getItem('moonpop_location');
+                if (savedLoc) {
+                    try {
+                        const loc = JSON.parse(savedLoc);
+                        const city = cities.find(c => c.name === loc.name);
+                        if (city) {
+                            updateData.city = city.name;
+                            updateData.latitude = city.lat;
+                            updateData.longitude = city.lon;
+                            updateData.timezone = city.tz;
+                        }
+                    } catch(e) {}
+                }
+                
+                const { error } = await sb.from('profiles').update(updateData).eq('id', currentAuthUser.id);
+                if (error) console.error('Profile save failed:', error);
             }
 
             // Sync avatar everywhere
@@ -5881,16 +5928,21 @@
         async function loadMessages() {
             if (!currentAuthUser) return;
 
-            // Fetch messages I sent
+            // Fetch messages I sent (join recipient profile for avatar)
             const { data: sent, error: sentErr } = await sb.from('messages')
-                .select('*')
+                .select('*, recipient_profile:profiles!recipient_id(username, avatar_url)')
                 .eq('sender_id', currentAuthUser.id)
                 .order('created_at', { ascending: false });
 
-            // Fetch messages I received (by profile id or by email)
+            // Fetch messages I received - check by profile id AND email
+            let recvFilter = `recipient_id.eq.${currentAuthUser.id}`;
+            if (currentAuthUser.email) {
+                recvFilter += `,recipient_email.eq.${currentAuthUser.email}`;
+            }
+            
             const { data: received, error: recvErr } = await sb.from('messages')
-                .select('*, sender:profiles!sender_id(username, city)')
-                .or(`recipient_id.eq.${currentAuthUser.id},recipient_email.eq.${currentAuthUser.email}`)
+                .select('*, sender:profiles!sender_id(username, city, avatar_url)')
+                .or(recvFilter)
                 .order('created_at', { ascending: false });
 
             if (sentErr) console.error('Load sent messages failed:', sentErr);
@@ -5908,6 +5960,7 @@
                     allMessages.push({
                         dbId: m.id,
                         sender: m.recipient_name || 'Unknown',
+                        senderAvatar: m.recipient_profile?.avatar_url || null,
                         preview: '',
                         status: statusDisplay,
                         type: 'sent',
@@ -5934,6 +5987,7 @@
                     allMessages.push({
                         dbId: m.id,
                         sender: senderName,
+                        senderAvatar: m.sender?.avatar_url || null,
                         preview: m.message_text || '',
                         status: '',
                         type: 'received',
@@ -6150,6 +6204,7 @@
                 renderMessageDots();
                 renderCircleRows();
                 renderContactsList();
+                setupRealtimeMessages();
                 if (globalTransmissions.length > 0) {
                     const latest = globalTransmissions[0];
                     const previewEl = document.getElementById('sharedSkyPreview');
@@ -6160,6 +6215,37 @@
             } else {
                 showOnboarding();
             }
+        }
+
+        // Realtime: listen for new messages sent to this user
+        function setupRealtimeMessages() {
+            if (!currentAuthUser) return;
+            
+            sb.channel('my-messages')
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `recipient_id=eq.${currentAuthUser.id}`
+                }, async (payload) => {
+                    console.log('New message received!', payload);
+                    // Reload messages and re-render
+                    await loadMessages();
+                    renderMessages();
+                    renderMessageDots();
+                })
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `sender_id=eq.${currentAuthUser.id}`
+                }, async (payload) => {
+                    // Message status changed (e.g. released)
+                    await loadMessages();
+                    renderMessages();
+                    renderMessageDots();
+                })
+                .subscribe();
         }
 
         // Also handle future auth changes (e.g. signing out)
@@ -6639,9 +6725,14 @@
                     badge = `<span class="message-status-badge received">From ${msg.location}</span>`;
                 }
                 
-                // Avatar: always show the OTHER person (recipient for sent, sender for received)
+                // Avatar: show profile pic if available, otherwise initial
                 const initial = (msg.sender || '?').charAt(0).toUpperCase();
-                const avatar = `<div class="msg-avatar"><span>${initial}</span></div>`;
+                let avatar;
+                if (msg.senderAvatar) {
+                    avatar = `<div class="msg-avatar"><img src="${msg.senderAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"><span style="display:none;">${initial}</span></div>`;
+                } else {
+                    avatar = `<div class="msg-avatar"><span>${initial}</span></div>`;
+                }
                 
                 return `
                     <li class="message-item" data-type="${msg.type}" data-sender="${msg.sender}" data-orbiting="${isOrbiting}" 
@@ -6684,10 +6775,15 @@
 
             const page = document.getElementById('messagePageView');
             document.getElementById('detailAvatarInitial').textContent = msg.sender.charAt(0);
-            // Always show the other person's initial (no profile pic for now)
             const detailImg = document.getElementById('detailAvatarImg');
-            detailImg.style.display = 'none';
-            document.getElementById('detailAvatarInitial').style.display = '';
+            if (msg.senderAvatar) {
+                detailImg.src = msg.senderAvatar;
+                detailImg.style.display = 'block';
+                document.getElementById('detailAvatarInitial').style.display = 'none';
+            } else {
+                detailImg.style.display = 'none';
+                document.getElementById('detailAvatarInitial').style.display = '';
+            }
             document.getElementById('detailSender').textContent = msg.sender;
             
             const phase = moonData.phase ? moonData.phase.phaseName : 'waxing gibbous';
@@ -7327,11 +7423,157 @@
             renderContactsList();
             document.getElementById('contactsPage').classList.add('active');
             document.body.style.overflow = 'hidden';
+            // Reset add view
+            document.getElementById('contactsAddView').style.display = 'none';
+            document.getElementById('contactSearchInput').value = '';
+            document.getElementById('contactSearchResults').innerHTML = '';
         }
 
         function closeContactsPage() {
             document.getElementById('contactsPage').classList.remove('active');
             document.body.style.overflow = '';
+        }
+
+        function toggleContactsAddView() {
+            const view = document.getElementById('contactsAddView');
+            view.style.display = view.style.display === 'none' ? 'block' : 'none';
+            if (view.style.display === 'block') {
+                document.getElementById('contactSearchInput').focus();
+            }
+        }
+
+        // Debounced search for users in DB
+        let contactSearchTimer = null;
+        function debouncedContactSearch() {
+            clearTimeout(contactSearchTimer);
+            const query = document.getElementById('contactSearchInput').value.trim();
+            if (query.length < 2) {
+                document.getElementById('contactSearchResults').innerHTML = '';
+                return;
+            }
+            contactSearchTimer = setTimeout(() => searchUsersForContact(query), 400);
+        }
+
+        async function searchUsersForContact(query) {
+            const resultsDiv = document.getElementById('contactSearchResults');
+            if (!currentAuthUser) return;
+
+            resultsDiv.innerHTML = '<div style="padding:8px;color:var(--text-muted);font-size:13px;">Searching...</div>';
+
+            try {
+                const { data, error } = await sb.rpc('search_users', { search_query: query });
+                
+                if (error) {
+                    console.error('User search error:', error);
+                    resultsDiv.innerHTML = '';
+                    return;
+                }
+
+                if (!data || data.length === 0) {
+                    // Check if query looks like an email
+                    const isEmail = query.includes('@') && query.includes('.');
+                    resultsDiv.innerHTML = `
+                        <div style="padding:10px;font-size:13px;color:var(--text-muted);">
+                            No users found for "${query}"
+                            ${isEmail ? `<br><button onclick="quickInviteContact('${query.replace(/'/g, "\\'")}')" style="margin-top:8px;background:var(--coral);color:white;border:none;border-radius:16px;padding:6px 14px;font-size:12px;cursor:pointer;">Send invite to ${query}</button>` : ''}
+                        </div>`;
+                    return;
+                }
+
+                // Filter out self and existing contacts
+                const existingEmails = contacts.map(c => (c.email || '').toLowerCase());
+                const filtered = data.filter(u => 
+                    u.id !== currentAuthUser.id && 
+                    !existingEmails.includes((u.email || '').toLowerCase())
+                );
+
+                if (filtered.length === 0) {
+                    resultsDiv.innerHTML = '<div style="padding:8px;font-size:13px;color:var(--text-muted);">Already in your contacts</div>';
+                    return;
+                }
+
+                resultsDiv.innerHTML = filtered.map(u => {
+                    const displayName = u.username || ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.email;
+                    const location = u.city || '';
+                    const avatarHtml = u.avatar_url 
+                        ? `<img src="${u.avatar_url}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`
+                        : `<div style="width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">${(displayName || '?').charAt(0).toUpperCase()}</div>`;
+                    
+                    return `
+                        <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(53,125,197,0.06)'" onmouseout="this.style.background=''" onclick="addUserAsContact('${u.id}', '${displayName.replace(/'/g, "\\'")}', '${(u.email||'').replace(/'/g, "\\'")}', '${location.replace(/'/g, "\\'")}')">
+                            ${avatarHtml}
+                            <div style="flex:1;">
+                                <div style="font-size:14px;font-weight:600;color:var(--blue);">${displayName}</div>
+                                <div style="font-size:11px;color:var(--text-muted);">${location}${u.email ? ' · ' + u.email : ''}</div>
+                            </div>
+                            <span style="font-size:11px;color:#4caf50;font-weight:600;">On MoonPop</span>
+                        </div>
+                    `;
+                }).join('');
+            } catch(e) {
+                console.error('User search exception:', e);
+                resultsDiv.innerHTML = '';
+            }
+        }
+
+        async function addUserAsContact(profileId, name, email, city) {
+            // Check if already in contacts
+            if (contacts.find(c => c.linkedProfileId === profileId || (c.email && c.email.toLowerCase() === email.toLowerCase()))) {
+                alert(name + ' is already in your contacts!');
+                return;
+            }
+
+            const newContact = {
+                name: name,
+                location: city || 'Unknown',
+                email: email,
+                isOnMoonpop: true,
+                linkedProfileId: profileId
+            };
+            contacts.push(newContact);
+
+            // Save to Supabase
+            if (currentAuthUser) {
+                await sb.from('contacts').insert({
+                    owner_id: currentAuthUser.id,
+                    name: name,
+                    city: city || null,
+                    email: email,
+                    is_on_moonpop: true,
+                    linked_profile_id: profileId
+                });
+            }
+
+            renderContactsList();
+            // Clear search
+            document.getElementById('contactSearchInput').value = '';
+            document.getElementById('contactSearchResults').innerHTML = '';
+            document.getElementById('contactsAddView').style.display = 'none';
+        }
+
+        async function quickInviteContact(email) {
+            // Open the compose modal new contact form with email pre-filled
+            closeContactsPage();
+            openModal();
+            setTimeout(() => {
+                goToRecipientStep();
+                showNewContactForm();
+                const emailEl = document.getElementById('newContactEmail');
+                if (emailEl) {
+                    emailEl.value = email;
+                    debouncedEmailLookup();
+                    checkNewContactForm();
+                }
+            }, 150);
+        }
+
+        function openAddContactFromContacts() {
+            closeContactsPage();
+            openModal();
+            setTimeout(() => {
+                goToRecipientStep();
+                showNewContactForm();
+            }, 150);
         }
 
         function renderContactsList() {
@@ -7343,13 +7585,13 @@
                     <div style="text-align:center;padding:60px 20px;color:var(--text-muted);">
                         <div style="font-size:40px;margin-bottom:12px;">👥</div>
                         <h4 style="color:var(--blue);margin-bottom:8px;">No contacts yet</h4>
-                        <p style="font-size:13px;">Send a moon message to someone to add them as a contact.</p>
+                        <p style="font-size:13px;margin-bottom:16px;">Search for MoonPop users or invite someone new.</p>
+                        <button onclick="toggleContactsAddView()" style="background:var(--blue);color:white;border:none;border-radius:20px;padding:8px 20px;font-size:13px;cursor:pointer;">+ Add a contact</button>
                     </div>
                 `;
                 return;
             }
 
-            // Sort: MoonPop users first, then alphabetical
             const sorted = [...contacts].sort((a, b) => {
                 if (a.isOnMoonpop && !b.isOnMoonpop) return -1;
                 if (!a.isOnMoonpop && b.isOnMoonpop) return 1;
@@ -7362,22 +7604,13 @@
             let html = '';
             
             if (onMps.length > 0) {
-                html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;">On MoonPop</div>`;
+                html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;">On MoonPop · ${onMps.length}</div>`;
                 html += onMps.map(c => renderContactRow(c, true)).join('');
             }
             
             if (offMps.length > 0) {
-                html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Invited</div>`;
+                html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Invited · ${offMps.length}</div>`;
                 html += offMps.map(c => renderContactRow(c, false)).join('');
-            }
-
-            // Update preview text in inbox
-            const previewEl = document.getElementById('contactsPreview');
-            if (previewEl) {
-                const mpsCount = onMps.length;
-                previewEl.textContent = mpsCount > 0 
-                    ? `${mpsCount} on MoonPop · ${contacts.length} total`
-                    : `${contacts.length} contact${contacts.length !== 1 ? 's' : ''}`;
             }
 
             container.innerHTML = html;
@@ -7385,30 +7618,43 @@
 
         function renderContactRow(contact, isOnMps) {
             const initial = (contact.name || '?').charAt(0).toUpperCase();
-            const statusDot = isOnMps 
-                ? '<span style="width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block;margin-right:6px;"></span>' 
-                : '';
-            const statusText = isOnMps 
-                ? '<span style="font-size:11px;color:#4caf50;">On MoonPop</span>'
-                : `<span style="font-size:11px;color:var(--text-muted);">${contact.email || 'Invited'}</span>`;
+            const escapedName = (contact.name || '').replace(/'/g, "\\'");
             
             return `
-                <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid #f0ece4;gap:12px;cursor:pointer;" onclick="contactAction('${contact.name.replace(/'/g, "\\'")}')">
-                    <div class="msg-avatar">${statusDot ? '<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid white;z-index:1;"></span>' : ''}<span>${initial}</span></div>
-                    <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid #f0ece4;gap:12px;">
+                    <div class="msg-avatar" style="margin-right:0;">
+                        ${isOnMps ? '<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid white;z-index:1;"></span>' : ''}
+                        <span>${initial}</span>
+                    </div>
+                    <div style="flex:1;min-width:0;cursor:pointer;" onclick="contactAction('${escapedName}')">
                         <div style="font-size:14px;font-weight:600;color:var(--blue);">${contact.name}</div>
-                        <div style="display:flex;align-items:center;gap:4px;">
-                            ${statusText}
-                            ${contact.location && contact.location !== 'Unknown' ? `<span style="font-size:11px;color:var(--text-muted);"> · ${contact.location}</span>` : ''}
+                        <div style="font-size:11px;color:var(--text-muted);">
+                            ${isOnMps ? '<span style="color:#4caf50;">On MoonPop</span>' : (contact.email || 'Invited')}
+                            ${contact.location && contact.location !== 'Unknown' ? ' · ' + contact.location : ''}
                         </div>
                     </div>
+                    <button onclick="deleteContact('${escapedName}')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#ccc;padding:4px;" title="Remove">&times;</button>
                 </div>
             `;
         }
 
+        async function deleteContact(contactName) {
+            if (!confirm('Remove ' + contactName + ' from your contacts?')) return;
+            
+            const contact = contacts.find(c => c.name === contactName);
+            contacts = contacts.filter(c => c.name !== contactName);
+            
+            if (currentAuthUser && contact?.id) {
+                await sb.from('contacts').delete().eq('id', contact.id).eq('owner_id', currentAuthUser.id);
+            } else if (currentAuthUser) {
+                await sb.from('contacts').delete().eq('name', contactName).eq('owner_id', currentAuthUser.id);
+            }
+            
+            renderContactsList();
+        }
+
         function contactAction(contactName) {
             closeContactsPage();
-            // Open compose with this contact pre-selected
             openModal();
             setTimeout(() => {
                 goToRecipientStep();
@@ -7463,12 +7709,14 @@
                 return;
             }
             
-            let html = list.map(c => `
-                <div class="recipient-option" onclick="selectRecipient('${c.name}', '${c.location}')">
-                    <span class="name">${c.name}</span>
+            let html = list.map(c => {
+                const escapedName = (c.name || '').replace(/'/g, "\\'");
+                return `
+                <div class="recipient-option" onclick="selectRecipientByName('${escapedName}')">
+                    <span class="name">${c.name}${c.isOnMoonpop ? ' <span style=&quot;color:#4caf50;font-size:11px;&quot;>●</span>' : ''}</span>
                     <span class="location">${c.location}</span>
                 </div>
-            `).join('');
+            `}).join('');
             
             // Always show "send to new person" option
             html += `
@@ -7488,12 +7736,26 @@
             dropdown.innerHTML = html || '<div class="recipient-option" style="color: var(--text-muted);">No contacts found</div>';
         }
 
+        function selectRecipientByName(name) {
+            const contact = contacts.find(c => c.name === name);
+            if (contact) {
+                document.getElementById('recipient').value = contact.name;
+                document.getElementById('recipientDropdown').classList.remove('active');
+                selectedRecipient = { 
+                    name: contact.name, 
+                    location: contact.location,
+                    email: contact.email || null,
+                    isOnMoonpop: contact.isOnMoonpop || false,
+                    linkedProfileId: contact.linkedProfileId || null
+                };
+                isNewContact = false;
+                updateDeliveryInfo();
+            }
+        }
+
         function selectRecipient(name, location) {
-            document.getElementById('recipient').value = name;
-            document.getElementById('recipientDropdown').classList.remove('active');
-            selectedRecipient = { name, location };
-            isNewContact = false;
-            updateDeliveryInfo();
+            // Legacy fallback
+            selectRecipientByName(name);
         }
 
         // Close dropdown when clicking outside
