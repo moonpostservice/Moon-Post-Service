@@ -1520,7 +1520,7 @@
             font-weight: 700;
             color: white;
             background: var(--blue);
-            overflow: hidden;
+            position: relative;
         }
 
         .message-content {
@@ -4278,6 +4278,15 @@
                 <div class="create-circle-icon">+</div>
                 <span>New Moon Circle</span>
             </div>
+            <!-- Contacts -->
+            <div class="shared-sky-row" onclick="openContactsPage()" style="border-bottom:1px solid #e8e4dc;">
+                <div class="shared-sky-row-icon">👥</div>
+                <div class="shared-sky-row-content">
+                    <div class="shared-sky-row-title">Contacts</div>
+                    <div class="shared-sky-row-preview" id="contactsPreview">Your MoonPop connections</div>
+                </div>
+                <span class="shared-sky-row-badge" id="contactsBadge" style="display:none;"></span>
+            </div>
             <ul class="message-list" id="messageList">
                 <!-- Populated by JS -->
             </ul>
@@ -4312,6 +4321,20 @@
         </div>
     </div>
 
+
+    <!-- Contacts Page -->
+    <div class="message-page" id="contactsPage">
+        <div class="message-page-inner">
+            <div class="message-page-header" style="justify-content:space-between;">
+                <button class="message-page-back" onclick="closeContactsPage()">←</button>
+                <span style="font-weight:700;color:var(--blue);font-size:15px;">👥 Contacts</span>
+                <span style="width:34px;"></span>
+            </div>
+            <div class="message-page-body" id="contactsListBody" style="padding:0;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
 
     <!-- Moon Circle Detail Page -->
     <div class="message-page" id="circleDetailPage">
@@ -4553,7 +4576,8 @@
                 
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="newContactEmail" placeholder="their@email.com" oninput="checkNewContactForm()">
+                    <input type="email" id="newContactEmail" placeholder="their@email.com" oninput="checkNewContactForm(); debouncedEmailLookup()">
+                    <div id="emailLookupResult" style="display:none;margin-top:8px;padding:10px 14px;border-radius:10px;font-size:13px;"></div>
                 </div>
                 
                 <div class="form-group">
@@ -6068,7 +6092,7 @@
                     if (profile) {
                         // Ensure email is saved to profile (for contact lookup)
                         if (!profile.email && session.user.email) {
-                            sb.from('profiles').update({ email: session.user.email }).eq('id', session.user.id);
+                            await sb.from('profiles').update({ email: session.user.email }).eq('id', session.user.id);
                         }
 
                         // Load saved profile data
@@ -6125,6 +6149,7 @@
                 renderMessages();
                 renderMessageDots();
                 renderCircleRows();
+                renderContactsList();
                 if (globalTransmissions.length > 0) {
                     const latest = globalTransmissions[0];
                     const previewEl = document.getElementById('sharedSkyPreview');
@@ -7295,6 +7320,107 @@
             }
         }
 
+        // ========================
+        // CONTACTS PAGE
+        // ========================
+        function openContactsPage() {
+            renderContactsList();
+            document.getElementById('contactsPage').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeContactsPage() {
+            document.getElementById('contactsPage').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function renderContactsList() {
+            const container = document.getElementById('contactsListBody');
+            if (!container) return;
+
+            if (contacts.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center;padding:60px 20px;color:var(--text-muted);">
+                        <div style="font-size:40px;margin-bottom:12px;">👥</div>
+                        <h4 style="color:var(--blue);margin-bottom:8px;">No contacts yet</h4>
+                        <p style="font-size:13px;">Send a moon message to someone to add them as a contact.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort: MoonPop users first, then alphabetical
+            const sorted = [...contacts].sort((a, b) => {
+                if (a.isOnMoonpop && !b.isOnMoonpop) return -1;
+                if (!a.isOnMoonpop && b.isOnMoonpop) return 1;
+                return (a.name || '').localeCompare(b.name || '');
+            });
+
+            const onMps = sorted.filter(c => c.isOnMoonpop);
+            const offMps = sorted.filter(c => !c.isOnMoonpop);
+
+            let html = '';
+            
+            if (onMps.length > 0) {
+                html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;">On MoonPop</div>`;
+                html += onMps.map(c => renderContactRow(c, true)).join('');
+            }
+            
+            if (offMps.length > 0) {
+                html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Invited</div>`;
+                html += offMps.map(c => renderContactRow(c, false)).join('');
+            }
+
+            // Update preview text in inbox
+            const previewEl = document.getElementById('contactsPreview');
+            if (previewEl) {
+                const mpsCount = onMps.length;
+                previewEl.textContent = mpsCount > 0 
+                    ? `${mpsCount} on MoonPop · ${contacts.length} total`
+                    : `${contacts.length} contact${contacts.length !== 1 ? 's' : ''}`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderContactRow(contact, isOnMps) {
+            const initial = (contact.name || '?').charAt(0).toUpperCase();
+            const statusDot = isOnMps 
+                ? '<span style="width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block;margin-right:6px;"></span>' 
+                : '';
+            const statusText = isOnMps 
+                ? '<span style="font-size:11px;color:#4caf50;">On MoonPop</span>'
+                : `<span style="font-size:11px;color:var(--text-muted);">${contact.email || 'Invited'}</span>`;
+            
+            return `
+                <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid #f0ece4;gap:12px;cursor:pointer;" onclick="contactAction('${contact.name.replace(/'/g, "\\'")}')">
+                    <div class="msg-avatar">${statusDot ? '<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid white;z-index:1;"></span>' : ''}<span>${initial}</span></div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:14px;font-weight:600;color:var(--blue);">${contact.name}</div>
+                        <div style="display:flex;align-items:center;gap:4px;">
+                            ${statusText}
+                            ${contact.location && contact.location !== 'Unknown' ? `<span style="font-size:11px;color:var(--text-muted);"> · ${contact.location}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function contactAction(contactName) {
+            closeContactsPage();
+            // Open compose with this contact pre-selected
+            openModal();
+            setTimeout(() => {
+                goToRecipientStep();
+                const contact = contacts.find(c => c.name === contactName);
+                if (contact) {
+                    selectedRecipient = { name: contact.name, email: contact.email, location: contact.location, isOnMoonpop: contact.isOnMoonpop, linkedProfileId: contact.linkedProfileId };
+                    document.getElementById('recipient').value = contact.name;
+                    updateDeliveryInfo();
+                }
+            }, 100);
+        }
+
         // Recipient dropdown
         function showRecipientDropdown() {
             const dropdown = document.getElementById('recipientDropdown');
@@ -7505,6 +7631,10 @@
             const lastNameEl = document.getElementById('newContactLastName');
             if (firstNameEl) firstNameEl.value = '';
             if (lastNameEl) lastNameEl.value = '';
+            // Reset email lookup
+            emailLookupResult = null;
+            const lookupDiv = document.getElementById('emailLookupResult');
+            if (lookupDiv) lookupDiv.style.display = 'none';
 
             // Update header
             const header = document.getElementById('composeHeader');
@@ -7589,11 +7719,101 @@
             const lastName = document.getElementById('newContactLastName')?.value.trim() || '';
             const email = document.getElementById('newContactEmail').value.trim();
             const city = document.getElementById('newContactCity').value.trim();
-            // Auto-compose display name
             const displayName = (firstName + ' ' + lastName).trim();
             document.getElementById('newContactName').value = displayName;
             const btn = document.getElementById('saveContactBtn');
             if (btn) btn.disabled = !(firstName && email && city);
+        }
+
+        // Real-time email lookup with debounce
+        let emailLookupTimer = null;
+        let emailLookupResult = null;
+
+        function debouncedEmailLookup() {
+            clearTimeout(emailLookupTimer);
+            const email = document.getElementById('newContactEmail').value.trim();
+            const resultDiv = document.getElementById('emailLookupResult');
+            
+            if (!email || !email.includes('@') || !email.includes('.')) {
+                resultDiv.style.display = 'none';
+                emailLookupResult = null;
+                return;
+            }
+            
+            emailLookupTimer = setTimeout(() => lookupEmailNow(email), 500);
+        }
+
+        async function lookupEmailNow(email) {
+            const resultDiv = document.getElementById('emailLookupResult');
+            if (!currentAuthUser) return;
+            
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = 'rgba(53,125,197,0.06)';
+            resultDiv.style.color = 'var(--text-muted)';
+            resultDiv.innerHTML = 'Checking...';
+            
+            try {
+                const { data, error } = await sb.rpc('lookup_user_by_email', { lookup_email: email });
+                
+                if (error) {
+                    console.error('Email lookup error:', error);
+                    resultDiv.style.display = 'none';
+                    emailLookupResult = null;
+                    return;
+                }
+                
+                if (data && data.length > 0) {
+                    const user = data[0];
+                    emailLookupResult = user;
+                    resultDiv.style.background = 'rgba(76,175,80,0.1)';
+                    resultDiv.style.color = '#2e7d32';
+                    const displayName = user.username || user.first_name || 'This person';
+                    resultDiv.innerHTML = `
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <span>✓ <strong>${displayName}</strong> is on MoonPop!</span>
+                            <button onclick="useExistingUser()" style="background:var(--blue);color:white;border:none;border-radius:16px;padding:4px 14px;font-size:12px;cursor:pointer;font-weight:600;">Add</button>
+                        </div>
+                    `;
+                    
+                    // Auto-fill name fields if empty
+                    const fnEl = document.getElementById('newContactFirstName');
+                    const lnEl = document.getElementById('newContactLastName');
+                    if (user.first_name && fnEl && !fnEl.value) fnEl.value = user.first_name;
+                    if (user.last_name && lnEl && !lnEl.value) lnEl.value = user.last_name;
+                    if (user.username && fnEl && !fnEl.value) fnEl.value = user.username;
+                    if (user.city) {
+                        const cityEl = document.getElementById('newContactCity');
+                        if (cityEl && !cityEl.value) cityEl.value = user.city;
+                    }
+                    checkNewContactForm();
+                } else {
+                    emailLookupResult = null;
+                    resultDiv.style.background = 'rgba(53,125,197,0.06)';
+                    resultDiv.style.color = 'var(--text-muted)';
+                    resultDiv.innerHTML = 'Not on MoonPop yet — they\'ll get an invite email';
+                }
+            } catch(e) {
+                console.error('Email lookup exception:', e);
+                resultDiv.style.display = 'none';
+                emailLookupResult = null;
+            }
+        }
+
+        function useExistingUser() {
+            if (!emailLookupResult) return;
+            const user = emailLookupResult;
+            const email = document.getElementById('newContactEmail').value.trim();
+            const fnEl = document.getElementById('newContactFirstName');
+            const lnEl = document.getElementById('newContactLastName');
+            const cityEl = document.getElementById('newContactCity');
+            
+            const name = user.username || ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || email;
+            if (fnEl && !fnEl.value) fnEl.value = user.first_name || user.username || '';
+            if (lnEl && !lnEl.value) lnEl.value = user.last_name || '';
+            if (cityEl && !cityEl.value) cityEl.value = user.city || '';
+            document.getElementById('newContactName').value = name;
+            
+            checkNewContactForm();
         }
 
         async function confirmNewContact() {
@@ -7608,18 +7828,22 @@
             if (!email.includes('@') || !email.includes('.')) { alert('Please enter a valid email'); return; }
             if (!city) { alert('Please enter their location'); return; }
 
-            // Check if this email belongs to an existing MPS user
+            // Use cached lookup result or do fresh lookup via RPC
             let isOnMps = false;
             let linkedProfileId = null;
-            if (currentAuthUser) {
-                const { data: existingProfile } = await sb.from('profiles')
-                    .select('id, username')
-                    .eq('email', email)
-                    .maybeSingle();
-                
-                if (existingProfile) {
-                    isOnMps = true;
-                    linkedProfileId = existingProfile.id;
+            
+            if (emailLookupResult) {
+                isOnMps = true;
+                linkedProfileId = emailLookupResult.id;
+            } else if (currentAuthUser) {
+                try {
+                    const { data } = await sb.rpc('lookup_user_by_email', { lookup_email: email });
+                    if (data && data.length > 0) {
+                        isOnMps = true;
+                        linkedProfileId = data[0].id;
+                    }
+                } catch(e) {
+                    console.error('Lookup failed:', e);
                 }
             }
             
@@ -8210,6 +8434,7 @@
                     isOnMoonpop: recipientIsOnMps
                 };
                 contacts.push(newContact);
+                renderContactsList();
 
                 // Save to Supabase
                 if (currentAuthUser) {
