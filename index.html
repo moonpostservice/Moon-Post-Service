@@ -5963,6 +5963,100 @@
 
         // Messages - loaded from Supabase
         let messages = [];
+        let conversations = []; // Grouped by person
+        let currentConversation = null; // Currently open conversation
+
+        // Build conversations: group messages by the other person
+        function buildConversations() {
+            const convMap = {};
+            messages.forEach(msg => {
+                // Determine the "other person" key (use ID when available, fallback to email/name)
+                let otherKey, otherName, otherAvatar, otherProfileId, otherEmail;
+                if (msg.type === 'sent') {
+                    otherKey = msg.recipientId || msg.recipientEmail || msg.sender;
+                    otherName = msg.sender; // In sent messages, sender field = recipient name
+                    otherAvatar = msg.senderAvatar;
+                    otherProfileId = msg.recipientId;
+                    otherEmail = msg.recipientEmail;
+                } else {
+                    otherKey = msg.senderId || msg.sender;
+                    otherName = msg.sender;
+                    otherAvatar = msg.senderAvatar;
+                    otherProfileId = msg.senderId;
+                    otherEmail = msg.recipientEmail;
+                }
+
+                if (!convMap[otherKey]) {
+                    convMap[otherKey] = {
+                        otherKey,
+                        otherName,
+                        otherAvatar,
+                        otherProfileId,
+                        otherEmail,
+                        location: msg.location,
+                        messages: [],
+                        latestCreatedAt: msg.createdAt,
+                        latestPreview: '',
+                        latestTime: ''
+                    };
+                }
+                convMap[otherKey].messages.push(msg);
+                // Update avatar if we get a better one
+                if (msg.senderAvatar && !convMap[otherKey].otherAvatar) {
+                    convMap[otherKey].otherAvatar = msg.senderAvatar;
+                }
+            });
+
+            // For each conversation, determine latest preview text and time
+            Object.values(convMap).forEach(conv => {
+                // Sort messages newest first
+                conv.messages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                const latest = conv.messages[0];
+                conv.latestCreatedAt = latest.createdAt;
+                conv.latestTime = latest.time;
+
+                // Check if any reply is more recent than the latest message
+                let latestReply = null;
+                conv.messages.forEach(m => {
+                    if (m.replies && m.replies.length > 0) {
+                        const lastReply = m.replies[m.replies.length - 1];
+                        if (lastReply.createdAt && (!latestReply || new Date(lastReply.createdAt) > new Date(latestReply.createdAt))) {
+                            latestReply = lastReply;
+                        }
+                    }
+                });
+
+                if (latestReply && latestReply.createdAt && new Date(latestReply.createdAt) > new Date(conv.latestCreatedAt)) {
+                    // Latest activity is a reply
+                    conv.latestCreatedAt = latestReply.createdAt;
+                    conv.latestTime = latestReply.time || 'Just now';
+                    conv.latestPreview = (latestReply.sent ? 'You: ' : '') + (latestReply.isLunarNote ? '🌙 Lunar Note' : latestReply.text);
+                } else {
+                    // Preview from latest message
+                    if (latest.messageText) {
+                        conv.latestPreview = (latest.type === 'sent' ? 'You: ' : '') + latest.messageText;
+                    } else if (latest.lunarNote) {
+                        conv.latestPreview = (latest.type === 'sent' ? 'You: ' : '') + '🌙 Lunar Note';
+                    } else if (latest.status === 'In Transit') {
+                        conv.latestPreview = '🔴 Message orbiting...';
+                    } else {
+                        conv.latestPreview = 'Moon message';
+                    }
+                }
+
+                // Truncate preview
+                if (conv.latestPreview.length > 50) {
+                    conv.latestPreview = conv.latestPreview.substring(0, 50) + '...';
+                }
+                conv.location = latest.location;
+                conv.hasInTransit = conv.messages.some(m => m.type === 'sent' && m.status === 'In Transit');
+            });
+
+            // Sort conversations by latest message time
+            conversations = Object.values(convMap).sort((a, b) =>
+                new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt)
+            );
+        }
 
         // Helper: relative time string
         function timeAgo(dateStr) {
@@ -6042,6 +6136,8 @@
 
                     allMessages.push({
                         dbId: m.id,
+                        senderId: currentAuthUser.id,
+                        recipientId: m.recipient_id || null,
                         sender: m.recipient_name || rp?.username || 'Unknown',
                         senderAvatar: rp?.avatar_url || null,
                         recipientEmail: m.recipient_email,
@@ -6070,8 +6166,11 @@
 
                 allMessages.push({
                     dbId: m.id,
+                    senderId: m.sender_id || null,
+                    recipientId: currentAuthUser.id,
                     sender: senderName,
                     senderAvatar: sp?.avatar_url || null,
+                    recipientEmail: m.recipient_email,
                     preview: m.message_text || '',
                     status: '',
                     type: 'received',
@@ -6092,10 +6191,13 @@
             allMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             messages = allMessages;
 
+            // Build conversations (grouped by person)
+            buildConversations();
+
             // Update message stats
             moonData.messagesInTransit = messages.filter(m => m.type === 'sent' && m.status === 'In Transit').length;
-            
-            console.log('Messages loaded:', messages.length, '(sent:', (sent||[]).length, ', received:', received.length, ')');
+
+            console.log('Messages loaded:', messages.length, '(sent:', (sent||[]).length, ', received:', received.length, '), conversations:', conversations.length);
         }
 
         let globalTransmissions = [];
@@ -6301,11 +6403,11 @@
             }
         }
 
-        // Realtime: listen for new messages sent to this user
+        // Realtime: listen for new messages, replies, and shared sky
         function setupRealtimeMessages() {
             if (!currentAuthUser) return;
-            
-            // Listen for ALL new messages (no filter — filter is unreliable when recipient_id is null)
+
+            // ---- MESSAGES: INSERT + UPDATE ----
             sb.channel('inbox-messages')
                 .on('postgres_changes', {
                     event: 'INSERT',
@@ -6313,16 +6415,21 @@
                     table: 'messages'
                 }, async (payload) => {
                     const m = payload.new;
-                    // Check if this message is for me (by id or email) or from me
-                    const isForMe = m.recipient_id === currentAuthUser.id || 
+                    const isForMe = m.recipient_id === currentAuthUser.id ||
                                     (m.recipient_email && m.recipient_email.toLowerCase() === (currentAuthUser.email || '').toLowerCase());
                     const isFromMe = m.sender_id === currentAuthUser.id;
-                    
+
                     if (isForMe || isFromMe) {
                         console.log('Realtime: new message', isForMe ? 'received' : 'sent', m.id);
+                        const prevKey = currentConversation?.otherKey;
                         await loadMessages();
+                        if (prevKey) {
+                            const newConv = conversations.find(c => c.otherKey === prevKey);
+                            if (newConv) { currentConversation = newConv; currentConversationIndex = conversations.indexOf(newConv); }
+                        }
                         renderMessages();
                         renderMessageDots();
+                        if (currentConversation) renderConversationThread();
                     }
                 })
                 .on('postgres_changes', {
@@ -6331,49 +6438,77 @@
                     table: 'messages'
                 }, async (payload) => {
                     const m = payload.new;
-                    const isRelevant = m.sender_id === currentAuthUser.id || 
+                    const isRelevant = m.sender_id === currentAuthUser.id ||
                                        m.recipient_id === currentAuthUser.id ||
                                        (m.recipient_email && m.recipient_email.toLowerCase() === (currentAuthUser.email || '').toLowerCase());
                     if (isRelevant) {
+                        const prevKey = currentConversation?.otherKey;
                         await loadMessages();
+                        if (prevKey) {
+                            const newConv = conversations.find(c => c.otherKey === prevKey);
+                            if (newConv) { currentConversation = newConv; currentConversationIndex = conversations.indexOf(newConv); }
+                        }
                         renderMessages();
                         renderMessageDots();
+                        if (currentConversation) renderConversationThread();
                     }
                 })
                 .subscribe((status) => {
                     console.log('Realtime messages channel:', status);
                 });
 
-            // Listen for new replies (live chat)
+            // ---- REPLIES: live chat via postgres_changes on replies table ----
             sb.channel('live-replies')
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
                     table: 'replies'
                 }, async (payload) => {
-                    console.log('New reply!', payload);
+                    console.log('Realtime: new reply', payload);
                     const reply = payload.new;
-                    // If we're viewing this thread, add the reply live
-                    if (currentMessageIndex >= 0) {
-                        const msg = messages[currentMessageIndex];
-                        if (msg && msg.dbId === reply.message_id && reply.sender_id !== currentAuthUser.id) {
-                            msg.replies = msg.replies || [];
-                            msg.replies.push({
-                                text: reply.text || reply.reply_text,
-                                time: 'Just now',
-                                sent: false,
-                                isLunarNote: reply.is_lunar_note || false
-                            });
-                            renderDetailContent(currentMessageIndex);
-                            // Auto-scroll to bottom
-                            const content = document.getElementById('detailContent');
-                            if (content) content.scrollTop = content.scrollHeight;
+                    // Skip replies from ourselves (we already added them optimistically)
+                    if (reply.sender_id === currentAuthUser.id) return;
+
+                    // Find the message this reply belongs to
+                    const targetMsg = messages.find(m => m.dbId === reply.message_id);
+                    if (!targetMsg) return;
+
+                    // Add the reply to the message's replies array
+                    targetMsg.replies = targetMsg.replies || [];
+                    targetMsg.replies.push({
+                        text: reply.text || reply.reply_text,
+                        time: 'Just now',
+                        createdAt: reply.created_at || new Date().toISOString(),
+                        sent: false,
+                        isLunarNote: reply.is_lunar_note || false
+                    });
+
+                    // If we're viewing the conversation that contains this message, re-render live
+                    if (currentConversation && currentConversation.messages.some(m => m.dbId === reply.message_id)) {
+                        renderConversationThread();
+                        // Auto-scroll to bottom
+                        const content = document.getElementById('detailContent');
+                        if (content) content.scrollTop = content.scrollHeight;
+                    }
+
+                    // Also update the inbox conversation preview
+                    const prevKey = currentConversation?.otherKey;
+                    buildConversations();
+                    // Re-link currentConversation after rebuild
+                    if (prevKey) {
+                        const newConv = conversations.find(c => c.otherKey === prevKey);
+                        if (newConv) {
+                            currentConversation = newConv;
+                            currentConversationIndex = conversations.indexOf(newConv);
                         }
                     }
+                    renderMessages();
                 })
-                .subscribe();
+                .subscribe((status) => {
+                    console.log('Realtime replies channel:', status);
+                });
 
-            // Listen for shared sky messages
+            // ---- SHARED SKY: live feed ----
             sb.channel('shared-sky-live')
                 .on('postgres_changes', {
                     event: 'INSERT',
@@ -6390,12 +6525,13 @@
                         });
                         renderSharedSkySignals();
                         updateSharedSkyBadge();
-                        // Update inbox preview
                         const previewEl = document.getElementById('sharedSkyPreview');
                         if (previewEl) previewEl.textContent = (s.city || 'Unknown') + ': "' + s.message + '"';
                     }
                 })
-                .subscribe();
+                .subscribe((status) => {
+                    console.log('Realtime shared_sky channel:', status);
+                });
 
             // Presence: track online users
             setupPresence();
@@ -6939,50 +7075,44 @@
         // Render all messages chronologically (IM-style)
         function renderMessages() {
             const list = document.getElementById('messageList');
-            
-            list.innerHTML = messages.map((msg, index) => {
-                const isOrbiting = msg.type === 'sent' && msg.status === 'In Transit';
-                const isReleased = msg.type === 'sent' && msg.status === 'Released';
-                const isReceived = msg.type === 'received';
-                
-                // Status badge
-                let badge = '';
-                if (isOrbiting) {
-                    badge = `<span class="message-status-badge orbiting">🔴 Orbiting · ${msg.location}</span>`;
-                } else if (isReleased) {
-                    badge = `<span class="message-status-badge released">Delivered · ${msg.location}</span>`;
-                } else if (isReceived && !msg.preview) {
-                    badge = `<span class="message-status-badge received">From ${msg.location}</span>`;
-                }
-                
-                // Avatar: show profile pic if available from message data or contacts
-                const initial = (msg.sender || '?').charAt(0).toUpperCase();
-                let avatarUrl = msg.senderAvatar || null;
-                const contact = contacts.find(c => c.name === msg.sender || (c.email && c.email === msg.recipientEmail));
+
+            // Show one row per conversation (grouped by person)
+            list.innerHTML = conversations.map((conv, ci) => {
+                const initial = (conv.otherName || '?').charAt(0).toUpperCase();
+                let avatarUrl = conv.otherAvatar || null;
+                const contact = contacts.find(c => c.name === conv.otherName || (c.email && c.email === conv.otherEmail));
                 if (!avatarUrl && contact?.avatar) avatarUrl = contact.avatar;
                 const online = isContactOnline(contact);
                 const onlineDot = online ? '<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid #FCF0D9;z-index:1;"></span>' : '';
-                
+
                 let avatar;
                 if (avatarUrl) {
                     avatar = `<div class="msg-avatar">${onlineDot}<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>`;
                 } else {
                     avatar = `<div class="msg-avatar">${onlineDot}<span>${initial}</span></div>`;
                 }
-                
+
+                // Badge for orbiting messages
+                let badge = '';
+                if (conv.hasInTransit) {
+                    badge = `<span class="message-status-badge orbiting">🔴 Orbiting</span>`;
+                }
+
+                const msgCount = conv.messages.length;
+                const countBadge = msgCount > 1 ? `<span style="background:var(--blue);color:white;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;margin-left:6px;">${msgCount}</span>` : '';
+
                 return `
-                    <li class="message-item" data-type="${msg.type}" data-sender="${msg.sender}" data-orbiting="${isOrbiting}" 
-                        onclick="openMessageDetail(${index})"
-                        onmouseenter="highlightOrbitDot('${msg.sender}', true)"
-                        onmouseleave="highlightOrbitDot('${msg.sender}', false)">
+                    <li class="message-item" data-sender="${conv.otherName}" data-orbiting="${conv.hasInTransit}"
+                        onclick="openConversation(${ci})"
+                        onmouseenter="highlightOrbitDot('${conv.otherName}', true)"
+                        onmouseleave="highlightOrbitDot('${conv.otherName}', false)">
                         ${avatar}
                         <div class="message-content">
-                            <div class="message-sender">${msg.sender}</div>
+                            <div class="message-sender">${conv.otherName}${countBadge}</div>
                             ${badge}
-                            ${msg.preview ? `<div class="message-preview">${msg.preview}</div>` : ''}
-                            ${msg.lunarNote ? `<div class="message-preview">🌙 Lunar Note attached</div>` : ''}
+                            <div class="message-preview">${conv.latestPreview}</div>
                         </div>
-                        ${msg.time ? `<span class="message-time">${msg.time}</span>` : `<span class="message-time">Now</span>`}
+                        ${conv.latestTime ? `<span class="message-time">${conv.latestTime}</span>` : `<span class="message-time">Now</span>`}
                     </li>
                 `;
             }).join('');
@@ -7003,21 +7133,23 @@
         // MESSAGE DETAIL (FULL PAGE)
         // ========================
         let currentMessageIndex = -1;
-        
-        async function openMessageDetail(index) {
-            const msg = messages[index];
-            if (!msg) return;
-            currentMessageIndex = index;
+        let currentConversationIndex = -1;
+
+        // Open a conversation (grouped chat thread with a person)
+        async function openConversation(convIndex) {
+            const conv = conversations[convIndex];
+            if (!conv) return;
+            currentConversation = conv;
+            currentConversationIndex = convIndex;
+            // Set currentMessageIndex to the latest message for reply attachment
+            currentMessageIndex = messages.indexOf(conv.messages[0]);
 
             const page = document.getElementById('messagePageView');
-            document.getElementById('detailAvatarInitial').textContent = msg.sender.charAt(0);
+            document.getElementById('detailAvatarInitial').textContent = (conv.otherName || '?').charAt(0);
             const detailImg = document.getElementById('detailAvatarImg');
-            // Check for avatar from message data or from contacts
-            let detailAvatarUrl = msg.senderAvatar || null;
-            if (!detailAvatarUrl) {
-                const contact = contacts.find(c => c.name === msg.sender);
-                if (contact?.avatar) detailAvatarUrl = contact.avatar;
-            }
+            const contact = contacts.find(c => c.name === conv.otherName || (c.email && c.email === conv.otherEmail));
+            let detailAvatarUrl = conv.otherAvatar || null;
+            if (!detailAvatarUrl && contact?.avatar) detailAvatarUrl = contact.avatar;
             if (detailAvatarUrl) {
                 detailImg.src = detailAvatarUrl;
                 detailImg.style.display = 'block';
@@ -7026,123 +7158,243 @@
                 detailImg.style.display = 'none';
                 document.getElementById('detailAvatarInitial').style.display = '';
             }
-            document.getElementById('detailSender').textContent = msg.sender;
-            
-            const phase = moonData.phase ? moonData.phase.phaseName : 'waxing gibbous';
-            document.getElementById('detailLocation').textContent = `${msg.location || 'Unknown'} · ${msg.type === 'received' ? 'Received' : 'Sent'} under ${phase.toLowerCase()}`;
+            document.getElementById('detailSender').textContent = conv.otherName;
 
-            // Load replies from Supabase (no FK join — plain select)
-            if (msg.dbId && currentAuthUser) {
-                const { data: replies, error: replErr } = await sb.from('replies')
-                    .select('*')
-                    .eq('message_id', msg.dbId)
-                    .order('created_at', { ascending: true });
-                
-                if (replErr) console.error('Load replies failed:', replErr);
-                if (replies) {
-                    msg.replies = replies.map(r => ({
-                        text: r.text,
-                        time: timeAgo(r.created_at),
-                        sent: r.sender_id === currentAuthUser.id,
-                        isLunarNote: r.is_lunar_note || false
-                    }));
-                }
+            // Show location and online status
+            const online = isContactOnline(contact);
+            document.getElementById('detailLocation').textContent = online
+                ? `${conv.location || 'Unknown'} · Online now`
+                : `${conv.location || 'Unknown'} · ${conv.messages.length} moon message${conv.messages.length > 1 ? 's' : ''}`;
 
-                // Load reactions from Supabase
-                const { data: reactions } = await sb.from('reactions')
-                    .select('*')
-                    .eq('message_id', msg.dbId);
-                
-                if (reactions) {
-                    const emojiMap = {};
-                    reactions.forEach(r => {
-                        if (!emojiMap[r.emoji]) emojiMap[r.emoji] = { emoji: r.emoji, count: 0, mine: false };
-                        emojiMap[r.emoji].count++;
-                        if (r.user_id === currentAuthUser.id) emojiMap[r.emoji].mine = true;
-                    });
-                    msg.reactions = Object.values(emojiMap);
+            // Load replies for ALL messages in this conversation
+            if (currentAuthUser) {
+                const msgIds = conv.messages.filter(m => m.dbId).map(m => m.dbId);
+                if (msgIds.length > 0) {
+                    const { data: allReplies, error: replErr } = await sb.from('replies')
+                        .select('*')
+                        .in('message_id', msgIds)
+                        .order('created_at', { ascending: true });
+
+                    if (replErr) console.error('Load replies failed:', replErr);
+                    if (allReplies) {
+                        // Group replies by message_id
+                        const replyMap = {};
+                        allReplies.forEach(r => {
+                            if (!replyMap[r.message_id]) replyMap[r.message_id] = [];
+                            replyMap[r.message_id].push({
+                                text: r.text,
+                                time: timeAgo(r.created_at),
+                                createdAt: r.created_at,
+                                sent: r.sender_id === currentAuthUser.id,
+                                isLunarNote: r.is_lunar_note || false
+                            });
+                        });
+                        conv.messages.forEach(msg => {
+                            if (msg.dbId && replyMap[msg.dbId]) {
+                                msg.replies = replyMap[msg.dbId];
+                            }
+                        });
+                    }
+
+                    // Load reactions for all messages
+                    const { data: allReactions } = await sb.from('reactions')
+                        .select('*')
+                        .in('message_id', msgIds);
+
+                    if (allReactions) {
+                        const rxnMap = {};
+                        allReactions.forEach(r => {
+                            if (!rxnMap[r.message_id]) rxnMap[r.message_id] = {};
+                            if (!rxnMap[r.message_id][r.emoji]) rxnMap[r.message_id][r.emoji] = { emoji: r.emoji, count: 0, mine: false };
+                            rxnMap[r.message_id][r.emoji].count++;
+                            if (r.user_id === currentAuthUser.id) rxnMap[r.message_id][r.emoji].mine = true;
+                        });
+                        conv.messages.forEach(msg => {
+                            if (msg.dbId && rxnMap[msg.dbId]) {
+                                msg.reactions = Object.values(rxnMap[msg.dbId]);
+                            }
+                        });
+                    }
                 }
             }
 
-            renderDetailContent(index);
+            renderConversationThread();
             page.classList.add('active');
             document.body.style.overflow = 'hidden';
+
+            // Auto-scroll to bottom
+            setTimeout(() => {
+                const content = document.getElementById('detailContent');
+                if (content) content.scrollTop = content.scrollHeight;
+            }, 50);
         }
-        
-        function renderDetailContent(index) {
+
+        // Legacy: openMessageDetail now finds the conversation for that message
+        async function openMessageDetail(index) {
             const msg = messages[index];
+            if (!msg) return;
+            // Find which conversation this message belongs to
+            const ci = conversations.findIndex(c => c.messages.includes(msg));
+            if (ci >= 0) {
+                await openConversation(ci);
+            }
+        }
+
+        // Render the full conversation thread (all messages + replies chronologically)
+        function renderConversationThread() {
+            if (!currentConversation) return;
+            const conv = currentConversation;
             const content = document.getElementById('detailContent');
+
+            // Build a flat timeline of all items
+            const timeline = [];
+
+            // Add all messages (oldest first)
+            const sortedMsgs = [...conv.messages].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+            sortedMsgs.forEach((msg, mi) => {
+                const msgIndex = messages.indexOf(msg);
+
+                // Add the message itself
+                if (msg.lunarNote) {
+                    timeline.push({
+                        type: 'lunar-note',
+                        text: msg.lunarNote.text,
+                        closing: msg.lunarNote.closing,
+                        time: msg.time,
+                        createdAt: msg.createdAt,
+                        sent: msg.type === 'sent',
+                        msgIndex,
+                        isMessage: true
+                    });
+                }
+                if (msg.messageText) {
+                    timeline.push({
+                        type: 'text',
+                        text: msg.messageText,
+                        time: msg.time,
+                        createdAt: msg.createdAt,
+                        sent: msg.type === 'sent',
+                        msgIndex,
+                        isMessage: true,
+                        status: msg.status
+                    });
+                }
+                if (msg.status === 'In Transit' && !msg.messageText && !msg.lunarNote) {
+                    timeline.push({
+                        type: 'transit',
+                        time: msg.time,
+                        createdAt: msg.createdAt,
+                        sent: true,
+                        location: msg.location,
+                        msgIndex,
+                        isMessage: true
+                    });
+                }
+
+                // Add replies for this message
+                if (msg.replies) {
+                    msg.replies.forEach(r => {
+                        timeline.push({
+                            type: r.isLunarNote ? 'lunar-reply' : 'reply',
+                            text: r.text,
+                            time: r.time,
+                            createdAt: r.createdAt || msg.createdAt,
+                            sent: r.sent,
+                            msgIndex
+                        });
+                    });
+                }
+            });
+
+            // Sort timeline chronologically
+            timeline.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+            // Render timeline
             let html = '';
-            
-            if (msg.lunarNote) {
-                html += `
-                    <div class="bubble-lunar-note">
-                        <div class="bubble-lunar-label">🌙 Lunar Note</div>
-                        <div class="bubble-lunar-text">${msg.lunarNote.text}</div>
-                        <div class="bubble-lunar-closing">${msg.lunarNote.closing}</div>
-                        ${renderReactionsBar(index, 'lunar')}
-                    </div>
-                `;
-            }
-            
-            if (msg.preview) {
-                html += `
-                    <div class="message-bubble">
-                        <p>${msg.preview}</p>
-                        <div class="message-bubble-time">${msg.time || 'Recently'}</div>
-                        ${renderReactionsBar(index, 'text')}
-                    </div>
-                `;
-            } else if (msg.messageText && msg.type === 'sent') {
-                html += `
-                    <div class="message-bubble sent">
-                        <p>${msg.messageText}</p>
-                        <div class="message-bubble-time">${msg.time || 'Recently'}</div>
-                    </div>
-                `;
-            }
-            
-            if (msg.status === 'In Transit') {
-                html += `
-                    <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;font-style:italic;">
-                        This message is traveling toward ${msg.location}<br>
-                        It will arrive at moonrise
-                    </div>
-                `;
-            }
-            
-            if (msg.replies) {
-                msg.replies.forEach(r => {
-                    if (r.isLunarNote) {
+            let lastDate = '';
+
+            timeline.forEach(item => {
+                // Date separator
+                const itemDate = new Date(item.createdAt);
+                const dateStr = itemDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                if (dateStr !== lastDate && item.createdAt) {
+                    html += `<div style="text-align:center;padding:12px 0 8px;"><span style="font-size:11px;color:var(--text-muted);background:var(--cream);padding:4px 12px;border-radius:12px;">${dateStr}</span></div>`;
+                    lastDate = dateStr;
+                }
+
+                if (item.type === 'lunar-note') {
+                    html += `
+                        <div class="bubble-lunar-note ${item.sent ? 'sent-lunar' : ''}" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
+                            <div class="bubble-lunar-label">🌙 Lunar Note</div>
+                            <div class="bubble-lunar-text">${item.text}</div>
+                            ${item.closing ? `<div class="bubble-lunar-closing">${item.closing}</div>` : ''}
+                            <div class="message-bubble-time">${item.time || 'Recently'}</div>
+                        </div>
+                    `;
+                } else if (item.type === 'text') {
+                    html += `
+                        <div class="message-bubble ${item.sent ? 'sent' : ''}">
+                            <p>${item.text}</p>
+                            <div class="message-bubble-time">${item.time || 'Recently'}</div>
+                        </div>
+                    `;
+                    if (item.status === 'In Transit') {
                         html += `
-                            <div class="bubble-lunar-note" style="margin-left:auto;max-width:85%;">
-                                <div class="bubble-lunar-label">🌙 Lunar Note</div>
-                                <div class="bubble-lunar-text">${r.text.replace('🌙 ', '')}</div>
-                                <div class="message-bubble-time" style="text-align:right;">${r.time}</div>
-                            </div>
-                        `;
-                    } else {
-                        html += `
-                            <div class="message-bubble ${r.sent ? 'sent' : ''}">
-                                <p>${r.text}</p>
-                                <div class="message-bubble-time">${r.time}</div>
+                            <div style="text-align:center;padding:8px;color:var(--text-muted);font-size:11px;font-style:italic;">
+                                Traveling toward moonrise...
                             </div>
                         `;
                     }
-                });
+                } else if (item.type === 'transit') {
+                    html += `
+                        <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;font-style:italic;">
+                            Message traveling toward ${item.location}<br>
+                            It will arrive at moonrise
+                        </div>
+                    `;
+                } else if (item.type === 'lunar-reply') {
+                    html += `
+                        <div class="bubble-lunar-note" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
+                            <div class="bubble-lunar-label">🌙 Lunar Note</div>
+                            <div class="bubble-lunar-text">${(item.text || '').replace('🌙 ', '')}</div>
+                            <div class="message-bubble-time" style="text-align:right;">${item.time}</div>
+                        </div>
+                    `;
+                } else if (item.type === 'reply') {
+                    html += `
+                        <div class="message-bubble ${item.sent ? 'sent' : ''}">
+                            <p>${item.text}</p>
+                            <div class="message-bubble-time">${item.time}</div>
+                        </div>
+                    `;
+                }
+            });
+
+            if (!html) {
+                html = `
+                    <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;font-style:italic;">
+                        No messages yet in this conversation
+                    </div>
+                `;
             }
-            
-            content.innerHTML = html || `
-                <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;font-style:italic;">
-                    No messages yet in this conversation
-                </div>
-            `;
+
+            content.innerHTML = html;
+        }
+
+        // Keep renderDetailContent as alias for compatibility with lunar note sending
+        function renderDetailContent(index) {
+            if (currentConversation) {
+                renderConversationThread();
+            }
         }
 
         function closeMessageDetail() {
             document.getElementById('messagePageView').classList.remove('active');
             document.body.style.overflow = '';
             currentMessageIndex = -1;
+            currentConversationIndex = -1;
+            currentConversation = null;
         }
 
 
@@ -7212,23 +7464,25 @@
         }
 
         async function sendThreadLunarNote() {
-            if (!threadLunarGenerated || currentMessageIndex < 0) return;
-            const msg = messages[currentMessageIndex];
-            
+            if (!threadLunarGenerated) return;
+            // Find the target message (latest in conversation or current)
+            let msg = null;
+            if (currentConversation) {
+                msg = currentConversation.messages[0];
+            } else if (currentMessageIndex >= 0) {
+                msg = messages[currentMessageIndex];
+            }
+            if (!msg) return;
+
             // Add as a reply-type lunar note
             if (!msg.replies) msg.replies = [];
+            const now = new Date().toISOString();
             msg.replies.push({
                 text: '🌙 ' + threadLunarGenerated.lines + '\n' + threadLunarGenerated.closing,
                 time: 'Just now',
+                createdAt: now,
                 sent: true,
                 isLunarNote: true
-            });
-            
-            // Also store as proper lunarNote if none exists
-            if (!msg.sentLunarNotes) msg.sentLunarNotes = [];
-            msg.sentLunarNotes.push({
-                text: threadLunarGenerated.lines,
-                closing: threadLunarGenerated.closing
             });
 
             // Save to Supabase
@@ -7243,9 +7497,9 @@
                 });
                 if (error) console.error('Lunar note reply save failed:', error);
             }
-            
+
             closeThreadLunar();
-            renderDetailContent(currentMessageIndex);
+            renderConversationThread();
             document.getElementById('detailContent').scrollTop = document.getElementById('detailContent').scrollHeight;
         }
 
@@ -7315,26 +7569,36 @@
         }
         async function sendReply() {
             const input = document.getElementById('replyInput');
-            if (!input.value.trim() || currentMessageIndex < 0) return;
-            
-            const msg = messages[currentMessageIndex];
-            if (!msg.replies) msg.replies = [];
-            
+            if (!input.value.trim()) return;
+
+            // Find the latest message in this conversation to attach the reply to
+            let targetMsg = null;
+            if (currentConversation) {
+                // Use the most recent message in the conversation (first in the array since sorted desc)
+                targetMsg = currentConversation.messages[0];
+            } else if (currentMessageIndex >= 0) {
+                targetMsg = messages[currentMessageIndex];
+            }
+            if (!targetMsg) return;
+
+            if (!targetMsg.replies) targetMsg.replies = [];
+
             const replyText = input.value.trim();
-            msg.replies.push({ text: replyText, time: 'Just now', sent: true });
+            const now = new Date().toISOString();
+            targetMsg.replies.push({ text: replyText, time: 'Just now', createdAt: now, sent: true });
 
             // Save to Supabase
-            if (currentAuthUser && msg.dbId) {
+            if (currentAuthUser && targetMsg.dbId) {
                 const { error } = await sb.from('replies').insert({
-                    message_id: msg.dbId,
+                    message_id: targetMsg.dbId,
                     sender_id: currentAuthUser.id,
                     text: replyText
                 });
                 if (error) console.error('Reply save failed:', error);
             }
-            
+
             input.value = '';
-            renderDetailContent(currentMessageIndex);
+            renderConversationThread();
             document.getElementById('detailContent').scrollTop = document.getElementById('detailContent').scrollHeight;
         }
 
@@ -8951,7 +9215,11 @@
             // Add to local messages array
             messages.unshift({
                 dbId: dbMessage?.id || null,
+                senderId: currentAuthUser?.id || null,
+                recipientId: recipientId || null,
+                recipientEmail: recipientEmail || null,
                 sender: pendingMessage.recipient,
+                senderAvatar: null,
                 preview: '',
                 status: instantDeliver ? 'Released' : 'In Transit',
                 type: 'sent',
@@ -8966,6 +9234,9 @@
                 reactions: [],
                 replies: []
             });
+
+            // Rebuild conversations to include the new message
+            buildConversations();
 
             // Update stats
             moonData.messagesInTransit++;
