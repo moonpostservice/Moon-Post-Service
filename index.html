@@ -4338,11 +4338,23 @@
                 <button onclick="toggleContactsAddView()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--blue);padding:4px 8px;" id="contactsAddBtn" title="Add contact">+</button>
             </div>
             <!-- Add/Search new contact view (hidden by default) -->
-            <div id="contactsAddView" style="display:none;padding:16px 20px;border-bottom:2px solid rgba(53,125,197,0.1);background:rgba(53,125,197,0.03);">
-                <input type="text" id="contactSearchInput" placeholder="Search by name or email..." autocomplete="off" oninput="debouncedContactSearch()" style="width:100%;box-sizing:border-box;margin-bottom:8px;">
-                <div id="contactSearchResults" style="max-height:200px;overflow-y:auto;"></div>
-                <div style="text-align:center;margin-top:10px;">
-                    <button onclick="openAddContactFromContacts()" style="background:none;border:1px dashed var(--blue);color:var(--blue);padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer;">+ Add new contact manually</button>
+            <div id="contactsAddView" style="display:none;border-bottom:2px solid rgba(53,125,197,0.1);background:rgba(53,125,197,0.03);">
+                <!-- Tab switcher -->
+                <div style="display:flex;border-bottom:1px solid rgba(53,125,197,0.1);">
+                    <button id="contactsTabFind" onclick="switchContactsTab('find')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);font-size:13px;font-weight:600;cursor:pointer;">Find on MoonPop</button>
+                    <button id="contactsTabInvite" onclick="switchContactsTab('invite')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;">Invite to MoonPop</button>
+                </div>
+                <!-- Find tab -->
+                <div id="contactsFindPanel" style="padding:16px 20px;">
+                    <input type="text" id="contactSearchInput" placeholder="Search by display name..." autocomplete="off" oninput="debouncedContactSearch()" style="width:100%;box-sizing:border-box;margin-bottom:8px;">
+                    <div id="contactSearchResults" style="max-height:200px;overflow-y:auto;"></div>
+                </div>
+                <!-- Invite tab -->
+                <div id="contactsInvitePanel" style="padding:16px 20px;display:none;">
+                    <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px;">Know someone who'd love MoonPop? Send them an invite.</p>
+                    <input type="email" id="inviteEmailInput" placeholder="their@email.com" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:10px;">
+                    <button id="sendInviteBtn" onclick="sendInviteFromContacts()" style="width:100%;padding:10px;background:var(--coral);color:white;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;opacity:0.5;" disabled>Send Invite</button>
+                    <div id="inviteStatus" style="margin-top:8px;font-size:12px;text-align:center;"></div>
                 </div>
             </div>
             <div class="message-page-body" id="contactsListBody" style="padding:0;">
@@ -7939,6 +7951,8 @@
             document.getElementById('contactsAddView').style.display = 'none';
             document.getElementById('contactSearchInput').value = '';
             document.getElementById('contactSearchResults').innerHTML = '';
+            document.getElementById('inviteEmailInput').value = '';
+            document.getElementById('inviteStatus').innerHTML = '';
         }
 
         function closeContactsPage() {
@@ -7950,7 +7964,38 @@
             const view = document.getElementById('contactsAddView');
             view.style.display = view.style.display === 'none' ? 'block' : 'none';
             if (view.style.display === 'block') {
+                switchContactsTab('find');
+            }
+        }
+
+        function switchContactsTab(tab) {
+            const findBtn = document.getElementById('contactsTabFind');
+            const inviteBtn = document.getElementById('contactsTabInvite');
+            const findPanel = document.getElementById('contactsFindPanel');
+            const invitePanel = document.getElementById('contactsInvitePanel');
+            if (tab === 'find') {
+                findBtn.style.borderBottomColor = 'var(--blue)';
+                findBtn.style.color = 'var(--blue)';
+                inviteBtn.style.borderBottomColor = 'transparent';
+                inviteBtn.style.color = 'var(--text-muted)';
+                findPanel.style.display = 'block';
+                invitePanel.style.display = 'none';
                 document.getElementById('contactSearchInput').focus();
+            } else {
+                findBtn.style.borderBottomColor = 'transparent';
+                findBtn.style.color = 'var(--text-muted)';
+                inviteBtn.style.borderBottomColor = 'var(--coral)';
+                inviteBtn.style.color = 'var(--coral)';
+                findPanel.style.display = 'none';
+                invitePanel.style.display = 'block';
+                const emailInput = document.getElementById('inviteEmailInput');
+                emailInput.focus();
+                emailInput.oninput = function() {
+                    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value.trim());
+                    const btn = document.getElementById('sendInviteBtn');
+                    btn.disabled = !valid;
+                    btn.style.opacity = valid ? '1' : '0.5';
+                };
             }
         }
 
@@ -7974,7 +8019,7 @@
 
             try {
                 const { data, error } = await sb.rpc('search_users', { search_query: query });
-                
+
                 if (error) {
                     console.error('User search error:', error);
                     resultsDiv.innerHTML = '';
@@ -7982,21 +8027,19 @@
                 }
 
                 if (!data || data.length === 0) {
-                    // Check if query looks like an email
-                    const isEmail = query.includes('@') && query.includes('.');
                     resultsDiv.innerHTML = `
                         <div style="padding:10px;font-size:13px;color:var(--text-muted);">
-                            No users found for "${query}"
-                            ${isEmail ? `<br><button onclick="quickInviteContact('${query.replace(/'/g, "\\'")}')" style="margin-top:8px;background:var(--coral);color:white;border:none;border-radius:16px;padding:6px 14px;font-size:12px;cursor:pointer;">Send invite to ${query}</button>` : ''}
+                            No users found for "${query}"<br>
+                            <span style="font-size:11px;">Try a different name, or use the Invite tab to bring them to MoonPop.</span>
                         </div>`;
                     return;
                 }
 
                 // Filter out self and existing contacts
-                const existingEmails = contacts.map(c => (c.email || '').toLowerCase());
-                const filtered = data.filter(u => 
-                    u.id !== currentAuthUser.id && 
-                    !existingEmails.includes((u.email || '').toLowerCase())
+                const existingIds = contacts.map(c => c.linkedProfileId).filter(Boolean);
+                const filtered = data.filter(u =>
+                    u.id !== currentAuthUser.id &&
+                    !existingIds.includes(u.id)
                 );
 
                 if (filtered.length === 0) {
@@ -8005,20 +8048,20 @@
                 }
 
                 resultsDiv.innerHTML = filtered.map(u => {
-                    const displayName = u.username || ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.email;
+                    const displayName = u.username || ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || 'MoonPop User';
                     const location = u.city || '';
-                    const avatarHtml = u.avatar_url 
+                    const avatarHtml = u.avatar_url
                         ? `<img src="${u.avatar_url}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`
                         : `<div style="width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">${(displayName || '?').charAt(0).toUpperCase()}</div>`;
-                    
+
                     return `
                         <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(53,125,197,0.06)'" onmouseout="this.style.background=''" onclick="addUserAsContact('${u.id}', '${displayName.replace(/'/g, "\\'")}', '${(u.email||'').replace(/'/g, "\\'")}', '${location.replace(/'/g, "\\'")}')">
                             ${avatarHtml}
                             <div style="flex:1;">
                                 <div style="font-size:14px;font-weight:600;color:var(--blue);">${displayName}</div>
-                                <div style="font-size:11px;color:var(--text-muted);">${location}${u.email ? ' · ' + u.email : ''}</div>
+                                <div style="font-size:11px;color:var(--text-muted);">${location || 'MoonPop user'}</div>
                             </div>
-                            <span style="font-size:11px;color:#4caf50;font-weight:600;">On MoonPop</span>
+                            <span style="font-size:11px;color:#4caf50;font-weight:600;">+ Add</span>
                         </div>
                     `;
                 }).join('');
@@ -8063,29 +8106,47 @@
             document.getElementById('contactsAddView').style.display = 'none';
         }
 
-        async function quickInviteContact(email) {
-            // Open the compose modal new contact form with email pre-filled
-            closeContactsPage();
-            openModal();
-            setTimeout(() => {
-                goToRecipientStep();
-                showNewContactForm();
-                const emailEl = document.getElementById('newContactEmail');
-                if (emailEl) {
-                    emailEl.value = email;
-                    debouncedEmailLookup();
-                    checkNewContactForm();
-                }
-            }, 150);
-        }
+        async function sendInviteFromContacts() {
+            const emailInput = document.getElementById('inviteEmailInput');
+            const statusDiv = document.getElementById('inviteStatus');
+            const btn = document.getElementById('sendInviteBtn');
+            const email = emailInput.value.trim();
+            if (!email) return;
 
-        function openAddContactFromContacts() {
-            closeContactsPage();
-            openModal();
-            setTimeout(() => {
-                goToRecipientStep();
-                showNewContactForm();
-            }, 150);
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            statusDiv.innerHTML = '';
+
+            const senderName = localStorage.getItem('moonpop_username') || 'Someone on MoonPop';
+
+            try {
+                if (typeof emailjs === 'undefined') {
+                    statusDiv.innerHTML = '<span style="color:var(--coral);">Email service not available. Try again later.</span>';
+                    return;
+                }
+
+                const inviteLink = window.location.origin;
+                await emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
+                    to_email: email,
+                    from_name: senderName,
+                    sender_display: senderName + ' invited you to MoonPop',
+                    to_location: '',
+                    moonrise_time: '',
+                    message_preview: 'Join me on MoonPop',
+                    reveal_link: inviteLink
+                });
+
+                statusDiv.innerHTML = '<span style="color:#4caf50;">Invite sent!</span>';
+                emailInput.value = '';
+                btn.style.opacity = '0.5';
+                setTimeout(() => { statusDiv.innerHTML = ''; }, 3000);
+            } catch(e) {
+                console.error('Invite send failed:', e);
+                statusDiv.innerHTML = '<span style="color:var(--coral);">Failed to send. Please try again.</span>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Invite';
+            }
         }
 
         function renderContactsList() {
@@ -8150,8 +8211,8 @@
                             ${online ? '<span style="font-size:11px;color:#4caf50;margin-left:6px;">● online</span>' : ''}
                         </div>
                         <div style="font-size:11px;color:var(--text-muted);">
-                            ${isOnMps && !online ? '<span style="color:#4caf50;">On MoonPop</span>' : (!isOnMps ? (contact.email || 'Invited') : '')}
-                            ${contact.location && contact.location !== 'Unknown' ? (isOnMps || contact.email ? ' · ' : '') + contact.location : ''}
+                            ${isOnMps && !online ? '<span style="color:#4caf50;">On MoonPop</span>' : (!isOnMps ? 'Invited' : '')}
+                            ${contact.location && contact.location !== 'Unknown' ? ' · ' + contact.location : ''}
                         </div>
                     </div>
                     <button onclick="deleteContact('${escapedName}')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#ccc;padding:4px;" title="Remove">&times;</button>
