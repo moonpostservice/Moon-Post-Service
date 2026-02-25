@@ -4529,13 +4529,12 @@
                     <div style="flex:1;min-width:200px;">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                             <span>🎵</span>
-                            <input type="text" id="songInput" placeholder="Paste a YouTube link (optional)" style="flex:1;" oninput="onSongInput()">
+                            <input type="text" id="songInput" placeholder="Search for a song or paste a YouTube link" style="flex:1;" oninput="onSongInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();if(!extractYouTubeId(this.value.trim()))searchYouTubeSong();}">
+                            <button onclick="searchYouTubeSong()" id="songSearchBtn" style="background:var(--blue);color:white;border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;display:none;">Search</button>
                         </div>
+                        <div id="songSearchResults" style="max-height:180px;overflow-y:auto;display:none;margin-bottom:8px;"></div>
                         <div class="song-suggestions" id="songSuggestions">
-                            <span class="song-suggestion" onclick="selectSong('https://youtu.be/xbvNODMfNHM', 'Talking to the Moon — Bruno Mars')">🌙 Talking to the Moon</span>
-                            <span class="song-suggestion" onclick="selectSong('https://youtu.be/nVMOlosNeMM', 'Moon River — Audrey Hepburn')">🌙 Moon River</span>
-                            <span class="song-suggestion" onclick="selectSong('https://youtu.be/ZEcqHA7dbwM', 'Fly Me to the Moon — Sinatra')">🌙 Fly Me to the Moon</span>
-                            <span class="song-suggestion" onclick="selectSong('https://youtu.be/4Tr0otuiQuU', 'Moonlight Sonata — Beethoven')">🌙 Moonlight Sonata</span>
+                            <!-- Populated by JS on each compose open -->
                         </div>
                         <div id="ytEmbedContainer" style="margin-top:8px;"></div>
                     </div>
@@ -5172,19 +5171,28 @@
         function handleProfilePic(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    localStorage.setItem('moonpop_profilepic', e.target.result);
-                    updateAvatarEverywhere(e.target.result);
+                reader.onload = async (e) => {
+                    const dataUrl = e.target.result;
+                    localStorage.setItem('moonpop_profilepic', dataUrl);
+                    updateAvatarEverywhere(dataUrl);
                     // Compress and save small avatar to Supabase for other users to see
-                    compressAvatar(e.target.result).then(async (smallAvatar) => {
-                        if (currentAuthUser && smallAvatar) {
-                            const { error: avatarErr } = await sb.from('profiles').update({ avatar_url: smallAvatar }).eq('id', currentAuthUser.id);
-                            if (avatarErr) console.error('Avatar save to profile failed:', avatarErr);
-                            else console.log('Avatar saved to profile (' + smallAvatar.length + ' chars)');
-                        }
-                    });
+                    await syncAvatarToSupabase(dataUrl);
                 };
                 reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function syncAvatarToSupabase(dataUrl) {
+            if (!currentAuthUser || !dataUrl) return;
+            try {
+                const smallAvatar = await compressAvatar(dataUrl);
+                if (!smallAvatar) { console.error('Avatar compress failed'); return; }
+                console.log('Syncing avatar to Supabase (' + smallAvatar.length + ' chars)...');
+                const { data, error } = await sb.from('profiles').update({ avatar_url: smallAvatar }).eq('id', currentAuthUser.id).select();
+                if (error) console.error('Avatar save to profile failed:', error);
+                else console.log('Avatar saved to Supabase profile successfully');
+            } catch(e) {
+                console.error('Avatar sync exception:', e);
             }
         }
 
@@ -6045,11 +6053,10 @@
                 }
             }
 
-            // Filter out self from contacts list
-            contacts = contacts.filter(c => {
-                if (c.linkedProfileId && c.linkedProfileId === currentAuthUser.id) return false;
-                if (c.email && currentAuthUser.email && c.email.toLowerCase() === currentAuthUser.email.toLowerCase()) return false;
-                return true;
+            // Mark self-contacts so we can show "You" badge
+            contacts.forEach(c => {
+                c._isSelf = (c.linkedProfileId && c.linkedProfileId === currentAuthUser.id) ||
+                            (c.email && currentAuthUser.email && c.email.toLowerCase() === currentAuthUser.email.toLowerCase());
             });
 
             console.log('Contacts loaded:', contacts.length, 'on MoonPop:', contacts.filter(c => c.isOnMoonpop).length);
@@ -6490,11 +6497,9 @@
                 const localAvatar = localStorage.getItem('moonpop_profilepic');
                 if (localAvatar) {
                     updateAvatarEverywhere(localAvatar);
-                    // If profile has no avatar, push the local one to Supabase
+                    // Always sync local avatar to Supabase if missing there
                     if (profile && !profile.avatar_url) {
-                        compressAvatar(localAvatar).then(small => {
-                            if (small) sb.from('profiles').update({ avatar_url: small }).eq('id', currentAuthUser.id);
-                        });
+                        syncAvatarToSupabase(localAvatar);
                     }
                 } else if (profile && profile.avatar_url) {
                     // No local avatar but profile has one — use it
@@ -8085,7 +8090,90 @@
         // YOUTUBE EMBED
         // ========================
         let selectedSongTitle = '';
-        
+
+        // Large pool of moon-themed songs
+        const MOON_SONGS = [
+            { url: 'https://youtu.be/xbvNODMfNHM', title: 'Talking to the Moon — Bruno Mars', short: 'Talking to the Moon' },
+            { url: 'https://youtu.be/nVMOlosNeMM', title: 'Moon River — Audrey Hepburn', short: 'Moon River' },
+            { url: 'https://youtu.be/ZEcqHA7dbwM', title: 'Fly Me to the Moon — Sinatra', short: 'Fly Me to the Moon' },
+            { url: 'https://youtu.be/4Tr0otuiQuU', title: 'Moonlight Sonata — Beethoven', short: 'Moonlight Sonata' },
+            { url: 'https://youtu.be/cGYNuoCigGY', title: 'Dancing in the Moonlight — King Harvest', short: 'Dancing in the Moonlight' },
+            { url: 'https://youtu.be/hgOHRBqFMEI', title: 'Moondance — Van Morrison', short: 'Moondance' },
+            { url: 'https://youtu.be/wQTbkEeCRUE', title: 'Bad Moon Rising — CCR', short: 'Bad Moon Rising' },
+            { url: 'https://youtu.be/kE0pwJ5PMDg', title: 'Moonlight Shadow — Mike Oldfield', short: 'Moonlight Shadow' },
+            { url: 'https://youtu.be/ANBpGBuKADM', title: 'Bark at the Moon — Ozzy Osbourne', short: 'Bark at the Moon' },
+            { url: 'https://youtu.be/rn_YodiJO6k', title: 'Harvest Moon — Neil Young', short: 'Harvest Moon' },
+            { url: 'https://youtu.be/k80UQWWUIYs', title: 'Claro de Luna — Debussy', short: 'Clair de Lune' },
+            { url: 'https://youtu.be/p5fa3yBpG9I', title: 'Blue Moon — The Marcels', short: 'Blue Moon' },
+            { url: 'https://youtu.be/FxzBvqY5PP0', title: 'Total Eclipse of the Heart — Bonnie Tyler', short: 'Total Eclipse of the Heart' },
+            { url: 'https://youtu.be/weidWE4-mEE', title: 'Half Moon Serenade — 半月小夜曲', short: 'Half Moon Serenade' },
+            { url: 'https://youtu.be/6IFoaHLCbNE', title: 'Man on the Moon — R.E.M.', short: 'Man on the Moon' },
+            { url: 'https://youtu.be/OMOGaugKpzs', title: 'Walking on the Moon — The Police', short: 'Walking on the Moon' },
+            { url: 'https://youtu.be/bU1sLx1zhGg', title: 'Rocket Man — Elton John', short: 'Rocket Man' },
+            { url: 'https://youtu.be/KyA9AtUOqRM', title: 'Moon Song — Phoebe Bridgers', short: 'Moon Song' },
+            { url: 'https://youtu.be/HUHC9tYz8ik', title: 'Here Comes the Moon — George Harrison', short: 'Here Comes the Moon' },
+            { url: 'https://youtu.be/v8wLxNIQVCE', title: 'Moonshadow — Cat Stevens', short: 'Moonshadow' },
+            { url: 'https://youtu.be/5IsSpAOD6K8', title: 'Space Oddity — David Bowie', short: 'Space Oddity' },
+            { url: 'https://youtu.be/TfBcJgbGCUk', title: 'To the Moon and Back — Savage Garden', short: 'To the Moon and Back' },
+            { url: 'https://youtu.be/I-BYzaDwNoE', title: 'Counting Stars — OneRepublic', short: 'Counting Stars' },
+            { url: 'https://youtu.be/psuRGfAaju4', title: 'A Sky Full of Stars — Coldplay', short: 'A Sky Full of Stars' },
+            { url: 'https://youtu.be/Qsy7kJyizoc', title: 'The Night We Met — Lord Huron', short: 'The Night We Met' },
+            { url: 'https://youtu.be/RBtlPT23PTM', title: 'I\'ll Follow You into the Dark — Death Cab', short: 'I\'ll Follow You into the Dark' },
+            { url: 'https://youtu.be/VPRjCeoBqrI', title: 'A Thousand Years — Christina Perri', short: 'A Thousand Years' },
+            { url: 'https://youtu.be/aJOTlE1K90k', title: 'Moon — Kanye West', short: 'Moon' },
+            { url: 'https://youtu.be/2OTDilAkKdI', title: 'Lullaby — Sigala & Paloma Faith', short: 'Lullaby' },
+            { url: 'https://youtu.be/e-fA-gBCkj0', title: 'Tonight — West Side Story', short: 'Tonight' },
+        ];
+        let lastSongSuggestions = [];
+
+        function refreshSongSuggestions() {
+            const container = document.getElementById('songSuggestions');
+            if (!container) return;
+            // Pick 4 random songs, avoid repeating last set
+            const available = MOON_SONGS.filter((_, i) => !lastSongSuggestions.includes(i));
+            const shuffled = available.sort(() => Math.random() - 0.5).slice(0, 4);
+            lastSongSuggestions = shuffled.map(s => MOON_SONGS.indexOf(s));
+            container.innerHTML = shuffled.map(s =>
+                `<span class="song-suggestion" onclick="selectSong('${s.url}', '${s.title.replace(/'/g, "\\'")}')">🌙 ${s.short}</span>`
+            ).join('') + `<span class="song-suggestion" onclick="refreshSongSuggestions()" style="opacity:0.6;">↻ more</span>`;
+        }
+
+        async function searchYouTubeSong() {
+            const input = document.getElementById('songInput');
+            const query = input.value.trim();
+            if (!query || extractYouTubeId(query)) return;
+            const resultsDiv = document.getElementById('songSearchResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<div style="padding:8px;color:var(--text-muted);font-size:12px;">Searching YouTube...</div>';
+            try {
+                // Use YouTube's oEmbed-based search via a public endpoint
+                const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' song')}&sp=EgIQAQ%3D%3D`;
+                // We can't directly call YouTube search API without a key, so we'll search via an iframe approach
+                // Instead, show curated results from our pool that match the query + open YouTube search link
+                const q = query.toLowerCase();
+                const matches = MOON_SONGS.filter(s =>
+                    s.title.toLowerCase().includes(q) || s.short.toLowerCase().includes(q)
+                );
+                let html = '';
+                if (matches.length > 0) {
+                    html += matches.map(s =>
+                        `<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(53,125,197,0.06)'" onmouseout="this.style.background=''" onclick="selectSong('${s.url}', '${s.title.replace(/'/g, "\\'")}');document.getElementById('songSearchResults').style.display='none';">
+                            <span>🎵</span>
+                            <div style="flex:1;font-size:13px;color:var(--blue);font-weight:500;">${s.title}</div>
+                        </div>`
+                    ).join('');
+                }
+                html += `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(query)}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;text-decoration:none;border-top:1px solid #f0ece4;margin-top:4px;" onmouseover="this.style.background='rgba(53,125,197,0.06)'" onmouseout="this.style.background=''">
+                    <span>🔍</span>
+                    <div style="flex:1;font-size:13px;color:var(--blue);font-weight:500;">Search "${query}" on YouTube</div>
+                    <span style="font-size:11px;color:var(--text-muted);">↗</span>
+                </a>`;
+                resultsDiv.innerHTML = html;
+            } catch(e) {
+                resultsDiv.innerHTML = `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(query)}" target="_blank" style="display:block;padding:10px;font-size:13px;color:var(--blue);text-decoration:none;">🔍 Search "${query}" on YouTube ↗</a>`;
+            }
+        }
+
         function extractYouTubeId(url) {
             if (!url) return null;
             const patterns = [
@@ -8103,12 +8191,19 @@
             const input = document.getElementById('songInput');
             const val = input.value.trim();
             const videoId = extractYouTubeId(val);
-            
+            const searchBtn = document.getElementById('songSearchBtn');
+            const searchResults = document.getElementById('songSearchResults');
+            const suggestions = document.getElementById('songSuggestions');
+
             // Remove existing embed
             const existing = document.getElementById('ytEmbed');
             if (existing) existing.remove();
-            
+
             if (videoId) {
+                // It's a YouTube URL — embed it
+                searchBtn.style.display = 'none';
+                searchResults.style.display = 'none';
+                suggestions.style.display = 'none';
                 const title = selectedSongTitle || '';
                 const embed = document.createElement('div');
                 embed.className = 'yt-embed';
@@ -8124,6 +8219,15 @@
                 `;
                 const container = document.getElementById('ytEmbedContainer');
                 if (container) container.appendChild(embed);
+            } else if (val.length > 1) {
+                // It's a text search query — show search button
+                searchBtn.style.display = '';
+                suggestions.style.display = 'none';
+            } else {
+                // Empty or short — show suggestions, hide search
+                searchBtn.style.display = 'none';
+                searchResults.style.display = 'none';
+                suggestions.style.display = '';
             }
         }
         
@@ -8132,6 +8236,9 @@
             selectedSongTitle = '';
             const embed = document.getElementById('ytEmbed');
             if (embed) embed.remove();
+            document.getElementById('songSearchBtn').style.display = 'none';
+            document.getElementById('songSearchResults').style.display = 'none';
+            document.getElementById('songSuggestions').style.display = '';
         }
 
         // Moon photo attachment
@@ -8406,14 +8513,18 @@
                         : `<button onclick="event.stopPropagation();addUserAsContact('${u.id}', '${displayName.replace(/'/g, "\\'")}', '${(u.email||'').replace(/'/g, "\\'")}', '${location.replace(/'/g, "\\'")}', '${avatarSafe}')" style="background:var(--blue);color:white;border:none;border-radius:16px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Contact</button>`;
 
                     if (isSelf) {
+                        const selfIsExisting = existingIds.includes(u.id);
+                        const selfAction = selfIsExisting
+                            ? `<span style="font-size:11px;color:var(--text-muted);font-weight:500;">✓ Contact</span>`
+                            : `<button onclick="event.stopPropagation();addUserAsContact('${u.id}', '${displayName.replace(/'/g, "\\'")}', '${(u.email||'').replace(/'/g, "\\'")}', '${location.replace(/'/g, "\\'")}', '${avatarSafe}')" style="background:var(--blue);color:white;border:none;border-radius:16px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Contact</button>`;
                         return `
                             <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:rgba(53,125,197,0.04);">
                                 ${avatarHtml}
                                 <div style="flex:1;">
-                                    <div style="font-size:14px;font-weight:600;color:var(--blue);">${displayName}</div>
+                                    <div style="font-size:14px;font-weight:600;color:var(--blue);">${displayName} <span style="font-size:10px;color:var(--coral);font-weight:600;background:rgba(231,111,81,0.1);padding:2px 8px;border-radius:10px;">You</span></div>
                                     <div style="font-size:11px;color:var(--text-muted);">${location || 'MoonPop user'}</div>
                                 </div>
-                                <span style="font-size:11px;color:var(--text-muted);font-weight:600;font-style:italic;">It's you</span>
+                                ${selfAction}
                             </div>
                         `;
                     }
@@ -8521,8 +8632,7 @@
             const container = document.getElementById('contactsListBody');
             if (!container) return;
 
-            // Filter out self from contacts list
-            const visibleContacts = contacts.filter(c => c.linkedProfileId !== currentAuthUser?.id);
+            const visibleContacts = contacts;
 
             if (visibleContacts.length === 0) {
                 container.innerHTML = `
@@ -8570,9 +8680,10 @@
             const statusDotColor = online ? '#4caf50' : (isOnMps ? '#4caf50' : '');
             const statusDot = statusDotColor ? `<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:${statusDotColor};border:2px solid white;z-index:1;${!online && isOnMps ? 'opacity:0.4;' : ''}"></span>` : '';
 
-            // Display name with username
+            // Display name with username and self badge
             const displayName = contact.name || 'Unknown';
             const usernameTag = contact.username ? `<span style="font-size:12px;color:var(--text-muted);font-weight:400;margin-left:4px;">@${contact.username}</span>` : '';
+            const selfBadge = contact._isSelf ? `<span style="font-size:10px;color:var(--coral);font-weight:600;margin-left:6px;background:rgba(231,111,81,0.1);padding:2px 8px;border-radius:10px;">You</span>` : '';
 
             return `
                 <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid #f0ece4;gap:12px;">
@@ -8582,7 +8693,7 @@
                     </div>
                     <div style="flex:1;min-width:0;cursor:pointer;" onclick="openContactDetail('${escapedName}')">
                         <div style="font-size:14px;font-weight:600;color:var(--blue);">
-                            ${displayName}${usernameTag}
+                            ${displayName}${usernameTag}${selfBadge}
                             ${online ? '<span style="font-size:11px;color:#4caf50;margin-left:6px;">● online</span>' : ''}
                         </div>
                         <div style="font-size:11px;color:var(--text-muted);">
@@ -8684,15 +8795,13 @@
 
         function contactDetailSendMessage() {
             if (!currentContactDetail) return;
+            const contact = currentContactDetail;
             closeContactDetail();
             closeContactsPage();
             openModal();
             setTimeout(() => {
-                goToRecipientStep();
-                const contact = currentContactDetail;
                 selectedRecipient = { name: contact.name, email: contact.email, location: contact.location, isOnMoonpop: contact.isOnMoonpop, linkedProfileId: contact.linkedProfileId };
                 document.getElementById('recipient').value = contact.name;
-                updateDeliveryInfo();
             }, 100);
         }
 
@@ -8864,11 +8973,15 @@
             showDefaultCompose();
             document.getElementById('messageModal').classList.add('active');
             document.body.style.overflow = 'hidden';
-            
+
+            // Refresh song suggestions each time compose opens
+            refreshSongSuggestions();
+
             // Auto-activate lunar note (panel is open by default)
             if (!lunarNoteActive) {
                 lunarNoteActive = true;
-                currentPromptSet = getTodaysPromptSet();
+                currentPromptSet = getNextPromptSet();
+                currentLunarTemplate = -1;
                 const ps = PROMPT_SETS[currentPromptSet];
                 for (let i = 0; i < 3; i++) {
                     document.getElementById('lunarLabel' + (i+1)).textContent = ps.prompts[i].label;
@@ -9171,191 +9284,109 @@
         let lunarNoteActive = false;
         let currentLunarTemplate = -1;
         let currentPromptSet = 0;
-        
-        // 10 daily prompt sets — each has 3 inputs { label, placeholder }
+        let lunarPromptHistory = []; // tracks recently used prompt indices to avoid repeats
+
+        // 30 prompt sets — shuffled each time, never repeats until all used
         const PROMPT_SETS = [
-            {
-                prompts: [
-                    { label: 'an emotion', placeholder: 'anything that comes to mind' },
-                    { label: 'a different emotion', placeholder: 'something else entirely' },
-                    { label: 'something you pretend not to care about', placeholder: 'you know the one' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'a color', placeholder: 'the first one you see' },
-                    { label: 'a sound you heard today', placeholder: 'big or small' },
-                    { label: 'a time of day', placeholder: 'morning? 3am?' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'something small you like', placeholder: 'really small' },
-                    { label: 'a place', placeholder: 'real or imaginary' },
-                    { label: 'a kind of weather', placeholder: 'any season' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'an object near you right now', placeholder: 'look around' },
-                    { label: 'something soft', placeholder: 'a texture, a word, anything' },
-                    { label: 'a thing you do when nobody\'s watching', placeholder: 'your secret move' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'a body part', placeholder: 'elbow? ribcage?' },
-                    { label: 'something you noticed this week', placeholder: 'just a small thing' },
-                    { label: 'a word that sounds funny', placeholder: 'say it out loud' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'a season', placeholder: 'your favorite or least' },
-                    { label: 'something you keep forgetting', placeholder: 'keys, dreams, names...' },
-                    { label: 'a texture', placeholder: 'smooth? crinkly?' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'a drink', placeholder: 'hot or cold' },
-                    { label: 'a type of light', placeholder: 'candle? screen? sunrise?' },
-                    { label: 'something gentle', placeholder: 'could be anything' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'a day of the week', placeholder: 'which one feels right' },
-                    { label: 'an animal', placeholder: 'any creature' },
-                    { label: 'something you\'re looking forward to', placeholder: 'even small things count' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'a smell', placeholder: 'good or weird' },
-                    { label: 'a number', placeholder: 'just pick one' },
-                    { label: 'something quiet', placeholder: 'sounds or feelings' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'something warm', placeholder: 'literal or not' },
-                    { label: 'a song you hum', placeholder: 'or a sound you make' },
-                    { label: 'a word you want to say more often', placeholder: 'let it out' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'something you almost said today', placeholder: 'the one that got away' },
-                    { label: 'a texture', placeholder: 'rough? soft? warm?' },
-                    { label: 'what your hands were doing an hour ago', placeholder: 'be specific' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'a flavor', placeholder: 'sweet, sour, burnt?' },
-                    { label: 'a person who doesn\'t know you\'re thinking of them', placeholder: 'just a first name' },
-                    { label: 'the last thing that made you laugh', placeholder: 'even a little' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'something you\'re carrying', placeholder: 'literally or not' },
-                    { label: 'a question with no answer', placeholder: 'the kind you like' },
-                    { label: 'a window you looked through today', placeholder: 'what was outside?' },
-                ],
-            },
-            {
-                prompts: [
-                    { label: 'an old photograph', placeholder: 'describe it in 3 words' },
-                    { label: 'a distance', placeholder: 'in steps, miles, or feelings' },
-                    { label: 'a secret that isn\'t really a secret', placeholder: 'everyone knows' },
-                ],
-            },
+            { prompts: [{ label: 'an emotion', placeholder: 'anything that comes to mind' }, { label: 'a different emotion', placeholder: 'something else entirely' }, { label: 'something you pretend not to care about', placeholder: 'you know the one' }] },
+            { prompts: [{ label: 'a color', placeholder: 'the first one you see' }, { label: 'a sound you heard today', placeholder: 'big or small' }, { label: 'a time of day', placeholder: 'morning? 3am?' }] },
+            { prompts: [{ label: 'something small you like', placeholder: 'really small' }, { label: 'a place', placeholder: 'real or imaginary' }, { label: 'a kind of weather', placeholder: 'any season' }] },
+            { prompts: [{ label: 'an object near you right now', placeholder: 'look around' }, { label: 'something soft', placeholder: 'a texture, a word, anything' }, { label: 'a thing you do when nobody\'s watching', placeholder: 'your secret move' }] },
+            { prompts: [{ label: 'a body part', placeholder: 'elbow? ribcage?' }, { label: 'something you noticed this week', placeholder: 'just a small thing' }, { label: 'a word that sounds funny', placeholder: 'say it out loud' }] },
+            { prompts: [{ label: 'a season', placeholder: 'your favorite or least' }, { label: 'something you keep forgetting', placeholder: 'keys, dreams, names...' }, { label: 'a texture', placeholder: 'smooth? crinkly?' }] },
+            { prompts: [{ label: 'a drink', placeholder: 'hot or cold' }, { label: 'a type of light', placeholder: 'candle? screen? sunrise?' }, { label: 'something gentle', placeholder: 'could be anything' }] },
+            { prompts: [{ label: 'a day of the week', placeholder: 'which one feels right' }, { label: 'an animal', placeholder: 'any creature' }, { label: 'something you\'re looking forward to', placeholder: 'even small things count' }] },
+            { prompts: [{ label: 'a smell', placeholder: 'good or weird' }, { label: 'a number', placeholder: 'just pick one' }, { label: 'something quiet', placeholder: 'sounds or feelings' }] },
+            { prompts: [{ label: 'something warm', placeholder: 'literal or not' }, { label: 'a song you hum', placeholder: 'or a sound you make' }, { label: 'a word you want to say more often', placeholder: 'let it out' }] },
+            { prompts: [{ label: 'something you almost said today', placeholder: 'the one that got away' }, { label: 'a texture', placeholder: 'rough? soft? warm?' }, { label: 'what your hands were doing an hour ago', placeholder: 'be specific' }] },
+            { prompts: [{ label: 'a flavor', placeholder: 'sweet, sour, burnt?' }, { label: 'a person who doesn\'t know you\'re thinking of them', placeholder: 'just a first name' }, { label: 'the last thing that made you laugh', placeholder: 'even a little' }] },
+            { prompts: [{ label: 'something you\'re carrying', placeholder: 'literally or not' }, { label: 'a question with no answer', placeholder: 'the kind you like' }, { label: 'a window you looked through today', placeholder: 'what was outside?' }] },
+            { prompts: [{ label: 'an old photograph', placeholder: 'describe it in 3 words' }, { label: 'a distance', placeholder: 'in steps, miles, or feelings' }, { label: 'a secret that isn\'t really a secret', placeholder: 'everyone knows' }] },
+            { prompts: [{ label: 'a childhood memory', placeholder: 'the first one that comes' }, { label: 'a sound from far away', placeholder: 'how far?' }, { label: 'something you\'d put in a time capsule', placeholder: 'open in 20 years' }] },
+            { prompts: [{ label: 'a type of silence', placeholder: 'comfortable? heavy?' }, { label: 'something that glows', placeholder: 'anything at all' }, { label: 'a word from another language', placeholder: 'you don\'t need to speak it' }] },
+            { prompts: [{ label: 'a song you forgot the name of', placeholder: 'hum it in words' }, { label: 'something blue', placeholder: 'or feeling blue' }, { label: 'the last thing you touched', placeholder: 'before this' }] },
+            { prompts: [{ label: 'a room you remember', placeholder: 'whose was it?' }, { label: 'something that moves slowly', placeholder: 'clouds? time?' }, { label: 'a promise you made to yourself', placeholder: 'kept or not' }] },
+            { prompts: [{ label: 'something you heard through a wall', placeholder: 'muffled or clear' }, { label: 'a kind of morning', placeholder: 'which kind?' }, { label: 'something you\'d whisper', placeholder: 'to who?' }] },
+            { prompts: [{ label: 'something round', placeholder: 'besides the moon' }, { label: 'a feeling you can\'t name', placeholder: 'try anyway' }, { label: 'the last dream you remember', placeholder: 'fragments count' }] },
+            { prompts: [{ label: 'a street you used to walk', placeholder: 'where did it go?' }, { label: 'something borrowed', placeholder: 'did you return it?' }, { label: 'a color the sky was once', placeholder: 'when?' }] },
+            { prompts: [{ label: 'something you built', placeholder: 'real or imaginary' }, { label: 'a voice you miss', placeholder: 'whose?' }, { label: 'something that tastes like home', placeholder: 'close your eyes' }] },
+            { prompts: [{ label: 'a door you didn\'t open', placeholder: 'where was it?' }, { label: 'something invisible', placeholder: 'but you know it\'s there' }, { label: 'the last thing that surprised you', placeholder: 'good or bad' }] },
+            { prompts: [{ label: 'a thing you do every morning', placeholder: 'the very first thing' }, { label: 'something heavy', placeholder: 'weight or feeling' }, { label: 'a conversation you replay', placeholder: 'what would you change?' }] },
+            { prompts: [{ label: 'a piece of clothing', placeholder: 'with a story' }, { label: 'something that floats', placeholder: 'in water or in thought' }, { label: 'a place you go when you close your eyes', placeholder: 'take me there' }] },
+            { prompts: [{ label: 'something unfinished', placeholder: 'a book? a sentence?' }, { label: 'a small victory', placeholder: 'today or recently' }, { label: 'the sound your door makes', placeholder: 'creak? click? slam?' }] },
+            { prompts: [{ label: 'something you do with your hands', placeholder: 'when you\'re thinking' }, { label: 'a word that calms you down', placeholder: 'just one' }, { label: 'the moon right now', placeholder: 'what does it look like to you?' }] },
+            { prompts: [{ label: 'a letter you never sent', placeholder: 'who was it for?' }, { label: 'something sweet', placeholder: 'literally or not' }, { label: 'a thing that always works', placeholder: 'your go-to' }] },
+            { prompts: [{ label: 'something that hums', placeholder: 'a fridge? a feeling?' }, { label: 'a pair of shoes', placeholder: 'whose?' }, { label: 'the best part of today', placeholder: 'even if small' }] },
+            { prompts: [{ label: 'a wish you outgrew', placeholder: 'what replaced it?' }, { label: 'something crooked', placeholder: 'charmingly so' }, { label: 'the space between two breaths', placeholder: 'what lives there?' }] },
         ];
-        
-        // 10 poem templates — (a, b, c) → { lines, closing }
+
+        // 30 poem templates — (a, b, c) → { lines, closing }
         const lunarTemplates = [
-            (a, b, c) => ({
-                lines: `Under the moon, I feel ${a},\nthen ${b}—no harm.\n${capitalize(c)} is just part of the charm.`,
-                closing: '— the moon is smiling'
-            }),
-            (a, b, c) => ({
-                lines: `A little ${a}, a lot of ${b},\nand somewhere in the middle:\n${c}.`,
-                closing: '— not bad for tonight'
-            }),
-            (a, b, c) => ({
-                lines: `Started with ${a}.\nEnded up at ${b}.\n${capitalize(c)} was there the whole time.`,
-                closing: '— sounds about right'
-            }),
-            (a, b, c) => ({
-                lines: `${capitalize(a)} walked in.\n${capitalize(b)} sat down.\n${capitalize(c)} waved from across the room.`,
-                closing: '— classic'
-            }),
-            (a, b, c) => ({
-                lines: `If ${a} were weather, it would be warm.\nIf ${b} were a season, late spring.\nAnd ${c}? That one's just Tuesday.`,
-                closing: '— the moon says hi'
-            }),
-            (a, b, c) => ({
-                lines: `There's ${a} in the air tonight,\na dash of ${b} on the side.\n${capitalize(c)}? We don't talk about that.\nBut we're smiling anyway.`,
-                closing: '— good night, really'
-            }),
-            (a, b, c) => ({
-                lines: `Somewhere between ${a}\nand ${b},\nthere's a place called ${c}.\nI think I've been there.`,
-                closing: '— stay a while'
-            }),
-            (a, b, c) => ({
-                lines: `${capitalize(a)}: present.\n${capitalize(b)}: noted.\n${capitalize(c)}: surprisingly fine.`,
-                closing: '— roll call complete'
-            }),
-            (a, b, c) => ({
-                lines: `The moon held ${a} in one hand\nand ${b} in the other.\n${capitalize(c)} just floated up on its own.`,
-                closing: '— it does that sometimes'
-            }),
-            (a, b, c) => ({
-                lines: `${capitalize(a)} showed up first,\nthen ${b} knocked twice,\nand ${c}?\n${capitalize(c)} was already inside.`,
-                closing: '— full house tonight'
-            }),
-            (a, b, c) => ({
-                lines: `I packed ${a} for the trip.\nBorrowed ${b} from someone I used to know.\n${capitalize(c)} just showed up at the door.`,
-                closing: '— carry-on only'
-            }),
-            (a, b, c) => ({
-                lines: `${capitalize(a)}: the part I said out loud.\n${capitalize(b)}: the part I almost did.\n${capitalize(c)}: the part that stayed.`,
-                closing: '— three-act night'
-            }),
-            (a, b, c) => ({
-                lines: `One hand full of ${a},\nthe other holding ${b}.\nAnd ${c}?\nBalanced on the roof of my mouth\nlike a word I haven't said yet.`,
-                closing: '— almost there'
-            }),
-            (a, b, c) => ({
-                lines: `The moon asked for ${a}.\nI gave it ${b} instead.\nIt didn't mind.\nIt just whispered: ${c}.`,
-                closing: '— fair trade'
-            }),
+            (a, b, c) => ({ lines: `Under the moon, I feel ${a},\nthen ${b}—no harm.\n${capitalize(c)} is just part of the charm.`, closing: '— the moon is smiling' }),
+            (a, b, c) => ({ lines: `A little ${a}, a lot of ${b},\nand somewhere in the middle:\n${c}.`, closing: '— not bad for tonight' }),
+            (a, b, c) => ({ lines: `Started with ${a}.\nEnded up at ${b}.\n${capitalize(c)} was there the whole time.`, closing: '— sounds about right' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} walked in.\n${capitalize(b)} sat down.\n${capitalize(c)} waved from across the room.`, closing: '— classic' }),
+            (a, b, c) => ({ lines: `If ${a} were weather, it would be warm.\nIf ${b} were a season, late spring.\nAnd ${c}? That one's just Tuesday.`, closing: '— the moon says hi' }),
+            (a, b, c) => ({ lines: `There's ${a} in the air tonight,\na dash of ${b} on the side.\n${capitalize(c)}? We don't talk about that.\nBut we're smiling anyway.`, closing: '— good night, really' }),
+            (a, b, c) => ({ lines: `Somewhere between ${a}\nand ${b},\nthere's a place called ${c}.\nI think I've been there.`, closing: '— stay a while' }),
+            (a, b, c) => ({ lines: `${capitalize(a)}: present.\n${capitalize(b)}: noted.\n${capitalize(c)}: surprisingly fine.`, closing: '— roll call complete' }),
+            (a, b, c) => ({ lines: `The moon held ${a} in one hand\nand ${b} in the other.\n${capitalize(c)} just floated up on its own.`, closing: '— it does that sometimes' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} showed up first,\nthen ${b} knocked twice,\nand ${c}?\n${capitalize(c)} was already inside.`, closing: '— full house tonight' }),
+            (a, b, c) => ({ lines: `I packed ${a} for the trip.\nBorrowed ${b} from someone I used to know.\n${capitalize(c)} just showed up at the door.`, closing: '— carry-on only' }),
+            (a, b, c) => ({ lines: `${capitalize(a)}: the part I said out loud.\n${capitalize(b)}: the part I almost did.\n${capitalize(c)}: the part that stayed.`, closing: '— three-act night' }),
+            (a, b, c) => ({ lines: `One hand full of ${a},\nthe other holding ${b}.\nAnd ${c}?\nBalanced on the roof of my mouth\nlike a word I haven't said yet.`, closing: '— almost there' }),
+            (a, b, c) => ({ lines: `The moon asked for ${a}.\nI gave it ${b} instead.\nIt didn't mind.\nIt just whispered: ${c}.`, closing: '— fair trade' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} fell asleep on the couch.\n${capitalize(b)} left the window open.\nAnd ${c} tiptoed in with the breeze.`, closing: '— uninvited but welcome' }),
+            (a, b, c) => ({ lines: `I wrote ${a} on a napkin,\nfolded ${b} into a paper crane,\nand left ${c} under a rock\nwhere only the moon could find it.`, closing: '— hidden in plain sight' }),
+            (a, b, c) => ({ lines: `Three things the moon knows:\n${a},\n${b},\nand the quiet shape of ${c}\nwhen no one's looking.`, closing: '— lunar inventory' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} tastes different at night.\n${capitalize(b)} sounds louder.\nAnd ${c}?\n${capitalize(c)} finally makes sense.`, closing: '— the after-hours version' }),
+            (a, b, c) => ({ lines: `Dear ${a},\nI hope this finds you well.\n${capitalize(b)} sends regards.\nAnd ${c}? ${capitalize(c)} never left.`, closing: '— yours, the moon' }),
+            (a, b, c) => ({ lines: `If I could mail ${a} to the moon,\nI'd wrap it in ${b}\nand address it to ${c}.`, closing: '— postage: one wish' }),
+            (a, b, c) => ({ lines: `Tonight's forecast:\n${a} with a chance of ${b}.\nLate-night ${c} expected.\nNo umbrella needed.`, closing: '— lunar weather report' }),
+            (a, b, c) => ({ lines: `The recipe calls for:\na pinch of ${a},\na handful of ${b},\nand ${c} to taste.\nBake under moonlight.`, closing: '— serves two' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} is what I meant.\n${capitalize(b)} is what I said.\n${capitalize(c)} is what you heard.\nSomehow it all worked out.`, closing: '— lost in translation' }),
+            (a, b, c) => ({ lines: `In the dictionary of tonight,\n${a} means almost.\n${capitalize(b)} means not yet.\nAnd ${c}? See: everything.`, closing: '— look it up' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} sat on the left.\n${capitalize(b)} sat on the right.\n${capitalize(c)} stood in the doorway,\nnot sure which side to choose.`, closing: '— there\'s room for all three' }),
+            (a, b, c) => ({ lines: `Note to self:\nremember ${a}.\nforget ${b} (just for tonight).\nand whatever you do,\ndon't let go of ${c}.`, closing: '— pinned to the fridge' }),
+            (a, b, c) => ({ lines: `The moon collects things:\n${a} from Monday,\n${b} from a dream,\n${c} from the space\nbetween a thought and a sigh.`, closing: '— growing collection' }),
+            (a, b, c) => ({ lines: `I found ${a} in my pocket.\n${capitalize(b)} was under the pillow.\n${capitalize(c)} was exactly where I left it:\nright here.`, closing: '— nothing\'s lost' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} before coffee.\n${capitalize(b)} after dark.\n${capitalize(c)} in that gap\nwhere the day holds its breath.`, closing: '— daily rhythm' }),
+            (a, b, c) => ({ lines: `Two truths and a moon:\n${a} is real.\n${capitalize(b)} is real.\n${capitalize(c)}? That one depends\non how the light hits it.`, closing: '— take your pick' }),
         ];
-        
+
         function capitalize(s) {
             if (!s) return '';
             s = s.trim();
             return s.charAt(0).toUpperCase() + s.slice(1);
         }
-        
-        // Pick today's prompt set (rotates by day)
-        function getTodaysPromptSet() {
-            const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-            return dayOfYear % PROMPT_SETS.length;
+
+        // Pick next prompt set — shuffles through all before repeating
+        function getNextPromptSet() {
+            // If we've used all prompts, reset history
+            if (lunarPromptHistory.length >= PROMPT_SETS.length) {
+                lunarPromptHistory = [];
+            }
+            // Pick a random unused index
+            const available = [];
+            for (let i = 0; i < PROMPT_SETS.length; i++) {
+                if (!lunarPromptHistory.includes(i)) available.push(i);
+            }
+            const pick = available[Math.floor(Math.random() * available.length)];
+            lunarPromptHistory.push(pick);
+            return pick;
         }
-        
+
         function toggleLunarNote() {
             lunarNoteActive = !lunarNoteActive;
             const panel = document.getElementById('lunarNotePanel');
             const pill = document.getElementById('lunarNotePill');
             const pillText = document.getElementById('lunarPillText');
             const toggleArea = document.getElementById('lunarToggleArea');
-            
+
             if (lunarNoteActive) {
-                // Set today's prompts
-                currentPromptSet = getTodaysPromptSet();
+                // Pick a fresh prompt set each time (never repeats until all used)
+                currentPromptSet = getNextPromptSet();
+                currentLunarTemplate = -1; // reset template so it picks a fresh one
                 const ps = PROMPT_SETS[currentPromptSet];
                 for (let i = 0; i < 3; i++) {
                     document.getElementById('lunarLabel' + (i+1)).textContent = ps.prompts[i].label;
