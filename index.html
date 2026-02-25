@@ -6170,8 +6170,19 @@
                 });
             }
 
-            // Map received messages
+            // Map received messages (only show released or past-moonrise messages)
+            const now = new Date();
             received.forEach(m => {
+                // Filter: only show messages that are released OR whose release_at has passed
+                const isReleased = m.status === 'released';
+                const releasePassed = m.release_at && new Date(m.release_at) <= now;
+                const noReleaseTime = !m.release_at; // No release time = show immediately
+
+                if (!isReleased && !releasePassed && !noReleaseTime) {
+                    // Message is still in_transit and moonrise hasn't passed — hide it
+                    return;
+                }
+
                 const sp = m.sender_id ? profileMap[m.sender_id] : null;
                 const senderName = sp?.username || m.recipient_name || 'Someone';
                 const senderCity = sp?.city || 'Unknown';
@@ -6415,12 +6426,165 @@
             }
         }
 
-        // Realtime: listen for new messages, replies, and shared sky
+        // ========================
+        // REALTIME + POLLING ENGINE
+        // ========================
+        let realtimeChannels = [];      // Track all channels for cleanup
+        let pollInterval = null;        // Fallback polling timer
+        let releaseInterval = null;     // in_transit → released checker
+        let realtimeWorking = false;    // Track if realtime events actually fire
+        let lastMessageCheck = null;    // Timestamp cursor for polling
+        let isReloadingMessages = false; // Debounce guard
+
+        // Debounced message reload — prevents rapid concurrent reloads
+        async function debouncedReloadMessages() {
+            if (isReloadingMessages) return;
+            isReloadingMessages = true;
+            try {
+                const prevKey = currentConversation?.otherKey;
+                await loadMessages();
+                if (prevKey) {
+                    const newConv = conversations.find(c => c.otherKey === prevKey);
+                    if (newConv) { currentConversation = newConv; currentConversationIndex = conversations.indexOf(newConv); }
+                }
+                renderMessages();
+                renderMessageDots();
+                if (currentConversation) renderConversationThread();
+            } finally {
+                // Allow next reload after a short cooldown
+                setTimeout(() => { isReloadingMessages = false; }, 1000);
+            }
+        }
+
+        // Release checker: update in_transit messages whose release_at has passed
+        async function checkAndReleaseMessages() {
+            if (!currentAuthUser) return;
+            const now = new Date().toISOString();
+
+            // Check messages I SENT that are still in_transit but should be released
+            const { data: toRelease, error } = await sb.from('messages')
+                .select('id')
+                .eq('sender_id', currentAuthUser.id)
+                .eq('status', 'in_transit')
+                .lte('release_at', now);
+
+            if (error) { console.error('Release check failed:', error); return; }
+            if (!toRelease || toRelease.length === 0) return;
+
+            console.log('Releasing', toRelease.length, 'messages that passed moonrise');
+            const ids = toRelease.map(m => m.id);
+            const { error: updateErr } = await sb.from('messages')
+                .update({ status: 'released' })
+                .in('id', ids);
+
+            if (updateErr) console.error('Release update failed:', updateErr);
+            else await debouncedReloadMessages();
+        }
+
+        // Also release in_transit messages sent TO me (by other users) that should be visible
+        async function checkAndReleaseReceivedMessages() {
+            if (!currentAuthUser) return;
+            const now = new Date().toISOString();
+
+            // Messages sent to me by ID
+            const { data: byId } = await sb.from('messages')
+                .select('id')
+                .eq('recipient_id', currentAuthUser.id)
+                .eq('status', 'in_transit')
+                .lte('release_at', now);
+
+            // Messages sent to me by email
+            let byEmail = [];
+            if (currentAuthUser.email) {
+                const { data } = await sb.from('messages')
+                    .select('id')
+                    .eq('recipient_email', currentAuthUser.email)
+                    .eq('status', 'in_transit')
+                    .lte('release_at', now);
+                if (data) byEmail = data;
+            }
+
+            const allIds = [...(byId || []), ...byEmail].map(m => m.id);
+            const uniqueIds = [...new Set(allIds)];
+            if (uniqueIds.length === 0) return;
+
+            console.log('Releasing', uniqueIds.length, 'received messages that passed moonrise');
+            const { error } = await sb.from('messages')
+                .update({ status: 'released' })
+                .in('id', uniqueIds);
+            if (error) console.error('Received release update failed:', error);
+            else await debouncedReloadMessages();
+        }
+
+        // Fallback polling: check for new messages periodically
+        async function pollForNewMessages() {
+            if (!currentAuthUser || isReloadingMessages) return;
+
+            // Quick check: count messages since last check
+            let hasNew = false;
+            const cursor = lastMessageCheck || new Date(Date.now() - 30000).toISOString();
+
+            // Check for new messages sent to me
+            const { count: newRecv } = await sb.from('messages')
+                .select('id', { count: 'exact', head: true })
+                .or(`recipient_id.eq.${currentAuthUser.id}${currentAuthUser.email ? `,recipient_email.eq.${currentAuthUser.email}` : ''}`)
+                .gt('created_at', cursor);
+
+            if (newRecv && newRecv > 0) hasNew = true;
+
+            // Check for new replies on my messages
+            if (!hasNew) {
+                const myMsgIds = messages.filter(m => m.dbId).map(m => m.dbId);
+                if (myMsgIds.length > 0) {
+                    const { count: newReplies } = await sb.from('replies')
+                        .select('id', { count: 'exact', head: true })
+                        .in('message_id', myMsgIds)
+                        .neq('sender_id', currentAuthUser.id)
+                        .gt('created_at', cursor);
+                    if (newReplies && newReplies > 0) hasNew = true;
+                }
+            }
+
+            lastMessageCheck = new Date().toISOString();
+
+            if (hasNew) {
+                console.log('Poll: new messages detected, reloading...');
+                await debouncedReloadMessages();
+            }
+        }
+
+        // Clean up all realtime channels and polling
+        function cleanupRealtime() {
+            // Unsubscribe all channels
+            realtimeChannels.forEach(ch => {
+                try { sb.removeChannel(ch); } catch(e) { /* ignore */ }
+            });
+            realtimeChannels = [];
+
+            // Clear polling intervals
+            if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+            if (releaseInterval) { clearInterval(releaseInterval); releaseInterval = null; }
+
+            // Untrack presence
+            if (presenceChannel) {
+                try { sb.removeChannel(presenceChannel); } catch(e) { /* ignore */ }
+                presenceChannel = null;
+            }
+
+            realtimeWorking = false;
+            lastMessageCheck = null;
+            onlineUsers = {};
+            console.log('Realtime: all channels cleaned up');
+        }
+
         function setupRealtimeMessages() {
             if (!currentAuthUser) return;
 
+            // Clean up any existing channels first (prevents duplicates)
+            cleanupRealtime();
+
             // ---- MESSAGES: INSERT + UPDATE ----
-            sb.channel('inbox-messages')
+            const msgChannel = sb.channel('inbox-messages')
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
@@ -6432,16 +6596,9 @@
                     const isFromMe = m.sender_id === currentAuthUser.id;
 
                     if (isForMe || isFromMe) {
+                        realtimeWorking = true;
                         console.log('Realtime: new message', isForMe ? 'received' : 'sent', m.id);
-                        const prevKey = currentConversation?.otherKey;
-                        await loadMessages();
-                        if (prevKey) {
-                            const newConv = conversations.find(c => c.otherKey === prevKey);
-                            if (newConv) { currentConversation = newConv; currentConversationIndex = conversations.indexOf(newConv); }
-                        }
-                        renderMessages();
-                        renderMessageDots();
-                        if (currentConversation) renderConversationThread();
+                        await debouncedReloadMessages();
                     }
                 })
                 .on('postgres_changes', {
@@ -6454,44 +6611,53 @@
                                        m.recipient_id === currentAuthUser.id ||
                                        (m.recipient_email && m.recipient_email.toLowerCase() === (currentAuthUser.email || '').toLowerCase());
                     if (isRelevant) {
-                        const prevKey = currentConversation?.otherKey;
-                        await loadMessages();
-                        if (prevKey) {
-                            const newConv = conversations.find(c => c.otherKey === prevKey);
-                            if (newConv) { currentConversation = newConv; currentConversationIndex = conversations.indexOf(newConv); }
-                        }
-                        renderMessages();
-                        renderMessageDots();
-                        if (currentConversation) renderConversationThread();
+                        realtimeWorking = true;
+                        await debouncedReloadMessages();
                     }
                 })
                 .subscribe((status) => {
                     console.log('Realtime messages channel:', status);
+                    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                        console.warn('Realtime messages channel failed, relying on polling fallback');
+                    }
                 });
+            realtimeChannels.push(msgChannel);
 
             // ---- REPLIES: live chat via postgres_changes on replies table ----
-            sb.channel('live-replies')
+            const replyChannel = sb.channel('live-replies')
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
                     table: 'replies'
                 }, async (payload) => {
-                    console.log('Realtime: new reply', payload);
+                    realtimeWorking = true;
                     const reply = payload.new;
                     // Skip replies from ourselves (we already added them optimistically)
                     if (reply.sender_id === currentAuthUser.id) return;
 
+                    console.log('Realtime: new reply on message', reply.message_id);
+
                     // Find the message this reply belongs to
                     const targetMsg = messages.find(m => m.dbId === reply.message_id);
-                    if (!targetMsg) return;
+                    if (!targetMsg) {
+                        // Message not in our local array — full reload needed
+                        await debouncedReloadMessages();
+                        return;
+                    }
 
                     // Add the reply to the message's replies array
                     targetMsg.replies = targetMsg.replies || [];
+                    // Avoid duplicate if we somehow already have this reply
+                    const alreadyExists = targetMsg.replies.some(r =>
+                        r.createdAt === reply.created_at && r.text === (reply.text || reply.reply_text));
+                    if (alreadyExists) return;
+
                     targetMsg.replies.push({
                         text: reply.text || reply.reply_text,
                         time: 'Just now',
                         createdAt: reply.created_at || new Date().toISOString(),
                         sent: false,
+                        senderId: reply.sender_id,
                         isLunarNote: reply.is_lunar_note || false
                     });
 
@@ -6519,14 +6685,16 @@
                 .subscribe((status) => {
                     console.log('Realtime replies channel:', status);
                 });
+            realtimeChannels.push(replyChannel);
 
             // ---- SHARED SKY: live feed ----
-            sb.channel('shared-sky-live')
+            const skyChannel = sb.channel('shared-sky-live')
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
                     table: 'shared_sky'
                 }, async (payload) => {
+                    realtimeWorking = true;
                     const s = payload.new;
                     if (s.user_id !== currentAuthUser.id) {
                         globalTransmissions.unshift({
@@ -6544,9 +6712,32 @@
                 .subscribe((status) => {
                     console.log('Realtime shared_sky channel:', status);
                 });
+            realtimeChannels.push(skyChannel);
+
+            // ---- Start polling as FALLBACK (always active, lightweight) ----
+            lastMessageCheck = new Date().toISOString();
+
+            // Poll for new messages every 8 seconds
+            pollInterval = setInterval(async () => {
+                await pollForNewMessages();
+            }, 8000);
+
+            // Check for in_transit → released every 20 seconds
+            releaseInterval = setInterval(async () => {
+                await checkAndReleaseMessages();
+                await checkAndReleaseReceivedMessages();
+            }, 20000);
+
+            // Run initial release check immediately
+            setTimeout(() => {
+                checkAndReleaseMessages();
+                checkAndReleaseReceivedMessages();
+            }, 2000);
 
             // Presence: track online users
             setupPresence();
+
+            console.log('Realtime: all channels + polling initialized');
         }
 
         // ========================
@@ -6629,7 +6820,14 @@
         // Also handle future auth changes (e.g. signing out)
         sb.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_OUT') {
+                // Clean up all realtime channels and polling before clearing state
+                cleanupRealtime();
                 currentAuthUser = null;
+                messages = [];
+                conversations = [];
+                currentConversation = null;
+                currentConversationIndex = -1;
+                globalTransmissions = [];
                 showOnboarding();
             }
         });
@@ -7198,6 +7396,7 @@
                                 time: timeAgo(r.created_at),
                                 createdAt: r.created_at,
                                 sent: r.sender_id === currentAuthUser.id,
+                                senderId: r.sender_id,
                                 isLunarNote: r.is_lunar_note || false
                             });
                         });
@@ -7597,19 +7796,37 @@
 
             const replyText = input.value.trim();
             const now = new Date().toISOString();
-            targetMsg.replies.push({ text: replyText, time: 'Just now', createdAt: now, sent: true });
+            targetMsg.replies.push({ text: replyText, time: 'Just now', createdAt: now, sent: true, senderId: currentAuthUser?.id });
 
             // Save to Supabase
             if (currentAuthUser && targetMsg.dbId) {
-                const { error } = await sb.from('replies').insert({
+                const { data: replyData, error } = await sb.from('replies').insert({
                     message_id: targetMsg.dbId,
                     sender_id: currentAuthUser.id,
                     text: replyText
-                });
-                if (error) console.error('Reply save failed:', error);
+                }).select().single();
+                if (error) {
+                    console.error('Reply save failed:', error);
+                    // Remove optimistic reply on failure
+                    const idx = targetMsg.replies.findIndex(r => r.createdAt === now && r.text === replyText);
+                    if (idx >= 0) targetMsg.replies.splice(idx, 1);
+                    renderConversationThread();
+                    return;
+                }
+                // Update the optimistic reply with the real timestamp
+                const lastReply = targetMsg.replies.find(r => r.createdAt === now && r.text === replyText);
+                if (lastReply && replyData) lastReply.createdAt = replyData.created_at;
             }
 
             input.value = '';
+            // Update conversation preview after reply
+            const prevKey = currentConversation?.otherKey;
+            buildConversations();
+            if (prevKey) {
+                const newConv = conversations.find(c => c.otherKey === prevKey);
+                if (newConv) { currentConversation = newConv; currentConversationIndex = conversations.indexOf(newConv); }
+            }
+            renderMessages();
             renderConversationThread();
             document.getElementById('detailContent').scrollTop = document.getElementById('detailContent').scrollHeight;
         }
@@ -9233,10 +9450,10 @@
             // Calculate when the message should be released (recipient's next moonrise)
             const recipientMoonrise = getRecipientMoonrise(pendingMessage.location);
             const releaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
-            
-            // If recipient is on MoonPop AND is online right now, deliver instantly
+
+            // Determine delivery: instant if recipient is online, or if no valid moonrise calculated
             const recipientOnline = recipientId && onlineUsers[recipientId];
-            const instantDeliver = pendingMessage.isOnMoonpop && recipientOnline;
+            const instantDeliver = recipientOnline || !releaseAt;
             const messageStatus = instantDeliver ? 'released' : 'in_transit';
 
             // Save to Supabase
