@@ -6434,12 +6434,14 @@
 
             if (session) {
                 currentAuthUser = session.user;
+                let profile = null;
                 try {
-                    const { data: profile } = await sb
+                    const { data: profileData } = await sb
                         .from('profiles')
                         .select('*')
                         .eq('id', session.user.id)
                         .single();
+                    profile = profileData;
 
                     if (profile) {
                         // Ensure email is saved to profile (for contact lookup)
