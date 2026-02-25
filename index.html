@@ -4333,12 +4333,12 @@
     <div class="message-page" id="contactsPage">
         <div class="message-page-inner">
             <div class="message-page-header" style="justify-content:space-between;">
-                <button class="message-page-back" onclick="closeContactsPage()">←</button>
+                <div style="width:36px;"></div>
                 <span style="font-weight:700;color:var(--blue);font-size:15px;">Contacts</span>
-                <button onclick="toggleContactsAddView()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--blue);padding:4px 8px;" id="contactsAddBtn" title="Add contact">+</button>
+                <button onclick="closeContactsPage()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted);padding:4px 8px;" title="Close">✕</button>
             </div>
-            <!-- Add/Search new contact view (hidden by default) -->
-            <div id="contactsAddView" style="display:none;border-bottom:2px solid rgba(53,125,197,0.1);background:rgba(53,125,197,0.03);">
+            <!-- Add/Search new contact view (always visible) -->
+            <div id="contactsAddView" style="display:block;border-bottom:2px solid rgba(53,125,197,0.1);background:rgba(53,125,197,0.03);">
                 <!-- Tab switcher -->
                 <div style="display:flex;border-bottom:1px solid rgba(53,125,197,0.1);">
                     <button id="contactsTabFind" onclick="switchContactsTab('find')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);font-size:13px;font-weight:600;cursor:pointer;">Find on MoonPop</button>
@@ -5176,9 +5176,11 @@
                     localStorage.setItem('moonpop_profilepic', e.target.result);
                     updateAvatarEverywhere(e.target.result);
                     // Compress and save small avatar to Supabase for other users to see
-                    compressAvatar(e.target.result).then(smallAvatar => {
+                    compressAvatar(e.target.result).then(async (smallAvatar) => {
                         if (currentAuthUser && smallAvatar) {
-                            sb.from('profiles').update({ avatar_url: smallAvatar }).eq('id', currentAuthUser.id);
+                            const { error: avatarErr } = await sb.from('profiles').update({ avatar_url: smallAvatar }).eq('id', currentAuthUser.id);
+                            if (avatarErr) console.error('Avatar save to profile failed:', avatarErr);
+                            else console.log('Avatar saved to profile (' + smallAvatar.length + ' chars)');
                         }
                     });
                 };
@@ -5499,6 +5501,12 @@
                 moonData.moonset = formatTimeInZone(todaySet, tz);
                 moonData.moonsetDate = todaySet;
             }
+
+            // Update the data bar below the ring to match
+            const riseTimeEl = document.getElementById('moonriseTime');
+            const setTimeEl = document.getElementById('moonsetTime');
+            if (riseTimeEl) riseTimeEl.textContent = moonData.moonrise || '--:--';
+            if (setTimeEl) setTimeEl.textContent = moonData.moonset || '--:--';
             
             // Altitude / azimuth
             const topoAlt = getTopocentricAltitude(now, lat, lon);
@@ -6037,6 +6045,13 @@
                 }
             }
 
+            // Filter out self from contacts list
+            contacts = contacts.filter(c => {
+                if (c.linkedProfileId && c.linkedProfileId === currentAuthUser.id) return false;
+                if (c.email && currentAuthUser.email && c.email.toLowerCase() === currentAuthUser.email.toLowerCase()) return false;
+                return true;
+            });
+
             console.log('Contacts loaded:', contacts.length, 'on MoonPop:', contacts.filter(c => c.isOnMoonpop).length);
         }
 
@@ -6471,7 +6486,23 @@
                 // Always go straight to the app
                 localStorage.setItem('moonpop_seen', 'true');
                 hideOnboarding();
-                updateAvatarEverywhere(localStorage.getItem('moonpop_profilepic'));
+                // Avatar sync: localStorage ↔ Supabase profiles
+                const localAvatar = localStorage.getItem('moonpop_profilepic');
+                if (localAvatar) {
+                    updateAvatarEverywhere(localAvatar);
+                    // If profile has no avatar, push the local one to Supabase
+                    if (profile && !profile.avatar_url) {
+                        compressAvatar(localAvatar).then(small => {
+                            if (small) sb.from('profiles').update({ avatar_url: small }).eq('id', currentAuthUser.id);
+                        });
+                    }
+                } else if (profile && profile.avatar_url) {
+                    // No local avatar but profile has one — use it
+                    localStorage.setItem('moonpop_profilepic', profile.avatar_url);
+                    updateAvatarEverywhere(profile.avatar_url);
+                } else {
+                    updateAvatarEverywhere(null);
+                }
                 await loadContacts();
                 await loadMessages();
                 await loadSharedSky();
@@ -8277,11 +8308,10 @@
         }
 
         function toggleContactsAddView() {
+            // Add view is always visible now; just focus the search input
             const view = document.getElementById('contactsAddView');
-            view.style.display = view.style.display === 'none' ? 'block' : 'none';
-            if (view.style.display === 'block') {
-                switchContactsTab('find');
-            }
+            view.style.display = 'block';
+            switchContactsTab('find');
         }
 
         function switchContactsTab(tab) {
@@ -8351,33 +8381,36 @@
                     return;
                 }
 
-                // Filter out self and existing contacts
+                // Filter out self only
                 const existingIds = contacts.map(c => c.linkedProfileId).filter(Boolean);
-                const filtered = data.filter(u =>
-                    u.id !== currentAuthUser.id &&
-                    !existingIds.includes(u.id)
-                );
+                const filtered = data.filter(u => u.id !== currentAuthUser.id);
 
                 if (filtered.length === 0) {
-                    resultsDiv.innerHTML = '<div style="padding:8px;font-size:13px;color:var(--text-muted);">Already in your contacts</div>';
+                    resultsDiv.innerHTML = '<div style="padding:8px;font-size:13px;color:var(--text-muted);">No users found</div>';
                     return;
                 }
 
                 resultsDiv.innerHTML = filtered.map(u => {
                     const displayName = u.username || ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || 'MoonPop User';
+                    const fullName = ((u.first_name || '') + ' ' + (u.last_name || '')).trim();
+                    const usernameDisplay = u.username ? `<span style="font-size:11px;color:var(--text-muted);margin-left:4px;">@${u.username}</span>` : '';
                     const location = u.city || '';
                     const avatarHtml = u.avatar_url
                         ? `<img src="${u.avatar_url}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`
                         : `<div style="width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">${(displayName || '?').charAt(0).toUpperCase()}</div>`;
+                    const isExisting = existingIds.includes(u.id);
+                    const actionHtml = isExisting
+                        ? `<span style="font-size:11px;color:var(--text-muted);font-weight:500;">✓ Contact</span>`
+                        : `<button onclick="event.stopPropagation();addUserAsContact('${u.id}', '${displayName.replace(/'/g, "\\'")}', '${(u.email||'').replace(/'/g, "\\'")}', '${location.replace(/'/g, "\\'")}')" style="font-size:11px;color:white;font-weight:600;background:var(--blue);border:none;border-radius:14px;padding:4px 12px;cursor:pointer;">+ Add</button>`;
 
                     return `
-                        <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(53,125,197,0.06)'" onmouseout="this.style.background=''" onclick="addUserAsContact('${u.id}', '${displayName.replace(/'/g, "\\'")}', '${(u.email||'').replace(/'/g, "\\'")}', '${location.replace(/'/g, "\\'")}')">
+                        <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(53,125,197,0.06)'" onmouseout="this.style.background=''">
                             ${avatarHtml}
-                            <div style="flex:1;">
-                                <div style="font-size:14px;font-weight:600;color:var(--blue);">${displayName}</div>
+                            <div style="flex:1;min-width:0;${isExisting ? 'cursor:pointer;' : ''}" ${isExisting ? `onclick="openContactDetail('${displayName.replace(/'/g, "\\'")}')"` : ''}>
+                                <div style="font-size:14px;font-weight:600;color:var(--blue);">${fullName || displayName}${usernameDisplay}</div>
                                 <div style="font-size:11px;color:var(--text-muted);">${location || 'MoonPop user'}</div>
                             </div>
-                            <span style="font-size:11px;color:#4caf50;font-weight:600;">+ Add</span>
+                            ${actionHtml}
                         </div>
                     `;
                 }).join('');
@@ -8416,10 +8449,13 @@
             }
 
             renderContactsList();
-            // Clear search
-            document.getElementById('contactSearchInput').value = '';
-            document.getElementById('contactSearchResults').innerHTML = '';
-            document.getElementById('contactsAddView').style.display = 'none';
+            // Re-run search to refresh results (shows ✓ Contact instead of + Add)
+            const currentQuery = document.getElementById('contactSearchInput').value.trim();
+            if (currentQuery.length >= 2) {
+                searchUsersForContact(currentQuery);
+            } else {
+                document.getElementById('contactSearchResults').innerHTML = '';
+            }
         }
 
         async function sendInviteFromContacts() {
@@ -9461,7 +9497,9 @@
             }
             
             if (!fullMessage) {
-                alert('Write a message, add a Lunar Note, or both!');
+                // Focus the message input instead of showing an alert
+                const msgInput = document.getElementById('messageText');
+                if (msgInput) { msgInput.focus(); msgInput.setAttribute('placeholder', 'Write your moon message here...'); }
                 return;
             }
             
