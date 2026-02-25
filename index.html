@@ -4333,9 +4333,9 @@
     <div class="message-page" id="contactsPage">
         <div class="message-page-inner">
             <div class="message-page-header" style="justify-content:space-between;">
-                <div style="width:36px;"></div>
+                <span style="width:60px;"></span>
                 <span style="font-weight:700;color:var(--blue);font-size:15px;">Contacts</span>
-                <button onclick="closeContactsPage()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted);padding:4px 8px;" title="Close">✕</button>
+                <button onclick="closeContactsPage()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--blue);padding:4px 8px;font-weight:600;">Cancel</button>
             </div>
             <!-- Add/Search new contact view (always visible) -->
             <div id="contactsAddView" style="display:block;border-bottom:2px solid rgba(53,125,197,0.1);background:rgba(53,125,197,0.03);">
@@ -8294,12 +8294,12 @@
             renderContactsList();
             document.getElementById('contactsPage').classList.add('active');
             document.body.style.overflow = 'hidden';
-            // Reset add view
-            document.getElementById('contactsAddView').style.display = 'none';
+            // Reset search/invite inputs but keep panels visible
             document.getElementById('contactSearchInput').value = '';
             document.getElementById('contactSearchResults').innerHTML = '';
             document.getElementById('inviteEmailInput').value = '';
             document.getElementById('inviteStatus').innerHTML = '';
+            switchContactsTab('find');
         }
 
         function closeContactsPage() {
@@ -8381,9 +8381,9 @@
                     return;
                 }
 
-                // Filter out self only
+                // Keep all results — rendering handles self, existing contacts, and new users
                 const existingIds = contacts.map(c => c.linkedProfileId).filter(Boolean);
-                const filtered = data.filter(u => u.id !== currentAuthUser.id);
+                const filtered = data;
 
                 if (filtered.length === 0) {
                     resultsDiv.innerHTML = '<div style="padding:8px;font-size:13px;color:var(--text-muted);">No users found</div>';
@@ -8391,6 +8391,7 @@
                 }
 
                 resultsDiv.innerHTML = filtered.map(u => {
+                    const isSelf = u.id === currentAuthUser.id;
                     const displayName = u.username || ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || 'MoonPop User';
                     const fullName = ((u.first_name || '') + ' ' + (u.last_name || '')).trim();
                     const usernameDisplay = u.username ? `<span style="font-size:11px;color:var(--text-muted);margin-left:4px;">@${u.username}</span>` : '';
@@ -8399,9 +8400,23 @@
                         ? `<img src="${u.avatar_url}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`
                         : `<div style="width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">${(displayName || '?').charAt(0).toUpperCase()}</div>`;
                     const isExisting = existingIds.includes(u.id);
+                    const avatarSafe = (u.avatar_url || '').replace(/'/g, "\\'");
                     const actionHtml = isExisting
                         ? `<span style="font-size:11px;color:var(--text-muted);font-weight:500;">✓ Contact</span>`
-                        : `<button onclick="event.stopPropagation();addUserAsContact('${u.id}', '${displayName.replace(/'/g, "\\'")}', '${(u.email||'').replace(/'/g, "\\'")}', '${location.replace(/'/g, "\\'")}')" style="font-size:11px;color:white;font-weight:600;background:var(--blue);border:none;border-radius:14px;padding:4px 12px;cursor:pointer;">+ Add</button>`;
+                        : `<button onclick="event.stopPropagation();addUserAsContact('${u.id}', '${displayName.replace(/'/g, "\\'")}', '${(u.email||'').replace(/'/g, "\\'")}', '${location.replace(/'/g, "\\'")}', '${avatarSafe}')" style="background:var(--blue);color:white;border:none;border-radius:16px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Contact</button>`;
+
+                    if (isSelf) {
+                        return `
+                            <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:rgba(53,125,197,0.04);">
+                                ${avatarHtml}
+                                <div style="flex:1;">
+                                    <div style="font-size:14px;font-weight:600;color:var(--blue);">${displayName}</div>
+                                    <div style="font-size:11px;color:var(--text-muted);">${location || 'MoonPop user'}</div>
+                                </div>
+                                <span style="font-size:11px;color:var(--text-muted);font-weight:600;font-style:italic;">It's you</span>
+                            </div>
+                        `;
+                    }
 
                     return `
                         <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(53,125,197,0.06)'" onmouseout="this.style.background=''">
@@ -8420,7 +8435,7 @@
             }
         }
 
-        async function addUserAsContact(profileId, name, email, city) {
+        async function addUserAsContact(profileId, name, email, city, avatarUrl) {
             // Check if already in contacts
             if (contacts.find(c => c.linkedProfileId === profileId || (c.email && c.email.toLowerCase() === email.toLowerCase()))) {
                 alert(name + ' is already in your contacts!');
@@ -8431,6 +8446,7 @@
                 name: name,
                 location: city || 'Unknown',
                 email: email,
+                avatar: avatarUrl || null,
                 isOnMoonpop: true,
                 linkedProfileId: profileId
             };
@@ -8449,7 +8465,7 @@
             }
 
             renderContactsList();
-            // Re-run search to refresh results (shows ✓ Contact instead of + Add)
+            // Re-run search to refresh results (shows ✓ Contact instead of Add Contact)
             const currentQuery = document.getElementById('contactSearchInput').value.trim();
             if (currentQuery.length >= 2) {
                 searchUsersForContact(currentQuery);
@@ -8505,19 +8521,22 @@
             const container = document.getElementById('contactsListBody');
             if (!container) return;
 
-            if (contacts.length === 0) {
+            // Filter out self from contacts list
+            const visibleContacts = contacts.filter(c => c.linkedProfileId !== currentAuthUser?.id);
+
+            if (visibleContacts.length === 0) {
                 container.innerHTML = `
                     <div style="text-align:center;padding:60px 20px;color:var(--text-muted);">
                         <div style="font-size:40px;margin-bottom:12px;">👥</div>
                         <h4 style="color:var(--blue);margin-bottom:8px;">No contacts yet</h4>
                         <p style="font-size:13px;margin-bottom:16px;">Search for MoonPop users or invite someone new.</p>
-                        <button onclick="toggleContactsAddView()" style="background:var(--blue);color:white;border:none;border-radius:20px;padding:8px 20px;font-size:13px;cursor:pointer;">+ Add a contact</button>
+                        <button onclick="document.getElementById('contactSearchInput').focus()" style="background:var(--blue);color:white;border:none;border-radius:20px;padding:8px 20px;font-size:13px;cursor:pointer;">+ Add a contact</button>
                     </div>
                 `;
                 return;
             }
 
-            const sorted = [...contacts].sort((a, b) => {
+            const sorted = [...visibleContacts].sort((a, b) => {
                 if (a.isOnMoonpop && !b.isOnMoonpop) return -1;
                 if (!a.isOnMoonpop && b.isOnMoonpop) return 1;
                 return (a.name || '').localeCompare(b.name || '');
@@ -8682,12 +8701,10 @@
             closeContactsPage();
             openModal();
             setTimeout(() => {
-                goToRecipientStep();
                 const contact = contacts.find(c => c.name === contactName);
                 if (contact) {
                     selectedRecipient = { name: contact.name, email: contact.email, location: contact.location, isOnMoonpop: contact.isOnMoonpop, linkedProfileId: contact.linkedProfileId };
                     document.getElementById('recipient').value = contact.name;
-                    updateDeliveryInfo();
                 }
             }, 100);
         }
