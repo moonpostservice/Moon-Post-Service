@@ -4666,10 +4666,18 @@
                 Loading your moon message...
             </div>
 
-            <!-- Error state -->
+            <!-- Error state / invite landing for non-users -->
             <div id="revealError" style="display:none;text-align:center;padding:40px;">
-                <p style="color:rgba(255,255,255,0.7);font-size:16px;">Message not found</p>
-                <p style="color:rgba(255,255,255,0.4);font-size:13px;margin-top:8px;">This link may have expired or the message doesn't exist.</p>
+                <div style="font-size:36px;margin-bottom:16px;">🌙</div>
+                <p style="color:rgba(255,255,255,0.9);font-size:18px;font-weight:600;">Someone sent you a moon message</p>
+                <p style="color:rgba(255,255,255,0.5);font-size:14px;margin-top:12px;line-height:1.6;">
+                    Messages on MoonPop travel with the moon.<br>
+                    Sign up to reveal your message and reply.
+                </p>
+                <button class="cta-primary" onclick="revealSignupToReply()" style="font-size:15px;padding:12px 32px;margin-top:24px;">
+                    Join MoonPop to read your message
+                </button>
+                <p style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:16px;">Free · No app download needed</p>
             </div>
 
             <!-- Real content (hidden until loaded) -->
@@ -4710,6 +4718,37 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Contact Detail Popup -->
+    <div class="modal-overlay" id="contactDetailModal" style="display:none;" onclick="if(event.target===this)closeContactDetail()">
+        <div style="background:white;border-radius:24px;width:min(340px,90vw);padding:32px 24px 24px;text-align:center;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <button onclick="closeContactDetail()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;color:#999;cursor:pointer;">&times;</button>
+
+            <!-- Profile Picture -->
+            <div id="contactDetailAvatar" style="width:80px;height:80px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;margin:0 auto 16px;overflow:hidden;position:relative;">
+                <span id="contactDetailInitial"></span>
+                <img id="contactDetailImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
+            </div>
+
+            <!-- Name & Username -->
+            <h3 id="contactDetailName" style="font-size:18px;font-weight:700;color:var(--blue);margin:0 0 4px;"></h3>
+            <p id="contactDetailUsername" style="font-size:13px;color:var(--text-muted);margin:0 0 4px;"></p>
+            <p id="contactDetailLocation" style="font-size:12px;color:var(--text-muted);margin:0 0 16px;"></p>
+
+            <!-- Online badge -->
+            <div id="contactDetailOnline" style="display:none;margin-bottom:16px;">
+                <span style="display:inline-flex;align-items:center;gap:4px;background:#e8f5e9;color:#2e7d32;font-size:12px;font-weight:600;padding:4px 12px;border-radius:12px;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:#4caf50;"></span> Online now
+                </span>
+            </div>
+
+            <!-- Stats -->
+            <div id="contactDetailStats" style="font-size:13px;color:var(--text-muted);margin-bottom:20px;padding:12px;background:var(--cream);border-radius:12px;"></div>
+
+            <!-- CTA -->
+            <button id="contactDetailCta" onclick="contactDetailSendMessage()" style="width:100%;background:var(--blue);color:white;border:none;border-radius:20px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);"></button>
         </div>
     </div>
 
@@ -5914,13 +5953,13 @@
 
         async function loadContacts() {
             if (!currentAuthUser) return;
-            
+
             // Load raw contacts (no FK join — it's unreliable)
             const { data, error } = await sb.from('contacts')
                 .select('*')
                 .eq('owner_id', currentAuthUser.id)
                 .order('created_at', { ascending: false });
-            
+
             if (!data) { console.error('Load contacts failed:', error); return; }
 
             // First pass: build contacts array from DB
@@ -5930,46 +5969,74 @@
                 location: c.city || 'Unknown',
                 email: c.email,
                 avatar: null,
+                username: null,
+                firstName: null,
+                lastName: null,
                 isOnMoonpop: c.is_on_moonpop || false,
                 linkedProfileId: c.linked_profile_id || null
             }));
 
-            // Second pass: for every contact with an email, check if they're on MoonPop
-            // This catches contacts that were added before the user signed up
+            // Second pass: batch-fetch all linked profiles in ONE query (fast + no auth.users access)
+            const linkedIds = contacts.filter(c => c.linkedProfileId).map(c => c.linkedProfileId);
+            const profileMap = {};
+            if (linkedIds.length > 0) {
+                const { data: profiles } = await sb.from('profiles')
+                    .select('id, username, first_name, last_name, city, avatar_url, email')
+                    .in('id', linkedIds);
+                if (profiles) profiles.forEach(p => { profileMap[p.id] = p; });
+            }
+
+            // Apply profile data to contacts
             for (let i = 0; i < contacts.length; i++) {
                 const c = contacts[i];
-                if (!c.email) continue;
-                
-                try {
-                    const { data: found, error: lookupErr } = await sb.rpc('lookup_user_by_email', { lookup_email: c.email });
-                    if (lookupErr) { console.error('Contact lookup error:', lookupErr); continue; }
-                    
-                    if (found && found.length > 0) {
-                        const user = found[0];
-                        const displayName = user.username || [user.first_name, user.last_name].filter(Boolean).join(' ') || c.name;
-                        
-                        // Update local contact with live profile data
-                        contacts[i].name = displayName;
-                        contacts[i].location = user.city || c.location;
-                        contacts[i].avatar = user.avatar_url || null;
-                        contacts[i].isOnMoonpop = true;
-                        contacts[i].linkedProfileId = user.id;
-
-                        // Update DB if needed (fire and forget)
-                        if (!c.linkedProfileId || c.linkedProfileId !== user.id) {
-                            sb.from('contacts').update({
-                                linked_profile_id: user.id,
-                                is_on_moonpop: true,
-                                name: displayName,
-                                city: user.city || null
-                            }).eq('id', c.id);
-                        }
-                    }
-                } catch(e) {
-                    console.error('Contact lookup failed for', c.email, e);
+                if (c.linkedProfileId && profileMap[c.linkedProfileId]) {
+                    const p = profileMap[c.linkedProfileId];
+                    contacts[i].avatar = p.avatar_url || null;
+                    contacts[i].username = p.username || null;
+                    contacts[i].firstName = p.first_name || null;
+                    contacts[i].lastName = p.last_name || null;
+                    contacts[i].location = p.city || c.location;
+                    contacts[i].isOnMoonpop = true;
+                    // Use full name for display, keep username separate
+                    const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ');
+                    if (fullName) contacts[i].name = fullName;
                 }
             }
-            
+
+            // Third pass: for contacts WITHOUT a linked profile, try to find them by email
+            const unlinked = contacts.filter(c => c.email && !c.linkedProfileId);
+            for (const c of unlinked) {
+                try {
+                    const { data: found } = await sb.from('profiles')
+                        .select('id, username, first_name, last_name, city, avatar_url')
+                        .eq('email', c.email)
+                        .limit(1);
+                    if (found && found.length > 0) {
+                        const p = found[0];
+                        const idx = contacts.indexOf(c);
+                        const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ');
+                        contacts[idx].avatar = p.avatar_url || null;
+                        contacts[idx].username = p.username || null;
+                        contacts[idx].firstName = p.first_name || null;
+                        contacts[idx].lastName = p.last_name || null;
+                        contacts[idx].location = p.city || c.location;
+                        contacts[idx].isOnMoonpop = true;
+                        contacts[idx].linkedProfileId = p.id;
+                        if (fullName) contacts[idx].name = fullName;
+
+                        // Update DB with resolved profile (fire and forget)
+                        sb.from('contacts').update({
+                            linked_profile_id: p.id,
+                            is_on_moonpop: true,
+                            name: fullName || c.name,
+                            city: p.city || null
+                        }).eq('id', c.id);
+                    }
+                } catch(e) {
+                    console.error('Contact email lookup failed for', c.email, e);
+                }
+            }
+
             console.log('Contacts loaded:', contacts.length, 'on MoonPop:', contacts.filter(c => c.isOnMoonpop).length);
         }
 
@@ -8441,22 +8508,26 @@
         function renderContactRow(contact, isOnMps) {
             const initial = (contact.name || '?').charAt(0).toUpperCase();
             const escapedName = (contact.name || '').replace(/'/g, "\\'");
-            const avatarInner = contact.avatar 
+            const avatarInner = contact.avatar
                 ? `<img src="${contact.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
                 : `<span>${initial}</span>`;
             const online = isContactOnline(contact);
             const statusDotColor = online ? '#4caf50' : (isOnMps ? '#4caf50' : '');
             const statusDot = statusDotColor ? `<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:${statusDotColor};border:2px solid white;z-index:1;${!online && isOnMps ? 'opacity:0.4;' : ''}"></span>` : '';
-            
+
+            // Display name with username
+            const displayName = contact.name || 'Unknown';
+            const usernameTag = contact.username ? `<span style="font-size:12px;color:var(--text-muted);font-weight:400;margin-left:4px;">@${contact.username}</span>` : '';
+
             return `
                 <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid #f0ece4;gap:12px;">
                     <div class="msg-avatar" style="margin-right:0;">
                         ${statusDot}
                         ${avatarInner}
                     </div>
-                    <div style="flex:1;min-width:0;cursor:pointer;" onclick="contactAction('${escapedName}')">
+                    <div style="flex:1;min-width:0;cursor:pointer;" onclick="openContactDetail('${escapedName}')">
                         <div style="font-size:14px;font-weight:600;color:var(--blue);">
-                            ${contact.name}
+                            ${displayName}${usernameTag}
                             ${online ? '<span style="font-size:11px;color:#4caf50;margin-left:6px;">● online</span>' : ''}
                         </div>
                         <div style="font-size:11px;color:var(--text-muted);">
@@ -8464,7 +8535,7 @@
                             ${contact.location && contact.location !== 'Unknown' ? ' · ' + contact.location : ''}
                         </div>
                     </div>
-                    <button onclick="deleteContact('${escapedName}')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#ccc;padding:4px;" title="Remove">&times;</button>
+                    <button onclick="event.stopPropagation();deleteContact('${escapedName}')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#ccc;padding:4px;" title="Remove">&times;</button>
                 </div>
             `;
         }
@@ -8484,6 +8555,93 @@
             renderContactsList();
         }
 
+        // ========================
+        // CONTACT DETAIL POPUP
+        // ========================
+        let currentContactDetail = null;
+
+        function openContactDetail(contactName) {
+            const contact = contacts.find(c => c.name === contactName);
+            if (!contact) return;
+            currentContactDetail = contact;
+
+            const modal = document.getElementById('contactDetailModal');
+
+            // Avatar
+            const initial = (contact.name || '?').charAt(0).toUpperCase();
+            document.getElementById('contactDetailInitial').textContent = initial;
+            const img = document.getElementById('contactDetailImg');
+            if (contact.avatar) {
+                img.src = contact.avatar;
+                img.style.display = 'block';
+                document.getElementById('contactDetailInitial').style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                document.getElementById('contactDetailInitial').style.display = '';
+            }
+
+            // Name & username
+            document.getElementById('contactDetailName').textContent = contact.name;
+            const usernameEl = document.getElementById('contactDetailUsername');
+            if (contact.username) {
+                usernameEl.textContent = '@' + contact.username;
+                usernameEl.style.display = '';
+            } else {
+                usernameEl.style.display = 'none';
+            }
+            document.getElementById('contactDetailLocation').textContent =
+                (contact.location && contact.location !== 'Unknown') ? contact.location : '';
+
+            // Online status
+            const online = isContactOnline(contact);
+            document.getElementById('contactDetailOnline').style.display = online ? '' : 'none';
+
+            // Chat stats
+            const chatCount = conversations.filter(c =>
+                c.otherProfileId === contact.linkedProfileId ||
+                c.otherName === contact.name ||
+                (contact.email && c.otherEmail === contact.email)
+            ).length;
+            const msgCount = messages.filter(m =>
+                (m.type === 'sent' && (m.recipientId === contact.linkedProfileId || m.recipientEmail === contact.email)) ||
+                (m.type === 'received' && (m.senderId === contact.linkedProfileId))
+            ).length;
+            const statsEl = document.getElementById('contactDetailStats');
+            if (msgCount > 0) {
+                statsEl.textContent = `${msgCount} moon message${msgCount !== 1 ? 's' : ''} exchanged`;
+                statsEl.style.display = '';
+            } else {
+                statsEl.textContent = 'No messages yet — send the first one!';
+                statsEl.style.display = '';
+            }
+
+            // CTA button
+            const displayUsername = contact.username || contact.name;
+            document.getElementById('contactDetailCta').textContent = `Write ${displayUsername} a moon message`;
+
+            modal.style.display = 'flex';
+        }
+
+        function closeContactDetail() {
+            document.getElementById('contactDetailModal').style.display = 'none';
+            currentContactDetail = null;
+        }
+
+        function contactDetailSendMessage() {
+            if (!currentContactDetail) return;
+            closeContactDetail();
+            closeContactsPage();
+            openModal();
+            setTimeout(() => {
+                goToRecipientStep();
+                const contact = currentContactDetail;
+                selectedRecipient = { name: contact.name, email: contact.email, location: contact.location, isOnMoonpop: contact.isOnMoonpop, linkedProfileId: contact.linkedProfileId };
+                document.getElementById('recipient').value = contact.name;
+                updateDeliveryInfo();
+            }, 100);
+        }
+
+        // Legacy: direct action (used by search results)
         function contactAction(contactName) {
             closeContactsPage();
             openModal();
@@ -8846,15 +9004,18 @@
             resultDiv.innerHTML = 'Checking...';
             
             try {
-                const { data, error } = await sb.rpc('lookup_user_by_email', { lookup_email: email });
-                
+                const { data, error } = await sb.from('profiles')
+                    .select('id, username, first_name, last_name, city, avatar_url, email')
+                    .eq('email', email)
+                    .limit(1);
+
                 if (error) {
                     console.error('Email lookup error:', error);
                     resultDiv.style.display = 'none';
                     emailLookupResult = null;
                     return;
                 }
-                
+
                 if (data && data.length > 0) {
                     const user = data[0];
                     emailLookupResult = user;
@@ -8930,7 +9091,10 @@
                 linkedProfileId = emailLookupResult.id;
             } else if (currentAuthUser) {
                 try {
-                    const { data } = await sb.rpc('lookup_user_by_email', { lookup_email: email });
+                    const { data } = await sb.from('profiles')
+                        .select('id')
+                        .eq('email', email)
+                        .limit(1);
                     if (data && data.length > 0) {
                         isOnMps = true;
                         linkedProfileId = data[0].id;
@@ -9453,16 +9617,19 @@
             const phase = moonData.phase || getMoonPhase();
             const phaseName = phase.phaseName.toLowerCase();
 
-            // ALWAYS resolve recipient by email lookup (don't trust cached data)
+            // Resolve recipient by profile lookup (avoids auth.users table)
             let recipientId = pendingMessage.linkedProfileId || null;
             let recipientEmail = pendingMessage.recipientEmail || null;
-            
-            // If we have an email but no profile ID, try to resolve
+
+            // If we have an email but no profile ID, try to resolve via profiles table
             if (recipientEmail && !recipientId) {
                 try {
-                    const { data: found } = await sb.rpc('lookup_user_by_email', { lookup_email: recipientEmail });
-                    if (found && found.length > 0) {
-                        recipientId = found[0].id;
+                    const { data: foundProfiles } = await sb.from('profiles')
+                        .select('id')
+                        .eq('email', recipientEmail)
+                        .limit(1);
+                    if (foundProfiles && foundProfiles.length > 0) {
+                        recipientId = foundProfiles[0].id;
                         pendingMessage.isOnMoonpop = true;
                         pendingMessage.linkedProfileId = recipientId;
                     }
@@ -9515,14 +9682,34 @@
 
                 console.log('Sending message:', { recipientId, recipientEmail, status: messageStatus, instantDeliver });
 
-                const { data: msgData, error: msgError } = await sb.from('messages')
-                    .insert(insertData)
-                    .select()
-                    .single();
+                // Insert message — try with .select() first, fall back to plain insert
+                // (.select() can fail if RLS SELECT policy references auth.users)
+                let msgData = null, msgError = null;
+
+                const result1 = await sb.from('messages').insert(insertData).select().single();
+                if (!result1.error) {
+                    msgData = result1.data;
+                } else {
+                    console.warn('Insert+select failed, trying plain insert:', result1.error.message);
+                    // Plain insert (no select)
+                    const result2 = await sb.from('messages').insert(insertData);
+                    if (result2.error) {
+                        msgError = result2.error;
+                    } else {
+                        // Insert succeeded — fetch the message ID by querying our latest sent
+                        const { data: latest } = await sb.from('messages')
+                            .select('id, created_at')
+                            .eq('sender_id', currentAuthUser.id)
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .single();
+                        if (latest) msgData = { ...insertData, id: latest.id, created_at: latest.created_at };
+                        else msgData = { ...insertData, id: 'pending_' + Date.now() };
+                    }
+                }
 
                 if (msgError) {
                     console.error('Message save failed:', msgError);
-                    // Show error to user and abort — don't pretend message was sent
                     alert('Message could not be sent. Please try again.\n\nError: ' + (msgError.message || 'Unknown error'));
                     pendingMessage = null;
                     return;
