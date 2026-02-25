@@ -6045,7 +6045,9 @@
                     conv.latestPreview = (latestReply.sent ? 'You: ' : '') + (latestReply.isLunarNote ? '🌙 Lunar Note' : latestReply.text);
                 } else {
                     // Preview from latest message
-                    if (latest.messageText) {
+                    if (latest.status === 'Arriving') {
+                        conv.latestPreview = '🌙 Message on its way...';
+                    } else if (latest.messageText) {
                         conv.latestPreview = (latest.type === 'sent' ? 'You: ' : '') + latest.messageText;
                     } else if (latest.lunarNote) {
                         conv.latestPreview = (latest.type === 'sent' ? 'You: ' : '') + '🌙 Lunar Note';
@@ -6170,22 +6172,18 @@
                 });
             }
 
-            // Map received messages (only show released or past-moonrise messages)
-            const now = new Date();
+            // Map received messages — ALL messages always visible (WhatsApp-like persistence)
+            // in_transit messages show as "arriving" notifications, released messages show full content
             received.forEach(m => {
-                // Filter: only show messages that are released OR whose release_at has passed
-                const isReleased = m.status === 'released';
-                const releasePassed = m.release_at && new Date(m.release_at) <= now;
-                const noReleaseTime = !m.release_at; // No release time = show immediately
-
-                if (!isReleased && !releasePassed && !noReleaseTime) {
-                    // Message is still in_transit and moonrise hasn't passed — hide it
-                    return;
-                }
-
                 const sp = m.sender_id ? profileMap[m.sender_id] : null;
                 const senderName = sp?.username || m.recipient_name || 'Someone';
                 const senderCity = sp?.city || 'Unknown';
+
+                // Determine if message content should be revealed
+                const isReleased = m.status === 'released';
+                const releasePassed = m.release_at && new Date(m.release_at) <= new Date();
+                const noReleaseTime = !m.release_at;
+                const contentVisible = isReleased || releasePassed || noReleaseTime;
 
                 allMessages.push({
                     dbId: m.id,
@@ -6194,17 +6192,19 @@
                     sender: senderName,
                     senderAvatar: sp?.avatar_url || null,
                     recipientEmail: m.recipient_email,
-                    preview: m.message_text || '',
-                    status: '',
+                    preview: contentVisible ? (m.message_text || '') : '',
+                    status: contentVisible ? '' : 'Arriving',
                     type: 'received',
                     location: senderCity,
                     time: timeAgo(m.created_at),
                     createdAt: m.created_at,
                     phaseName: m.moon_phase || '',
-                    messageText: m.message_text || '',
-                    lunarNote: m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
-                    songUrl: m.song_url,
-                    songTitle: m.song_title,
+                    messageText: contentVisible ? (m.message_text || '') : '',
+                    lunarNote: contentVisible && m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
+                    songUrl: contentVisible ? m.song_url : null,
+                    songTitle: contentVisible ? m.song_title : null,
+                    contentVisible: contentVisible,
+                    releaseAt: m.release_at,
                     reactions: [],
                     replies: []
                 });
@@ -6433,7 +6433,6 @@
         let pollInterval = null;        // Fallback polling timer
         let releaseInterval = null;     // in_transit → released checker
         let realtimeWorking = false;    // Track if realtime events actually fire
-        let lastMessageCheck = null;    // Timestamp cursor for polling
         let isReloadingMessages = false; // Debounce guard
 
         // Debounced message reload — prevents rapid concurrent reloads
@@ -6516,40 +6515,45 @@
             else await debouncedReloadMessages();
         }
 
-        // Fallback polling: check for new messages periodically
+        // Fallback polling: reload messages periodically to catch anything missed
+        // This is the CRITICAL fallback when Supabase Realtime isn't working
+        let lastKnownMessageCount = 0;
+
         async function pollForNewMessages() {
             if (!currentAuthUser || isReloadingMessages) return;
 
-            // Quick check: count messages since last check
-            let hasNew = false;
-            const cursor = lastMessageCheck || new Date(Date.now() - 30000).toISOString();
+            try {
+                // Simple approach: count total messages for this user and compare
+                // Query 1: messages I sent
+                const { count: sentCount } = await sb.from('messages')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('sender_id', currentAuthUser.id);
 
-            // Check for new messages sent to me
-            const { count: newRecv } = await sb.from('messages')
-                .select('id', { count: 'exact', head: true })
-                .or(`recipient_id.eq.${currentAuthUser.id}${currentAuthUser.email ? `,recipient_email.eq.${currentAuthUser.email}` : ''}`)
-                .gt('created_at', cursor);
+                // Query 2: messages sent to me (by ID)
+                const { count: recvCount } = await sb.from('messages')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('recipient_id', currentAuthUser.id);
 
-            if (newRecv && newRecv > 0) hasNew = true;
-
-            // Check for new replies on my messages
-            if (!hasNew) {
-                const myMsgIds = messages.filter(m => m.dbId).map(m => m.dbId);
-                if (myMsgIds.length > 0) {
-                    const { count: newReplies } = await sb.from('replies')
+                // Query 3: messages sent to me (by email, as fallback)
+                let emailCount = 0;
+                if (currentAuthUser.email) {
+                    const { count: ec } = await sb.from('messages')
                         .select('id', { count: 'exact', head: true })
-                        .in('message_id', myMsgIds)
-                        .neq('sender_id', currentAuthUser.id)
-                        .gt('created_at', cursor);
-                    if (newReplies && newReplies > 0) hasNew = true;
+                        .eq('recipient_email', currentAuthUser.email);
+                    emailCount = ec || 0;
                 }
-            }
 
-            lastMessageCheck = new Date().toISOString();
+                const totalCount = (sentCount || 0) + (recvCount || 0) + (emailCount || 0);
 
-            if (hasNew) {
-                console.log('Poll: new messages detected, reloading...');
-                await debouncedReloadMessages();
+                if (lastKnownMessageCount > 0 && totalCount !== lastKnownMessageCount) {
+                    console.log('Poll: message count changed', lastKnownMessageCount, '→', totalCount, '— reloading');
+                    lastKnownMessageCount = totalCount;
+                    await debouncedReloadMessages();
+                } else {
+                    lastKnownMessageCount = totalCount;
+                }
+            } catch(e) {
+                console.error('Poll error:', e);
             }
         }
 
@@ -6572,7 +6576,7 @@
             }
 
             realtimeWorking = false;
-            lastMessageCheck = null;
+            lastKnownMessageCount = 0;
             onlineUsers = {};
             console.log('Realtime: all channels cleaned up');
         }
@@ -6715,12 +6719,12 @@
             realtimeChannels.push(skyChannel);
 
             // ---- Start polling as FALLBACK (always active, lightweight) ----
-            lastMessageCheck = new Date().toISOString();
+            lastKnownMessageCount = 0; // Reset so first poll sets baseline
 
-            // Poll for new messages every 8 seconds
+            // Poll for new messages every 5 seconds (critical for delivery)
             pollInterval = setInterval(async () => {
                 await pollForNewMessages();
-            }, 8000);
+            }, 5000);
 
             // Check for in_transit → released every 20 seconds
             releaseInterval = setInterval(async () => {
@@ -7466,6 +7470,20 @@
             sortedMsgs.forEach((msg, mi) => {
                 const msgIndex = messages.indexOf(msg);
 
+                // Received in-transit message: show "arriving" notification instead of content
+                if (msg.type === 'received' && msg.status === 'Arriving') {
+                    timeline.push({
+                        type: 'arriving',
+                        time: msg.time,
+                        createdAt: msg.createdAt,
+                        sent: false,
+                        releaseAt: msg.releaseAt,
+                        msgIndex,
+                        isMessage: true
+                    });
+                    return; // Skip content rendering for this message
+                }
+
                 // Add the message itself
                 if (msg.lunarNote) {
                     timeline.push({
@@ -7562,6 +7580,20 @@
                         <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;font-style:italic;">
                             Message traveling toward ${item.location}<br>
                             It will arrive at moonrise
+                        </div>
+                    `;
+                } else if (item.type === 'arriving') {
+                    // Received in-transit message: shown as notification
+                    let arrivalNote = 'A moon message is on its way to you...';
+                    if (item.releaseAt) {
+                        const rd = new Date(item.releaseAt);
+                        const timeStr = rd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        arrivalNote = `A moon message is traveling toward you. It will arrive at moonrise (${timeStr}).`;
+                    }
+                    html += `
+                        <div style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(47,73,131,0.08);border:1px dashed rgba(47,73,131,0.2);margin-bottom:8px;">
+                            <div style="font-size:13px;color:var(--blue);font-style:italic;">${arrivalNote}</div>
+                            <div class="message-bubble-time">${item.time}</div>
                         </div>
                     `;
                 } else if (item.type === 'lunar-reply') {
@@ -9451,9 +9483,14 @@
             const recipientMoonrise = getRecipientMoonrise(pendingMessage.location);
             const releaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
 
-            // Determine delivery: instant if recipient is online, or if no valid moonrise calculated
+            // Determine delivery:
+            // - Instant if recipient is on MoonPop AND online (their moon is visible since they're using the app)
+            // - Instant if moonrise can't be calculated (no city data)
+            // - Instant if moonrise is very soon (< 5 minutes away)
+            // - Otherwise: in_transit until recipient's moonrise
             const recipientOnline = recipientId && onlineUsers[recipientId];
-            const instantDeliver = recipientOnline || !releaseAt;
+            const moonriseVerySoon = recipientMoonrise && recipientMoonrise.hoursUntil < (5/60);
+            const instantDeliver = recipientOnline || !releaseAt || moonriseVerySoon;
             const messageStatus = instantDeliver ? 'released' : 'in_transit';
 
             // Save to Supabase
@@ -9483,16 +9520,27 @@
                     .select()
                     .single();
 
-                if (msgError) console.error('Message save failed:', msgError);
-                else {
-                    console.log('Message saved successfully, id:', msgData.id);
-                    dbMessage = msgData;
+                if (msgError) {
+                    console.error('Message save failed:', msgError);
+                    // Show error to user and abort — don't pretend message was sent
+                    alert('Message could not be sent. Please try again.\n\nError: ' + (msgError.message || 'Unknown error'));
+                    pendingMessage = null;
+                    return;
                 }
+                console.log('Message saved successfully, id:', msgData.id);
+                dbMessage = msgData;
+            }
+
+            // Only add to local array if we have a confirmed DB record
+            if (!dbMessage) {
+                alert('Message could not be sent — not authenticated.');
+                pendingMessage = null;
+                return;
             }
 
             // Add to local messages array
             messages.unshift({
-                dbId: dbMessage?.id || null,
+                dbId: dbMessage.id,
                 senderId: currentAuthUser?.id || null,
                 recipientId: recipientId || null,
                 recipientEmail: recipientEmail || null,
