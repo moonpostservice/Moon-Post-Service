@@ -6227,139 +6227,202 @@
             return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
         }
 
-        async function loadMessages() {
-            if (!currentAuthUser) return;
+        async function loadMessages(retryCount = 0) {
+            if (!currentAuthUser) {
+                console.warn('loadMessages: no currentAuthUser, skipping');
+                return;
+            }
 
-            // *** NO FK JOINS — they silently fail if FK missing or value is NULL ***
-
-            // 1. Fetch messages I sent (plain select)
-            const { data: sent, error: sentErr } = await sb.from('messages')
-                .select('*')
-                .eq('sender_id', currentAuthUser.id)
-                .order('created_at', { ascending: false });
-            if (sentErr) console.error('Load sent failed:', sentErr);
-
-            // 2. Fetch messages sent TO me — two separate safe queries
-            let received = [];
-            
-            // 2a. By recipient_id
-            const { data: recvById, error: err1 } = await sb.from('messages')
-                .select('*')
-                .eq('recipient_id', currentAuthUser.id)
-                .order('created_at', { ascending: false });
-            if (err1) console.error('Load recv by id failed:', err1);
-            if (recvById) received = received.concat(recvById);
-
-            // 2b. By recipient_email (catches messages sent before profile was linked)
-            if (currentAuthUser.email) {
-                const { data: recvByEmail, error: err2 } = await sb.from('messages')
-                    .select('*')
-                    .eq('recipient_email', currentAuthUser.email)
-                    .order('created_at', { ascending: false });
-                if (err2) console.error('Load recv by email failed:', err2);
-                if (recvByEmail) {
-                    const existingIds = new Set(received.map(m => m.id));
-                    recvByEmail.forEach(m => { if (!existingIds.has(m.id)) received.push(m); });
+            try {
+                // Ensure we have a fresh session (prevents stale JWT issues)
+                if (retryCount > 0) {
+                    const { data: { session } } = await sb.auth.getSession();
+                    if (!session) {
+                        console.error('loadMessages: session lost on retry, cannot load');
+                        return;
+                    }
+                    currentAuthUser = session.user;
                 }
-            }
 
-            // 3. Batch-fetch profiles for senders and recipients
-            const profileIds = new Set();
-            (sent || []).forEach(m => { if (m.recipient_id) profileIds.add(m.recipient_id); });
-            received.forEach(m => { if (m.sender_id) profileIds.add(m.sender_id); });
+                console.log('loadMessages: starting (attempt ' + (retryCount + 1) + ') for user', currentAuthUser.id, currentAuthUser.email);
 
-            const profileMap = {};
-            if (profileIds.size > 0) {
-                const { data: profiles } = await sb.from('profiles')
-                    .select('id, username, first_name, last_name, city, avatar_url')
-                    .in('id', Array.from(profileIds));
-                if (profiles) profiles.forEach(p => { profileMap[p.id] = p; });
-            }
+                // *** NO FK JOINS — they silently fail if FK missing or value is NULL ***
 
-            const allMessages = [];
+                // 1. Fetch messages I sent (plain select)
+                const { data: sent, error: sentErr } = await sb.from('messages')
+                    .select('*')
+                    .eq('sender_id', currentAuthUser.id)
+                    .order('created_at', { ascending: false });
+                if (sentErr) {
+                    console.error('loadMessages: sent query failed:', sentErr.message, sentErr.code, sentErr.details);
+                    // If auth error, try refreshing session
+                    if (sentErr.code === 'PGRST301' || sentErr.message?.includes('JWT') || sentErr.code === '401') {
+                        if (retryCount < 2) {
+                            console.log('loadMessages: auth error, refreshing session and retrying...');
+                            const { data: { session } } = await sb.auth.refreshSession();
+                            if (session) {
+                                currentAuthUser = session.user;
+                                return loadMessages(retryCount + 1);
+                            }
+                        }
+                    }
+                }
 
-            // Map sent messages
-            if (sent) {
-                sent.forEach(m => {
-                    let statusDisplay = '';
-                    if (m.status === 'in_transit') statusDisplay = 'In Transit';
-                    else if (m.status === 'released') statusDisplay = 'Released';
+                // 2. Fetch messages sent TO me — two separate safe queries
+                let received = [];
 
-                    const rp = m.recipient_id ? profileMap[m.recipient_id] : null;
+                // 2a. By recipient_id
+                const { data: recvById, error: err1 } = await sb.from('messages')
+                    .select('*')
+                    .eq('recipient_id', currentAuthUser.id)
+                    .order('created_at', { ascending: false });
+                if (err1) console.error('loadMessages: recv by id failed:', err1.message);
+                if (recvById) received = received.concat(recvById);
+
+                // 2b. By recipient_email (catches messages sent before profile was linked)
+                if (currentAuthUser.email) {
+                    const { data: recvByEmail, error: err2 } = await sb.from('messages')
+                        .select('*')
+                        .eq('recipient_email', currentAuthUser.email)
+                        .order('created_at', { ascending: false });
+                    if (err2) console.error('loadMessages: recv by email failed:', err2.message);
+                    if (recvByEmail) {
+                        const existingIds = new Set(received.map(m => m.id));
+                        recvByEmail.forEach(m => { if (!existingIds.has(m.id)) received.push(m); });
+                    }
+                }
+
+                // 3. Batch-fetch profiles for senders and recipients
+                const profileIds = new Set();
+                (sent || []).forEach(m => { if (m.recipient_id) profileIds.add(m.recipient_id); });
+                received.forEach(m => { if (m.sender_id) profileIds.add(m.sender_id); });
+
+                const profileMap = {};
+                if (profileIds.size > 0) {
+                    const { data: profiles } = await sb.from('profiles')
+                        .select('id, username, first_name, last_name, city, avatar_url')
+                        .in('id', Array.from(profileIds));
+                    if (profiles) profiles.forEach(p => { profileMap[p.id] = p; });
+                }
+
+                const allMessages = [];
+                const seenIds = new Set(); // Global dedup across sent + received
+
+                // Map sent messages
+                if (sent) {
+                    sent.forEach(m => {
+                        if (seenIds.has(m.id)) return;
+                        seenIds.add(m.id);
+
+                        let statusDisplay = '';
+                        if (m.status === 'in_transit') statusDisplay = 'In Transit';
+                        else if (m.status === 'released') statusDisplay = 'Released';
+
+                        const rp = m.recipient_id ? profileMap[m.recipient_id] : null;
+
+                        allMessages.push({
+                            dbId: m.id,
+                            senderId: currentAuthUser.id,
+                            recipientId: m.recipient_id || null,
+                            sender: m.recipient_name || rp?.username || 'Unknown',
+                            senderAvatar: rp?.avatar_url || null,
+                            recipientEmail: m.recipient_email,
+                            preview: '',
+                            status: statusDisplay,
+                            type: 'sent',
+                            location: m.recipient_city || rp?.city || 'Unknown',
+                            time: timeAgo(m.created_at),
+                            createdAt: m.created_at,
+                            phaseName: m.moon_phase || '',
+                            messageText: m.message_text || '',
+                            lunarNote: m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
+                            songUrl: m.song_url,
+                            songTitle: m.song_title,
+                            reactions: [],
+                            replies: []
+                        });
+                    });
+                }
+
+                // Map received messages — ALL messages always visible (WhatsApp-like persistence)
+                // in_transit messages show as "arriving" notifications, released messages show full content
+                received.forEach(m => {
+                    if (seenIds.has(m.id)) return; // Skip if already counted as sent (self-message)
+                    seenIds.add(m.id);
+
+                    const sp = m.sender_id ? profileMap[m.sender_id] : null;
+                    const senderName = sp?.username || m.recipient_name || 'Someone';
+                    const senderCity = sp?.city || 'Unknown';
+
+                    // Determine if message content should be revealed
+                    const isReleased = m.status === 'released';
+                    const releasePassed = m.release_at && new Date(m.release_at) <= new Date();
+                    const noReleaseTime = !m.release_at;
+                    const contentVisible = isReleased || releasePassed || noReleaseTime;
 
                     allMessages.push({
                         dbId: m.id,
-                        senderId: currentAuthUser.id,
-                        recipientId: m.recipient_id || null,
-                        sender: m.recipient_name || rp?.username || 'Unknown',
-                        senderAvatar: rp?.avatar_url || null,
+                        senderId: m.sender_id || null,
+                        recipientId: currentAuthUser.id,
+                        sender: senderName,
+                        senderAvatar: sp?.avatar_url || null,
                         recipientEmail: m.recipient_email,
-                        preview: '',
-                        status: statusDisplay,
-                        type: 'sent',
-                        location: m.recipient_city || rp?.city || 'Unknown',
+                        preview: contentVisible ? (m.message_text || '') : '',
+                        status: contentVisible ? '' : 'Arriving',
+                        type: 'received',
+                        location: senderCity,
                         time: timeAgo(m.created_at),
                         createdAt: m.created_at,
                         phaseName: m.moon_phase || '',
-                        messageText: m.message_text || '',
-                        lunarNote: m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
-                        songUrl: m.song_url,
-                        songTitle: m.song_title,
+                        messageText: contentVisible ? (m.message_text || '') : '',
+                        lunarNote: contentVisible && m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
+                        songUrl: contentVisible ? m.song_url : null,
+                        songTitle: contentVisible ? m.song_title : null,
+                        contentVisible: contentVisible,
+                        releaseAt: m.release_at,
                         reactions: [],
                         replies: []
                     });
                 });
+
+                // Sort by created_at descending
+                allMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                messages = allMessages;
+
+                // Build conversations (grouped by person)
+                buildConversations();
+
+                // Update message stats
+                moonData.messagesInTransit = messages.filter(m => m.type === 'sent' && m.status === 'In Transit').length;
+
+                console.log('loadMessages: SUCCESS -', messages.length, 'messages (sent:', (sent||[]).length, ', received:', received.length, '), conversations:', conversations.length);
+
+                // If zero messages and this is first attempt, do one retry after session refresh
+                // (catches edge case where JWT was stale on page load)
+                if (messages.length === 0 && retryCount === 0) {
+                    console.log('loadMessages: 0 messages loaded, retrying with fresh session...');
+                    const { data: { session } } = await sb.auth.refreshSession();
+                    if (session) {
+                        currentAuthUser = session.user;
+                        return loadMessages(1);
+                    }
+                }
+            } catch (err) {
+                console.error('loadMessages: UNEXPECTED ERROR:', err);
+                // On unexpected error, try one more time with fresh session
+                if (retryCount < 1) {
+                    console.log('loadMessages: retrying after error...');
+                    try {
+                        const { data: { session } } = await sb.auth.refreshSession();
+                        if (session) {
+                            currentAuthUser = session.user;
+                            return loadMessages(retryCount + 1);
+                        }
+                    } catch (e) {
+                        console.error('loadMessages: retry also failed:', e);
+                    }
+                }
             }
-
-            // Map received messages — ALL messages always visible (WhatsApp-like persistence)
-            // in_transit messages show as "arriving" notifications, released messages show full content
-            received.forEach(m => {
-                const sp = m.sender_id ? profileMap[m.sender_id] : null;
-                const senderName = sp?.username || m.recipient_name || 'Someone';
-                const senderCity = sp?.city || 'Unknown';
-
-                // Determine if message content should be revealed
-                const isReleased = m.status === 'released';
-                const releasePassed = m.release_at && new Date(m.release_at) <= new Date();
-                const noReleaseTime = !m.release_at;
-                const contentVisible = isReleased || releasePassed || noReleaseTime;
-
-                allMessages.push({
-                    dbId: m.id,
-                    senderId: m.sender_id || null,
-                    recipientId: currentAuthUser.id,
-                    sender: senderName,
-                    senderAvatar: sp?.avatar_url || null,
-                    recipientEmail: m.recipient_email,
-                    preview: contentVisible ? (m.message_text || '') : '',
-                    status: contentVisible ? '' : 'Arriving',
-                    type: 'received',
-                    location: senderCity,
-                    time: timeAgo(m.created_at),
-                    createdAt: m.created_at,
-                    phaseName: m.moon_phase || '',
-                    messageText: contentVisible ? (m.message_text || '') : '',
-                    lunarNote: contentVisible && m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
-                    songUrl: contentVisible ? m.song_url : null,
-                    songTitle: contentVisible ? m.song_title : null,
-                    contentVisible: contentVisible,
-                    releaseAt: m.release_at,
-                    reactions: [],
-                    replies: []
-                });
-            });
-
-            // Sort by created_at descending
-            allMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            messages = allMessages;
-
-            // Build conversations (grouped by person)
-            buildConversations();
-
-            // Update message stats
-            moonData.messagesInTransit = messages.filter(m => m.type === 'sent' && m.status === 'In Transit').length;
-
-            console.log('Messages loaded:', messages.length, '(sent:', (sent||[]).length, ', received:', received.length, '), conversations:', conversations.length);
         }
 
         let globalTransmissions = [];
@@ -6552,11 +6615,24 @@
                 history.replaceState(null, '', window.location.pathname);
             }
 
-            // Now check the session
-            const { data: { session } } = await sb.auth.getSession();
+            // Now check the session — refresh first to ensure fresh JWT
+            let { data: { session } } = await sb.auth.getSession();
+
+            // If session exists but might be stale, proactively refresh
+            if (session) {
+                try {
+                    const { data: refreshData } = await sb.auth.refreshSession();
+                    if (refreshData?.session) {
+                        session = refreshData.session;
+                    }
+                } catch (e) {
+                    console.warn('initAuth: session refresh failed, using existing session:', e.message);
+                }
+            }
 
             if (session) {
                 currentAuthUser = session.user;
+                console.log('initAuth: authenticated as', session.user.email, session.user.id);
                 let profile = null;
                 try {
                     const { data: profileData } = await sb
@@ -6701,7 +6777,7 @@
             console.log('Releasing', toRelease.length, 'messages that passed moonrise');
             const ids = toRelease.map(m => m.id);
             const { error: updateErr } = await sb.from('messages')
-                .update({ status: 'released' })
+                .update({ status: 'released', released_at: new Date().toISOString() })
                 .in('id', ids);
 
             if (updateErr) console.error('Release update failed:', updateErr);
@@ -6737,7 +6813,7 @@
 
             console.log('Releasing', uniqueIds.length, 'received messages that passed moonrise');
             const { error } = await sb.from('messages')
-                .update({ status: 'released' })
+                .update({ status: 'released', released_at: new Date().toISOString() })
                 .in('id', uniqueIds);
             if (error) console.error('Received release update failed:', error);
             else await debouncedReloadMessages();
@@ -10062,7 +10138,8 @@
                     moon_phase: phaseName,
                     moon_illumination: moonData.illumination || null,
                     status: messageStatus,
-                    release_at: instantDeliver ? new Date().toISOString() : releaseAt
+                    release_at: instantDeliver ? new Date().toISOString() : releaseAt,
+                    released_at: instantDeliver ? new Date().toISOString() : null
                 };
 
                 console.log('Sending message:', { recipientId, recipientEmail, status: messageStatus, instantDeliver });
@@ -10075,13 +10152,43 @@
                     .single();
 
                 if (msgError) {
-                    console.error('Message save failed:', msgError);
-                    alert('Message could not be sent. Please try again.\n\nError: ' + (msgError.message || 'Unknown error'));
-                    pendingMessage = null;
-                    return;
+                    console.error('Message save failed:', msgError.message, msgError.code, msgError.details);
+
+                    // Retry: if insert+select failed, try plain insert (message might be saved but select failed)
+                    console.log('completeSend: retrying with plain insert...');
+                    const { error: retryErr } = await sb.from('messages').insert(insertData);
+                    if (retryErr) {
+                        // Check if it's a duplicate (first insert actually succeeded)
+                        if (retryErr.code === '23505') {
+                            console.log('completeSend: first insert DID succeed (duplicate detected), fetching...');
+                        } else {
+                            console.error('completeSend: retry also failed:', retryErr.message);
+                            alert('Message could not be sent. Please try again.\n\nError: ' + (msgError.message || 'Unknown error'));
+                            pendingMessage = null;
+                            return;
+                        }
+                    }
+
+                    // Fetch the most recent message we sent to this recipient
+                    const { data: fetchedMsg } = await sb.from('messages')
+                        .select('*')
+                        .eq('sender_id', currentAuthUser.id)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single();
+
+                    if (fetchedMsg) {
+                        console.log('completeSend: recovered message id:', fetchedMsg.id);
+                        dbMessage = fetchedMsg;
+                    } else {
+                        // Create a synthetic record so UI still works
+                        console.warn('completeSend: could not fetch back, using synthetic record');
+                        dbMessage = { ...insertData, id: crypto.randomUUID(), created_at: new Date().toISOString() };
+                    }
+                } else {
+                    console.log('Message saved successfully, id:', msgData.id);
+                    dbMessage = msgData;
                 }
-                console.log('Message saved successfully, id:', msgData.id);
-                dbMessage = msgData;
             }
 
             // Only add to local array if we have a confirmed DB record
