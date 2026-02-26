@@ -10067,31 +10067,12 @@
 
                 console.log('Sending message:', { recipientId, recipientEmail, status: messageStatus, instantDeliver });
 
-                // Insert message — try with .select() first, fall back to plain insert
-                // (.select() can fail if RLS SELECT policy references auth.users)
-                let msgData = null, msgError = null;
-
-                const result1 = await sb.from('messages').insert(insertData).select().single();
-                if (!result1.error) {
-                    msgData = result1.data;
-                } else {
-                    console.warn('Insert+select failed, trying plain insert:', result1.error.message);
-                    // Plain insert (no select)
-                    const result2 = await sb.from('messages').insert(insertData);
-                    if (result2.error) {
-                        msgError = result2.error;
-                    } else {
-                        // Insert succeeded — fetch the message ID by querying our latest sent
-                        const { data: latest } = await sb.from('messages')
-                            .select('id, created_at')
-                            .eq('sender_id', currentAuthUser.id)
-                            .order('created_at', { ascending: false })
-                            .limit(1)
-                            .single();
-                        if (latest) msgData = { ...insertData, id: latest.id, created_at: latest.created_at };
-                        else msgData = { ...insertData, id: 'pending_' + Date.now() };
-                    }
-                }
+                // Insert and return the row in one call
+                const { data: msgData, error: msgError } = await sb
+                    .from('messages')
+                    .insert(insertData)
+                    .select()
+                    .single();
 
                 if (msgError) {
                     console.error('Message save failed:', msgError);
