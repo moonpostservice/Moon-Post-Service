@@ -2944,6 +2944,53 @@
             color: rgba(255,255,255,0.7);
         }
 
+        /* Unread badge (coral pill) */
+        .unread-badge {
+            background: #E8755A;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+        }
+
+        /* Unread conversation row styling */
+        .message-item.unread .message-sender {
+            font-weight: 700;
+        }
+        .message-item.unread .message-preview {
+            color: var(--blue);
+            font-weight: 600;
+        }
+
+        /* Read receipt checkmarks */
+        .read-receipt {
+            font-size: 12px;
+            margin-left: 4px;
+            letter-spacing: -2px;
+        }
+        .read-receipt.delivered {
+            color: rgba(255,255,255,0.5);
+        }
+        .read-receipt.read {
+            color: #4fc3f7;
+        }
+        /* For non-sent bubbles (shouldn't appear, but safety) */
+        .message-bubble:not(.sent) .read-receipt.delivered {
+            color: var(--text-muted);
+        }
+        .bubble-lunar-note .read-receipt.delivered {
+            color: var(--text-muted);
+        }
+        .bubble-lunar-note .read-receipt.read {
+            color: #2196F3;
+        }
+
         .message-detail-footer {
             padding: 16px 24px;
             border-top: 1px solid #e0dcd4;
@@ -6143,10 +6190,17 @@
                         messages: [],
                         latestCreatedAt: msg.createdAt,
                         latestPreview: '',
-                        latestTime: ''
+                        latestTime: '',
+                        dbConversationId: null,
+                        unreadCount: 0,
+                        otherReadAt: null
                     };
                 }
                 convMap[otherKey].messages.push(msg);
+                // Propagate DB conversation ID from messages that have one
+                if (msg.conversationId && !convMap[otherKey].dbConversationId) {
+                    convMap[otherKey].dbConversationId = msg.conversationId;
+                }
                 // Update avatar if we get a better one
                 if (msg.senderAvatar && !convMap[otherKey].otherAvatar) {
                     convMap[otherKey].otherAvatar = msg.senderAvatar;
@@ -6208,6 +6262,61 @@
             conversations.sort((a, b) =>
                 new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt)
             );
+        }
+
+        // Load conversation metadata: unread counts + read receipts from DB
+        async function loadConversationMetadata() {
+            if (!currentAuthUser) return;
+            try {
+                // 1. Fetch my read_receipts (to calculate unread counts)
+                const { data: myReceipts } = await sb.from('read_receipts')
+                    .select('conversation_id, last_read_at')
+                    .eq('user_id', currentAuthUser.id);
+
+                const myReceiptMap = {};
+                if (myReceipts) {
+                    myReceipts.forEach(r => { myReceiptMap[r.conversation_id] = r.last_read_at; });
+                }
+
+                // 2. Fetch other participants' read_receipts (for blue checkmarks on sent messages)
+                const myConvIds = conversations.map(c => c.dbConversationId).filter(Boolean);
+                let otherReceiptMap = {};
+                if (myConvIds.length > 0) {
+                    const { data: otherReceipts } = await sb.from('read_receipts')
+                        .select('conversation_id, last_read_at')
+                        .in('conversation_id', myConvIds)
+                        .neq('user_id', currentAuthUser.id);
+
+                    if (otherReceipts) {
+                        otherReceipts.forEach(r => {
+                            // Keep the most recent read time per conversation
+                            if (!otherReceiptMap[r.conversation_id] || new Date(r.last_read_at) > new Date(otherReceiptMap[r.conversation_id])) {
+                                otherReceiptMap[r.conversation_id] = r.last_read_at;
+                            }
+                        });
+                    }
+                }
+
+                // 3. Enrich conversations with unread counts + other's read status
+                conversations.forEach(conv => {
+                    if (!conv.dbConversationId) return;
+
+                    const myLastRead = myReceiptMap[conv.dbConversationId];
+                    conv.otherReadAt = otherReceiptMap[conv.dbConversationId] || null;
+
+                    // Count unread = received messages newer than my last read receipt
+                    if (myLastRead) {
+                        conv.unreadCount = conv.messages.filter(m =>
+                            m.type === 'received' && new Date(m.createdAt) > new Date(myLastRead)
+                        ).length;
+                    } else {
+                        // No read receipt yet = all received messages are unread
+                        conv.unreadCount = conv.messages.filter(m => m.type === 'received').length;
+                    }
+                });
+            } catch (err) {
+                console.error('loadConversationMetadata error:', err);
+            }
         }
 
         // Helper: WhatsApp-style time display
@@ -6333,6 +6442,7 @@
                             location: m.recipient_city || rp?.city || 'Unknown',
                             time: timeAgo(m.created_at),
                             createdAt: m.created_at,
+                            conversationId: m.conversation_id || null,
                             phaseName: m.moon_phase || '',
                             messageText: m.message_text || '',
                             lunarNote: m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
@@ -6373,6 +6483,7 @@
                         location: senderCity,
                         time: timeAgo(m.created_at),
                         createdAt: m.created_at,
+                        conversationId: m.conversation_id || null,
                         phaseName: m.moon_phase || '',
                         messageText: contentVisible ? (m.message_text || '') : '',
                         lunarNote: contentVisible && m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
@@ -6391,6 +6502,9 @@
 
                 // Build conversations (grouped by person)
                 buildConversations();
+
+                // Load unread counts + read receipt metadata from DB
+                await loadConversationMetadata();
 
                 // Update message stats
                 moonData.messagesInTransit = messages.filter(m => m.type === 'sent' && m.status === 'In Transit').length;
@@ -6994,6 +7108,39 @@
                     console.log('Realtime replies channel:', status);
                 });
             realtimeChannels.push(replyChannel);
+
+            // ---- READ RECEIPTS: live updates ----
+            const readReceiptChannel = sb.channel('live-read-receipts')
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'read_receipts'
+                }, async (payload) => {
+                    const receipt = payload.new;
+                    // Only care about other users' receipts (not our own)
+                    if (!receipt || receipt.user_id === currentAuthUser.id) return;
+
+                    console.log('Realtime: read receipt update from', receipt.user_id);
+
+                    // Find the conversation this receipt belongs to
+                    const conv = conversations.find(c => c.dbConversationId === receipt.conversation_id);
+                    if (!conv) return;
+
+                    // Update otherReadAt
+                    conv.otherReadAt = receipt.last_read_at;
+
+                    // If we're viewing this conversation, re-render to show blue checkmarks
+                    if (currentConversation && currentConversation.dbConversationId === receipt.conversation_id) {
+                        renderConversationThread();
+                    }
+
+                    // Update inbox (in case preview styling changes)
+                    renderMessages();
+                })
+                .subscribe((status) => {
+                    console.log('Realtime read_receipts channel:', status);
+                });
+            realtimeChannels.push(readReceiptChannel);
 
             // ---- SHARED SKY: live feed ----
             const skyChannel = sb.channel('shared-sky-live')
@@ -7621,21 +7768,24 @@
                     badge = `<span class="message-status-badge orbiting">🔴 Orbiting</span>`;
                 }
 
-                const msgCount = conv.messages.length;
-                const countBadge = msgCount > 1 ? `<span style="background:var(--blue);color:white;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;margin-left:6px;">${msgCount}</span>` : '';
+                const unreadBadge = conv.unreadCount > 0 ? `<span class="unread-badge">${conv.unreadCount}</span>` : '';
+                const isUnread = conv.unreadCount > 0;
 
                 return `
-                    <li class="message-item" data-sender="${conv.otherName}" data-orbiting="${conv.hasInTransit}"
+                    <li class="message-item${isUnread ? ' unread' : ''}" data-sender="${conv.otherName}" data-orbiting="${conv.hasInTransit}"
                         onclick="openConversation(${ci})"
                         onmouseenter="highlightOrbitDot('${conv.otherName}', true)"
                         onmouseleave="highlightOrbitDot('${conv.otherName}', false)">
                         ${avatar}
                         <div class="message-content">
-                            <div class="message-sender">${conv.otherName}${countBadge}</div>
+                            <div class="message-sender">${conv.otherName}</div>
                             ${badge}
                             <div class="message-preview">${conv.latestPreview}</div>
                         </div>
-                        ${conv.latestTime ? `<span class="message-time">${conv.latestTime}</span>` : `<span class="message-time">Now</span>`}
+                        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                            ${conv.latestTime ? `<span class="message-time">${conv.latestTime}</span>` : `<span class="message-time">Now</span>`}
+                            ${unreadBadge}
+                        </div>
                     </li>
                 `;
             }).join('');
@@ -7746,6 +7896,24 @@
             page.classList.add('active');
             document.body.style.overflow = 'hidden';
 
+            // Mark conversation as read
+            if (conv.unreadCount > 0 && conv.dbConversationId && currentAuthUser) {
+                conv.unreadCount = 0;
+                renderMessages(); // Re-render inbox to clear badge
+
+                // Upsert read receipt in DB
+                try {
+                    await sb.from('read_receipts').upsert({
+                        conversation_id: conv.dbConversationId,
+                        user_id: currentAuthUser.id,
+                        last_read_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'conversation_id,user_id' });
+                } catch (err) {
+                    console.error('Failed to upsert read receipt:', err);
+                }
+            }
+
             // Auto-scroll to bottom
             setTimeout(() => {
                 const content = document.getElementById('detailContent');
@@ -7762,6 +7930,12 @@
             if (ci >= 0) {
                 await openConversation(ci);
             }
+        }
+
+        // Get read receipt status for a sent message
+        function getReadReceiptStatus(messageCreatedAt, conv) {
+            if (!conv || !conv.otherReadAt) return 'delivered';
+            return new Date(conv.otherReadAt) >= new Date(messageCreatedAt) ? 'read' : 'delivered';
         }
 
         // Render the full conversation thread (all messages + replies chronologically)
@@ -7862,19 +8036,27 @@
                 }
 
                 if (item.type === 'lunar-note') {
+                    const lunarReceipt = item.sent ? (() => {
+                        const st = getReadReceiptStatus(item.createdAt, conv);
+                        return `<span class="read-receipt ${st}">✓✓</span>`;
+                    })() : '';
                     html += `
                         <div class="bubble-lunar-note ${item.sent ? 'sent-lunar' : ''}" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
                             <div class="bubble-lunar-label">🌙 Lunar Note</div>
                             <div class="bubble-lunar-text">${item.text}</div>
                             ${item.closing ? `<div class="bubble-lunar-closing">${item.closing}</div>` : ''}
-                            <div class="message-bubble-time">${item.time || 'Recently'}</div>
+                            <div class="message-bubble-time">${item.time || 'Recently'} ${lunarReceipt}</div>
                         </div>
                     `;
                 } else if (item.type === 'text') {
+                    const textReceipt = item.sent ? (() => {
+                        const st = getReadReceiptStatus(item.createdAt, conv);
+                        return `<span class="read-receipt ${st}">✓✓</span>`;
+                    })() : '';
                     html += `
                         <div class="message-bubble ${item.sent ? 'sent' : ''}">
                             <p>${item.text}</p>
-                            <div class="message-bubble-time">${item.time || 'Recently'}</div>
+                            <div class="message-bubble-time">${item.time || 'Recently'} ${textReceipt}</div>
                         </div>
                     `;
                     if (item.status === 'In Transit') {
@@ -10214,6 +10396,7 @@
                 phaseName: phaseName,
                 time: 'Just now',
                 createdAt: new Date().toISOString(),
+                conversationId: dbMessage.conversation_id || null,
                 messageText: pendingMessage.textMessage || '',
                 lunarNote: pendingMessage.lunarNoteText ? { text: pendingMessage.lunarNoteText, closing: pendingMessage.lunarClosing || '' } : null,
                 songUrl: pendingMessage.song || null,
