@@ -4412,25 +4412,10 @@
                 <span style="font-weight:700;color:var(--blue);font-size:15px;">Contacts</span>
                 <button onclick="closeContactsPage()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--blue);padding:4px 8px;font-weight:600;">Cancel</button>
             </div>
-            <!-- Add/Search new contact view (always visible) -->
-            <div id="contactsAddView" style="display:block;border-bottom:2px solid rgba(53,125,197,0.1);background:rgba(53,125,197,0.03);">
-                <!-- Tab switcher -->
-                <div style="display:flex;border-bottom:1px solid rgba(53,125,197,0.1);">
-                    <button id="contactsTabFind" onclick="switchContactsTab('find')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);font-size:13px;font-weight:600;cursor:pointer;">Find on MoonPop</button>
-                    <button id="contactsTabInvite" onclick="switchContactsTab('invite')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;">Invite to MoonPop</button>
-                </div>
-                <!-- Find tab -->
-                <div id="contactsFindPanel" style="padding:16px 20px;">
-                    <input type="text" id="contactSearchInput" placeholder="Search by display name..." autocomplete="off" oninput="debouncedContactSearch()" style="width:100%;box-sizing:border-box;margin-bottom:8px;">
-                    <div id="contactSearchResults" style="max-height:200px;overflow-y:auto;"></div>
-                </div>
-                <!-- Invite tab -->
-                <div id="contactsInvitePanel" style="padding:16px 20px;display:none;">
-                    <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px;">Know someone who'd love MoonPop? Send them an invite.</p>
-                    <input type="email" id="inviteEmailInput" placeholder="their@email.com" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:10px;">
-                    <button id="sendInviteBtn" onclick="sendInviteFromContacts()" style="width:100%;padding:10px;background:var(--coral);color:white;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;opacity:0.5;" disabled>Send Invite</button>
-                    <div id="inviteStatus" style="margin-top:8px;font-size:12px;text-align:center;"></div>
-                </div>
+            <!-- Search bar -->
+            <div style="padding:12px 16px;border-bottom:1px solid #f0ece4;background:rgba(53,125,197,0.03);">
+                <input type="text" id="contactSearchInput" placeholder="Search by name, username, or email..." autocomplete="off" oninput="debouncedContactSearch()" style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid #e0dcd4;border-radius:10px;font-size:14px;background:white;">
+                <div id="contactSearchResults" style="max-height:300px;overflow-y:auto;margin-top:4px;"></div>
             </div>
             <div class="message-page-body" id="contactsListBody" style="padding:0;">
                 <!-- Populated by JS -->
@@ -8789,12 +8774,11 @@
             renderContactsList();
             document.getElementById('contactsPage').classList.add('active');
             document.body.style.overflow = 'hidden';
-            // Reset search/invite inputs but keep panels visible
+            // Reset search
             document.getElementById('contactSearchInput').value = '';
             document.getElementById('contactSearchResults').innerHTML = '';
-            document.getElementById('inviteEmailInput').value = '';
-            document.getElementById('inviteStatus').innerHTML = '';
-            switchContactsTab('find');
+            _lastSearchResults = [];
+            setTimeout(() => document.getElementById('contactSearchInput').focus(), 100);
         }
 
         function closeContactsPage() {
@@ -8803,53 +8787,27 @@
         }
 
         function toggleContactsAddView() {
-            // Add view is always visible now; just focus the search input
-            const view = document.getElementById('contactsAddView');
-            view.style.display = 'block';
-            switchContactsTab('find');
+            document.getElementById('contactSearchInput').focus();
         }
 
         function switchContactsTab(tab) {
-            const findBtn = document.getElementById('contactsTabFind');
-            const inviteBtn = document.getElementById('contactsTabInvite');
-            const findPanel = document.getElementById('contactsFindPanel');
-            const invitePanel = document.getElementById('contactsInvitePanel');
-            if (tab === 'find') {
-                findBtn.style.borderBottomColor = 'var(--blue)';
-                findBtn.style.color = 'var(--blue)';
-                inviteBtn.style.borderBottomColor = 'transparent';
-                inviteBtn.style.color = 'var(--text-muted)';
-                findPanel.style.display = 'block';
-                invitePanel.style.display = 'none';
-                document.getElementById('contactSearchInput').focus();
-            } else {
-                findBtn.style.borderBottomColor = 'transparent';
-                findBtn.style.color = 'var(--text-muted)';
-                inviteBtn.style.borderBottomColor = 'var(--coral)';
-                inviteBtn.style.color = 'var(--coral)';
-                findPanel.style.display = 'none';
-                invitePanel.style.display = 'block';
-                const emailInput = document.getElementById('inviteEmailInput');
-                emailInput.focus();
-                emailInput.oninput = function() {
-                    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value.trim());
-                    const btn = document.getElementById('sendInviteBtn');
-                    btn.disabled = !valid;
-                    btn.style.opacity = valid ? '1' : '0.5';
-                };
-            }
+            // Legacy — tabs removed; just focus search
+            document.getElementById('contactSearchInput').focus();
         }
 
         // Debounced search for users in DB
         let contactSearchTimer = null;
+        let _lastSearchResults = []; // Cache search results so we can reference by index
+
         function debouncedContactSearch() {
             clearTimeout(contactSearchTimer);
             const query = document.getElementById('contactSearchInput').value.trim();
             if (query.length < 2) {
                 document.getElementById('contactSearchResults').innerHTML = '';
+                _lastSearchResults = [];
                 return;
             }
-            contactSearchTimer = setTimeout(() => searchUsersForContact(query), 400);
+            contactSearchTimer = setTimeout(() => searchUsersForContact(query), 300);
         }
 
         async function searchUsersForContact(query) {
@@ -8858,113 +8816,136 @@
 
             resultsDiv.innerHTML = '<div style="padding:8px;color:var(--text-muted);font-size:13px;">Searching...</div>';
 
+            // Check if query is an email address
+            const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query);
+
             try {
                 const { data, error } = await sb.rpc('search_users', { search_query: query });
 
                 if (error) {
                     console.error('User search error:', error);
-                    resultsDiv.innerHTML = '';
+                    resultsDiv.innerHTML = '<div style="padding:8px;color:var(--coral);font-size:13px;">Search failed. Try again.</div>';
                     return;
                 }
 
-                if (!data || data.length === 0) {
-                    resultsDiv.innerHTML = `
-                        <div style="padding:10px;font-size:13px;color:var(--text-muted);">
-                            No users found for "${query}"<br>
-                            <span style="font-size:11px;">Try a different name, or use the Invite tab to bring them to MoonPop.</span>
-                        </div>`;
-                    return;
-                }
+                _lastSearchResults = data || [];
+                const existingIds = new Set(contacts.map(c => c.linkedProfileId).filter(Boolean));
+                const existingEmails = new Set(contacts.map(c => (c.email || '').toLowerCase()).filter(Boolean));
 
-                // Keep all results — rendering handles self, existing contacts, and new users
-                const existingIds = contacts.map(c => c.linkedProfileId).filter(Boolean);
-                const filtered = data;
+                let html = '';
 
-                if (filtered.length === 0) {
-                    resultsDiv.innerHTML = '<div style="padding:8px;font-size:13px;color:var(--text-muted);">No users found</div>';
-                    return;
-                }
+                if (_lastSearchResults.length > 0) {
+                    html += _lastSearchResults.map((u, idx) => {
+                        const isSelf = u.id === currentAuthUser.id;
+                        const displayName = u.username || [u.first_name, u.last_name].filter(Boolean).join(' ') || 'MoonPop User';
+                        const fullName = [u.first_name, u.last_name].filter(Boolean).join(' ');
+                        const usernameTag = u.username ? `<span style="font-size:11px;color:var(--text-muted);margin-left:4px;">@${u.username}</span>` : '';
+                        const location = u.city || '';
+                        const initial = (displayName || '?').charAt(0).toUpperCase();
+                        const avatarHtml = u.avatar_url
+                            ? `<img src="${u.avatar_url}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">`
+                            : `<div style="width:36px;height:36px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;">${initial}</div>`;
 
-                resultsDiv.innerHTML = filtered.map(u => {
-                    const isSelf = u.id === currentAuthUser.id;
-                    const displayName = u.username || ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || 'MoonPop User';
-                    const fullName = ((u.first_name || '') + ' ' + (u.last_name || '')).trim();
-                    const usernameDisplay = u.username ? `<span style="font-size:11px;color:var(--text-muted);margin-left:4px;">@${u.username}</span>` : '';
-                    const location = u.city || '';
-                    const avatarHtml = u.avatar_url
-                        ? `<img src="${u.avatar_url}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`
-                        : `<div style="width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">${(displayName || '?').charAt(0).toUpperCase()}</div>`;
-                    const isExisting = existingIds.includes(u.id);
-                    const avatarSafe = (u.avatar_url || '').replace(/'/g, "\\'");
-                    const actionHtml = isExisting
-                        ? `<span style="font-size:11px;color:var(--text-muted);font-weight:500;">✓ Contact</span>`
-                        : `<button onclick="event.stopPropagation();addUserAsContact('${u.id}', '${displayName.replace(/'/g, "\\'")}', '${(u.email||'').replace(/'/g, "\\'")}', '${location.replace(/'/g, "\\'")}', '${avatarSafe}')" style="background:var(--blue);color:white;border:none;border-radius:16px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Contact</button>`;
+                        const isExisting = existingIds.has(u.id) || (u.email && existingEmails.has(u.email.toLowerCase()));
+                        const selfBadge = isSelf ? ` <span style="font-size:10px;color:var(--coral);font-weight:600;background:rgba(231,111,81,0.1);padding:2px 8px;border-radius:10px;">You</span>` : '';
 
-                    if (isSelf) {
-                        const selfIsExisting = existingIds.includes(u.id);
-                        const selfAction = selfIsExisting
-                            ? `<span style="font-size:11px;color:var(--text-muted);font-weight:500;">✓ Contact</span>`
-                            : `<button onclick="event.stopPropagation();addUserAsContact('${u.id}', '${displayName.replace(/'/g, "\\'")}', '${(u.email||'').replace(/'/g, "\\'")}', '${location.replace(/'/g, "\\'")}', '${avatarSafe}')" style="background:var(--blue);color:white;border:none;border-radius:16px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Contact</button>`;
+                        let actionHtml;
+                        if (isExisting) {
+                            actionHtml = `<span style="font-size:11px;color:#4caf50;font-weight:600;">✓ Contact</span>`;
+                        } else if (isSelf) {
+                            actionHtml = '';
+                        } else {
+                            actionHtml = `<button onclick="event.stopPropagation();addSearchResult(${idx})" style="background:var(--blue);color:white;border:none;border-radius:16px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Add</button>`;
+                        }
+
                         return `
-                            <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:rgba(53,125,197,0.04);">
+                            <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid #f5f2ec;">
                                 ${avatarHtml}
-                                <div style="flex:1;">
-                                    <div style="font-size:14px;font-weight:600;color:var(--blue);">${displayName} <span style="font-size:10px;color:var(--coral);font-weight:600;background:rgba(231,111,81,0.1);padding:2px 8px;border-radius:10px;">You</span></div>
-                                    <div style="font-size:11px;color:var(--text-muted);">${location || 'MoonPop user'}</div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:14px;font-weight:600;color:var(--blue);">${fullName || displayName}${usernameTag}${selfBadge}</div>
+                                    <div style="font-size:11px;color:var(--text-muted);">${location || 'On MoonPop'}</div>
                                 </div>
-                                ${selfAction}
+                                ${actionHtml}
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                // If email search found no exact match, show invite option
+                if (isEmail) {
+                    const exactMatch = _lastSearchResults.find(u => u.email && u.email.toLowerCase() === query.toLowerCase());
+                    if (!exactMatch) {
+                        html += `
+                            <div style="display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid #f5f2ec;">
+                                <div style="width:36px;height:36px;border-radius:50%;background:var(--coral);color:white;display:flex;align-items:center;justify-content:center;font-size:16px;">✉</div>
+                                <div style="flex:1;">
+                                    <div style="font-size:14px;font-weight:600;color:var(--coral);">${query}</div>
+                                    <div style="font-size:11px;color:var(--text-muted);">Not on MoonPop yet</div>
+                                </div>
+                                <button onclick="inviteEmailFromSearch('${query.replace(/'/g, "\\'")}')" style="background:var(--coral);color:white;border:none;border-radius:16px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Invite</button>
                             </div>
                         `;
                     }
+                }
 
-                    return `
-                        <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(53,125,197,0.06)'" onmouseout="this.style.background=''">
-                            ${avatarHtml}
-                            <div style="flex:1;min-width:0;${isExisting ? 'cursor:pointer;' : ''}" ${isExisting ? `onclick="openContactDetail('${displayName.replace(/'/g, "\\'")}')"` : ''}>
-                                <div style="font-size:14px;font-weight:600;color:var(--blue);">${fullName || displayName}${usernameDisplay}</div>
-                                <div style="font-size:11px;color:var(--text-muted);">${location || 'MoonPop user'}</div>
-                            </div>
-                            ${actionHtml}
-                        </div>
-                    `;
-                }).join('');
+                if (!html) {
+                    html = `
+                        <div style="padding:16px 4px;font-size:13px;color:var(--text-muted);">
+                            No users found for "${query}"<br>
+                            <span style="font-size:11px;">Try typing their exact email address to invite them.</span>
+                        </div>`;
+                }
+
+                resultsDiv.innerHTML = html;
             } catch(e) {
                 console.error('User search exception:', e);
-                resultsDiv.innerHTML = '';
+                resultsDiv.innerHTML = '<div style="padding:8px;color:var(--coral);font-size:13px;">Search failed. Try again.</div>';
             }
         }
 
-        async function addUserAsContact(profileId, name, email, city, avatarUrl) {
+        // Add contact from search results by index (avoids passing avatar in onclick)
+        async function addSearchResult(idx) {
+            const u = _lastSearchResults[idx];
+            if (!u) return;
+
+            const displayName = u.username || [u.first_name, u.last_name].filter(Boolean).join(' ') || 'MoonPop User';
+
             // Check if already in contacts
-            if (contacts.find(c => c.linkedProfileId === profileId || (c.email && c.email.toLowerCase() === email.toLowerCase()))) {
-                alert(name + ' is already in your contacts!');
+            if (contacts.find(c => c.linkedProfileId === u.id || (c.email && u.email && c.email.toLowerCase() === u.email.toLowerCase()))) {
+                // Already exists, just refresh display
+                const currentQuery = document.getElementById('contactSearchInput').value.trim();
+                if (currentQuery.length >= 2) searchUsersForContact(currentQuery);
                 return;
             }
 
             const newContact = {
-                name: name,
-                location: city || 'Unknown',
-                email: email,
-                avatar: avatarUrl || null,
+                name: displayName,
+                location: u.city || 'Unknown',
+                email: u.email || null,
+                avatar: u.avatar_url || null,
+                username: u.username || null,
+                firstName: u.first_name || null,
+                lastName: u.last_name || null,
                 isOnMoonpop: true,
-                linkedProfileId: profileId
+                linkedProfileId: u.id
             };
             contacts.push(newContact);
 
             // Save to Supabase
             if (currentAuthUser) {
-                await sb.from('contacts').insert({
+                const { error } = await sb.from('contacts').insert({
                     owner_id: currentAuthUser.id,
-                    name: name,
-                    city: city || null,
-                    email: email,
+                    name: displayName,
+                    city: u.city || null,
+                    email: u.email || null,
                     is_on_moonpop: true,
-                    linked_profile_id: profileId
+                    linked_profile_id: u.id
                 });
+                if (error) console.error('Contact save failed:', error);
             }
 
             renderContactsList();
-            // Re-run search to refresh results (shows ✓ Contact instead of Add Contact)
+            // Refresh search results to show ✓ Contact
             const currentQuery = document.getElementById('contactSearchInput').value.trim();
             if (currentQuery.length >= 2) {
                 searchUsersForContact(currentQuery);
@@ -8973,24 +8954,24 @@
             }
         }
 
-        async function sendInviteFromContacts() {
-            const emailInput = document.getElementById('inviteEmailInput');
-            const statusDiv = document.getElementById('inviteStatus');
-            const btn = document.getElementById('sendInviteBtn');
-            const email = emailInput.value.trim();
+        // Legacy stub — invite tab removed
+        async function sendInviteFromContacts() {}
+
+        // Invite email from search results
+        async function inviteEmailFromSearch(email) {
             if (!email) return;
-
-            btn.disabled = true;
-            btn.textContent = 'Sending...';
-            statusDiv.innerHTML = '';
-
             const senderName = localStorage.getItem('moonpop_username') || 'Someone on MoonPop';
+            const resultsDiv = document.getElementById('contactSearchResults');
 
             try {
                 if (typeof emailjs === 'undefined') {
-                    statusDiv.innerHTML = '<span style="color:var(--coral);">Email service not available. Try again later.</span>';
+                    alert('Email service not available right now. Try again later.');
                     return;
                 }
+
+                // Show sending state
+                const inviteBtn = resultsDiv.querySelector('button[onclick*="inviteEmailFromSearch"]');
+                if (inviteBtn) { inviteBtn.textContent = 'Sending...'; inviteBtn.disabled = true; }
 
                 const inviteLink = window.location.origin;
                 await emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
@@ -9003,16 +8984,36 @@
                     reveal_link: inviteLink
                 });
 
-                statusDiv.innerHTML = '<span style="color:#4caf50;">Invite sent!</span>';
-                emailInput.value = '';
-                btn.style.opacity = '0.5';
-                setTimeout(() => { statusDiv.innerHTML = ''; }, 3000);
+                // Also add as contact (off-platform)
+                if (!contacts.find(c => c.email && c.email.toLowerCase() === email.toLowerCase())) {
+                    const newContact = {
+                        name: email,
+                        location: 'Unknown',
+                        email: email,
+                        avatar: null,
+                        isOnMoonpop: false,
+                        linkedProfileId: null
+                    };
+                    contacts.push(newContact);
+                    if (currentAuthUser) {
+                        await sb.from('contacts').insert({
+                            owner_id: currentAuthUser.id,
+                            name: email,
+                            email: email,
+                            is_on_moonpop: false
+                        });
+                    }
+                    renderContactsList();
+                }
+
+                // Update button to show success
+                if (inviteBtn) { inviteBtn.textContent = '✓ Invited'; inviteBtn.style.background = '#4caf50'; }
+                else alert('Invite sent to ' + email + '!');
             } catch(e) {
                 console.error('Invite send failed:', e);
-                statusDiv.innerHTML = '<span style="color:var(--coral);">Failed to send. Please try again.</span>';
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Send Invite';
+                alert('Failed to send invite. Please try again.');
+                const inviteBtn = resultsDiv.querySelector('button[onclick*="inviteEmailFromSearch"]');
+                if (inviteBtn) { inviteBtn.textContent = 'Invite'; inviteBtn.disabled = false; }
             }
         }
 
