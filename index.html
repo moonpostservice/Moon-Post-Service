@@ -9303,32 +9303,40 @@
             moonData.messagesInTransit++;
 
 
-            // Add contact if new
+            // Add contact if new (with duplicate check)
             if (isNewRecipient) {
                 const recipientIsOnMps = pendingMessage.isOnMoonpop || !!recipientId;
 
-                const newContact = {
-                    name: pendingMessage.recipient,
-                    location: pendingMessage.location,
-                    email: recipientEmail,
-                    isOnMoonpop: recipientIsOnMps,
-                    linkedProfileId: recipientId
-                };
-                contacts.push(newContact);
-                renderContactsList();
+                // Check if contact already exists locally
+                const alreadyExists = contacts.some(c =>
+                    (recipientId && c.linkedProfileId === recipientId) ||
+                    (recipientEmail && c.email && c.email.toLowerCase() === recipientEmail.toLowerCase())
+                );
 
-                // Save to Supabase
-                if (currentAuthUser) {
-                    const { error: contactError } = await sb.from('contacts').insert({
-                        owner_id: currentAuthUser.id,
+                if (!alreadyExists) {
+                    const newContact = {
                         name: pendingMessage.recipient,
-                        city: pendingMessage.location,
+                        location: pendingMessage.location,
                         email: recipientEmail,
-                        is_on_moonpop: recipientIsOnMps,
-                        linked_profile_id: recipientId
-                    });
-                    if (contactError) console.error('Contact save failed:', contactError);
-                    else console.log('Contact saved successfully');
+                        isOnMoonpop: recipientIsOnMps,
+                        linkedProfileId: recipientId
+                    };
+                    contacts.push(newContact);
+                    renderContactsList();
+
+                    // Save to Supabase
+                    if (currentAuthUser) {
+                        const { error: contactError } = await sb.from('contacts').insert({
+                            owner_id: currentAuthUser.id,
+                            name: pendingMessage.recipient,
+                            city: pendingMessage.location,
+                            email: recipientEmail,
+                            is_on_moonpop: recipientIsOnMps,
+                            linked_profile_id: recipientId
+                        });
+                        if (contactError) console.error('Contact save failed:', contactError);
+                        else console.log('Contact saved successfully');
+                    }
                 }
                 
                 // Only send invite email to NON-MPS users
