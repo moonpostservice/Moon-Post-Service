@@ -5806,7 +5806,7 @@
             
             // Get messages in transit (sent but not yet delivered)
             const inTransitMessages = messages.filter(m => m.type === 'sent' && m.status === 'In Transit');
-            console.log('Dots: in-transit messages:', inTransitMessages.length, inTransitMessages.map(m => m.location));
+            if (inTransitMessages.length > 0) console.log('Dots: in-transit messages:', inTransitMessages.length);
             
             inTransitMessages.forEach((msg) => {
                 const info = getRecipientMoonrise(msg.location);
@@ -10640,6 +10640,22 @@
                         alert('Message could not be sent: ' + (fnData.details ? fnData.details.join(', ') : fnData.error));
                         pendingMessage = null;
                         return;
+                    } else {
+                        // Unexpected response format — fall back to direct insert
+                        console.warn('Edge Function returned unexpected format:', fnData);
+                        console.log('completeSend: falling back to direct insert...');
+                        const { data: msgData, error: msgError } = await sb
+                            .from('messages')
+                            .insert(insertData)
+                            .select()
+                            .single();
+                        if (msgError) {
+                            console.error('Direct insert fallback failed:', msgError.message);
+                            alert('Message could not be sent. Please try again.');
+                            pendingMessage = null;
+                            return;
+                        }
+                        dbMessage = msgData;
                     }
                 } catch (err) {
                     console.error('Send message exception:', err);
@@ -10651,7 +10667,8 @@
 
             // Only add to local array if we have a confirmed DB record
             if (!dbMessage) {
-                alert('Message could not be sent — not authenticated.');
+                console.error('completeSend: dbMessage is null after all attempts. currentAuthUser:', !!currentAuthUser);
+                alert('Message could not be sent. Please sign in and try again.');
                 pendingMessage = null;
                 return;
             }

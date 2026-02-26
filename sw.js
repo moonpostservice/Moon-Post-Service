@@ -1,29 +1,27 @@
-// MoonPop Service Worker v1
-const CACHE_NAME = 'moonpop-v1';
+// MoonPop Service Worker v2
+const CACHE_NAME = 'moonpop-v2';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  // Only precache CDN assets (immutable, safe to cache-first)
+  // App shell (index.html) is NOT precached — it uses network-first strategy
+  // and gets cached dynamically on first successful fetch
   'https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
 
-// Install: cache static assets
+// Install: cache CDN assets only
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching static assets');
-      return cache.addAll(STATIC_ASSETS).catch(err => {
-        console.warn('[SW] Some assets failed to cache:', err);
-        // Cache what we can
-        return Promise.allSettled(
-          STATIC_ASSETS.map(url => cache.add(url).catch(() => {}))
-        );
-      });
+      console.log('[SW] Caching CDN assets');
+      return Promise.allSettled(
+        STATIC_ASSETS.map(url => cache.add(url).catch(() => {
+          console.warn('[SW] Failed to cache:', url);
+        }))
+      );
     })
   );
-  // Activate immediately
+  // Activate immediately (don't wait for old SW to finish)
   self.skipWaiting();
 });
 
@@ -32,29 +30,37 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        keys.filter(key => key !== CACHE_NAME).map(key => {
+          console.log('[SW] Deleting old cache:', key);
+          return caches.delete(key);
+        })
       );
     })
   );
-  // Take control of all open tabs
+  // Take control of all open tabs immediately
   self.clients.claim();
 });
 
 // Fetch strategy:
-// - Supabase API calls: network-first (always try fresh data)
-// - Static assets: cache-first (fast loading)
-// - Everything else: network-first with cache fallback
+// - Supabase API calls: network-only (never cache API responses)
+// - CDN assets: cache-first (fast loading, immutable)
+// - App shell: network-first with cache fallback (always latest code)
+// - Everything else: network-first
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
-  // Supabase API / Edge Functions — always network-first
+  // Supabase API / Edge Functions — network-only (never serve stale API data)
   if (url.hostname.includes('supabase.co') || url.hostname.includes('supabase.in')) {
     event.respondWith(
       fetch(event.request).catch(() => {
-        return caches.match(event.request);
+        // Offline: return empty response instead of stale data
+        return new Response(JSON.stringify({ error: 'offline' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        });
       })
     );
     return;
@@ -76,8 +82,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // App shell (index.html) — network-first, cache fallback
-  if (url.pathname === '/' || url.pathname === '/index.html') {
+  // App shell (index.html, manifest) — network-first, cache fallback
+  if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/manifest.json') {
     event.respondWith(
       fetch(event.request).then((response) => {
         const clone = response.clone();
@@ -96,7 +102,7 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Push notification handler (for Phase 3D)
+// Push notification handler
 self.addEventListener('push', (event) => {
   if (!event.data) return;
 
@@ -104,7 +110,7 @@ self.addEventListener('push', (event) => {
     const data = event.data.json();
     const options = {
       body: data.body || 'You have a new moon message',
-      icon: data.icon || '/manifest.json', // Fallback
+      icon: data.icon || '/manifest.json',
       badge: '/manifest.json',
       tag: data.tag || 'moonpop-message',
       data: { url: data.url || '/' },
