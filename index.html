@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Moonpop - Messages Released By The Moon</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MoonPop">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4089,8 +4094,7 @@
             }
         }
     </style>
-    <!-- EmailJS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <!-- EmailJS removed — email now sent via Supabase Edge Function (send-email) -->
 </head>
 <body>
     <!-- Header -->
@@ -4910,30 +4914,13 @@
         };
 
         // ============================================
-        // EMAILJS - Moon Post Service notifications
+        // EMAIL NOTIFICATIONS via Supabase Edge Function (Resend)
         // ============================================
-        const EMAILJS_CONFIG = {
-            serviceId: 'service_bejw9gg',
-            templateId: 'template_cym7h31',
-            publicKey: '2WAwzqDhDXZB0EQf5'
-        };
-        
-        // Initialize EmailJS
-        (function() {
-            if (typeof emailjs !== 'undefined') {
-                emailjs.init(EMAILJS_CONFIG.publicKey);
-            }
-        })();
-        
-        // Send invite email to new recipient
+
+        // Send message notification email to recipient
         async function sendMoonPostEmail(recipientEmail, recipientLocation, messageText, senderName, dbMessageId) {
-            // Always use stored username
             senderName = senderName || localStorage.getItem('moonpop_username') || 'Someone on MoonPop';
-            if (typeof emailjs === 'undefined') {
-                console.warn('EmailJS not loaded');
-                return false;
-            }
-            
+
             // Calculate moonrise at recipient's location
             const city = cities.find(c => c.name === recipientLocation);
             let moonriseTime = 'your next moonrise';
@@ -4943,32 +4930,28 @@
                     moonriseTime = info.timeStr;
                 }
             }
-            
+
             // Get first 3 words for preview
-            const words = messageText.trim().split(/\s+/);
+            const words = (messageText || '').trim().split(/\s+/);
             const preview = words.slice(0, 3).join(' ');
-            
-            // Use the real database message ID
+
             const messageId = dbMessageId || (Date.now().toString(36) + Math.random().toString(36).substr(2, 5));
             const revealLink = window.location.origin + '?m=' + messageId;
-            
-            const templateParams = {
-                to_email: recipientEmail,
-                from_name: senderName,
-                sender_display: senderName + ' sent you a moon message',
-                to_location: recipientLocation,
-                moonrise_time: moonriseTime,
-                message_preview: preview,
-                reveal_link: revealLink
-            };
-            
+
             try {
-                const response = await emailjs.send(
-                    EMAILJS_CONFIG.serviceId,
-                    EMAILJS_CONFIG.templateId,
-                    templateParams
-                );
-                console.log('Email sent successfully:', response);
+                const { data, error } = await sb.functions.invoke('send-email', {
+                    body: {
+                        type: 'message',
+                        recipientEmail,
+                        senderName,
+                        recipientLocation,
+                        moonriseTime,
+                        messagePreview: preview,
+                        revealLink
+                    }
+                });
+                if (error) throw error;
+                console.log('Email sent via Edge Function:', data);
                 return true;
             } catch (error) {
                 console.error('Failed to send email:', error);
@@ -5250,9 +5233,7 @@
                 const reader = new FileReader();
                 reader.onload = async (e) => {
                     const dataUrl = e.target.result;
-                    localStorage.setItem('moonpop_profilepic', dataUrl);
-                    updateAvatarEverywhere(dataUrl);
-                    // Compress and save small avatar to Supabase for other users to see
+                    // Compress, upload to Storage, and save URL to profile
                     await syncAvatarToSupabase(dataUrl);
                 };
                 reader.readAsDataURL(input.files[0]);
@@ -5262,18 +5243,47 @@
         async function syncAvatarToSupabase(dataUrl) {
             if (!currentAuthUser || !dataUrl) return;
             try {
-                const smallAvatar = await compressAvatar(dataUrl);
-                if (!smallAvatar) { console.error('Avatar compress failed'); return; }
-                console.log('Syncing avatar to Supabase (' + smallAvatar.length + ' chars)...');
-                const { data, error } = await sb.from('profiles').update({ avatar_url: smallAvatar }).eq('id', currentAuthUser.id).select();
-                if (error) console.error('Avatar save to profile failed:', error);
-                else console.log('Avatar saved to Supabase profile successfully');
+                const blob = await compressAvatarToBlob(dataUrl);
+                if (!blob) { console.error('Avatar compress failed'); return; }
+
+                const filePath = `${currentAuthUser.id}/avatar.jpg`;
+                console.log('Uploading avatar to Supabase Storage...');
+
+                // Upload to storage (upsert to overwrite existing)
+                const { error: uploadError } = await sb.storage
+                    .from('avatars')
+                    .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
+
+                if (uploadError) {
+                    console.error('Avatar upload failed:', uploadError);
+                    return;
+                }
+
+                // Get public URL
+                const { data: urlData } = sb.storage.from('avatars').getPublicUrl(filePath);
+                const publicUrl = urlData.publicUrl + '?t=' + Date.now(); // Cache-bust
+
+                // Save URL to profile (not base64!)
+                const { error: updateError } = await sb.from('profiles')
+                    .update({ avatar_url: publicUrl })
+                    .eq('id', currentAuthUser.id);
+
+                if (updateError) {
+                    console.error('Avatar URL save to profile failed:', updateError);
+                    return;
+                }
+
+                // Update locally
+                localStorage.setItem('moonpop_profilepic', publicUrl);
+                updateAvatarEverywhere(publicUrl);
+                console.log('Avatar saved to Supabase Storage successfully:', publicUrl);
             } catch(e) {
                 console.error('Avatar sync exception:', e);
             }
         }
 
-        function compressAvatar(dataUrl) {
+        // Compress avatar to a Blob (for Storage upload) instead of data URL
+        function compressAvatarToBlob(dataUrl) {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
@@ -5282,7 +5292,27 @@
                     canvas.width = size;
                     canvas.height = size;
                     const ctx = canvas.getContext('2d');
-                    // Crop to square center
+                    const minDim = Math.min(img.width, img.height);
+                    const sx = (img.width - minDim) / 2;
+                    const sy = (img.height - minDim) / 2;
+                    ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+                    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.6);
+                };
+                img.onerror = () => resolve(null);
+                img.src = dataUrl;
+            });
+        }
+
+        // Legacy support: compress to data URL (for backward compat)
+        function compressAvatar(dataUrl) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const size = 80;
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
                     const minDim = Math.min(img.width, img.height);
                     const sx = (img.width - minDim) / 2;
                     const sy = (img.height - minDim) / 2;
@@ -6342,11 +6372,12 @@
 
                 // *** NO FK JOINS — they silently fail if FK missing or value is NULL ***
 
-                // 1. Fetch messages I sent (plain select)
+                // 1. Fetch messages I sent (paginated — latest 200 for inbox)
                 const { data: sent, error: sentErr } = await sb.from('messages')
                     .select('*')
                     .eq('sender_id', currentAuthUser.id)
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: false })
+                    .range(0, 199);
                 if (sentErr) {
                     console.error('loadMessages: sent query failed:', sentErr.message, sentErr.code, sentErr.details);
                     // If auth error, try refreshing session
@@ -6365,11 +6396,12 @@
                 // 2. Fetch messages sent TO me — two separate safe queries
                 let received = [];
 
-                // 2a. By recipient_id
+                // 2a. By recipient_id (paginated — latest 200)
                 const { data: recvById, error: err1 } = await sb.from('messages')
                     .select('*')
                     .eq('recipient_id', currentAuthUser.id)
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: false })
+                    .range(0, 199);
                 if (err1) console.error('loadMessages: recv by id failed:', err1.message);
                 if (recvById) received = received.concat(recvById);
 
@@ -6378,7 +6410,8 @@
                     const { data: recvByEmail, error: err2 } = await sb.from('messages')
                         .select('*')
                         .eq('recipient_email', currentAuthUser.email)
-                        .order('created_at', { ascending: false });
+                        .order('created_at', { ascending: false })
+                        .range(0, 199);
                     if (err2) console.error('loadMessages: recv by email failed:', err2.message);
                     if (recvByEmail) {
                         const existingIds = new Set(received.map(m => m.id));
@@ -6834,7 +6867,7 @@
         // ========================
         let realtimeChannels = [];      // Track all channels for cleanup
         let pollInterval = null;        // Fallback polling timer
-        let releaseInterval = null;     // in_transit → released checker
+        // releaseInterval removed — message release now handled by server-side pg_cron job
         let realtimeWorking = false;    // Track if realtime events actually fire
         let isReloadingMessages = false; // Debounce guard
 
@@ -6858,65 +6891,8 @@
             }
         }
 
-        // Release checker: update in_transit messages whose release_at has passed
-        async function checkAndReleaseMessages() {
-            if (!currentAuthUser) return;
-            const now = new Date().toISOString();
-
-            // Check messages I SENT that are still in_transit but should be released
-            const { data: toRelease, error } = await sb.from('messages')
-                .select('id')
-                .eq('sender_id', currentAuthUser.id)
-                .eq('status', 'in_transit')
-                .lte('release_at', now);
-
-            if (error) { console.error('Release check failed:', error); return; }
-            if (!toRelease || toRelease.length === 0) return;
-
-            console.log('Releasing', toRelease.length, 'messages that passed moonrise');
-            const ids = toRelease.map(m => m.id);
-            const { error: updateErr } = await sb.from('messages')
-                .update({ status: 'released', released_at: new Date().toISOString() })
-                .in('id', ids);
-
-            if (updateErr) console.error('Release update failed:', updateErr);
-            else await debouncedReloadMessages();
-        }
-
-        // Also release in_transit messages sent TO me (by other users) that should be visible
-        async function checkAndReleaseReceivedMessages() {
-            if (!currentAuthUser) return;
-            const now = new Date().toISOString();
-
-            // Messages sent to me by ID
-            const { data: byId } = await sb.from('messages')
-                .select('id')
-                .eq('recipient_id', currentAuthUser.id)
-                .eq('status', 'in_transit')
-                .lte('release_at', now);
-
-            // Messages sent to me by email
-            let byEmail = [];
-            if (currentAuthUser.email) {
-                const { data } = await sb.from('messages')
-                    .select('id')
-                    .eq('recipient_email', currentAuthUser.email)
-                    .eq('status', 'in_transit')
-                    .lte('release_at', now);
-                if (data) byEmail = data;
-            }
-
-            const allIds = [...(byId || []), ...byEmail].map(m => m.id);
-            const uniqueIds = [...new Set(allIds)];
-            if (uniqueIds.length === 0) return;
-
-            console.log('Releasing', uniqueIds.length, 'received messages that passed moonrise');
-            const { error } = await sb.from('messages')
-                .update({ status: 'released', released_at: new Date().toISOString() })
-                .in('id', uniqueIds);
-            if (error) console.error('Received release update failed:', error);
-            else await debouncedReloadMessages();
-        }
+        // Message release is now handled server-side by pg_cron (runs every minute)
+        // checkAndReleaseMessages() and checkAndReleaseReceivedMessages() removed
 
         // Fallback polling: reload messages periodically to catch anything missed
         // This is the CRITICAL fallback when Supabase Realtime isn't working
@@ -6970,7 +6946,7 @@
 
             // Clear polling intervals
             if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-            if (releaseInterval) { clearInterval(releaseInterval); releaseInterval = null; }
+            // releaseInterval removed — handled by server-side pg_cron
 
             // Untrack presence
             if (presenceChannel) {
@@ -7162,17 +7138,8 @@
                 await pollForNewMessages();
             }, 5000);
 
-            // Check for in_transit → released every 20 seconds
-            releaseInterval = setInterval(async () => {
-                await checkAndReleaseMessages();
-                await checkAndReleaseReceivedMessages();
-            }, 20000);
-
-            // Run initial release check immediately
-            setTimeout(() => {
-                checkAndReleaseMessages();
-                checkAndReleaseReceivedMessages();
-            }, 2000);
+            // Message release is now server-side (pg_cron every minute)
+            // No client-side release polling needed
 
             // Presence: track online users
             setupPresence();
@@ -7276,6 +7243,13 @@
                 showOnboarding();
             }
         });
+
+        // Register service worker for PWA + offline support
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('Service Worker registered:', reg.scope))
+                .catch(err => console.warn('Service Worker registration failed:', err));
+        }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
@@ -7793,12 +7767,92 @@
         let currentMessageIndex = -1;
         let currentConversationIndex = -1;
 
+        // Load ALL messages for a specific conversation from DB (for full thread view)
+        async function loadFullConversationThread(conv) {
+            if (!conv.dbConversationId || !currentAuthUser) return;
+            try {
+                const { data: convMessages, error } = await sb.from('messages')
+                    .select('*')
+                    .eq('conversation_id', conv.dbConversationId)
+                    .order('created_at', { ascending: true });
+
+                if (error || !convMessages) {
+                    console.error('loadFullConversationThread error:', error);
+                    return;
+                }
+
+                // Fetch profiles for participants
+                const profileIds = new Set();
+                convMessages.forEach(m => {
+                    if (m.sender_id) profileIds.add(m.sender_id);
+                    if (m.recipient_id) profileIds.add(m.recipient_id);
+                });
+                const profileMap = {};
+                if (profileIds.size > 0) {
+                    const { data: profiles } = await sb.from('profiles')
+                        .select('id, username, first_name, last_name, city, avatar_url')
+                        .in('id', Array.from(profileIds));
+                    if (profiles) profiles.forEach(p => { profileMap[p.id] = p; });
+                }
+
+                // Map DB rows to local message format
+                const fullMessages = convMessages.map(m => {
+                    const isSent = m.sender_id === currentAuthUser.id;
+                    const sp = m.sender_id ? profileMap[m.sender_id] : null;
+                    const rp = m.recipient_id ? profileMap[m.recipient_id] : null;
+                    const otherProfile = isSent ? rp : sp;
+
+                    const isReleased = m.status === 'released';
+                    const releasePassed = m.release_at && new Date(m.release_at) <= new Date();
+                    const noReleaseTime = !m.release_at;
+                    const contentVisible = isSent || isReleased || releasePassed || noReleaseTime;
+
+                    return {
+                        dbId: m.id,
+                        senderId: m.sender_id,
+                        recipientId: m.recipient_id || null,
+                        sender: otherProfile?.username || m.recipient_name || 'Unknown',
+                        senderAvatar: otherProfile?.avatar_url || null,
+                        recipientEmail: m.recipient_email,
+                        preview: contentVisible ? (m.message_text || '') : '',
+                        status: isSent ? (m.status === 'in_transit' ? 'In Transit' : 'Released') : (contentVisible ? '' : 'Arriving'),
+                        type: isSent ? 'sent' : 'received',
+                        location: otherProfile?.city || m.recipient_city || 'Unknown',
+                        time: timeAgo(m.created_at),
+                        createdAt: m.created_at,
+                        conversationId: m.conversation_id || null,
+                        phaseName: m.moon_phase || '',
+                        messageText: contentVisible ? (m.message_text || '') : '',
+                        lunarNote: contentVisible && m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
+                        songUrl: contentVisible ? m.song_url : null,
+                        songTitle: contentVisible ? m.song_title : null,
+                        contentVisible: contentVisible,
+                        releaseAt: m.release_at,
+                        reactions: [],
+                        replies: []
+                    };
+                });
+
+                // Replace conversation's messages with the full set
+                conv.messages = fullMessages;
+                conv._fullThreadLoaded = true;
+                console.log('loadFullConversationThread: loaded', fullMessages.length, 'messages for conversation', conv.dbConversationId);
+            } catch (err) {
+                console.error('loadFullConversationThread exception:', err);
+            }
+        }
+
         // Open a conversation (grouped chat thread with a person)
         async function openConversation(convIndex) {
             const conv = conversations[convIndex];
             if (!conv) return;
             currentConversation = conv;
             currentConversationIndex = convIndex;
+
+            // Load full thread from DB if we haven't already (pagination: initial load may be partial)
+            if (!conv._fullThreadLoaded && conv.dbConversationId) {
+                await loadFullConversationThread(conv);
+            }
             // Set currentMessageIndex to the latest message for reply attachment
             currentMessageIndex = messages.indexOf(conv.messages[0]);
 
@@ -8964,25 +9018,19 @@
             const resultsDiv = document.getElementById('contactSearchResults');
 
             try {
-                if (typeof emailjs === 'undefined') {
-                    alert('Email service not available right now. Try again later.');
-                    return;
-                }
-
                 // Show sending state
                 const inviteBtn = resultsDiv.querySelector('button[onclick*="inviteEmailFromSearch"]');
                 if (inviteBtn) { inviteBtn.textContent = 'Sending...'; inviteBtn.disabled = true; }
 
-                const inviteLink = window.location.origin;
-                await emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
-                    to_email: email,
-                    from_name: senderName,
-                    sender_display: senderName + ' invited you to MoonPop',
-                    to_location: '',
-                    moonrise_time: '',
-                    message_preview: 'Join me on MoonPop',
-                    reveal_link: inviteLink
+                const { data, error } = await sb.functions.invoke('send-email', {
+                    body: {
+                        type: 'invite',
+                        recipientEmail: email,
+                        senderName,
+                        revealLink: window.location.origin
+                    }
                 });
+                if (error) throw error;
 
                 // Also add as contact (off-platform)
                 if (!contacts.find(c => c.email && c.email.toLowerCase() === email.toLowerCase())) {
@@ -9720,9 +9768,72 @@
             document.getElementById('moonDownModal').classList.remove('active');
         }
 
-        function showNotifyModal() {
-            // MVP: just show a simple alert or could open a modal for email input
-            alert('Notifications coming soon. Check back at moonrise!');
+        // VAPID public key for Web Push (matches push-notify Edge Function)
+        const VAPID_PUBLIC_KEY = 'BHqBb8cUt0T7Zb2aBo3G8vFpQRw0zBVnKbGqT5Fv3qYxPkPU4A9J-a4dIWx7U5VnSXBqK8aGnL1yMzRsQf3xG8';
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const raw = atob(base64);
+            const arr = new Uint8Array(raw.length);
+            for (let i = 0; i < raw.length; ++i) arr[i] = raw.charCodeAt(i);
+            return arr;
+        }
+
+        async function showNotifyModal() {
+            if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+                alert('Push notifications are not supported in this browser.');
+                return;
+            }
+
+            if (Notification.permission === 'granted') {
+                await subscribeToPush();
+                alert('Notifications are enabled! You\'ll get notified when moon messages arrive.');
+                return;
+            }
+
+            if (Notification.permission === 'denied') {
+                alert('Notifications are blocked. Please enable them in your browser settings.');
+                return;
+            }
+
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                await subscribeToPush();
+                alert('Notifications enabled! You\'ll be notified when moon messages arrive.');
+            } else {
+                alert('Notification permission was not granted.');
+            }
+        }
+
+        async function subscribeToPush() {
+            if (!currentAuthUser) return;
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                let subscription = await reg.pushManager.getSubscription();
+
+                if (!subscription) {
+                    subscription = await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                    });
+                }
+
+                const key = subscription.getKey('p256dh');
+                const auth = subscription.getKey('auth');
+
+                const { error } = await sb.from('push_subscriptions').upsert({
+                    user_id: currentAuthUser.id,
+                    endpoint: subscription.endpoint,
+                    p256dh: btoa(String.fromCharCode(...new Uint8Array(key))),
+                    auth: btoa(String.fromCharCode(...new Uint8Array(auth)))
+                }, { onConflict: 'user_id,endpoint' });
+
+                if (error) console.error('Push subscription save failed:', error);
+                else console.log('Push subscription saved successfully');
+            } catch (err) {
+                console.error('Push subscribe error:', err);
+            }
         }
 
         function closeModal() {
@@ -10476,7 +10587,7 @@
             const instantDeliver = recipientOnline || !releaseAt || moonriseVerySoon;
             const messageStatus = instantDeliver ? 'released' : 'in_transit';
 
-            // Save to Supabase
+            // Save to Supabase via Edge Function (server-side validation + rate limiting)
             let dbMessage = null;
             if (currentAuthUser) {
                 const insertData = {
@@ -10497,52 +10608,44 @@
                     released_at: instantDeliver ? new Date().toISOString() : null
                 };
 
-                console.log('Sending message:', { recipientId, recipientEmail, status: messageStatus, instantDeliver });
+                console.log('Sending message via Edge Function:', { recipientId, recipientEmail, status: messageStatus, instantDeliver });
 
-                // Insert and return the row in one call
-                const { data: msgData, error: msgError } = await sb
-                    .from('messages')
-                    .insert(insertData)
-                    .select()
-                    .single();
+                try {
+                    const { data: fnData, error: fnError } = await sb.functions.invoke('send-message', {
+                        body: insertData
+                    });
 
-                if (msgError) {
-                    console.error('Message save failed:', msgError.message, msgError.code, msgError.details);
-
-                    // Retry: if insert+select failed, try plain insert (message might be saved but select failed)
-                    console.log('completeSend: retrying with plain insert...');
-                    const { error: retryErr } = await sb.from('messages').insert(insertData);
-                    if (retryErr) {
-                        // Check if it's a duplicate (first insert actually succeeded)
-                        if (retryErr.code === '23505') {
-                            console.log('completeSend: first insert DID succeed (duplicate detected), fetching...');
-                        } else {
-                            console.error('completeSend: retry also failed:', retryErr.message);
-                            alert('Message could not be sent. Please try again.\n\nError: ' + (msgError.message || 'Unknown error'));
+                    if (fnError) {
+                        console.error('Edge Function error:', fnError);
+                        // Fallback: try direct insert if Edge Function fails
+                        console.log('completeSend: falling back to direct insert...');
+                        const { data: msgData, error: msgError } = await sb
+                            .from('messages')
+                            .insert(insertData)
+                            .select()
+                            .single();
+                        if (msgError) {
+                            console.error('Direct insert also failed:', msgError.message);
+                            alert('Message could not be sent. Please try again.\n\nError: ' + (fnError.message || msgError.message || 'Unknown error'));
                             pendingMessage = null;
                             return;
                         }
+                        dbMessage = msgData;
+                    } else if (fnData && fnData.message) {
+                        console.log('Message saved via Edge Function, id:', fnData.message.id);
+                        dbMessage = fnData.message;
+                    } else if (fnData && fnData.error) {
+                        // Server-side validation error
+                        console.error('Validation error:', fnData.error, fnData.details);
+                        alert('Message could not be sent: ' + (fnData.details ? fnData.details.join(', ') : fnData.error));
+                        pendingMessage = null;
+                        return;
                     }
-
-                    // Fetch the most recent message we sent to this recipient
-                    const { data: fetchedMsg } = await sb.from('messages')
-                        .select('*')
-                        .eq('sender_id', currentAuthUser.id)
-                        .order('created_at', { ascending: false })
-                        .limit(1)
-                        .single();
-
-                    if (fetchedMsg) {
-                        console.log('completeSend: recovered message id:', fetchedMsg.id);
-                        dbMessage = fetchedMsg;
-                    } else {
-                        // Create a synthetic record so UI still works
-                        console.warn('completeSend: could not fetch back, using synthetic record');
-                        dbMessage = { ...insertData, id: crypto.randomUUID(), created_at: new Date().toISOString() };
-                    }
-                } else {
-                    console.log('Message saved successfully, id:', msgData.id);
-                    dbMessage = msgData;
+                } catch (err) {
+                    console.error('Send message exception:', err);
+                    alert('Message could not be sent. Please try again.');
+                    pendingMessage = null;
+                    return;
                 }
             }
 
