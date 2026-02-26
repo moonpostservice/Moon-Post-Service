@@ -621,6 +621,23 @@
             margin-top: 8px;
             display: none;
         }
+        .otp-digit {
+            width: 44px;
+            height: 52px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            color: var(--blue);
+            transition: border-color 0.2s;
+        }
+        .otp-digit:focus {
+            outline: none;
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(53,125,197,0.15);
+        }
 
         /* Moon Down Modal */
         .moon-down-modal {
@@ -4152,19 +4169,30 @@
                 <button class="onboarding-primary" id="authSendBtn" onclick="sendMoonKey()">
                     Send Moon Key 🌙
                 </button>
-                <p class="auth-note">No password needed. We'll send a magic link to your inbox.</p>
+                <p class="auth-note">No password needed. We'll send a 6-digit code to your inbox.</p>
             </div>
 
-            <!-- Step 2: Check inbox -->
-            <div class="auth-step" id="authStepInbox">
+            <!-- Step 2: Enter code -->
+            <div class="auth-step" id="authStepCode">
                 <div class="auth-check-inbox">
-                    <div class="inbox-icon">📬</div>
-                    <h2>Check your inbox</h2>
-                    <p>We sent a moon key to</p>
+                    <div class="inbox-icon">🔑</div>
+                    <h2>Enter your Moon Key</h2>
+                    <p>We sent a 6-digit code to</p>
                     <p class="auth-email-highlight" id="authEmailSent"></p>
-                    <p>Click the link to enter MoonPop.</p>
-                    <div class="auth-actions">
-                        <button class="auth-link-btn" onclick="resendMoonKey()">Resend</button>
+                    <div style="display:flex;justify-content:center;gap:8px;margin:20px 0;">
+                        <input type="text" id="otpDigit1" class="otp-digit" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+                        <input type="text" id="otpDigit2" class="otp-digit" maxlength="1" inputmode="numeric">
+                        <input type="text" id="otpDigit3" class="otp-digit" maxlength="1" inputmode="numeric">
+                        <input type="text" id="otpDigit4" class="otp-digit" maxlength="1" inputmode="numeric">
+                        <input type="text" id="otpDigit5" class="otp-digit" maxlength="1" inputmode="numeric">
+                        <input type="text" id="otpDigit6" class="otp-digit" maxlength="1" inputmode="numeric">
+                    </div>
+                    <div class="auth-error" id="otpError" style="display:none;"></div>
+                    <button class="onboarding-primary" id="verifyCodeBtn" onclick="verifyMoonKey()" disabled>
+                        Enter MoonPop
+                    </button>
+                    <div class="auth-actions" style="margin-top:12px;">
+                        <button class="auth-link-btn" onclick="resendMoonKey()">Resend code</button>
                         <button class="auth-link-btn" onclick="changeEmail()">Change email</button>
                     </div>
                 </div>
@@ -4276,7 +4304,7 @@
                     <span class="inbox-title">INBOX</span>
                     <button onclick="openContactsPage()" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 6px;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Contacts">👥</button>
                 </div>
-                <button class="new-message-btn" onclick="openModal()">+</button>
+                <button class="new-message-btn" onclick="openNewMessagePicker()">+</button>
             </div>
             <!-- Shared Sky as first row (public chat) -->
             <div class="shared-sky-row" onclick="openSharedSkyModal()">
@@ -4358,6 +4386,23 @@
                 </div>
             </div>
             <div class="message-page-body" id="contactsListBody" style="padding:0;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- New Message Contact Picker (WhatsApp-style) -->
+    <div class="message-page" id="newMessagePicker">
+        <div class="message-page-inner">
+            <div class="message-page-header" style="justify-content:space-between;">
+                <button class="message-page-back" onclick="closeNewMessagePicker()">←</button>
+                <span style="font-weight:700;color:var(--blue);font-size:15px;">New Message</span>
+                <span style="width:34px;"></span>
+            </div>
+            <div style="padding:8px 16px;border-bottom:1px solid #f0ece4;">
+                <input type="text" id="newMsgContactSearch" placeholder="Search name or email..." autocomplete="off" oninput="filterNewMsgContacts(this.value)" style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid #e0dcd4;border-radius:10px;font-size:14px;background:white;">
+            </div>
+            <div class="message-page-body" id="newMsgContactList" style="padding:0;">
                 <!-- Populated by JS -->
             </div>
         </div>
@@ -4554,7 +4599,7 @@
                 </div>
                 
                 <div style="display:flex;justify-content:center;margin-top:20px;">
-                    <button class="send-button" onclick="goToRecipientStep()" style="max-width:280px;">Continue →</button>
+                    <button class="send-button" id="composeMainBtn" onclick="composeMainAction()" style="max-width:280px;">Continue →</button>
                 </div>
             </div>
             
@@ -6064,26 +6109,31 @@
                 conv.hasInTransit = conv.messages.some(m => m.type === 'sent' && m.status === 'In Transit');
             });
 
-            // Sort conversations by latest message time
-            conversations = Object.values(convMap).sort((a, b) =>
+            // Recalculate time strings and sort conversations by latest activity
+            conversations = Object.values(convMap);
+            conversations.forEach(conv => {
+                conv.latestTime = timeAgo(conv.latestCreatedAt);
+            });
+            conversations.sort((a, b) =>
                 new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt)
             );
         }
 
-        // Helper: relative time string
+        // Helper: WhatsApp-style time display
         function timeAgo(dateStr) {
             const now = new Date();
             const date = new Date(dateStr);
-            const diffMs = now - date;
-            const diffMin = Math.floor(diffMs / 60000);
-            const diffHrs = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
-            if (diffMin < 1) return 'Just now';
-            if (diffMin < 60) return diffMin + 'm ago';
-            if (diffHrs < 24) return diffHrs + 'h ago';
+            if (isNaN(date)) return '';
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const diffDays = Math.floor((today - msgDay) / 86400000);
+
+            if (diffDays === 0) {
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
             if (diffDays === 1) return 'Yesterday';
-            if (diffDays < 7) return diffDays + ' days ago';
-            return 'Last week';
+            if (diffDays < 7) return date.toLocaleDateString([], { weekday: 'short' });
+            return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
         }
 
         async function loadMessages() {
@@ -6244,6 +6294,8 @@
         let currentAuthUser = null;
 
         // Send magic link
+        let pendingAuthEmail = '';
+
         async function sendMoonKey() {
             const email = document.getElementById('authEmail').value.trim();
             const errorEl = document.getElementById('authError');
@@ -6262,7 +6314,7 @@
             const { error } = await sb.auth.signInWithOtp({
                 email,
                 options: {
-                    emailRedirectTo: window.location.origin
+                    shouldCreateUser: true
                 }
             });
 
@@ -6274,27 +6326,98 @@
                 return;
             }
 
-            // Show check inbox step
+            pendingAuthEmail = email;
             document.getElementById('authEmailSent').textContent = email;
             document.getElementById('authStepEmail').classList.remove('active');
-            document.getElementById('authStepInbox').classList.add('active');
+            document.getElementById('authStepCode').classList.add('active');
+            setupOtpInputs();
+            document.getElementById('otpDigit1').focus();
+        }
+
+        function setupOtpInputs() {
+            for (let i = 1; i <= 6; i++) {
+                const input = document.getElementById('otpDigit' + i);
+                input.value = '';
+                input.addEventListener('input', (e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    e.target.value = val;
+                    if (val && i < 6) document.getElementById('otpDigit' + (i + 1)).focus();
+                    checkOtpComplete();
+                });
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && i > 1) {
+                        document.getElementById('otpDigit' + (i - 1)).focus();
+                    }
+                    if (e.key === 'Enter') verifyMoonKey();
+                });
+                input.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+                    for (let j = 0; j < paste.length; j++) {
+                        const d = document.getElementById('otpDigit' + (j + 1));
+                        if (d) d.value = paste[j];
+                    }
+                    checkOtpComplete();
+                    if (paste.length === 6) verifyMoonKey();
+                });
+            }
+        }
+
+        function checkOtpComplete() {
+            let code = '';
+            for (let i = 1; i <= 6; i++) code += document.getElementById('otpDigit' + i).value;
+            document.getElementById('verifyCodeBtn').disabled = code.length < 6;
+        }
+
+        async function verifyMoonKey() {
+            let code = '';
+            for (let i = 1; i <= 6; i++) code += document.getElementById('otpDigit' + i).value;
+            if (code.length < 6) return;
+
+            const btn = document.getElementById('verifyCodeBtn');
+            const errorEl = document.getElementById('otpError');
+            btn.textContent = 'Verifying...';
+            btn.disabled = true;
+            errorEl.style.display = 'none';
+
+            const { error } = await sb.auth.verifyOtp({
+                email: pendingAuthEmail,
+                token: code,
+                type: 'email'
+            });
+
+            if (error) {
+                errorEl.textContent = error.message || 'Invalid code. Please try again.';
+                errorEl.style.display = 'block';
+                btn.textContent = 'Enter MoonPop';
+                btn.disabled = false;
+                // Clear OTP inputs
+                for (let i = 1; i <= 6; i++) document.getElementById('otpDigit' + i).value = '';
+                document.getElementById('otpDigit1').focus();
+                return;
+            }
+
+            // Auth successful — initAuth will handle the rest via onAuthStateChange
+            btn.textContent = 'Welcome!';
         }
 
         async function resendMoonKey() {
-            const email = document.getElementById('authEmailSent').textContent;
+            const email = pendingAuthEmail || document.getElementById('authEmailSent').textContent;
             const { error } = await sb.auth.signInWithOtp({
                 email,
                 options: {
-                    emailRedirectTo: window.location.origin
+                    shouldCreateUser: true
                 }
             });
             if (!error) {
-                alert('Moon key resent! Check your inbox.');
+                alert('New code sent! Check your inbox.');
+            } else {
+                alert(error.message || 'Could not resend. Try again in a moment.');
             }
         }
 
         function changeEmail() {
-            document.getElementById('authStepInbox').classList.remove('active');
+            document.getElementById('authStepCode').classList.remove('active');
             document.getElementById('authStepEmail').classList.add('active');
             document.getElementById('authSendBtn').textContent = 'Send Moon Key 🌙';
             document.getElementById('authSendBtn').disabled = false;
@@ -6323,7 +6446,7 @@
             const isMessageLink = await checkMessageLink();
             if (isMessageLink) return; // Don't load the app, just show the reveal page
 
-            // If URL has magic link tokens, Supabase needs a moment to process them
+            // Legacy: clean up any old magic link tokens in URL
             if (window.location.hash.includes('access_token')) {
                 await new Promise(resolve => setTimeout(resolve, 500));
                 history.replaceState(null, '', window.location.pathname);
@@ -6628,6 +6751,11 @@
 
         // Also handle future auth changes (e.g. signing out)
         sb.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session && !currentAuthUser) {
+                // OTP verify success — load the app
+                currentAuthUser = session.user;
+                await initAuth();
+            }
             if (event === 'SIGNED_OUT') {
                 currentAuthUser = null;
                 showOnboarding();
@@ -8237,16 +8365,7 @@
 
         function contactAction(contactName) {
             closeContactsPage();
-            openModal();
-            setTimeout(() => {
-                goToRecipientStep();
-                const contact = contacts.find(c => c.name === contactName);
-                if (contact) {
-                    selectedRecipient = { name: contact.name, email: contact.email, location: contact.location, isOnMoonpop: contact.isOnMoonpop, linkedProfileId: contact.linkedProfileId };
-                    document.getElementById('recipient').value = contact.name;
-                    updateDeliveryInfo();
-                }
-            }, 100);
+            pickContactForMessage(contactName);
         }
 
         // Recipient dropdown
@@ -8395,6 +8514,169 @@
         }
 
         // Modal functions
+        // ========================
+        // NEW MESSAGE PICKER (WhatsApp-style: pick contact first, then compose)
+        // ========================
+        function openNewMessagePicker() {
+            if (!moonData.isVisible) {
+                openMoonDownModal();
+                return;
+            }
+            renderNewMsgContactList();
+            document.getElementById('newMessagePicker').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            document.getElementById('newMsgContactSearch').value = '';
+            document.getElementById('newMsgContactSearch').focus();
+        }
+
+        function closeNewMessagePicker() {
+            document.getElementById('newMessagePicker').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function renderNewMsgContactList(query) {
+            const container = document.getElementById('newMsgContactList');
+            let filtered = [...contacts];
+            if (query) {
+                const q = query.toLowerCase();
+                filtered = filtered.filter(c =>
+                    (c.name || '').toLowerCase().includes(q) ||
+                    (c.email || '').toLowerCase().includes(q) ||
+                    (c.location || '').toLowerCase().includes(q)
+                );
+            }
+
+            // Sort: on MoonPop first, then alphabetical
+            filtered.sort((a, b) => {
+                if (a.isOnMoonpop && !b.isOnMoonpop) return -1;
+                if (!a.isOnMoonpop && b.isOnMoonpop) return 1;
+                return (a.name || '').localeCompare(b.name || '');
+            });
+
+            let html = '';
+
+            // New contact option (always at top)
+            html += `
+                <div style="display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid #f0ece4;gap:14px;cursor:pointer;" onclick="openNewContactForMessage()">
+                    <div class="msg-avatar" style="margin-right:0;background:var(--blue);">
+                        <span style="font-size:18px;">+</span>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-size:14px;font-weight:600;color:var(--blue);">New contact</div>
+                        <div style="font-size:11px;color:var(--text-muted);">Send to someone not in your contacts</div>
+                    </div>
+                </div>
+            `;
+
+            const onMps = filtered.filter(c => c.isOnMoonpop);
+            const offMps = filtered.filter(c => !c.isOnMoonpop);
+
+            if (onMps.length > 0) {
+                html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;">On MoonPop</div>`;
+                html += onMps.map(c => renderPickerRow(c)).join('');
+            }
+
+            if (offMps.length > 0) {
+                html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Contacts</div>`;
+                html += offMps.map(c => renderPickerRow(c)).join('');
+            }
+
+            if (filtered.length === 0 && query) {
+                html += `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;">No contacts match "${query}"</div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderPickerRow(contact) {
+            const initial = (contact.name || '?').charAt(0).toUpperCase();
+            const escapedName = (contact.name || '').replace(/'/g, "\\'");
+            const avatarInner = contact.avatar
+                ? `<img src="${contact.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+                : `<span>${initial}</span>`;
+            const online = isContactOnline(contact);
+            const statusDot = online ? `<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid white;z-index:1;"></span>` : '';
+
+            return `
+                <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid #f0ece4;gap:14px;cursor:pointer;" onclick="pickContactForMessage('${escapedName}')">
+                    <div class="msg-avatar" style="margin-right:0;">
+                        ${statusDot}
+                        ${avatarInner}
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:14px;font-weight:600;color:var(--blue);">
+                            ${contact.name}
+                            ${online ? '<span style="font-size:11px;color:#4caf50;margin-left:6px;">online</span>' : ''}
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted);">
+                            ${contact.isOnMoonpop ? '<span style="color:#4caf50;">On MoonPop</span>' : ''}
+                            ${contact.location && contact.location !== 'Unknown' ? (contact.isOnMoonpop ? ' · ' : '') + contact.location : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function filterNewMsgContacts(query) {
+            renderNewMsgContactList(query);
+        }
+
+        function pickContactForMessage(contactName) {
+            const contact = contacts.find(c => c.name === contactName);
+            if (!contact) return;
+            closeNewMessagePicker();
+            selectedRecipient = {
+                name: contact.name,
+                email: contact.email,
+                location: contact.location,
+                isOnMoonpop: contact.isOnMoonpop,
+                linkedProfileId: contact.linkedProfileId
+            };
+            openModalForRecipient();
+        }
+
+        function openNewContactForMessage() {
+            closeNewMessagePicker();
+            selectedRecipient = null;
+            openModal();
+            // Jump straight to new contact form
+            setTimeout(() => {
+                goToRecipientStep();
+                showNewContactForm();
+            }, 50);
+        }
+
+        // Open compose modal with a pre-selected recipient (skip step 2)
+        function openModalForRecipient() {
+            showDefaultCompose();
+            document.getElementById('messageModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Auto-activate lunar note
+            if (!lunarNoteActive) {
+                lunarNoteActive = true;
+                currentPromptSet = getTodaysPromptSet();
+                const ps = PROMPT_SETS[currentPromptSet];
+                for (let i = 0; i < 3; i++) {
+                    document.getElementById('lunarLabel' + (i+1)).textContent = ps.prompts[i].label;
+                    document.getElementById('lunarInput' + (i+1)).placeholder = ps.prompts[i].placeholder;
+                }
+                goLunarStep(1);
+            }
+
+            // Show who we're composing to in the header and update button
+            if (selectedRecipient) {
+                const header = document.getElementById('composeHeader');
+                header.innerHTML = `
+                    <button class="message-page-back" onclick="closeModal()" style="font-size:20px;">←</button>
+                    <span style="font-weight:700;color:var(--blue);font-size:15px;">${selectedRecipient.name}</span>
+                    <span style="width:34px;"></span>
+                `;
+                const mainBtn = document.getElementById('composeMainBtn');
+                if (mainBtn) mainBtn.textContent = 'Release to the Moon';
+            }
+        }
+
         function openModal() {
             if (!moonData.isVisible) {
                 // Show moon-down modal instead
@@ -8502,6 +8784,16 @@
         }
         
         // Compose step navigation (now: message=step1, recipient=step2)
+        function composeMainAction() {
+            if (selectedRecipient) {
+                // Recipient already picked — send directly
+                handleComposeSend();
+            } else {
+                // No recipient yet — go to step 2
+                goToRecipientStep();
+            }
+        }
+
         function goToRecipientStep() {
             const textMessage = document.getElementById('messageText').value.trim();
             const songVal = document.getElementById('songInput')?.value.trim() || '';
@@ -9128,7 +9420,11 @@
                     <button class="message-page-back" onclick="closeModal()" style="font-size:20px;">&times;</button>
                 `;
             }
-            
+
+            // Reset main button text
+            const mainBtn = document.getElementById('composeMainBtn');
+            if (mainBtn) mainBtn.textContent = 'Continue →';
+
             // Switch back to step 1
             showDefaultCompose();
         }
