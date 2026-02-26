@@ -4447,7 +4447,7 @@
                 <span style="width:34px;"></span>
             </div>
             <div style="padding:8px 16px;border-bottom:1px solid #f0ece4;">
-                <input type="text" id="newMsgContactSearch" placeholder="Search name or email..." autocomplete="off" oninput="filterNewMsgContacts(this.value)" style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid #e0dcd4;border-radius:10px;font-size:14px;background:white;">
+                <input type="text" id="newMsgContactSearch" placeholder="Search MoonPop users or type an email..." autocomplete="off" oninput="filterNewMsgContacts(this.value)" style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid #e0dcd4;border-radius:10px;font-size:14px;background:white;">
             </div>
             <div class="message-page-body" id="newMsgContactList" style="padding:0;">
                 <!-- Populated by JS -->
@@ -7118,7 +7118,7 @@
                 }, async (payload) => {
                     const receipt = payload.new;
                     // Only care about other users' receipts (not our own)
-                    if (!receipt || receipt.user_id === currentAuthUser.id) return;
+                    if (!currentAuthUser || !receipt || receipt.user_id === currentAuthUser.id) return;
 
                     console.log('Realtime: read receipt update from', receipt.user_id);
 
@@ -9385,20 +9385,22 @@
 
             let html = '';
 
-            // New contact option (always at top)
-            html += `
-                <div style="display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid #f0ece4;gap:14px;cursor:pointer;" onclick="openNewContactForMessage()">
-                    <div class="msg-avatar" style="margin-right:0;background:var(--blue);">
-                        <span style="font-size:18px;">+</span>
+            // If query looks like email, show email invite option
+            if (query && query.includes('@') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query.trim())) {
+                html += `
+                    <div style="display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid #f0ece4;gap:14px;cursor:pointer;" onclick="pickEmailForMessage('${query.trim().replace(/'/g, "\\'")}')">
+                        <div class="msg-avatar" style="margin-right:0;background:var(--coral);">
+                            <span style="font-size:16px;">✉</span>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-size:14px;font-weight:600;color:var(--coral);">Send to ${query.trim()}</div>
+                            <div style="font-size:11px;color:var(--text-muted);">Invite them to MoonPop with your message</div>
+                        </div>
                     </div>
-                    <div style="flex:1;">
-                        <div style="font-size:14px;font-weight:600;color:var(--blue);">New contact</div>
-                        <div style="font-size:11px;color:var(--text-muted);">Send to someone not in your contacts</div>
-                    </div>
-                </div>
-            `;
+                `;
+            }
 
-            const onMps = filtered.filter(c => c.isOnMoonpop);
+            const onMps = filtered.filter(c => c.isOnMoonpop && !c._isSelf);
             const offMps = filtered.filter(c => !c.isOnMoonpop);
 
             if (onMps.length > 0) {
@@ -9411,8 +9413,14 @@
                 html += offMps.map(c => renderPickerRow(c)).join('');
             }
 
-            if (filtered.length === 0 && query) {
-                html += `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;">No contacts match "${query}"</div>`;
+            if (filtered.length === 0 && !query) {
+                html += `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;">
+                    <div style="font-size:32px;margin-bottom:12px;">🔍</div>
+                    <p style="margin-bottom:8px;">Search for MoonPop users by name</p>
+                    <p style="font-size:12px;">Or type an email address to invite someone new</p>
+                </div>`;
+            } else if (filtered.length === 0 && query && query.trim().length < 2) {
+                html += `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;">Keep typing to search...</div>`;
             }
 
             container.innerHTML = html;
@@ -9447,8 +9455,172 @@
             `;
         }
 
+        let newMsgSearchTimer = null;
         function filterNewMsgContacts(query) {
+            // Always show local contacts filter immediately
             renderNewMsgContactList(query);
+            // If query is long enough, also search all MoonPop users (debounced)
+            clearTimeout(newMsgSearchTimer);
+            if (query && query.trim().length >= 2) {
+                newMsgSearchTimer = setTimeout(() => searchAllUsersForNewMsg(query.trim()), 400);
+            }
+        }
+
+        async function searchAllUsersForNewMsg(query) {
+            if (!currentAuthUser) return;
+            try {
+                const { data, error } = await sb.rpc('search_users', { search_query: query });
+                if (error || !data) return;
+
+                const container = document.getElementById('newMsgContactList');
+                if (!container) return;
+
+                // Get current search query (may have changed during async call)
+                const currentQuery = document.getElementById('newMsgContactSearch')?.value?.trim() || '';
+                if (currentQuery.length < 2) return; // User cleared search
+
+                // Build local contacts display
+                const q = currentQuery.toLowerCase();
+                const localFiltered = contacts.filter(c =>
+                    (c.name || '').toLowerCase().includes(q) ||
+                    (c.email || '').toLowerCase().includes(q) ||
+                    (c.location || '').toLowerCase().includes(q)
+                );
+
+                // Filter out users already in local contacts (by profile ID or email)
+                const localIds = new Set(contacts.map(c => c.linkedProfileId).filter(Boolean));
+                const localEmails = new Set(contacts.map(c => (c.email || '').toLowerCase()).filter(Boolean));
+                const newUsers = data.filter(u =>
+                    u.id !== currentAuthUser.id &&
+                    !localIds.has(u.id) &&
+                    !(u.email && localEmails.has(u.email.toLowerCase()))
+                );
+
+                let html = '';
+
+                // Invite by email option at top
+                if (currentQuery.includes('@') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(currentQuery)) {
+                    html += `
+                        <div style="display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid #f0ece4;gap:14px;cursor:pointer;" onclick="pickEmailForMessage('${currentQuery.replace(/'/g, "\\'")}')">
+                            <div class="msg-avatar" style="margin-right:0;background:var(--coral);">
+                                <span style="font-size:16px;">✉</span>
+                            </div>
+                            <div style="flex:1;">
+                                <div style="font-size:14px;font-weight:600;color:var(--coral);">Send to ${currentQuery}</div>
+                                <div style="font-size:11px;color:var(--text-muted);">Invite them to MoonPop with your message</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Your contacts that match
+                if (localFiltered.length > 0) {
+                    html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;">Your Contacts</div>`;
+                    localFiltered.sort((a, b) => {
+                        if (a.isOnMoonpop && !b.isOnMoonpop) return -1;
+                        if (!a.isOnMoonpop && b.isOnMoonpop) return 1;
+                        return (a.name || '').localeCompare(b.name || '');
+                    });
+                    html += localFiltered.map(c => renderPickerRow(c)).join('');
+                }
+
+                // New MoonPop users found via search
+                if (newUsers.length > 0) {
+                    html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:#4caf50;text-transform:uppercase;letter-spacing:0.5px;">On MoonPop</div>`;
+                    html += newUsers.map(u => {
+                        const displayName = u.username || [u.first_name, u.last_name].filter(Boolean).join(' ') || 'MoonPop User';
+                        return renderSearchedUserRow(u, displayName);
+                    }).join('');
+                }
+
+                if (!html && localFiltered.length === 0 && newUsers.length === 0) {
+                    html += `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;">
+                        No users found for "${currentQuery}"<br>
+                        <span style="font-size:12px;">Try an email address to invite someone new.</span>
+                    </div>`;
+                }
+
+                container.innerHTML = html;
+            } catch (e) {
+                console.error('searchAllUsersForNewMsg error:', e);
+            }
+        }
+
+        function renderSearchedUserRow(user, displayName) {
+            const initial = (displayName || '?').charAt(0).toUpperCase();
+            const escapedId = user.id;
+            const escapedName = (displayName || '').replace(/'/g, "\\'");
+            const escapedEmail = (user.email || '').replace(/'/g, "\\'");
+            const escapedCity = (user.city || '').replace(/'/g, "\\'");
+            const avatarInner = user.avatar_url
+                ? `<img src="${user.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+                : `<span>${initial}</span>`;
+            const username = user.username ? `<span style="font-size:11px;color:var(--text-muted);margin-left:4px;">@${user.username}</span>` : '';
+
+            return `
+                <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid #f0ece4;gap:14px;cursor:pointer;" onclick="pickSearchedUserForMessage('${escapedId}', '${escapedName}', '${escapedEmail}', '${escapedCity}')">
+                    <div class="msg-avatar" style="margin-right:0;">
+                        ${avatarInner}
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:14px;font-weight:600;color:var(--blue);">
+                            ${displayName}${username}
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted);">
+                            <span style="color:#4caf50;">On MoonPop</span>
+                            ${user.city ? ' · ' + user.city : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function pickSearchedUserForMessage(profileId, name, email, city) {
+            // Auto-add to contacts
+            if (!contacts.find(c => c.linkedProfileId === profileId)) {
+                const newContact = {
+                    name: name,
+                    location: city || 'Unknown',
+                    email: email,
+                    avatar: null,
+                    isOnMoonpop: true,
+                    linkedProfileId: profileId
+                };
+                contacts.push(newContact);
+                if (currentAuthUser) {
+                    sb.from('contacts').insert({
+                        owner_id: currentAuthUser.id,
+                        name: name,
+                        city: city || null,
+                        email: email,
+                        is_on_moonpop: true,
+                        linked_profile_id: profileId
+                    });
+                }
+            }
+            // Open compose
+            closeNewMessagePicker();
+            selectedRecipient = {
+                name: name,
+                email: email,
+                location: city || 'Unknown',
+                isOnMoonpop: true,
+                linkedProfileId: profileId
+            };
+            openModalForRecipient();
+        }
+
+        function pickEmailForMessage(email) {
+            closeNewMessagePicker();
+            selectedRecipient = {
+                name: email,
+                email: email,
+                location: 'Unknown',
+                isOnMoonpop: false,
+                linkedProfileId: null,
+                isNew: true
+            };
+            openModalForRecipient();
         }
 
         function pickContactForMessage(contactName) {
