@@ -2897,6 +2897,20 @@
             color: var(--text-muted);
         }
 
+        .transit-progress {
+            height: 3px;
+            background: rgba(53, 125, 197, 0.15);
+            border-radius: 2px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .transit-progress-bar {
+            height: 100%;
+            background: var(--blue);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
         .message-detail-header {
             padding: 20px 24px;
             border-bottom: 1px solid #e0dcd4;
@@ -4232,12 +4246,16 @@
                         <span class="section-chevron">▾</span>
                     </div>
                     <div class="settings-section-body">
-                        <div class="form-group" style="margin-bottom:0;">
+                        <div class="form-group" style="margin-bottom:10px;">
                             <label style="font-size:11px;">Time format</label>
                             <select id="timeFormat" class="settings-select" style="font-size:13px;padding:6px 8px;" onchange="updateSettingsSummaries()">
                                 <option value="24" selected>24-hour (18:00)</option>
                                 <option value="12">12-hour (6:00 PM)</option>
                             </select>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <label style="font-size:11px;margin:0;">Push notifications</label>
+                            <button id="notifToggleBtn" onclick="toggleNotifications()" style="font-size:12px;padding:4px 12px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;">Enable</button>
                         </div>
                     </div>
                 </div>
@@ -4259,6 +4277,10 @@
                             <a href="#" onclick="event.preventDefault();deleteAccount();" style="font-size:12px;color:#cc3333;">Delete my account</a>
                         </div>
                     </div>
+                </div>
+
+                <div style="text-align:center;padding:8px 0 6px;border-top:1px solid rgba(128,128,128,0.12);">
+                    <span style="font-size:10px;color:var(--text-muted);">MoonPop v1.3.0</span>
                 </div>
             </div>
         </div>
@@ -5284,8 +5306,9 @@
                 const wrapper = document.getElementById('manualLocationWrapper');
                 if (wrapper) wrapper.style.display = 'none';
 
-                // Update section summaries
+                // Update section summaries and notification button
                 updateSettingsSummaries();
+                updateNotifButton();
             }
         }
 
@@ -6413,7 +6436,10 @@
                     conv.latestPreview = conv.latestPreview.substring(0, 50) + '...';
                 }
                 conv.location = latest.location;
-                conv.hasInTransit = conv.messages.some(m => m.type === 'sent' && m.status === 'In Transit');
+                const transitMsg = conv.messages.find(m => m.type === 'sent' && m.status === 'In Transit');
+                conv.hasInTransit = !!transitMsg;
+                conv.transitCreatedAt = transitMsg?.createdAt || null;
+                conv.transitReleaseAt = transitMsg?.releaseAt || null;
             });
 
             // Recalculate time strings and sort conversations by latest activity
@@ -6620,6 +6646,7 @@
                             lunarNote: m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
                             songUrl: m.song_url,
                             songTitle: m.song_title,
+                            releaseAt: m.release_at,
                             reactions: [],
                             replies: []
                         });
@@ -7946,8 +7973,19 @@
 
                 // Badge for orbiting messages
                 let badge = '';
+                let progressBar = '';
                 if (conv.hasInTransit) {
                     badge = `<span class="message-status-badge orbiting">🔴 Orbiting</span>`;
+                    // Progress bar: how far along from sent → moonrise
+                    if (conv.transitCreatedAt && conv.transitReleaseAt) {
+                        const sent = new Date(conv.transitCreatedAt).getTime();
+                        const release = new Date(conv.transitReleaseAt).getTime();
+                        const now = Date.now();
+                        const total = release - sent;
+                        const elapsed = now - sent;
+                        const pct = total > 0 ? Math.min(100, Math.max(2, (elapsed / total) * 100)) : 50;
+                        progressBar = `<div class="transit-progress"><div class="transit-progress-bar" style="width:${pct.toFixed(1)}%"></div></div>`;
+                    }
                 }
 
                 const unreadBadge = conv.unreadCount > 0 ? `<span class="unread-badge">${conv.unreadCount}</span>` : '';
@@ -7963,6 +8001,7 @@
                             <div class="message-sender">${conv.otherName}</div>
                             ${badge}
                             <div class="message-preview">${conv.latestPreview}</div>
+                            ${progressBar}
                         </div>
                         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
                             ${conv.latestTime ? `<span class="message-time">${conv.latestTime}</span>` : `<span class="message-time">Now</span>`}
@@ -10001,6 +10040,51 @@
             const arr = new Uint8Array(raw.length);
             for (let i = 0; i < raw.length; ++i) arr[i] = raw.charCodeAt(i);
             return arr;
+        }
+
+        async function toggleNotifications() {
+            const btn = document.getElementById('notifToggleBtn');
+            if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+                if (btn) { btn.textContent = 'Not supported'; btn.disabled = true; }
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                // Already enabled — unsubscribe
+                try {
+                    const reg = await navigator.serviceWorker.ready;
+                    const sub = await reg.pushManager.getSubscription();
+                    if (sub) await sub.unsubscribe();
+                    if (currentAuthUser) {
+                        await sb.from('push_subscriptions').delete().eq('user_id', currentAuthUser.id);
+                    }
+                    if (btn) { btn.textContent = 'Enable'; btn.style.background = 'transparent'; btn.style.color = 'var(--blue)'; }
+                } catch(e) { console.error('Unsubscribe failed:', e); }
+                return;
+            }
+            if (Notification.permission === 'denied') {
+                alert('Notifications are blocked. Please enable them in your browser settings.');
+                return;
+            }
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                await subscribeToPush();
+                if (btn) { btn.textContent = 'Enabled'; btn.style.background = 'var(--blue)'; btn.style.color = 'white'; }
+            }
+        }
+
+        function updateNotifButton() {
+            const btn = document.getElementById('notifToggleBtn');
+            if (!btn) return;
+            if (!('Notification' in window)) {
+                btn.textContent = 'Not supported'; btn.disabled = true; return;
+            }
+            if (Notification.permission === 'granted') {
+                btn.textContent = 'Enabled'; btn.style.background = 'var(--blue)'; btn.style.color = 'white';
+            } else if (Notification.permission === 'denied') {
+                btn.textContent = 'Blocked'; btn.style.background = '#ccc'; btn.style.color = '#666';
+            } else {
+                btn.textContent = 'Enable'; btn.style.background = 'transparent'; btn.style.color = 'var(--blue)';
+            }
         }
 
         async function showNotifyModal() {
