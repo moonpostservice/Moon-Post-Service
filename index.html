@@ -4252,7 +4252,10 @@
                         <span class="section-chevron">▾</span>
                     </div>
                     <div class="settings-section-body">
-                        <div style="text-align:center;padding:4px 0;">
+                        <div style="padding:4px 0;">
+                            <button class="send-button" onclick="logOut()" style="font-size:13px;padding:8px;background:var(--text-muted);">Sign out</button>
+                        </div>
+                        <div style="text-align:center;padding:8px 0 0;">
                             <a href="#" onclick="event.preventDefault();deleteAccount();" style="font-size:12px;color:#cc3333;">Delete my account</a>
                         </div>
                     </div>
@@ -5447,6 +5450,13 @@
                 img.onerror = () => resolve(null);
                 img.src = dataUrl;
             });
+        }
+
+        async function logOut() {
+            closeSettings();
+            await sb.auth.signOut();
+            localStorage.clear();
+            window.location.reload();
         }
 
         async function deleteAccount() {
