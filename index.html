@@ -6397,13 +6397,13 @@
                     .range(0, 199);
                 if (sentErr) {
                     console.error('loadMessages: sent query failed:', sentErr.message, sentErr.code, sentErr.details);
-                    // If auth error, try refreshing session
+                    // If auth error, try getting fresh session
                     if (sentErr.code === 'PGRST301' || sentErr.message?.includes('JWT') || sentErr.code === '401') {
                         if (retryCount < 2) {
-                            console.log('loadMessages: auth error, refreshing session and retrying...');
-                            const { data: { session } } = await sb.auth.refreshSession();
-                            if (session) {
-                                currentAuthUser = session.user;
+                            console.log('loadMessages: auth error, getting session and retrying...');
+                            const { data } = await sb.auth.getSession();
+                            if (data?.session) {
+                                currentAuthUser = data.session.user;
                                 return loadMessages(retryCount + 1);
                             }
                         }
@@ -6546,25 +6546,24 @@
 
                 console.log('loadMessages: SUCCESS -', messages.length, 'messages (sent:', (sent||[]).length, ', received:', received.length, '), conversations:', conversations.length);
 
-                // If zero messages and this is first attempt, do one retry after session refresh
-                // (catches edge case where JWT was stale on page load)
+                // If zero messages and this is first attempt, retry with fresh session
                 if (messages.length === 0 && retryCount === 0) {
                     console.log('loadMessages: 0 messages loaded, retrying with fresh session...');
-                    const { data: { session } } = await sb.auth.refreshSession();
-                    if (session) {
-                        currentAuthUser = session.user;
+                    const { data } = await sb.auth.getSession();
+                    if (data?.session) {
+                        currentAuthUser = data.session.user;
                         return loadMessages(1);
                     }
                 }
             } catch (err) {
                 console.error('loadMessages: UNEXPECTED ERROR:', err);
-                // On unexpected error, try one more time with fresh session
+                // On unexpected error, try one more time with current session
                 if (retryCount < 1) {
                     console.log('loadMessages: retrying after error...');
                     try {
-                        const { data: { session } } = await sb.auth.refreshSession();
-                        if (session) {
-                            currentAuthUser = session.user;
+                        const { data } = await sb.auth.getSession();
+                        if (data?.session) {
+                            currentAuthUser = data.session.user;
                             return loadMessages(retryCount + 1);
                         }
                     } catch (e) {
@@ -6604,7 +6603,9 @@
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentAuthUser = null;
-        let _isInitializing = false; // Guard: prevents SIGNED_OUT from wiping data mid-load
+        let _isInitializing = false; // Guard: prevents concurrent initAuth calls
+        let _appDataLoaded = false;  // Tracks whether initAuth has successfully loaded data
+        let _domReady = false;       // Tracks whether DOMContentLoaded has fired
 
         // Send magic link
         let pendingAuthEmail = '';
@@ -6755,9 +6756,16 @@
         // AUTH INITIALIZATION
         // ============================================
         async function initAuth(sessionOverride) {
+            console.log('[initAuth] START', sessionOverride ? 'with session override' : 'no override',
+                        '_isInitializing=' + _isInitializing, '_appDataLoaded=' + _appDataLoaded);
+
             // Prevent concurrent initAuth calls (race between onAuthStateChange + DOMContentLoaded)
             if (_isInitializing) {
-                console.log('initAuth: already initializing, skipping');
+                console.log('[initAuth] Already initializing, skipping');
+                return;
+            }
+            if (_appDataLoaded) {
+                console.log('[initAuth] Data already loaded, skipping');
                 return;
             }
             _isInitializing = true;
@@ -6776,13 +6784,16 @@
             // Use session from onAuthStateChange if provided, otherwise fetch it
             let session = sessionOverride || null;
             if (!session) {
-                const { data } = await sb.auth.getSession();
+                console.log('[initAuth] No session override, calling getSession()...');
+                const { data, error: sessionError } = await sb.auth.getSession();
+                if (sessionError) console.error('[initAuth] getSession error:', sessionError);
                 session = data?.session;
+                console.log('[initAuth] getSession result:', session ? session.user.email : 'null');
             }
 
             if (session) {
                 currentAuthUser = session.user;
-                console.log('initAuth: authenticated as', session.user.email, session.user.id);
+                console.log('[initAuth] Authenticated as', session.user.email, session.user.id);
                 let profile = null;
                 try {
                     const { data: profileData } = await sb
@@ -6867,15 +6878,28 @@
                 } else {
                     updateAvatarEverywhere(null);
                 }
+                console.log('[initAuth] Loading contacts...');
                 await loadContacts();
+                console.log('[initAuth] Contacts loaded:', contacts.length);
+
+                console.log('[initAuth] Loading messages...');
                 await loadMessages();
+                console.log('[initAuth] Messages loaded:', messages.length, 'conversations:', conversations.length);
+
                 await loadSharedSky();
                 await loadMoonCircles();
+
+                console.log('[initAuth] Rendering UI...');
                 renderMessages();
                 renderMessageDots();
                 renderCircleRows();
                 renderContactsList();
                 setupRealtimeMessages();
+
+                // Mark data as loaded — prevents re-initialization
+                _appDataLoaded = true;
+                console.log('[initAuth] SUCCESS — contacts:', contacts.length, 'messages:', messages.length, 'conversations:', conversations.length);
+
                 if (globalTransmissions.length > 0) {
                     const latest = globalTransmissions[0];
                     const previewEl = document.getElementById('sharedSkyPreview');
@@ -6884,6 +6908,7 @@
                     updateSharedSkyBadge();
                 }
             } else {
+                console.log('[initAuth] No session found, showing onboarding');
                 showOnboarding();
             }
 
@@ -7256,22 +7281,40 @@
 
         // Handle auth state changes (sign in, sign out, initial session, token refresh)
         sb.auth.onAuthStateChange(async (event, session) => {
-            console.log('onAuthStateChange:', event, session ? 'has session' : 'no session');
+            console.log('[AUTH EVENT]', event, session ? 'session=' + session.user.email : 'no session',
+                        '_isInitializing=' + _isInitializing, '_appDataLoaded=' + _appDataLoaded);
 
             if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session) {
-                // Update currentAuthUser from latest session
+                // Always keep currentAuthUser fresh
                 currentAuthUser = session.user;
-                // Only call initAuth if app hasn't loaded yet (prevents double-init)
-                if (event === 'SIGNED_IN' && !_isInitializing && messages.length === 0) {
-                    // OTP verify success or fresh sign-in — load the app
+
+                // Load the app if data hasn't been loaded yet and we're not already loading
+                if (!_appDataLoaded && !_isInitializing && _domReady) {
+                    console.log('[AUTH EVENT] Triggering initAuth from', event);
                     await initAuth(session);
                 }
             }
-            if (event === 'SIGNED_OUT' && !_isInitializing) {
-                // Only wipe state if we're NOT in the middle of initializing
-                // (prevents race condition where token refresh triggers brief SIGNED_OUT)
+
+            if (event === 'SIGNED_OUT') {
+                // CRITICAL: Verify the session is TRULY gone before wiping data
+                // (token refresh can briefly trigger SIGNED_OUT even when session is valid)
+                console.log('[AUTH EVENT] SIGNED_OUT received, verifying session...');
+                try {
+                    const { data } = await sb.auth.getSession();
+                    if (data?.session) {
+                        console.warn('[AUTH EVENT] SIGNED_OUT fired but session still valid — IGNORING (token refresh race)');
+                        currentAuthUser = data.session.user;
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('[AUTH EVENT] getSession check failed:', e);
+                }
+
+                // Session truly gone — clean up
+                console.log('[AUTH EVENT] Session confirmed gone, cleaning up');
                 cleanupRealtime();
                 currentAuthUser = null;
+                _appDataLoaded = false;
                 messages = [];
                 conversations = [];
                 currentConversation = null;
@@ -7290,6 +7333,8 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            _domReady = true;
+
             // Check for saved location first
             const savedLocation = localStorage.getItem('moonpop_location');
             if (savedLocation) {
@@ -7307,11 +7352,15 @@
                 autoDetectFromTimezone();
             }
 
-            // Auth is handled entirely by onAuthStateChange above
-            // Don't show or hide onboarding here — let onAuthStateChange decide
-
             // Initialize auth (loads data and renders everything)
-            await initAuth();
+            // If onAuthStateChange already fired INITIAL_SESSION before DOM was ready,
+            // initAuth would not have been called yet — call it now
+            if (!_appDataLoaded && !_isInitializing) {
+                console.log('[DOMContentLoaded] Calling initAuth');
+                await initAuth();
+            } else {
+                console.log('[DOMContentLoaded] initAuth already ran or running, skipping');
+            }
 
             updateMoonDisplay();
             initCountdown();
