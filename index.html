@@ -299,6 +299,35 @@
             margin-bottom: 3px;
         }
 
+        .settings-section { margin: 0; }
+        .settings-section + .settings-section { border-top: 1px solid rgba(128,128,128,0.12); }
+        .settings-section-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 11px 16px; cursor: pointer; user-select: none;
+        }
+        .settings-section-header:active { background: rgba(128,128,128,0.08); }
+        .settings-section-header .section-summary {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 13px; color: var(--text-primary); flex: 1; min-width: 0;
+        }
+        .settings-section-header .section-summary .summary-text {
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .settings-section-header .section-chevron {
+            transition: transform 0.2s; font-size: 11px; color: var(--text-muted); margin-left: 8px;
+        }
+        .settings-section.open .section-chevron { transform: rotate(180deg); }
+        .settings-section-body { display: none; padding: 4px 16px 14px; }
+        .settings-section.open .settings-section-body { display: block; }
+        .settings-section .section-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background: var(--blue);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 14px; font-weight: 700; overflow: hidden; flex-shrink: 0;
+        }
+        .settings-section .section-avatar img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+
         .moon-phase-dropdown {
             position: absolute;
             top: 100%;
@@ -4125,67 +4154,108 @@
 
             <!-- Settings Dropdown -->
             <div class="settings-dropdown" id="settingsDropdown">
-                <!-- Profile Picture -->
-                <div style="display:flex;flex-direction:column;align-items:center;padding:16px 0 12px;">
-                    <div id="profilePicPreview" style="width:64px;height:64px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:700;overflow:hidden;cursor:pointer;position:relative;" onclick="document.getElementById('profilePicInput').click()">
-                        <span id="profilePicInitial">?</span>
-                        <img id="profilePicImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
+                <!-- Profile Section -->
+                <div class="settings-section" id="settingsSectionProfile">
+                    <div class="settings-section-header" onclick="toggleSettingsSection(this)">
+                        <div class="section-summary">
+                            <div class="section-avatar" id="sectionProfileAvatar"><span id="sectionProfileInitial">?</span><img id="sectionProfileImg" style="display:none;"></div>
+                            <span class="summary-text" id="sectionProfileSummary">Profile</span>
+                        </div>
+                        <span class="section-chevron">▾</span>
                     </div>
-                    <input type="file" id="profilePicInput" accept="image/*" capture="user" style="display:none;" onchange="handleProfilePic(this)">
-                    <a href="#" onclick="event.preventDefault();document.getElementById('profilePicInput').click();" style="font-size:12px;color:var(--blue);margin-top:6px;">Change photo</a>
-                </div>
-
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px;">
-                    <div class="form-group" style="margin-bottom:8px;">
-                        <label style="font-size:11px;">First name</label>
-                        <input type="text" id="settingsFirstName" placeholder="First" style="font-size:13px;padding:6px 8px;">
-                    </div>
-                    <div class="form-group" style="margin-bottom:8px;">
-                        <label style="font-size:11px;">Last name</label>
-                        <input type="text" id="settingsLastName" placeholder="Last" style="font-size:13px;padding:6px 8px;">
-                    </div>
-                </div>
-
-                <div class="form-group" style="margin-bottom:8px;padding:0 16px;">
-                    <label style="font-size:11px;">Sender name</label>
-                    <input type="text" id="userName" placeholder="How recipients see you" style="font-size:13px;padding:6px 8px;">
-                </div>
-                
-                <div class="form-group" style="margin-bottom:8px;padding:0 16px;">
-                    <label style="font-size:11px;">Location</label>
-                    <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Moonrise and release times depend on location.</p>
-                    <div class="settings-location-display" id="settingsLocationDisplay" style="margin-bottom:6px;">
-                        <svg class="settings-location-pin" viewBox="0 0 78.91 105.29" xmlns="http://www.w3.org/2000/svg" style="width:14px;">
-                            <path fill="#ff5558" d="M78.91,36.19v7.4c-.97,6.37-2.55,12.5-5.3,18.54-2.89,6.37-6.36,12.25-10.44,17.96-6.41,8.97-13.71,17.16-21.79,24.61-.43.4-1.03.2-1.32.59h-1.41c-.28-.38-.83-.3-1.25-.69C20.39,88.86-1.46,61.73.08,37.25c.67-10.75,5.65-20.69,13.76-27.7C26.22-1.16,43.98-3.04,58.27,4.82c11.84,6.52,19.05,18.13,20.64,31.37ZM38.22,17.59c-12.26.7-21.41,11.29-20.65,23.28s11.12,21.18,23.11,20.51,21.34-11.07,20.65-23.14-10.91-21.35-23.11-20.65Z"/>
-                        </svg>
-                        <span class="settings-location-name" id="settingsLocationName" style="font-size:13px;">Set your location</span>
-                    </div>
-                    <div style="display:flex;gap:12px;">
-                        <a href="#" onclick="event.preventDefault();requestLocation();" style="font-size:12px;color:var(--blue);">Use current</a>
-                        <a href="#" onclick="event.preventDefault();showManualLocationInput();" style="font-size:12px;color:var(--blue);">Type location</a>
-                    </div>
-                    <div id="manualLocationWrapper" style="display:none;margin-top:6px;">
-                        <div class="location-input-wrapper">
-                            <input type="text" id="manualLocation" placeholder="City (e.g. Lisbon)" autocomplete="off" oninput="filterSettingsCities(this.value)" style="font-size:13px;padding:6px 8px;">
-                            <div class="city-dropdown" id="settingsCityDropdown"></div>
+                    <div class="settings-section-body">
+                        <div style="display:flex;flex-direction:column;align-items:center;padding:8px 0 10px;">
+                            <div id="profilePicPreview" style="width:64px;height:64px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:700;overflow:hidden;cursor:pointer;position:relative;" onclick="document.getElementById('profilePicInput').click()">
+                                <span id="profilePicInitial">?</span>
+                                <img id="profilePicImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
+                            </div>
+                            <input type="file" id="profilePicInput" accept="image/*" capture="user" style="display:none;" onchange="handleProfilePic(this)">
+                            <a href="#" onclick="event.preventDefault();document.getElementById('profilePicInput').click();" style="font-size:12px;color:var(--blue);margin-top:6px;">Change photo</a>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <div class="form-group" style="margin-bottom:8px;">
+                                <label style="font-size:11px;">First name</label>
+                                <input type="text" id="settingsFirstName" placeholder="First" style="font-size:13px;padding:6px 8px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom:8px;">
+                                <label style="font-size:11px;">Last name</label>
+                                <input type="text" id="settingsLastName" placeholder="Last" style="font-size:13px;padding:6px 8px;">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:8px;">
+                            <label style="font-size:11px;">Sender name</label>
+                            <input type="text" id="userName" placeholder="How recipients see you" style="font-size:13px;padding:6px 8px;">
+                        </div>
+                        <div style="padding-top:4px;">
+                            <button class="send-button" onclick="saveSettings()" style="font-size:13px;padding:8px;">Save</button>
                         </div>
                     </div>
                 </div>
-                
-                <div class="form-group" style="margin-bottom:10px;padding:0 16px;">
-                    <label style="font-size:11px;">Time format</label>
-                    <select id="timeFormat" class="settings-select" style="font-size:13px;padding:6px 8px;">
-                        <option value="24" selected>24-hour (18:00)</option>
-                        <option value="12">12-hour (6:00 PM)</option>
-                    </select>
-                </div>
-                
-                <div style="padding:0 16px 12px;">
-                    <button class="send-button" onclick="saveSettings()" style="font-size:13px;padding:8px;">Save</button>
+
+                <!-- Location Section -->
+                <div class="settings-section" id="settingsSectionLocation">
+                    <div class="settings-section-header" onclick="toggleSettingsSection(this)">
+                        <div class="section-summary">
+                            <svg viewBox="0 0 78.91 105.29" xmlns="http://www.w3.org/2000/svg" style="width:14px;flex-shrink:0;"><path fill="#ff5558" d="M78.91,36.19v7.4c-.97,6.37-2.55,12.5-5.3,18.54-2.89,6.37-6.36,12.25-10.44,17.96-6.41,8.97-13.71,17.16-21.79,24.61-.43.4-1.03.2-1.32.59h-1.41c-.28-.38-.83-.3-1.25-.69C20.39,88.86-1.46,61.73.08,37.25c.67-10.75,5.65-20.69,13.76-27.7C26.22-1.16,43.98-3.04,58.27,4.82c11.84,6.52,19.05,18.13,20.64,31.37ZM38.22,17.59c-12.26.7-21.41,11.29-20.65,23.28s11.12,21.18,23.11,20.51,21.34-11.07,20.65-23.14-10.91-21.35-23.11-20.65Z"/></svg>
+                            <span class="summary-text" id="sectionLocationSummary">Set your location</span>
+                        </div>
+                        <span class="section-chevron">▾</span>
+                    </div>
+                    <div class="settings-section-body">
+                        <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Moonrise and release times depend on location.</p>
+                        <div class="settings-location-display" id="settingsLocationDisplay" style="margin-bottom:6px;">
+                            <svg class="settings-location-pin" viewBox="0 0 78.91 105.29" xmlns="http://www.w3.org/2000/svg" style="width:14px;">
+                                <path fill="#ff5558" d="M78.91,36.19v7.4c-.97,6.37-2.55,12.5-5.3,18.54-2.89,6.37-6.36,12.25-10.44,17.96-6.41,8.97-13.71,17.16-21.79,24.61-.43.4-1.03.2-1.32.59h-1.41c-.28-.38-.83-.3-1.25-.69C20.39,88.86-1.46,61.73.08,37.25c.67-10.75,5.65-20.69,13.76-27.7C26.22-1.16,43.98-3.04,58.27,4.82c11.84,6.52,19.05,18.13,20.64,31.37ZM38.22,17.59c-12.26.7-21.41,11.29-20.65,23.28s11.12,21.18,23.11,20.51,21.34-11.07,20.65-23.14-10.91-21.35-23.11-20.65Z"/>
+                            </svg>
+                            <span class="settings-location-name" id="settingsLocationName" style="font-size:13px;">Set your location</span>
+                        </div>
+                        <div style="display:flex;gap:12px;">
+                            <a href="#" onclick="event.preventDefault();requestLocation();" style="font-size:12px;color:var(--blue);">Use current</a>
+                            <a href="#" onclick="event.preventDefault();showManualLocationInput();" style="font-size:12px;color:var(--blue);">Type location</a>
+                        </div>
+                        <div id="manualLocationWrapper" style="display:none;margin-top:6px;">
+                            <div class="location-input-wrapper">
+                                <input type="text" id="manualLocation" placeholder="City (e.g. Lisbon)" autocomplete="off" oninput="filterSettingsCities(this.value)" style="font-size:13px;padding:6px 8px;">
+                                <div class="city-dropdown" id="settingsCityDropdown"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div style="padding:8px 16px;border-top:1px solid #eee;text-align:center;">
-                    <a href="#" onclick="event.preventDefault();deleteAccount();" style="font-size:12px;color:#cc3333;">Delete my account</a>
+                <!-- Preferences Section -->
+                <div class="settings-section" id="settingsSectionPrefs">
+                    <div class="settings-section-header" onclick="toggleSettingsSection(this)">
+                        <div class="section-summary">
+                            <span style="font-size:15px;flex-shrink:0;">&#128336;</span>
+                            <span class="summary-text" id="sectionPrefsSummary">24-hour (18:00)</span>
+                        </div>
+                        <span class="section-chevron">▾</span>
+                    </div>
+                    <div class="settings-section-body">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:11px;">Time format</label>
+                            <select id="timeFormat" class="settings-select" style="font-size:13px;padding:6px 8px;" onchange="updateSettingsSummaries()">
+                                <option value="24" selected>24-hour (18:00)</option>
+                                <option value="12">12-hour (6:00 PM)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Section -->
+                <div class="settings-section" id="settingsSectionAccount">
+                    <div class="settings-section-header" onclick="toggleSettingsSection(this)">
+                        <div class="section-summary">
+                            <span style="font-size:14px;flex-shrink:0;">&#9881;</span>
+                            <span class="summary-text" id="sectionAccountSummary">Account</span>
+                        </div>
+                        <span class="section-chevron">▾</span>
+                    </div>
+                    <div class="settings-section-body">
+                        <div style="text-align:center;padding:4px 0;">
+                            <a href="#" onclick="event.preventDefault();deleteAccount();" style="font-size:12px;color:#cc3333;">Delete my account</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -5128,19 +5198,71 @@
         }
 
         // Settings functions
+        function toggleSettingsSection(headerEl) {
+            const section = headerEl.closest('.settings-section');
+            if (!section) return;
+            // Accordion: close others
+            document.querySelectorAll('.settings-section.open').forEach(s => {
+                if (s !== section) s.classList.remove('open');
+            });
+            section.classList.toggle('open');
+        }
+
+        function updateSettingsSummaries() {
+            // Profile summary
+            const displayName = document.getElementById('userName')?.value || localStorage.getItem('moonpop_username') || '';
+            const firstName = document.getElementById('settingsFirstName')?.value || '';
+            const lastName = document.getElementById('settingsLastName')?.value || '';
+            const fullName = (firstName || lastName) ? (firstName + ' ' + lastName).trim() : displayName;
+            const email = currentAuthUser?.email || '';
+            const profileSummary = document.getElementById('sectionProfileSummary');
+            if (profileSummary) profileSummary.textContent = fullName || email || 'Profile';
+
+            // Profile section avatar
+            const savedPic = localStorage.getItem('moonpop_profilepic');
+            const sectionImg = document.getElementById('sectionProfileImg');
+            const sectionInitial = document.getElementById('sectionProfileInitial');
+            if (savedPic && sectionImg) {
+                sectionImg.src = savedPic;
+                sectionImg.style.display = 'block';
+                if (sectionInitial) sectionInitial.style.display = 'none';
+            } else if (sectionInitial) {
+                sectionInitial.textContent = (fullName || email || '?').charAt(0).toUpperCase();
+                sectionInitial.style.display = '';
+                if (sectionImg) sectionImg.style.display = 'none';
+            }
+
+            // Location summary
+            const locName = document.getElementById('settingsLocationName')?.textContent || 'Set your location';
+            const locSummary = document.getElementById('sectionLocationSummary');
+            if (locSummary) locSummary.textContent = locName;
+
+            // Preferences summary
+            const tf = document.getElementById('timeFormat');
+            const prefsSummary = document.getElementById('sectionPrefsSummary');
+            if (tf && prefsSummary) prefsSummary.textContent = tf.options[tf.selectedIndex]?.text || '24-hour';
+
+            // Account summary
+            const acctSummary = document.getElementById('sectionAccountSummary');
+            if (acctSummary) acctSummary.textContent = email || 'Account';
+        }
+
         function toggleSettings() {
             const dd = document.getElementById('settingsDropdown');
             const arrow = document.getElementById('settingsArrow');
             const isOpen = dd.classList.contains('active');
-            
+
             if (isOpen) {
                 dd.classList.remove('active');
                 arrow.classList.remove('open');
             } else {
                 dd.classList.add('active');
                 arrow.classList.add('open');
-                
-                // Populate profile pic
+
+                // Collapse all sections on open
+                document.querySelectorAll('.settings-section.open').forEach(s => s.classList.remove('open'));
+
+                // Populate profile pic in body
                 const savedPic = localStorage.getItem('moonpop_profilepic');
                 const userName = document.getElementById('userName')?.value || localStorage.getItem('moonpop_username') || '';
                 const picInitial = document.getElementById('profilePicInitial');
@@ -5158,6 +5280,9 @@
                 // Hide manual location input by default
                 const wrapper = document.getElementById('manualLocationWrapper');
                 if (wrapper) wrapper.style.display = 'none';
+
+                // Update section summaries
+                updateSettingsSummaries();
             }
         }
 
@@ -5393,8 +5518,10 @@
 
             // Sync avatar everywhere
             updateAvatarEverywhere(localStorage.getItem('moonpop_profilepic'));
-            
-            closeSettings();
+
+            // Collapse open section and refresh summaries
+            document.querySelectorAll('.settings-section.open').forEach(s => s.classList.remove('open'));
+            updateSettingsSummaries();
         }
 
         // Close dropdowns when clicking outside
