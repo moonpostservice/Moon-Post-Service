@@ -6075,7 +6075,17 @@
         let contacts = [];
 
         async function loadContacts() {
-            if (!currentAuthUser) return;
+            if (!currentAuthUser) {
+                // Try to recover session — currentAuthUser may have been cleared by a race condition
+                const { data } = await sb.auth.getSession();
+                if (data?.session) {
+                    currentAuthUser = data.session.user;
+                    console.warn('loadContacts: recovered session from auth state');
+                } else {
+                    console.warn('loadContacts: no currentAuthUser and no session, skipping');
+                    return;
+                }
+            }
 
             // Load raw contacts (no FK join — it's unreliable)
             const { data, error } = await sb.from('contacts')
@@ -6353,8 +6363,15 @@
 
         async function loadMessages(retryCount = 0) {
             if (!currentAuthUser) {
-                console.warn('loadMessages: no currentAuthUser, skipping');
-                return;
+                // Try to recover session — currentAuthUser may have been cleared by a race condition
+                const { data } = await sb.auth.getSession();
+                if (data?.session) {
+                    currentAuthUser = data.session.user;
+                    console.warn('loadMessages: recovered session from auth state');
+                } else {
+                    console.warn('loadMessages: no currentAuthUser and no session, skipping');
+                    return;
+                }
             }
 
             try {
@@ -6587,6 +6604,7 @@
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentAuthUser = null;
+        let _isInitializing = false; // Guard: prevents SIGNED_OUT from wiping data mid-load
 
         // Send magic link
         let pendingAuthEmail = '';
@@ -6736,7 +6754,15 @@
         // ============================================
         // AUTH INITIALIZATION
         // ============================================
-        async function initAuth() {
+        async function initAuth(sessionOverride) {
+            // Prevent concurrent initAuth calls (race between onAuthStateChange + DOMContentLoaded)
+            if (_isInitializing) {
+                console.log('initAuth: already initializing, skipping');
+                return;
+            }
+            _isInitializing = true;
+
+            try {
             // Check if this is a message reveal link (?m=xxx)
             const isMessageLink = await checkMessageLink();
             if (isMessageLink) return; // Don't load the app, just show the reveal page
@@ -6747,19 +6773,11 @@
                 history.replaceState(null, '', window.location.pathname);
             }
 
-            // Now check the session — refresh first to ensure fresh JWT
-            let { data: { session } } = await sb.auth.getSession();
-
-            // If session exists but might be stale, proactively refresh
-            if (session) {
-                try {
-                    const { data: refreshData } = await sb.auth.refreshSession();
-                    if (refreshData?.session) {
-                        session = refreshData.session;
-                    }
-                } catch (e) {
-                    console.warn('initAuth: session refresh failed, using existing session:', e.message);
-                }
+            // Use session from onAuthStateChange if provided, otherwise fetch it
+            let session = sessionOverride || null;
+            if (!session) {
+                const { data } = await sb.auth.getSession();
+                session = data?.session;
             }
 
             if (session) {
@@ -6826,6 +6844,14 @@
                 // Always go straight to the app
                 localStorage.setItem('moonpop_seen', 'true');
                 hideOnboarding();
+
+                // Ensure userInitials always has a fallback letter
+                const initialsEl = document.getElementById('userInitials');
+                if (initialsEl && !initialsEl.textContent.trim()) {
+                    const fallbackName = profile?.username || profile?.first_name || session.user.email || '?';
+                    initialsEl.textContent = fallbackName.charAt(0).toUpperCase();
+                }
+
                 // Avatar sync: localStorage ↔ Supabase profiles
                 const localAvatar = localStorage.getItem('moonpop_profilepic');
                 if (localAvatar) {
@@ -6859,6 +6885,10 @@
                 }
             } else {
                 showOnboarding();
+            }
+
+            } finally {
+                _isInitializing = false;
             }
         }
 
@@ -7224,15 +7254,22 @@
             return contact?.linkedProfileId && onlineUsers[contact.linkedProfileId];
         }
 
-        // Also handle future auth changes (e.g. signing out)
+        // Handle auth state changes (sign in, sign out, initial session, token refresh)
         sb.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session && !currentAuthUser) {
-                // OTP verify success — load the app
+            console.log('onAuthStateChange:', event, session ? 'has session' : 'no session');
+
+            if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session) {
+                // Update currentAuthUser from latest session
                 currentAuthUser = session.user;
-                await initAuth();
+                // Only call initAuth if app hasn't loaded yet (prevents double-init)
+                if (event === 'SIGNED_IN' && !_isInitializing && messages.length === 0) {
+                    // OTP verify success or fresh sign-in — load the app
+                    await initAuth(session);
+                }
             }
-            if (event === 'SIGNED_OUT') {
-                // Clean up all realtime channels and polling before clearing state
+            if (event === 'SIGNED_OUT' && !_isInitializing) {
+                // Only wipe state if we're NOT in the middle of initializing
+                // (prevents race condition where token refresh triggers brief SIGNED_OUT)
                 cleanupRealtime();
                 currentAuthUser = null;
                 messages = [];
