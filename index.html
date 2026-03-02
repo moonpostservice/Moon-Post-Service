@@ -692,6 +692,13 @@
             line-height: 1.5;
         }
 
+        .countdown-sublabel {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
         /* Standby Mode (moon below horizon) */
         body.moon-down .cta-button {
             background: #c5c2bb;
@@ -1592,6 +1599,37 @@
             color: var(--blue);
             text-transform: capitalize;
             opacity: 0.7;
+        }
+
+        /* Moon transit time bar */
+        .message-item {
+            position: relative;
+            flex-wrap: wrap;
+        }
+        .moon-transit-bar {
+            width: 100%;
+            height: 3px;
+            background: rgba(53, 125, 197, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+            flex-basis: 100%;
+        }
+        .moon-transit-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, rgba(53, 125, 197, 0.3), rgba(53, 125, 197, 0.7));
+            transition: width 2s ease;
+        }
+        .moon-transit-fill.active {
+            background: linear-gradient(90deg, rgba(76, 175, 80, 0.5), rgba(76, 175, 80, 0.9));
+        }
+        .moon-transit-label {
+            width: 100%;
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            flex-basis: 100%;
         }
 
         /* Ambient Signals (Global Transmissions redesigned) */
@@ -2973,6 +3011,50 @@
             font-weight: 600;
         }
 
+        /* Pulsing unread badge */
+        .unread-badge.pulse {
+            animation: unreadPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes unreadPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(232, 117, 90, 0.5); }
+            50% { transform: scale(1.15); box-shadow: 0 0 8px 2px rgba(232, 117, 90, 0.3); }
+        }
+
+        /* New message flash animation on conversation row */
+        .message-item.new-message-flash {
+            animation: rowFlash 0.6s ease-out;
+        }
+        @keyframes rowFlash {
+            0% { background: rgba(53, 125, 197, 0.15); }
+            100% { background: transparent; }
+        }
+
+        /* Notification toast */
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--blue);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 10000;
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            pointer-events: none;
+            font-family: 'Satoshi', sans-serif;
+            box-shadow: 0 4px 20px rgba(53, 125, 197, 0.3);
+            max-width: 90%;
+            text-align: center;
+        }
+        .notification-toast.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
         /* Read receipt checkmarks */
         .read-receipt {
             font-size: 12px;
@@ -4179,7 +4261,14 @@
                         <option value="12">12-hour (6:00 PM)</option>
                     </select>
                 </div>
-                
+
+                <div style="padding:0 16px 10px;display:flex;align-items:center;justify-content:space-between;">
+                    <label style="font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;">Message sounds</label>
+                    <button id="soundToggleBtn" onclick="toggleMessageSounds()" style="background:none;border:1px solid var(--blue);border-radius:16px;padding:4px 12px;font-size:12px;color:var(--blue);cursor:pointer;font-family:'Satoshi',sans-serif;">
+                        On
+                    </button>
+                </div>
+
                 <div style="padding:0 16px 12px;">
                     <button class="send-button" onclick="saveSettings()" style="font-size:13px;padding:8px;">Save</button>
                 </div>
@@ -4259,18 +4348,22 @@
                 <div class="moon-down-icon"></div>
                 <h2>Moon below horizon</h2>
                 <div class="moon-down-countdown">
-                    <span class="countdown-label">Moonrise in</span>
+                    <span class="countdown-label">You can compose a new message when the moon rises</span>
                     <span class="countdown-value" id="moonDownCountdown">2h 34m</span>
+                    <span class="countdown-sublabel" id="moonDownRiseTime"></span>
                 </div>
-                <p class="moon-down-note">Writing opens when the moon is visible in your sky.</p>
+                <p class="moon-down-note">Your chat history is available to browse, but sending and receiving messages requires the moon in your sky.</p>
                 <button class="send-button" onclick="closeMoonDownModal()">Close</button>
             </div>
         </div>
     </div>
 
+    <!-- Notification Toast -->
+    <div class="notification-toast" id="notificationToast"></div>
+
     <!-- Hero -->
     <section class="hero">
-        <h1>MESSAGES RELEASED BY THE MOON</h1>
+        <h1 id="heroTitle">MESSAGES RELEASED BY THE MOON</h1>
         <p class="subtitle">The world's first moon postal service.</p>
     </section>
 
@@ -5795,6 +5888,42 @@
             return { date: rise, timeStr, hoursUntil, tz: city.tz };
         }
         
+        // Calculate moon status for a contact's city (for transit bar)
+        function getContactMoonStatus(cityName) {
+            if (!cityName || cityName === 'Unknown') return null;
+            const city = cities.find(c => c.name.toLowerCase() === cityName.toLowerCase());
+            if (!city) return null;
+
+            const now = new Date();
+            const isUp = isMoonVisible(now, city.lat, city.lon);
+
+            if (isUp) {
+                // Moon is in their sky - find when it sets
+                const dayStart = getCityDayStart(now, city.tz);
+                const today = findMoonRiseSet(dayStart, city.lat, city.lon);
+                let setTime = today.set;
+                if (!setTime || setTime < now) {
+                    const tmrw = new Date(dayStart.getTime() + 24 * 3600000);
+                    const tomorrow = findMoonRiseSet(tmrw, city.lat, city.lon);
+                    if (tomorrow.set) setTime = tomorrow.set;
+                }
+                const hoursUntilSet = setTime ? Math.max(0, (setTime - now) / 3600000) : 0;
+                return { isUp: true, hoursUntilRise: 0, hoursUntilSet, progress: 1.0 };
+            }
+
+            // Moon is down - calculate progress toward moonrise
+            const recipientMoonrise = getRecipientMoonrise(cityName);
+            if (!recipientMoonrise) return { isUp: false, hoursUntilRise: 24, hoursUntilSet: 0, progress: 0 };
+
+            const hoursUntilRise = recipientMoonrise.hoursUntil;
+            // Estimate down period as ~12h for progress calculation
+            const estimatedDownHours = 14;
+            const elapsed = Math.max(0, estimatedDownHours - hoursUntilRise);
+            const progress = Math.min(1, Math.max(0, elapsed / estimatedDownHours));
+
+            return { isUp: false, hoursUntilRise, hoursUntilSet: 0, progress };
+        }
+
         // Build and position all message dots on the ring
         // Dots represent messages in transit (sent messages going to recipients)
         function renderMessageDots() {
@@ -6222,6 +6351,16 @@
                 }
             });
 
+            // Enrich conversations with username from contacts
+            Object.values(convMap).forEach(conv => {
+                const contact = contacts.find(c =>
+                    (conv.otherProfileId && c.linkedProfileId === conv.otherProfileId) ||
+                    (c.name === conv.otherName) ||
+                    (conv.otherEmail && c.email && c.email.toLowerCase() === conv.otherEmail.toLowerCase())
+                );
+                conv.otherUsername = contact?.username || null;
+            });
+
             // For each conversation, determine latest preview text and time
             Object.values(convMap).forEach(conv => {
                 // Sort messages newest first
@@ -6483,10 +6622,12 @@
                     const senderCity = sp?.city || 'Unknown';
 
                     // Determine if message content should be revealed
+                    // Moon must be in user's horizon to see received message content
                     const isReleased = m.status === 'released';
                     const releasePassed = m.release_at && new Date(m.release_at) <= new Date();
                     const noReleaseTime = !m.release_at;
-                    const contentVisible = isReleased || releasePassed || noReleaseTime;
+                    const normallyVisible = isReleased || releasePassed || noReleaseTime;
+                    const contentVisible = moonData.isVisible && normallyVisible;
 
                     allMessages.push({
                         dbId: m.id,
@@ -6849,6 +6990,9 @@
                 renderMessageDots();
                 renderCircleRows();
                 renderContactsList();
+                // Initialize received count baseline for notification detection
+                _lastKnownReceivedCount = messages.filter(m => m.type === 'received').length;
+                updateSoundToggleBtn();
                 setupRealtimeMessages();
                 if (globalTransmissions.length > 0) {
                     const latest = globalTransmissions[0];
@@ -6884,6 +7028,7 @@
                 }
                 renderMessages();
                 renderMessageDots();
+                checkForNewMessageNotifications();
                 if (currentConversation) renderConversationThread();
             } finally {
                 // Allow next reload after a short cooldown
@@ -7646,19 +7791,24 @@
         // Update center content
         function updateOrbitCenter() {
             const centerEl = document.getElementById('orbitCenter');
+            const heroTitle = document.getElementById('heroTitle');
             const countdown = getCountdown();
             const location = document.getElementById('userLocation')?.textContent || 'your location';
-            
+
             // Live HH:MM:SS format
             const pad = (n) => String(n).padStart(2, '0');
             const timerStr = `${pad(countdown.hours)}:${pad(countdown.minutes)}:${pad(countdown.seconds)}`;
-            
-            // Count incoming messages (received type that are still "in transit" to user)
-            const incomingMessages = messages.filter(m => m.type === 'received' && m.status === 'In Transit').length;
-            
+
+            // Count incoming messages (received that are in_transit OR released but moon-gated)
+            const pendingMessages = messages.filter(m => m.type === 'received' && (m.status === 'In Transit' || m.status === 'Arriving')).length;
+            // Also count released messages waiting to be revealed when moon rises
+            const moonGatedMessages = !moonData.isVisible ? messages.filter(m => m.type === 'received' && !m.contentVisible).length : 0;
+            const totalWaiting = Math.max(pendingMessages, moonGatedMessages);
+
             // If no location set yet, show a prompt
             if (!moonData.userLat) {
                 document.body.classList.remove('moon-down');
+                if (heroTitle) heroTitle.textContent = 'MESSAGES RELEASED BY THE MOON';
                 centerEl.innerHTML = `
                     <p class="visibility-text">Set your location to begin</p>
                     <p class="visibility-subtitle">The moon needs to know where you are.</p>
@@ -7666,10 +7816,13 @@
                 `;
                 return;
             }
-            
+
+            const userName = localStorage.getItem('moonpop_username') || '';
+
             if (moonData.isVisible) {
                 // Moon is up - compose available
                 document.body.classList.remove('moon-down');
+                if (heroTitle) heroTitle.textContent = 'MESSAGES RELEASED BY THE MOON';
                 centerEl.innerHTML = `
                     <div class="standby-countdown live-timer">${timerStr}</div>
                     <p class="standby-label">until moonset</p>
@@ -7680,16 +7833,27 @@
                 // Moon is down - compose locked
                 document.body.classList.add('moon-down');
                 const riseTime = moonData.moonrise !== '--:--' ? moonData.moonrise : '—';
-                
+
+                // Update hero title based on pending messages
+                if (heroTitle) {
+                    const greeting = userName ? `Hello ${userName}` : 'Hello';
+                    if (totalWaiting > 0) {
+                        const msgWord = totalWaiting === 1 ? 'message is' : 'messages are';
+                        heroTitle.textContent = `${greeting}, ${totalWaiting} ${msgWord} waiting to be released by the moon`;
+                    } else {
+                        heroTitle.textContent = `${greeting}, the moon is below your horizon`;
+                    }
+                }
+
                 // Message indicator
                 let messageIndicator = '';
-                if (incomingMessages > 0) {
-                    const plural = incomingMessages === 1 ? 'message is' : 'messages are';
-                    messageIndicator = `<p class="moon-carrying-indicator"><span class="moon-carrying-count">${incomingMessages}</span> ${plural} traveling with the moon toward you.</p>`;
+                if (totalWaiting > 0) {
+                    const plural = totalWaiting === 1 ? 'message is' : 'messages are';
+                    messageIndicator = `<p class="moon-carrying-indicator"><span class="moon-carrying-count">${totalWaiting}</span> ${plural} traveling with the moon toward you.</p>`;
                 } else {
                     messageIndicator = `<p class="moon-carrying-indicator">The moon travels light tonight. No messages waiting.</p>`;
                 }
-                
+
                 centerEl.innerHTML = `
                     <div class="standby-content">
                         <div class="standby-countdown live-timer">${timerStr}</div>
@@ -7727,17 +7891,51 @@
                     badge = `<span class="message-status-badge orbiting">🔴 Orbiting</span>`;
                 }
 
-                const unreadBadge = conv.unreadCount > 0 ? `<span class="unread-badge">${conv.unreadCount}</span>` : '';
+                const unreadBadge = conv.unreadCount > 0 ? `<span class="unread-badge pulse">${conv.unreadCount}</span>` : '';
                 const isUnread = conv.unreadCount > 0;
 
+                // Moon transit info for the other user
+                const moonStatus = getContactMoonStatus(conv.location);
+                let transitBar = '';
+                if (moonStatus) {
+                    const fillPct = Math.round(moonStatus.progress * 100);
+                    const barClass = moonStatus.isUp ? 'active' : '';
+                    // Their moonrise status
+                    let theirLabel = moonStatus.isUp
+                        ? 'Moon in their sky'
+                        : (moonStatus.hoursUntilRise < 1
+                            ? `Their moonrise in ${Math.round(moonStatus.hoursUntilRise * 60)}m`
+                            : `Their moonrise in ${Math.floor(moonStatus.hoursUntilRise)}h ${Math.round((moonStatus.hoursUntilRise % 1) * 60)}m`);
+                    // Your moonrise/moonset status (return direction)
+                    let yourLabel = '';
+                    if (moonData.isVisible) {
+                        const cd = getCountdown();
+                        yourLabel = cd.hours > 0
+                            ? ` · Your moonset in ${cd.hours}h ${cd.minutes}m`
+                            : ` · Your moonset in ${cd.minutes}m`;
+                    } else if (moonData._nextRise || moonData._cycleRise) {
+                        const nextRise = moonData._nextRise || moonData._cycleRise;
+                        const hrsUntil = Math.max(0, (nextRise - new Date()) / 3600000);
+                        yourLabel = hrsUntil < 1
+                            ? ` · Your moonrise in ${Math.round(hrsUntil * 60)}m`
+                            : ` · Your moonrise in ${Math.floor(hrsUntil)}h ${Math.round((hrsUntil % 1) * 60)}m`;
+                    }
+                    transitBar = `
+                        <div class="moon-transit-bar">
+                            <div class="moon-transit-fill ${barClass}" style="width:${fillPct}%"></div>
+                        </div>
+                        <div class="moon-transit-label">${theirLabel}${yourLabel}</div>
+                    `;
+                }
+
                 return `
-                    <li class="message-item${isUnread ? ' unread' : ''}" data-sender="${conv.otherName}" data-orbiting="${conv.hasInTransit}"
+                    <li class="message-item${isUnread ? ' unread' : ''}" data-sender="${conv.otherName}" data-orbiting="${conv.hasInTransit}" data-location="${conv.location || ''}"
                         onclick="openConversation(${ci})"
                         onmouseenter="highlightOrbitDot('${conv.otherName}', true)"
                         onmouseleave="highlightOrbitDot('${conv.otherName}', false)">
                         ${avatar}
                         <div class="message-content">
-                            <div class="message-sender">${conv.otherName}</div>
+                            <div class="message-sender">${conv.otherUsername ? '@' + conv.otherUsername : conv.otherName}</div>
                             ${badge}
                             <div class="message-preview">${conv.latestPreview}</div>
                         </div>
@@ -7745,6 +7943,7 @@
                             ${conv.latestTime ? `<span class="message-time">${conv.latestTime}</span>` : `<span class="message-time">Now</span>`}
                             ${unreadBadge}
                         </div>
+                        ${transitBar}
                     </li>
                 `;
             }).join('');
@@ -7805,7 +8004,9 @@
                     const isReleased = m.status === 'released';
                     const releasePassed = m.release_at && new Date(m.release_at) <= new Date();
                     const noReleaseTime = !m.release_at;
-                    const contentVisible = isSent || isReleased || releasePassed || noReleaseTime;
+                    const normallyVisible = isReleased || releasePassed || noReleaseTime;
+                    // Sent messages always visible; received require moon in horizon
+                    const contentVisible = isSent || (moonData.isVisible && normallyVisible);
 
                     return {
                         dbId: m.id,
@@ -9757,10 +9958,15 @@
 
         function openMoonDownModal() {
             const countdown = getCountdown();
-            const timeStr = countdown.hours > 0 
-                ? `${countdown.hours}h ${countdown.minutes}m` 
+            const timeStr = countdown.hours > 0
+                ? `${countdown.hours}h ${countdown.minutes}m`
                 : `${countdown.minutes}m`;
             document.getElementById('moonDownCountdown').textContent = timeStr;
+            const riseTimeEl = document.getElementById('moonDownRiseTime');
+            if (riseTimeEl) {
+                const riseTime = moonData.moonrise !== '--:--' ? moonData.moonrise : '';
+                riseTimeEl.textContent = riseTime ? `Moonrise at ${riseTime}` : '';
+            }
             document.getElementById('moonDownModal').classList.add('active');
         }
 
@@ -9778,6 +9984,111 @@
             const arr = new Uint8Array(raw.length);
             for (let i = 0; i < raw.length; ++i) arr[i] = raw.charCodeAt(i);
             return arr;
+        }
+
+        // ========================
+        // MESSAGE NOTIFICATION SOUND & VISUALS
+        // ========================
+        let _audioCtx = null;
+        let _lastKnownReceivedCount = 0;
+        let _notificationToastTimer = null;
+
+        function getAudioCtx() {
+            if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return _audioCtx;
+        }
+
+        function playMessageSound() {
+            if (localStorage.getItem('moonpop_mute_sounds') === 'true') return;
+            try {
+                const ctx = getAudioCtx();
+                if (ctx.state === 'suspended') ctx.resume();
+
+                // Soft two-tone chime
+                const now = ctx.currentTime;
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(523.25, now); // C5
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(659.25, now + 0.15); // E5
+
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.15, now + 0.05);
+                gain.gain.linearRampToValueAtTime(0.12, now + 0.15);
+                gain.gain.linearRampToValueAtTime(0.15, now + 0.2);
+                gain.gain.linearRampToValueAtTime(0, now + 0.6);
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc1.start(now);
+                osc1.stop(now + 0.15);
+                osc2.start(now + 0.15);
+                osc2.stop(now + 0.6);
+            } catch (e) {
+                console.warn('Could not play notification sound:', e);
+            }
+        }
+
+        function showNotificationToast(text) {
+            const toast = document.getElementById('notificationToast');
+            if (!toast) return;
+            toast.classList.remove('visible');
+            toast.textContent = text;
+            // Force reflow so transition plays from initial state
+            void toast.offsetHeight;
+            toast.classList.add('visible');
+            if (_notificationToastTimer) clearTimeout(_notificationToastTimer);
+            _notificationToastTimer = setTimeout(() => {
+                toast.classList.remove('visible');
+            }, 4000);
+        }
+
+        function toggleMessageSounds() {
+            const muted = localStorage.getItem('moonpop_mute_sounds') === 'true';
+            localStorage.setItem('moonpop_mute_sounds', muted ? 'false' : 'true');
+            updateSoundToggleBtn();
+        }
+
+        function updateSoundToggleBtn() {
+            const btn = document.getElementById('soundToggleBtn');
+            if (!btn) return;
+            const muted = localStorage.getItem('moonpop_mute_sounds') === 'true';
+            btn.textContent = muted ? 'Off' : 'On';
+            btn.style.opacity = muted ? '0.5' : '1';
+        }
+
+        // Called after messages reload to detect new arrivals and trigger notifications
+        function checkForNewMessageNotifications() {
+            if (!moonData.isVisible) return; // No notifications when moon is down
+            const receivedCount = messages.filter(m => m.type === 'received').length;
+            if (_lastKnownReceivedCount > 0 && receivedCount > _lastKnownReceivedCount) {
+                const newCount = receivedCount - _lastKnownReceivedCount;
+                playMessageSound();
+
+                // Find the newest received message for the toast
+                const newest = messages.find(m => m.type === 'received');
+                if (newest) {
+                    const senderName = newest.sender || 'Someone';
+                    showNotificationToast(newCount === 1
+                        ? `New message from ${senderName}`
+                        : `${newCount} new messages received`);
+                }
+
+                // Flash the top conversation row after render
+                requestAnimationFrame(() => {
+                    const firstRow = document.querySelector('.message-item');
+                    if (firstRow) {
+                        firstRow.classList.add('new-message-flash');
+                        setTimeout(() => firstRow.classList.remove('new-message-flash'), 600);
+                    }
+                });
+            }
+            _lastKnownReceivedCount = receivedCount;
         }
 
         async function showNotifyModal() {
