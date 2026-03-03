@@ -6729,23 +6729,80 @@
                     }
                 }
 
-                // 3. Enrich conversations with unread counts + other's read status
+                // 3. Fetch latest replies per conversation for preview + unread
+                const allMsgIds = [];
+                const msgToConv = {};
+                conversations.forEach(conv => {
+                    conv.messages.forEach(m => {
+                        if (m.dbId) {
+                            allMsgIds.push(m.dbId);
+                            msgToConv[m.dbId] = conv;
+                        }
+                    });
+                });
+
+                let latestReplyPerConv = {};
+                if (allMsgIds.length > 0) {
+                    const { data: recentReplies } = await sb.from('replies')
+                        .select('id, message_id, text, is_lunar_note, lunar_note_text, sender_id, created_at')
+                        .in('message_id', allMsgIds)
+                        .order('created_at', { ascending: false })
+                        .limit(100);
+
+                    if (recentReplies) {
+                        recentReplies.forEach(r => {
+                            const conv = msgToConv[r.message_id];
+                            if (!conv) return;
+                            const key = conv.otherKey;
+                            if (!latestReplyPerConv[key] || new Date(r.created_at) > new Date(latestReplyPerConv[key].created_at)) {
+                                latestReplyPerConv[key] = r;
+                            }
+                        });
+                    }
+                }
+
+                // 4. Enrich conversations with unread counts + reply-aware previews
                 conversations.forEach(conv => {
                     if (!conv.dbConversationId) return;
 
                     const myLastRead = myReceiptMap[conv.dbConversationId];
                     conv.otherReadAt = otherReceiptMap[conv.dbConversationId] || null;
 
+                    // Check if there's a reply newer than the latest top-level message
+                    const latestReply = latestReplyPerConv[conv.otherKey];
+                    if (latestReply && new Date(latestReply.created_at) > new Date(conv.latestCreatedAt)) {
+                        // Update preview with the latest reply
+                        conv.latestCreatedAt = latestReply.created_at;
+                        conv.latestTime = timeAgo(latestReply.created_at);
+                        const isMine = latestReply.sender_id === currentAuthUser.id;
+                        const youPrefix = isMine ? 'You: ' : '';
+                        if (latestReply.is_lunar_note && latestReply.lunar_note_text) {
+                            const snippet = latestReply.lunar_note_text.replace(/\n/g, ' ').substring(0, 40);
+                            conv.latestPreview = youPrefix + '🌙 ' + snippet;
+                        } else if (latestReply.text) {
+                            conv.latestPreview = youPrefix + latestReply.text;
+                        }
+                        if (conv.latestPreview && conv.latestPreview.length > 50) {
+                            conv.latestPreview = conv.latestPreview.substring(0, 50) + '...';
+                        }
+                    }
+
                     // Determine the effective "last read" time:
-                    // Use the most recent of: explicit read receipt, last sent message time,
-                    // or localStorage receipt. If you sent a message at time T, you must
-                    // have seen the conversation up to T (implicit read receipt).
+                    // Use the most recent of: read receipt, last sent message, last sent reply.
+                    // If you sent anything at time T, you've seen the conversation up to T.
                     let effectiveReadTime = null;
                     if (myLastRead) effectiveReadTime = new Date(myLastRead);
                     if (conv._lastSentAt) {
                         const sentTime = new Date(conv._lastSentAt);
                         if (!effectiveReadTime || sentTime > effectiveReadTime) {
                             effectiveReadTime = sentTime;
+                        }
+                    }
+                    // Also check latest sent reply as implicit read time
+                    if (latestReply && latestReply.sender_id === currentAuthUser.id) {
+                        const replySentTime = new Date(latestReply.created_at);
+                        if (!effectiveReadTime || replySentTime > effectiveReadTime) {
+                            effectiveReadTime = replySentTime;
                         }
                     }
 
@@ -6759,6 +6816,11 @@
                         conv.unreadCount = conv.messages.filter(m => m.type === 'received').length;
                     }
                 });
+
+                // Re-sort conversations since reply timestamps may have changed ordering
+                conversations.sort((a, b) =>
+                    new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt)
+                );
             } catch (err) {
                 console.error('loadConversationMetadata error:', err);
             }
