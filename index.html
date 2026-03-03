@@ -5057,7 +5057,15 @@
                     <div class="thread-lunar-result" id="threadLunarResult" style="display:none;"></div>
                     <button class="thread-lunar-send" id="threadLunarSendBtn" onclick="sendThreadLunarNote()" disabled>Send Lunar Note</button>
                 </div>
+                <div id="replyPhotoPreview" style="display:none;padding:8px 8px 0;">
+                    <div style="position:relative;display:inline-block;">
+                        <img id="replyPhotoImg" style="max-height:100px;border-radius:8px;">
+                        <button onclick="clearReplyPhoto()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:12px;cursor:pointer;">&times;</button>
+                    </div>
+                </div>
                 <div class="reply-row">
+                    <label for="replyPhotoInput" style="cursor:pointer;font-size:20px;padding:4px;flex-shrink:0;">🌕</label>
+                    <input type="file" id="replyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleReplyPhoto(this)">
                     <input type="text" class="message-page-input" placeholder="Write a reply..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()">
                     <button class="message-page-send" onclick="sendReply()">↑</button>
                 </div>
@@ -6572,7 +6580,16 @@
                     conv.latestPreview = conv.latestPreview.substring(0, 50) + '...';
                 }
                 conv.location = latest.location;
-                const transitMsg = conv.messages.find(m => m.type === 'sent' && m.status === 'In Transit');
+                // Bug fix #3/#4: Only count a message as in-transit if status is 'In Transit'
+                // AND its release_at is in the future (or null). If release_at has passed,
+                // the server cron should have released it — treat it as released client-side.
+                const now = new Date();
+                const transitMsg = conv.messages.find(m => {
+                    if (m.type !== 'sent' || m.status !== 'In Transit') return false;
+                    // If release_at has passed, this message should have been released
+                    if (m.releaseAt && new Date(m.releaseAt) <= now) return false;
+                    return true;
+                });
                 conv.hasInTransit = !!transitMsg;
                 conv.transitCreatedAt = transitMsg?.createdAt || null;
                 conv.transitReleaseAt = transitMsg?.releaseAt || null;
@@ -6757,9 +6774,12 @@
                         if (seenIds.has(m.id)) return;
                         seenIds.add(m.id);
 
+                        // Bug fix #3: Client-side status correction — if release_at has passed
+                        // but server hasn't updated yet, treat as released locally
                         let statusDisplay = '';
-                        if (m.status === 'in_transit') statusDisplay = 'In Transit';
-                        else if (m.status === 'released') statusDisplay = 'Released';
+                        const releasePast = m.release_at && new Date(m.release_at) <= new Date();
+                        if (m.status === 'in_transit' && !releasePast) statusDisplay = 'In Transit';
+                        else if (m.status === 'released' || releasePast) statusDisplay = 'Released';
 
                         const rp = m.recipient_id ? profileMap[m.recipient_id] : null;
 
@@ -6782,6 +6802,7 @@
                             lunarNote: m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
                             songUrl: m.song_url,
                             songTitle: m.song_title,
+                            photoUrl: m.photo_url || null,
                             releaseAt: m.release_at,
                             reactions: [],
                             replies: []
@@ -6826,6 +6847,7 @@
                         lunarNote: contentVisible && m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
                         songUrl: contentVisible ? m.song_url : null,
                         songTitle: contentVisible ? m.song_title : null,
+                        photoUrl: contentVisible ? (m.photo_url || null) : null,
                         contentVisible: contentVisible,
                         releaseAt: m.release_at,
                         reactions: [],
@@ -6882,14 +6904,15 @@
                 .select('*')
                 .order('created_at', { ascending: false })
                 .limit(20);
-            
+
             if (error) { console.error('Load shared sky failed:', error); return; }
             if (data) {
                 globalTransmissions = data.map(s => ({
                     location: s.city || 'Unknown',
                     time: timeAgo(s.created_at),
                     createdAt: s.created_at,
-                    message: '"' + s.message + '"'
+                    message: '"' + s.message + '"',
+                    photo: s.photo_url || null
                 }));
             }
         }
@@ -7402,7 +7425,8 @@
                         createdAt: reply.created_at || new Date().toISOString(),
                         sent: false,
                         senderId: reply.sender_id,
-                        isLunarNote: reply.is_lunar_note || false
+                        isLunarNote: reply.is_lunar_note || false,
+                        photoUrl: reply.photo_url || null
                     });
 
                     // If we're viewing the conversation that contains this message, re-render live
@@ -7478,7 +7502,8 @@
                             location: s.city || 'Unknown',
                             time: 'Just now',
                             createdAt: s.created_at,
-                            message: '"' + s.message + '"'
+                            message: '"' + s.message + '"',
+                            photo: s.photo_url || null
                         });
                         renderSharedSkySignals();
                         updateSharedSkyBadge();
@@ -8152,10 +8177,10 @@
                 const unreadBadge = conv.unreadCount > 0 ? `<span class="unread-badge pulse">${conv.unreadCount}</span>` : '';
                 const isUnread = conv.unreadCount > 0;
 
-                // Moon transit info for the other user
-                const moonStatus = getContactMoonStatus(conv.location);
+                // Bug fix #4: Only show moon transit bar when there's an in-transit message
+                const moonStatus = conv.hasInTransit ? getContactMoonStatus(conv.location) : null;
                 let transitBar = '';
-                if (moonStatus) {
+                if (moonStatus && conv.hasInTransit) {
                     const fillPct = Math.round(moonStatus.progress * 100);
                     const barClass = moonStatus.isUp ? 'active' : '';
                     // Their moonrise status
@@ -8286,6 +8311,7 @@
                         lunarNote: contentVisible && m.lunar_note_text ? { text: m.lunar_note_text, closing: m.lunar_note_closing || '' } : null,
                         songUrl: contentVisible ? m.song_url : null,
                         songTitle: contentVisible ? m.song_title : null,
+                        photoUrl: contentVisible ? (m.photo_url || null) : null,
                         contentVisible: contentVisible,
                         releaseAt: m.release_at,
                         reactions: [],
@@ -8359,7 +8385,8 @@
                                 createdAt: r.created_at,
                                 sent: r.sender_id === currentAuthUser.id,
                                 senderId: r.sender_id,
-                                isLunarNote: r.is_lunar_note || false
+                                isLunarNote: r.is_lunar_note || false,
+                                photoUrl: r.photo_url || null
                             });
                         });
                         conv.messages.forEach(msg => {
@@ -8479,10 +8506,11 @@
                         isMessage: true
                     });
                 }
-                if (msg.messageText) {
+                if (msg.messageText || msg.photoUrl) {
                     timeline.push({
                         type: 'text',
                         text: msg.messageText,
+                        photoUrl: msg.photoUrl || null,
                         time: msg.time,
                         createdAt: msg.createdAt,
                         sent: msg.type === 'sent',
@@ -8491,7 +8519,7 @@
                         status: msg.status
                     });
                 }
-                if (msg.status === 'In Transit' && !msg.messageText && !msg.lunarNote) {
+                if (msg.status === 'In Transit' && !msg.messageText && !msg.lunarNote && !msg.photoUrl) {
                     timeline.push({
                         type: 'transit',
                         time: msg.time,
@@ -8509,6 +8537,7 @@
                         timeline.push({
                             type: r.isLunarNote ? 'lunar-reply' : 'reply',
                             text: r.text,
+                            photoUrl: r.photoUrl || null,
                             time: r.time,
                             createdAt: r.createdAt || msg.createdAt,
                             sent: r.sent,
@@ -8554,7 +8583,8 @@
                     })() : '';
                     html += `
                         <div class="message-bubble ${item.sent ? 'sent' : ''}">
-                            <p>${item.text}</p>
+                            ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
+                            ${item.text ? `<p>${item.text}</p>` : ''}
                             <div class="message-bubble-time">${item.time || 'Recently'} ${textReceipt}</div>
                         </div>
                     `;
@@ -8597,7 +8627,8 @@
                 } else if (item.type === 'reply') {
                     html += `
                         <div class="message-bubble ${item.sent ? 'sent' : ''}">
-                            <p>${item.text}</p>
+                            ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
+                            ${item.text ? `<p>${item.text}</p>` : ''}
                             <div class="message-bubble-time">${item.time}</div>
                         </div>
                     `;
@@ -8739,19 +8770,18 @@
         let pendingSharedSkyPhoto = null;
 
         function handleSharedSkyPhoto(input) {
+            handlePhotoAttachment(input, 'sharedSkyPhotoImg', 'sharedSkyPhotoPreview', null, 'sharedsky');
+            // Also keep data URL for optimistic display
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    pendingSharedSkyPhoto = e.target.result;
-                    document.getElementById('sharedSkyPhotoImg').src = e.target.result;
-                    document.getElementById('sharedSkyPhotoPreview').style.display = 'block';
-                };
+                reader.onload = (e) => { pendingSharedSkyPhoto = e.target.result; };
                 reader.readAsDataURL(input.files[0]);
             }
         }
 
         function clearSharedSkyPhoto() {
             pendingSharedSkyPhoto = null;
+            window['_pendingPhotoFile_sharedsky'] = null;
             document.getElementById('sharedSkyPhotoPreview').style.display = 'none';
             document.getElementById('sharedSkyPhotoInput').value = '';
         }
@@ -8759,15 +8789,17 @@
         async function sendSharedSkyMessage() {
             const input = document.getElementById('sharedSkyInput');
             const text = input.value.trim();
-            if (!text && !pendingSharedSkyPhoto) return;
-            
+            const hasPhoto = !!window['_pendingPhotoFile_sharedsky'];
+            if (!text && !hasPhoto) return;
+
             const userName = localStorage.getItem('moonpop_username') || 'Anonymous';
             const userLoc = localStorage.getItem('moonpop_location');
             let locName = 'Unknown';
             if (userLoc) {
                 try { locName = JSON.parse(userLoc).name || 'Unknown'; } catch(e) {}
             }
-            
+
+            // Optimistic local entry (show data URL preview while uploading)
             const transmission = {
                 location: locName,
                 time: 'Just now',
@@ -8777,6 +8809,14 @@
             };
             globalTransmissions.unshift(transmission);
 
+            // Compress & upload photo
+            let photoUrl = null;
+            if (hasPhoto) {
+                photoUrl = await compressAndUpload('sharedsky', 'shared-sky');
+                // Update optimistic entry with real URL
+                if (photoUrl) transmission.photo = photoUrl;
+            }
+
             // Save to Supabase
             if (currentAuthUser) {
                 const insertData = {
@@ -8784,14 +8824,15 @@
                     city: locName,
                     message: text || '🌕'
                 };
+                if (photoUrl) insertData.photo_url = photoUrl;
                 const { error } = await sb.from('shared_sky').insert(insertData);
                 if (error) console.error('Shared sky save failed:', error);
             }
-            
+
             input.value = '';
             clearSharedSkyPhoto();
             renderSharedSkySignals();
-            
+
             // Update inbox preview
             const previewEl = document.getElementById('sharedSkyPreview');
             if (previewEl) previewEl.textContent = locName + ': ' + (text ? '"' + text + '"' : '🌕 Photo');
@@ -8800,17 +8841,52 @@
             // Mark as seen since we're in shared sky already
             localStorage.setItem('moonpop_shared_sky_seen', new Date().toISOString());
         }
-        async function sendReply() {
-            const input = document.getElementById('replyInput');
-            if (!input.value.trim()) return;
+        // Reply photo attachment
+        let pendingReplyPhoto = null;
 
-            // Find the latest message in this conversation to attach the reply to
-            let targetMsg = null;
+        function handleReplyPhoto(input) {
+            handlePhotoAttachment(input, 'replyPhotoImg', 'replyPhotoPreview', null, 'reply');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { pendingReplyPhoto = e.target.result; };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function clearReplyPhoto() {
+            pendingReplyPhoto = null;
+            window['_pendingPhotoFile_reply'] = null;
+            document.getElementById('replyPhotoPreview').style.display = 'none';
+            document.getElementById('replyPhotoInput').value = '';
+        }
+
+        async function sendReply() {
+            // Bug fix #1: Gate replies behind moonrise
+            if (!moonData.isVisible) {
+                openMoonDownModal();
+                return;
+            }
+
+            const input = document.getElementById('replyInput');
+            const hasPhoto = !!window['_pendingPhotoFile_reply'];
+            if (!input.value.trim() && !hasPhoto) return;
+
+            // Bug fix #2: Save conversation key BEFORE any mutations so we can restore after rebuild
+            const prevKey = currentConversation?.otherKey;
+
+            // Find the target message by dbId (stable reference that survives rebuilds)
+            let targetDbId = null;
             if (currentConversation) {
-                // Use the most recent message in the conversation (first in the array since sorted desc)
-                targetMsg = currentConversation.messages[0];
+                targetDbId = currentConversation.messages[0]?.dbId;
             } else if (currentMessageIndex >= 0) {
-                targetMsg = messages[currentMessageIndex];
+                targetDbId = messages[currentMessageIndex]?.dbId;
+            }
+            // Find the actual message object from the global messages array (canonical source)
+            let targetMsg = targetDbId ? messages.find(m => m.dbId === targetDbId) : null;
+            if (!targetMsg) {
+                // Fallback: try direct reference
+                if (currentConversation) targetMsg = currentConversation.messages[0];
+                else if (currentMessageIndex >= 0) targetMsg = messages[currentMessageIndex];
             }
             if (!targetMsg) return;
 
@@ -8818,15 +8894,31 @@
 
             const replyText = input.value.trim();
             const now = new Date().toISOString();
-            targetMsg.replies.push({ text: replyText, time: 'Just now', createdAt: now, sent: true, senderId: currentAuthUser?.id });
+
+            // Optimistic reply (with data URL for instant display)
+            const optimisticReply = { text: replyText, time: 'Just now', createdAt: now, sent: true, senderId: currentAuthUser?.id, photoUrl: pendingReplyPhoto || null };
+            targetMsg.replies.push(optimisticReply);
+
+            // Render immediately with optimistic data (before async operations)
+            renderConversationThread();
+            document.getElementById('detailContent').scrollTop = document.getElementById('detailContent').scrollHeight;
+
+            // Compress & upload photo
+            let replyPhotoUrl = null;
+            if (hasPhoto) {
+                replyPhotoUrl = await compressAndUpload('reply', 'replies');
+                if (replyPhotoUrl) optimisticReply.photoUrl = replyPhotoUrl;
+            }
 
             // Save to Supabase
             if (currentAuthUser && targetMsg.dbId) {
-                const { data: replyData, error } = await sb.from('replies').insert({
+                const insertData = {
                     message_id: targetMsg.dbId,
                     sender_id: currentAuthUser.id,
-                    text: replyText
-                }).select().single();
+                    text: replyText || '🌕'
+                };
+                if (replyPhotoUrl) insertData.photo_url = replyPhotoUrl;
+                const { data: replyData, error } = await sb.from('replies').insert(insertData).select().single();
                 if (error) {
                     console.error('Reply save failed:', error);
                     // Remove optimistic reply on failure
@@ -8841,8 +8933,8 @@
             }
 
             input.value = '';
-            // Update conversation preview after reply
-            const prevKey = currentConversation?.otherKey;
+            clearReplyPhoto();
+            // Update conversation preview after reply — restore by stable key
             buildConversations();
             if (prevKey) {
                 const newConv = conversations.find(c => c.otherKey === prevKey);
@@ -9128,31 +9220,117 @@
             document.getElementById('songSuggestions').style.display = '';
         }
 
-        // Moon photo attachment
-        let pendingMoonPhoto = null;
+        // ========================
+        // MOON PHOTO: compression + upload utilities
+        // ========================
 
-        function handleMoonPhoto(input) {
+        // Compress an image File to JPEG blob (max 800px wide, 65% quality)
+        function compressMoonPhoto(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const objUrl = URL.createObjectURL(file);
+                img.onload = () => {
+                    URL.revokeObjectURL(objUrl);
+                    const MAX_W = 800;
+                    let w = img.width, h = img.height;
+                    if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    canvas.toBlob(blob => {
+                        if (blob) resolve(blob);
+                        else reject(new Error('Canvas toBlob failed'));
+                    }, 'image/jpeg', 0.65);
+                };
+                img.onerror = () => { URL.revokeObjectURL(objUrl); reject(new Error('Image load failed')); };
+                img.src = objUrl;
+            });
+        }
+
+        // Upload a compressed blob to Supabase Storage, return public URL
+        async function uploadMoonPhoto(blob, context) {
+            if (!currentAuthUser) throw new Error('Not authenticated');
+            const ts = Date.now();
+            const path = `${context}/${currentAuthUser.id}/${ts}.jpg`;
+
+            const userName = localStorage.getItem('moonpop_username') || 'Anonymous';
+            const userLoc = localStorage.getItem('moonpop_location');
+            let locName = 'Unknown';
+            if (userLoc) { try { locName = JSON.parse(userLoc).name || 'Unknown'; } catch(e) {} }
+            const phase = moonData.phase ? moonData.phase.phaseName : getMoonPhase().phaseName;
+
+            const { data, error } = await sb.storage.from('moon-photos').upload(path, blob, {
+                contentType: 'image/jpeg',
+                upsert: false,
+                metadata: { uploader: userName, location: locName, moon_phase: phase, date: new Date().toISOString() }
+            });
+            if (error) throw error;
+            const { data: urlData } = sb.storage.from('moon-photos').getPublicUrl(path);
+            return urlData.publicUrl;
+        }
+
+        // Generic handler: compress file, show preview, store file ref
+        function handlePhotoAttachment(input, previewImgId, previewContainerId, labelId, stateKey) {
             if (input.files && input.files[0]) {
                 const file = input.files[0];
+                window['_pendingPhotoFile_' + stateKey] = file;
+                // Show preview from original file
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    pendingMoonPhoto = e.target.result;
-                    document.getElementById('moonPhotoImg').src = e.target.result;
-                    document.getElementById('moonPhotoPreview').style.display = 'block';
-                    document.getElementById('moonPhotoLabel').textContent = 'Photo attached ✓';
+                    const img = document.getElementById(previewImgId);
+                    if (img) img.src = e.target.result;
+                    const container = document.getElementById(previewContainerId);
+                    if (container) container.style.display = 'block';
+                    const label = document.getElementById(labelId);
+                    if (label) label.textContent = 'Photo attached ✓';
                 };
                 reader.readAsDataURL(file);
             }
         }
 
+        function clearPhotoAttachment(inputId, previewContainerId, labelId, labelText, stateKey) {
+            window['_pendingPhotoFile_' + stateKey] = null;
+            const container = document.getElementById(previewContainerId);
+            if (container) container.style.display = 'none';
+            const input = document.getElementById(inputId);
+            if (input) input.value = '';
+            const label = document.getElementById(labelId);
+            if (label) label.textContent = labelText || 'Attach a moon photo';
+        }
+
+        // Compress + upload in one step, returns URL or null
+        async function compressAndUpload(stateKey, context) {
+            const file = window['_pendingPhotoFile_' + stateKey];
+            if (!file) return null;
+            try {
+                const blob = await compressMoonPhoto(file);
+                return await uploadMoonPhoto(blob, context);
+            } catch (err) {
+                console.error('Moon photo upload failed:', err);
+                return null;
+            }
+        }
+
+        // ========================
+        // MOON PHOTO: New Moon Message (compose modal)
+        // ========================
+        let pendingMoonPhoto = null;
+
+        function handleMoonPhoto(input) {
+            handlePhotoAttachment(input, 'moonPhotoImg', 'moonPhotoPreview', 'moonPhotoLabel', 'compose');
+            // Also keep data URL for optimistic display
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { pendingMoonPhoto = e.target.result; };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
         function clearMoonPhoto() {
             pendingMoonPhoto = null;
-            const preview = document.getElementById('moonPhotoPreview');
-            if (preview) preview.style.display = 'none';
-            const input = document.getElementById('moonPhotoInput');
-            if (input) input.value = '';
-            const label = document.getElementById('moonPhotoLabel');
-            if (label) label.textContent = 'Attach a moon photo';
+            clearPhotoAttachment('moonPhotoInput', 'moonPhotoPreview', 'moonPhotoLabel', 'Attach a moon photo', 'compose');
         }
 
 
@@ -9220,6 +9398,7 @@
                     <div class="shared-sky-signal">
                         <div class="shared-sky-location">${trans.location} · ${trans.time}</div>
                         <div class="shared-sky-text">${trans.message}</div>
+                        ${trans.photo ? `<img src="${trans.photo}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:10px;margin-top:8px;object-fit:cover;">` : ''}
                     </div>
                 `).join('');
             }
@@ -9235,7 +9414,7 @@
                         <span style="font-size:11px;color:var(--text-muted);">${t.time}</span>
                     </div>
                     ${t.message ? `<p style="font-size:14px;color:var(--text-dark);line-height:1.5;margin:0;">${t.message}</p>` : ''}
-                    ${t.photo ? `<img src="${t.photo}" style="max-width:100%;max-height:240px;border-radius:10px;margin-top:8px;object-fit:cover;">` : ''}
+                    ${t.photo ? `<img src="${t.photo}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:10px;margin-top:8px;object-fit:cover;">` : ''}
                 </div>
             `).join('');
         }
@@ -10545,7 +10724,8 @@
                 }
             }
             
-            if (!textMessage && !hasLunarNote) {
+            const hasPhotoAttached = !!window['_pendingPhotoFile_compose'];
+            if (!textMessage && !hasLunarNote && !hasPhotoAttached) {
                 alert('Write a message, add a Lunar Note, or both!');
                 return;
             }
@@ -10969,6 +11149,12 @@
         
         // Handle final send
         function handleComposeSend() {
+            // Bug fix #1: Gate message sending behind moonrise
+            if (!moonData.isVisible) {
+                openMoonDownModal();
+                return;
+            }
+
             // Validate recipient
             const recipientVal = document.getElementById('recipient').value.trim();
             if (!recipientVal && !selectedRecipient) {
@@ -10996,7 +11182,8 @@
                 if (lunarClosing) fullMessage += '\n' + lunarClosing;
             }
             
-            if (!fullMessage) {
+            const hasPhoto = !!window['_pendingPhotoFile_compose'];
+            if (!fullMessage && !hasPhoto) {
                 // Focus the message input instead of showing an alert
                 const msgInput = document.getElementById('messageText');
                 if (msgInput) { msgInput.focus(); msgInput.setAttribute('placeholder', 'Write your moon message here...'); }
@@ -11190,17 +11377,25 @@
 
             // Calculate when the message should be released (recipient's next moonrise)
             const recipientMoonrise = getRecipientMoonrise(pendingMessage.location);
-            const releaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
+            let releaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
 
-            // Determine delivery:
-            // - Instant if recipient is on MoonPop AND online (their moon is visible since they're using the app)
-            // - Instant if moonrise can't be calculated (no city data)
-            // - Instant if moonrise is very soon (< 5 minutes away)
-            // - Otherwise: in_transit until recipient's moonrise
+            // Bug fix #3: If moonrise can't be calculated, always instant-deliver.
+            // Never allow in_transit with null release_at (causes messages to be stuck forever).
             const recipientOnline = recipientId && onlineUsers[recipientId];
             const moonriseVerySoon = recipientMoonrise && recipientMoonrise.hoursUntil < (5/60);
             const instantDeliver = recipientOnline || !releaseAt || moonriseVerySoon;
             const messageStatus = instantDeliver ? 'released' : 'in_transit';
+
+            // Safety: if somehow still in_transit but no release_at, set a 24h fallback
+            if (messageStatus === 'in_transit' && !releaseAt) {
+                releaseAt = new Date(Date.now() + 24 * 3600000).toISOString();
+            }
+
+            // Upload moon photo if attached
+            let messagePhotoUrl = null;
+            if (window['_pendingPhotoFile_compose']) {
+                messagePhotoUrl = await compressAndUpload('compose', 'messages');
+            }
 
             // Save to Supabase via Edge Function (server-side validation + rate limiting)
             let dbMessage = null;
@@ -11220,7 +11415,8 @@
                     moon_illumination: moonData.illumination || null,
                     status: messageStatus,
                     release_at: instantDeliver ? new Date().toISOString() : releaseAt,
-                    released_at: instantDeliver ? new Date().toISOString() : null
+                    released_at: instantDeliver ? new Date().toISOString() : null,
+                    photo_url: messagePhotoUrl || null
                 };
 
                 console.log('Sending message via Edge Function:', { recipientId, recipientEmail, status: messageStatus, instantDeliver });
@@ -11308,6 +11504,7 @@
                 messageText: pendingMessage.textMessage || '',
                 lunarNote: pendingMessage.lunarNoteText ? { text: pendingMessage.lunarNoteText, closing: pendingMessage.lunarClosing || '' } : null,
                 songUrl: pendingMessage.song || null,
+                photoUrl: messagePhotoUrl || null,
                 reactions: [],
                 replies: []
             });
