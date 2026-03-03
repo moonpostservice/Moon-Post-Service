@@ -6612,6 +6612,10 @@
                 conv.latestCreatedAt = latest.createdAt;
                 conv.latestTime = latest.time;
 
+                // Inbox preview = your last SENT message in this conversation
+                // (shows what you last said, not what you last received)
+                const lastSent = conv.messages.find(m => m.type === 'sent');
+
                 // Check if any reply is more recent than the latest message
                 let latestReply = null;
                 conv.messages.forEach(m => {
@@ -6623,21 +6627,32 @@
                     }
                 });
 
-                if (latestReply && latestReply.createdAt && new Date(latestReply.createdAt) > new Date(conv.latestCreatedAt)) {
-                    // Latest activity is a reply
-                    conv.latestCreatedAt = latestReply.createdAt;
-                    conv.latestTime = latestReply.time || 'Just now';
-                    conv.latestPreview = (latestReply.sent ? 'You: ' : '') + (latestReply.isLunarNote ? '🌙 Lunar Note' : latestReply.text);
+                if (latestReply && latestReply.sent && latestReply.createdAt && new Date(latestReply.createdAt) > new Date(conv.latestCreatedAt)) {
+                    // Latest activity is your reply
+                    conv.latestPreview = 'You: ' + (latestReply.isLunarNote ? '🌙 Lunar Note' : latestReply.text);
+                } else if (lastSent) {
+                    // Preview from your last sent message
+                    if (lastSent.status === 'In Transit') {
+                        conv.latestPreview = '🔴 Message orbiting...';
+                    } else if (lastSent.messageText) {
+                        conv.latestPreview = 'You: ' + lastSent.messageText;
+                    } else if (lastSent.lunarNote) {
+                        conv.latestPreview = 'You: 🌙 Lunar Note';
+                    } else if (lastSent.songUrl) {
+                        conv.latestPreview = 'You: 🎵 Song';
+                    } else if (lastSent.photoUrl) {
+                        conv.latestPreview = 'You: 📷 Photo';
+                    } else {
+                        conv.latestPreview = 'You: Moon message';
+                    }
                 } else {
-                    // Preview from latest message
+                    // No sent messages yet — show latest received
                     if (latest.status === 'Arriving') {
                         conv.latestPreview = '🌙 Message on its way...';
                     } else if (latest.messageText) {
-                        conv.latestPreview = (latest.type === 'sent' ? 'You: ' : '') + latest.messageText;
+                        conv.latestPreview = latest.messageText;
                     } else if (latest.lunarNote) {
-                        conv.latestPreview = (latest.type === 'sent' ? 'You: ' : '') + '🌙 Lunar Note';
-                    } else if (latest.status === 'In Transit') {
-                        conv.latestPreview = '🔴 Message orbiting...';
+                        conv.latestPreview = '🌙 Lunar Note';
                     } else {
                         conv.latestPreview = 'Moon message';
                     }
