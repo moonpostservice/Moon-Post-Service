@@ -6722,6 +6722,16 @@
                         // No read receipt yet = all received messages are unread
                         conv.unreadCount = conv.messages.filter(m => m.type === 'received').length;
                     }
+                    // Smart reset: if the latest message is from YOU, you've clearly
+                    // seen the conversation — don't show unread badge
+                    if (conv.messages.length > 0) {
+                        const latest = conv.messages.reduce((a, b) =>
+                            new Date(a.createdAt) > new Date(b.createdAt) ? a : b
+                        );
+                        if (latest.type === 'sent') {
+                            conv.unreadCount = 0;
+                        }
+                    }
                 });
             } catch (err) {
                 console.error('loadConversationMetadata error:', err);
@@ -8363,7 +8373,7 @@
                         onmouseleave="highlightOrbitDot('${conv.otherName}', false)">
                         ${avatar}
                         <div class="message-content">
-                            <div class="message-sender">${conv.otherUsername ? '@' + conv.otherUsername : conv.otherName}</div>
+                            <div class="message-sender">${conv.otherUsername || conv.otherName}</div>
                             ${badge}
                             <div class="message-preview">${conv.latestPreview}</div>
                             ${progressBar}
@@ -8578,16 +8588,35 @@
                 conv.unreadCount = 0;
                 renderMessages(); // Re-render inbox to clear badge
 
-                // Upsert read receipt in DB
+                // Save read receipt in DB — try upsert first, fallback to insert
+                const now = new Date().toISOString();
+                const receiptData = {
+                    conversation_id: conv.dbConversationId,
+                    user_id: currentAuthUser.id,
+                    last_read_at: now,
+                    created_at: now,
+                    updated_at: now
+                };
                 try {
-                    await sb.from('read_receipts').upsert({
-                        conversation_id: conv.dbConversationId,
-                        user_id: currentAuthUser.id,
-                        last_read_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    }, { onConflict: 'conversation_id,user_id' });
+                    const { error: upsertErr } = await sb.from('read_receipts').upsert(
+                        receiptData,
+                        { onConflict: 'conversation_id,user_id' }
+                    );
+                    if (upsertErr) {
+                        console.error('read_receipt upsert failed:', upsertErr.message, upsertErr.code);
+                        // Fallback: try plain insert (first time) or update (already exists)
+                        const { error: insertErr } = await sb.from('read_receipts').insert(receiptData);
+                        if (insertErr) {
+                            console.error('read_receipt insert fallback failed:', insertErr.message);
+                            // Last resort: update existing
+                            await sb.from('read_receipts')
+                                .update({ last_read_at: now, updated_at: now })
+                                .eq('conversation_id', conv.dbConversationId)
+                                .eq('user_id', currentAuthUser.id);
+                        }
+                    }
                 } catch (err) {
-                    console.error('Failed to upsert read receipt:', err);
+                    console.error('read_receipt save exception:', err);
                 }
             }
 
