@@ -6573,24 +6573,34 @@
 
             // Enrich conversations with contact info and fix name resolution
             const myUsername = document.getElementById('settingsUsername')?.value || '';
+            const myNameLC = myUsername.toLowerCase();
+            const myEmailPrefix = (currentAuthUser?.email?.split('@')[0] || '').toLowerCase();
             Object.values(convMap).forEach(conv => {
+                // Find matching contact — EXCLUDE self-contacts to avoid name confusion
                 const contact = contacts.find(c =>
-                    (conv.otherProfileId && c.linkedProfileId === conv.otherProfileId) ||
-                    (c.name === conv.otherName) ||
-                    (conv.otherEmail && c.email && c.email.toLowerCase() === conv.otherEmail.toLowerCase())
+                    !c._isSelf && (
+                        (conv.otherProfileId && c.linkedProfileId === conv.otherProfileId) ||
+                        (c.name === conv.otherName) ||
+                        (conv.otherEmail && c.email && c.email.toLowerCase() === conv.otherEmail.toLowerCase())
+                    )
                 );
-                conv.otherUsername = contact?.username || null;
-                // Fix: if otherName accidentally equals current user's name/email, override with contact name
+                // Only use contact username if it's NOT the current user's username
+                const contactUsername = contact?.username || null;
+                conv.otherUsername = (contactUsername && contactUsername.toLowerCase() !== myNameLC)
+                    ? contactUsername : null;
+                // Always prefer contact name if available (most reliable source)
                 if (contact && contact.name) {
-                    const nameLC = conv.otherName?.toLowerCase() || '';
-                    if (nameLC === myEmail || nameLC === myUsername.toLowerCase() ||
-                        nameLC === (currentAuthUser?.email?.split('@')[0] || '').toLowerCase()) {
-                        conv.otherName = contact.name;
-                    }
-                }
-                // Always prefer contact name if available (most reliable)
-                if (contact && contact.name && !contact._isSelf) {
                     conv.otherName = contact.name;
+                }
+                // Fallback: if otherName still equals current user's name/email, clear it
+                const nameLC = conv.otherName?.toLowerCase() || '';
+                if (nameLC === myEmail || nameLC === myNameLC || nameLC === myEmailPrefix) {
+                    // otherName is accidentally the current user — try to find a better name
+                    if (contact && contact.name) {
+                        conv.otherName = contact.name;
+                    } else if (conv.otherProfileId) {
+                        conv.otherName = 'Unknown';
+                    }
                 }
             });
 
