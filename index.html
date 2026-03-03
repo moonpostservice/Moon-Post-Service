@@ -6513,21 +6513,31 @@
         // Build conversations: group messages by the other person
         function buildConversations() {
             const convMap = {};
+            // Get current user's identifiers for safety checks
+            const myId = currentAuthUser?.id;
+            const myEmail = (currentAuthUser?.email || '').toLowerCase();
+
             messages.forEach(msg => {
                 // Determine the "other person" key (use ID when available, fallback to email/name)
                 let otherKey, otherName, otherAvatar, otherProfileId, otherEmail;
                 if (msg.type === 'sent') {
+                    // For sent messages: the "other" person is the RECIPIENT
                     otherKey = msg.recipientId || msg.recipientEmail || msg.sender;
                     otherName = msg.sender; // In sent messages, sender field = recipient name
                     otherAvatar = msg.senderAvatar;
                     otherProfileId = msg.recipientId;
                     otherEmail = msg.recipientEmail;
+                    // Safety: if otherKey accidentally resolves to current user, skip
+                    if (otherKey === myId || (typeof otherKey === 'string' && otherKey.toLowerCase() === myEmail)) return;
                 } else {
+                    // For received messages: the "other" person is the SENDER
                     otherKey = msg.senderId || msg.sender;
                     otherName = msg.sender;
                     otherAvatar = msg.senderAvatar;
                     otherProfileId = msg.senderId;
                     otherEmail = msg.recipientEmail;
+                    // Safety: if sender is actually us (self-message slipped through), skip
+                    if (otherKey === myId) return;
                 }
 
                 // Skip messages with no valid other person key (ghost conversations)
@@ -6561,7 +6571,8 @@
                 }
             });
 
-            // Enrich conversations with username from contacts
+            // Enrich conversations with contact info and fix name resolution
+            const myUsername = document.getElementById('settingsUsername')?.value || '';
             Object.values(convMap).forEach(conv => {
                 const contact = contacts.find(c =>
                     (conv.otherProfileId && c.linkedProfileId === conv.otherProfileId) ||
@@ -6569,6 +6580,18 @@
                     (conv.otherEmail && c.email && c.email.toLowerCase() === conv.otherEmail.toLowerCase())
                 );
                 conv.otherUsername = contact?.username || null;
+                // Fix: if otherName accidentally equals current user's name/email, override with contact name
+                if (contact && contact.name) {
+                    const nameLC = conv.otherName?.toLowerCase() || '';
+                    if (nameLC === myEmail || nameLC === myUsername.toLowerCase() ||
+                        nameLC === (currentAuthUser?.email?.split('@')[0] || '').toLowerCase()) {
+                        conv.otherName = contact.name;
+                    }
+                }
+                // Always prefer contact name if available (most reliable)
+                if (contact && contact.name && !contact._isSelf) {
+                    conv.otherName = contact.name;
+                }
             });
 
             // For each conversation, determine latest preview text and time
@@ -6863,7 +6886,9 @@
                     seenIds.add(m.id);
 
                     const sp = m.sender_id ? profileMap[m.sender_id] : null;
-                    const senderName = sp?.username || m.recipient_name || 'Someone';
+                    // Use sender's profile name. NEVER fallback to recipient_name for received messages
+                    // (recipient_name = current user's name, not the sender's name)
+                    const senderName = sp?.username || [sp?.first_name, sp?.last_name].filter(Boolean).join(' ') || 'Someone';
                     const senderCity = sp?.city || 'Unknown';
 
                     // Determine if message content should be revealed
@@ -8402,11 +8427,17 @@
                     // Sent messages always visible; received require moon in horizon
                     const contentVisible = isSent || (moonData.isVisible && normallyVisible);
 
+                    // For sender name: use profile, then recipient_name ONLY for sent messages
+                    // (for received messages, recipient_name = current user, NOT the sender)
+                    const otherName = otherProfile?.username ||
+                        [otherProfile?.first_name, otherProfile?.last_name].filter(Boolean).join(' ') ||
+                        (isSent ? m.recipient_name : null) || 'Unknown';
+
                     return {
                         dbId: m.id,
                         senderId: m.sender_id,
                         recipientId: m.recipient_id || null,
-                        sender: otherProfile?.username || m.recipient_name || 'Unknown',
+                        sender: otherName,
                         senderAvatar: otherProfile?.avatar_url || null,
                         recipientEmail: m.recipient_email,
                         preview: contentVisible ? (m.message_text || '') : '',
