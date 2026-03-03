@@ -7414,6 +7414,21 @@
                     const badgeEl = document.getElementById('sharedSkyBadge');
                     updateSharedSkyBadge();
                 }
+
+                // Deep-link: if URL is /chat/<id>, auto-open that conversation
+                const chatMatch = window.location.pathname.match(/\/chat\/([a-f0-9-]+)/);
+                if (chatMatch) {
+                    const chatId = chatMatch[1];
+                    const convIdx = conversations.findIndex(c => c.dbConversationId === chatId);
+                    if (convIdx !== -1) {
+                        console.log('[deeplink] Opening conversation:', chatId);
+                        await openConversation(convIdx);
+                    } else {
+                        console.warn('[deeplink] Conversation not found:', chatId);
+                        // Clean up invalid URL
+                        history.replaceState(null, '', window.location.pathname.replace(/\/chat\/.*$/, '') || '/');
+                    }
+                }
             } else {
                 console.log('[initAuth] No session found, showing onboarding');
                 showOnboarding();
@@ -7423,6 +7438,35 @@
                 _isInitializing = false;
             }
         }
+
+        // ========================
+        // URL ROUTING (popstate)
+        // ========================
+
+        window.addEventListener('popstate', async function(e) {
+            const chatMatch = window.location.pathname.match(/\/chat\/([a-f0-9-]+)/);
+            if (chatMatch) {
+                // Navigated forward/back to a chat URL — open it
+                const chatId = chatMatch[1];
+                const convIdx = conversations.findIndex(c => c.dbConversationId === chatId);
+                if (convIdx !== -1) {
+                    // Open without pushing another history entry (avoid infinite loop)
+                    const conv = conversations[convIdx];
+                    currentConversation = conv;
+                    currentConversationIndex = convIdx;
+                    if (!conv._fullThreadLoaded && conv.dbConversationId) {
+                        await loadFullConversationThread(conv);
+                    }
+                    renderConversationThread();
+                    document.getElementById('messagePageView').classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            } else {
+                // Navigated back to inbox
+                _closeMessageDetailUI();
+                renderMessages();
+            }
+        });
 
         // ========================
         // REALTIME + POLLING ENGINE
@@ -7479,8 +7523,13 @@
                 renderMessageDots();
                 checkForNewMessageNotifications();
 
-                // If conversation is open, reload its replies from DB for freshness
-                if (currentConversation) {
+                // If conversation is open, reload the FULL thread from DB
+                // buildConversations() only keeps a subset of messages from the global array.
+                // We need to re-fetch ALL messages for this conversation so replies aren't lost.
+                if (currentConversation && currentConversation.dbConversationId) {
+                    await loadFullConversationThread(currentConversation);
+
+                    // Now load replies + reactions for ALL messages in the full thread
                     const msgIds = currentConversation.messages.filter(m => m.dbId).map(m => m.dbId);
                     if (msgIds.length > 0 && currentAuthUser) {
                         const { data: freshReplies } = await sb.from('replies')
@@ -7504,6 +7553,25 @@
                             currentConversation.messages.forEach(msg => {
                                 if (msg.dbId && replyMap[msg.dbId]) {
                                     msg.replies = replyMap[msg.dbId];
+                                }
+                            });
+                        }
+
+                        // Also load reactions for all messages
+                        const { data: freshReactions } = await sb.from('reactions')
+                            .select('*')
+                            .in('message_id', msgIds);
+                        if (freshReactions) {
+                            const rxnMap = {};
+                            freshReactions.forEach(r => {
+                                if (!rxnMap[r.message_id]) rxnMap[r.message_id] = {};
+                                if (!rxnMap[r.message_id][r.emoji]) rxnMap[r.message_id][r.emoji] = { emoji: r.emoji, count: 0, mine: false };
+                                rxnMap[r.message_id][r.emoji].count++;
+                                if (r.user_id === currentAuthUser.id) rxnMap[r.message_id][r.emoji].mine = true;
+                            });
+                            currentConversation.messages.forEach(msg => {
+                                if (msg.dbId && rxnMap[msg.dbId]) {
+                                    msg.reactions = Object.values(rxnMap[msg.dbId]);
                                 }
                             });
                         }
@@ -8682,6 +8750,12 @@
             page.classList.add('active');
             document.body.style.overflow = 'hidden';
 
+            // Update URL to reflect the open conversation (deep-linkable)
+            if (conv.dbConversationId) {
+                const chatPath = window.location.pathname.replace(/\/chat\/.*$/, '').replace(/\/$/, '') + '/chat/' + conv.dbConversationId;
+                history.pushState({ chat: conv.dbConversationId }, '', chatPath);
+            }
+
             // Mark conversation as read (always, even if unreadCount is 0 — keeps receipt fresh)
             if (conv.dbConversationId && currentAuthUser) {
                 conv.unreadCount = 0;
@@ -8959,6 +9033,17 @@
         }
 
         function closeMessageDetail() {
+            // If URL has /chat/, use history.back() so browser history stays clean
+            // The popstate handler will do the actual UI teardown
+            if (window.location.pathname.match(/\/chat\//)) {
+                history.back();
+                return;
+            }
+            // Fallback: close directly (e.g. called without URL routing active)
+            _closeMessageDetailUI();
+        }
+
+        function _closeMessageDetailUI() {
             document.getElementById('messagePageView').classList.remove('active');
             document.body.style.overflow = '';
             currentMessageIndex = -1;
