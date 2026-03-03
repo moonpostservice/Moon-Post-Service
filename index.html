@@ -752,6 +752,24 @@
             box-shadow: none;
         }
 
+        /* Moon-down: completely hide reply input and show gate message */
+        body.moon-down .reply-row {
+            display: none !important;
+        }
+        body.moon-down .add-lunar-link {
+            display: none !important;
+        }
+        body.moon-down #replyPhotoPreview {
+            display: none !important;
+        }
+        body.moon-down #replyMoonGate {
+            display: block !important;
+        }
+        /* When moon is up, hide the gate message */
+        body:not(.moon-down) #replyMoonGate {
+            display: none !important;
+        }
+
         /* Standby center content */
         .standby-content {
             text-align: center;
@@ -5079,8 +5097,9 @@
                     <input type="text" class="message-page-input" placeholder="Write a reply..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()">
                     <button class="message-page-send" id="replySendBtn" onclick="sendReply()">↑</button>
                 </div>
-                <div id="replyMoonGate" style="display:none;text-align:center;padding:10px 16px;color:var(--text-muted);font-size:12px;font-style:italic;">
-                    🌙 Messages can only be sent when the moon is in your sky
+                <div id="replyMoonGate" style="text-align:center;padding:12px 16px;color:var(--text-muted);font-size:13px;">
+                    <div style="margin-bottom:4px;">🌙 The moon is below your horizon</div>
+                    <div id="replyMoonGateTime" style="font-size:11px;opacity:0.7;"></div>
                 </div>
                 <button class="add-lunar-link" id="addLunarLink" onclick="openThreadLunar()">🌙 Add a Lunar Note</button>
             </div>
@@ -8495,26 +8514,19 @@
         }
 
         // Update reply row visibility based on moon state
+        // CSS handles the show/hide via body.moon-down class (bulletproof)
+        // This function updates the moonrise time text in the gate message
         function updateReplyRowMoonGate() {
-            const replyRow = document.getElementById('replyRow');
-            const moonGate = document.getElementById('replyMoonGate');
-            const replyInput = document.getElementById('replyInput');
-            const replySendBtn = document.getElementById('replySendBtn');
-            const replyPhotoLabel = document.getElementById('replyPhotoLabel');
-            const addLunarLink = document.getElementById('addLunarLink');
-            if (!replyRow) return;
+            const timeEl = document.getElementById('replyMoonGateTime');
+            if (!timeEl) return;
 
-            if (moonData.isVisible) {
-                replyRow.style.display = '';
-                if (moonGate) moonGate.style.display = 'none';
-                if (replyInput) { replyInput.disabled = false; replyInput.placeholder = 'Write a reply...'; }
-                if (replySendBtn) replySendBtn.disabled = false;
-                if (replyPhotoLabel) replyPhotoLabel.style.display = '';
-                if (addLunarLink) addLunarLink.style.display = '';
-            } else {
-                replyRow.style.display = 'none';
-                if (moonGate) moonGate.style.display = '';
-                if (addLunarLink) addLunarLink.style.display = 'none';
+            if (!moonData.isVisible) {
+                const riseTime = moonData.moonrise !== '--:--' ? moonData.moonrise : '';
+                if (riseTime) {
+                    timeEl.textContent = `Messaging opens at moonrise (${riseTime})`;
+                } else {
+                    timeEl.textContent = 'Messaging opens when the moon rises';
+                }
             }
         }
 
