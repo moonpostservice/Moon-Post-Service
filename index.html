@@ -7677,16 +7677,27 @@
                         if (content) content.scrollTop = content.scrollHeight;
                     }
 
-                    // Also update the inbox conversation preview
-                    const prevKey = currentConversation?.otherKey;
-                    buildConversations();
-                    // Re-link currentConversation after rebuild
-                    if (prevKey) {
-                        const newConv = conversations.find(c => c.otherKey === prevKey);
-                        if (newConv) {
-                            currentConversation = newConv;
-                            currentConversationIndex = conversations.indexOf(newConv);
+                    // Update inbox preview inline (DON'T rebuild — preserves full thread)
+                    const replyConv = currentConversation || conversations.find(c =>
+                        c.messages.some(m => m.dbId === reply.message_id)
+                    );
+                    if (replyConv) {
+                        const replyTime = reply.created_at || new Date().toISOString();
+                        replyConv.latestCreatedAt = replyTime;
+                        replyConv.latestTime = 'Just now';
+                        const isMyReply = reply.sender_id === currentAuthUser?.id;
+                        const prefix = isMyReply ? 'You: ' : '';
+                        if (reply.is_lunar_note && reply.lunar_note_text) {
+                            const snippet = reply.lunar_note_text.replace(/\n/g, ' ').substring(0, 40);
+                            replyConv.latestPreview = prefix + '🌙 ' + snippet;
+                        } else {
+                            replyConv.latestPreview = prefix + (reply.text || reply.reply_text || '🌕');
                         }
+                        if (replyConv.latestPreview.length > 50) {
+                            replyConv.latestPreview = replyConv.latestPreview.substring(0, 50) + '...';
+                        }
+                        if (isMyReply) replyConv.unreadCount = 0;
+                        conversations.sort((a, b) => new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt));
                     }
                     renderMessages();
                 })
@@ -9236,11 +9247,18 @@
                 setTimeout(() => { isReloadingMessages = false; }, 1500);
             }
 
-            // Update inbox preview — restore conversation by stable key
-            buildConversations();
-            if (prevKey) {
-                const newConv = conversations.find(c => c.otherKey === prevKey);
-                if (newConv) { currentConversation = newConv; currentConversationIndex = conversations.indexOf(newConv); }
+            // Update inbox preview inline (DON'T rebuild conversations — that would
+            // wipe the full thread loaded by loadFullConversationThread and lose messages)
+            if (currentConversation) {
+                currentConversation.latestCreatedAt = now;
+                currentConversation.latestTime = 'Just now';
+                currentConversation.latestPreview = 'You: ' + (replyText || '🌙');
+                if (currentConversation.latestPreview.length > 50) {
+                    currentConversation.latestPreview = currentConversation.latestPreview.substring(0, 50) + '...';
+                }
+                currentConversation.unreadCount = 0;
+                conversations.sort((a, b) => new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt));
+                currentConversationIndex = conversations.indexOf(currentConversation);
             }
             renderMessages();
             renderConversationThread();
@@ -12023,8 +12041,22 @@
                 replies: []
             });
 
+            // Save current conversation's full thread before rebuild (loadFullConversationThread
+            // loads extra messages/replies that aren't in the global messages array)
+            const _savedThread = currentConversation?._fullThreadLoaded ? currentConversation.messages : null;
+            const _savedKey = currentConversation?.otherKey;
+
             // Rebuild conversations to include the new message
             buildConversations();
+
+            // Restore full thread if it was loaded
+            if (_savedThread && _savedKey) {
+                const restoredConv = conversations.find(c => c.otherKey === _savedKey);
+                if (restoredConv) {
+                    restoredConv.messages = _savedThread;
+                    restoredConv._fullThreadLoaded = true;
+                }
+            }
 
             // Update stats
             moonData.messagesInTransit++;
