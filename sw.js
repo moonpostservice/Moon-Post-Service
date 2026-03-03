@@ -1,5 +1,5 @@
-// MoonPop Service Worker v11
-const CACHE_NAME = 'moonpop-v11';
+// MoonPop Service Worker v12
+const CACHE_NAME = 'moonpop-v12';
 const STATIC_ASSETS = [
   // Only precache CDN assets (immutable, safe to cache-first)
   // App shell (index.html) is NOT precached — it uses network-first strategy
@@ -97,8 +97,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // App shell (index.html, manifest) — network-first, cache fallback
-  if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/manifest.json') {
+  // Manifest — network-first, cache fallback
+  if (url.pathname === '/manifest.json') {
     event.respondWith(
       fetch(event.request).then((response) => {
         const clone = response.clone();
@@ -106,6 +106,24 @@ self.addEventListener('fetch', (event) => {
         return response;
       }).catch(() => {
         return caches.match(event.request);
+      })
+    );
+    return;
+  }
+
+  // App shell (index.html, /chat/* deep links) — network-first, cache fallback
+  // Deep-link routes like /chat/<id> are handled client-side, so serve index.html
+  if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname.startsWith('/chat/')) {
+    const appShellRequest = url.pathname.startsWith('/chat/')
+      ? new Request(url.origin + '/index.html') // Rewrite /chat/* to /index.html
+      : event.request;
+    event.respondWith(
+      fetch(appShellRequest).then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(new Request(url.origin + '/index.html'), clone));
+        return response;
+      }).catch(() => {
+        return caches.match(new Request(url.origin + '/index.html'));
       })
     );
     return;
