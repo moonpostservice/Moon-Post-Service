@@ -6612,50 +6612,31 @@
                 conv.latestCreatedAt = latest.createdAt;
                 conv.latestTime = latest.time;
 
-                // Inbox preview = your last SENT message in this conversation
-                // (shows what you last said, not what you last received)
+                // Store the timestamp of the last sent message (used for implicit read receipt)
                 const lastSent = conv.messages.find(m => m.type === 'sent');
+                conv._lastSentAt = lastSent ? lastSent.createdAt : null;
 
-                // Check if any reply is more recent than the latest message
-                let latestReply = null;
-                conv.messages.forEach(m => {
-                    if (m.replies && m.replies.length > 0) {
-                        const lastReply = m.replies[m.replies.length - 1];
-                        if (lastReply.createdAt && (!latestReply || new Date(lastReply.createdAt) > new Date(latestReply.createdAt))) {
-                            latestReply = lastReply;
-                        }
-                    }
-                });
-
-                if (latestReply && latestReply.sent && latestReply.createdAt && new Date(latestReply.createdAt) > new Date(conv.latestCreatedAt)) {
-                    // Latest activity is your reply
-                    conv.latestPreview = 'You: ' + (latestReply.isLunarNote ? '🌙 Lunar Note' : latestReply.text);
-                } else if (lastSent) {
-                    // Preview from your last sent message
-                    if (lastSent.status === 'In Transit') {
-                        conv.latestPreview = '🔴 Message orbiting...';
-                    } else if (lastSent.messageText) {
-                        conv.latestPreview = 'You: ' + lastSent.messageText;
-                    } else if (lastSent.lunarNote) {
-                        conv.latestPreview = 'You: 🌙 Lunar Note';
-                    } else if (lastSent.songUrl) {
-                        conv.latestPreview = 'You: 🎵 Song';
-                    } else if (lastSent.photoUrl) {
-                        conv.latestPreview = 'You: 📷 Photo';
-                    } else {
-                        conv.latestPreview = 'You: Moon message';
-                    }
+                // Preview = the most recent message in the conversation (from either party)
+                // "You:" prefix for sent messages
+                const youPrefix = latest.type === 'sent' ? 'You: ' : '';
+                if (latest.status === 'Arriving') {
+                    conv.latestPreview = '🌙 Message on its way...';
+                } else if (latest.status === 'In Transit') {
+                    conv.latestPreview = '🔴 Message orbiting...';
+                } else if (latest.messageText) {
+                    conv.latestPreview = youPrefix + latest.messageText;
+                } else if (latest.lunarNote) {
+                    // Show snippet of actual lunar note text instead of generic label
+                    const noteSnippet = latest.lunarNote.text
+                        ? latest.lunarNote.text.replace(/\n/g, ' ').substring(0, 40)
+                        : 'Lunar Note';
+                    conv.latestPreview = youPrefix + '🌙 ' + noteSnippet;
+                } else if (latest.songUrl) {
+                    conv.latestPreview = youPrefix + '🎵 Song';
+                } else if (latest.photoUrl) {
+                    conv.latestPreview = youPrefix + '📷 Photo';
                 } else {
-                    // No sent messages yet — show latest received
-                    if (latest.status === 'Arriving') {
-                        conv.latestPreview = '🌙 Message on its way...';
-                    } else if (latest.messageText) {
-                        conv.latestPreview = latest.messageText;
-                    } else if (latest.lunarNote) {
-                        conv.latestPreview = '🌙 Lunar Note';
-                    } else {
-                        conv.latestPreview = 'Moon message';
-                    }
+                    conv.latestPreview = youPrefix + 'Moon message';
                 }
 
                 // Truncate preview
@@ -6755,24 +6736,27 @@
                     const myLastRead = myReceiptMap[conv.dbConversationId];
                     conv.otherReadAt = otherReceiptMap[conv.dbConversationId] || null;
 
-                    // Count unread = received messages newer than my last read receipt
-                    if (myLastRead) {
+                    // Determine the effective "last read" time:
+                    // Use the most recent of: explicit read receipt, last sent message time,
+                    // or localStorage receipt. If you sent a message at time T, you must
+                    // have seen the conversation up to T (implicit read receipt).
+                    let effectiveReadTime = null;
+                    if (myLastRead) effectiveReadTime = new Date(myLastRead);
+                    if (conv._lastSentAt) {
+                        const sentTime = new Date(conv._lastSentAt);
+                        if (!effectiveReadTime || sentTime > effectiveReadTime) {
+                            effectiveReadTime = sentTime;
+                        }
+                    }
+
+                    // Count unread = received messages newer than effectiveReadTime
+                    if (effectiveReadTime) {
                         conv.unreadCount = conv.messages.filter(m =>
-                            m.type === 'received' && new Date(m.createdAt) > new Date(myLastRead)
+                            m.type === 'received' && new Date(m.createdAt) > effectiveReadTime
                         ).length;
                     } else {
-                        // No read receipt yet = all received messages are unread
+                        // Never sent or read anything = all received messages are unread
                         conv.unreadCount = conv.messages.filter(m => m.type === 'received').length;
-                    }
-                    // Smart reset: if the latest message is from YOU, you've clearly
-                    // seen the conversation — don't show unread badge
-                    if (conv.messages.length > 0) {
-                        const latest = conv.messages.reduce((a, b) =>
-                            new Date(a.createdAt) > new Date(b.createdAt) ? a : b
-                        );
-                        if (latest.type === 'sent') {
-                            conv.unreadCount = 0;
-                        }
                     }
                 });
             } catch (err) {
