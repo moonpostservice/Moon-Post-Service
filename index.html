@@ -1501,6 +1501,11 @@
         .new-message-btn:hover {
             background: var(--blue-light);
         }
+        body.moon-down .new-message-btn {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
 
         .message-list {
             list-style: none;
@@ -3065,11 +3070,16 @@
 
         /* New message flash animation on conversation row */
         .message-item.new-message-flash {
-            animation: rowFlash 0.6s ease-out;
+            animation: rowFlash 1.2s ease-out;
         }
         @keyframes rowFlash {
-            0% { background: rgba(53, 125, 197, 0.15); }
+            0% { background: rgba(53, 125, 197, 0.2); }
+            30% { background: rgba(53, 125, 197, 0.12); }
             100% { background: transparent; }
+        }
+        /* Unread conversation has subtle background tint */
+        .message-item.unread {
+            background: rgba(53, 125, 197, 0.05);
         }
 
         /* Notification toast */
@@ -5063,11 +5073,14 @@
                         <button onclick="clearReplyPhoto()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:12px;cursor:pointer;">&times;</button>
                     </div>
                 </div>
-                <div class="reply-row">
-                    <label for="replyPhotoInput" style="cursor:pointer;font-size:20px;padding:4px;flex-shrink:0;">🌕</label>
+                <div class="reply-row" id="replyRow">
+                    <label for="replyPhotoInput" id="replyPhotoLabel" style="cursor:pointer;font-size:20px;padding:4px;flex-shrink:0;">🌕</label>
                     <input type="file" id="replyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleReplyPhoto(this)">
                     <input type="text" class="message-page-input" placeholder="Write a reply..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()">
-                    <button class="message-page-send" onclick="sendReply()">↑</button>
+                    <button class="message-page-send" id="replySendBtn" onclick="sendReply()">↑</button>
+                </div>
+                <div id="replyMoonGate" style="display:none;text-align:center;padding:10px 16px;color:var(--text-muted);font-size:12px;font-style:italic;">
+                    🌙 Messages can only be sent when the moon is in your sky
                 </div>
                 <button class="add-lunar-link" id="addLunarLink" onclick="openThreadLunar()">🌙 Add a Lunar Note</button>
             </div>
@@ -6498,6 +6511,9 @@
                     otherEmail = msg.recipientEmail;
                 }
 
+                // Skip messages with no valid other person key (ghost conversations)
+                if (!otherKey || otherKey === 'Unknown' || otherKey === 'Someone') return;
+
                 if (!convMap[otherKey]) {
                     convMap[otherKey] = {
                         otherKey,
@@ -6767,6 +6783,17 @@
 
                 const allMessages = [];
                 const seenIds = new Set(); // Global dedup across sent + received
+
+                // Filter out self-messages and ghost messages
+                if (sent) {
+                    const selfEmail = (currentAuthUser.email || '').toLowerCase();
+                    for (let i = sent.length - 1; i >= 0; i--) {
+                        const m = sent[i];
+                        // Skip self-messages (sent to yourself)
+                        if (m.recipient_id && m.recipient_id === currentAuthUser.id) { sent.splice(i, 1); continue; }
+                        if (m.recipient_email && m.recipient_email.toLowerCase() === selfEmail) { sent.splice(i, 1); continue; }
+                    }
+                }
 
                 // Map sent messages
                 if (sent) {
@@ -8135,6 +8162,9 @@
                     </div>
                 `;
             }
+
+            // Update reply row gating if conversation detail is open
+            updateReplyRowMoonGate();
         }
 
         // Render all messages chronologically (IM-style)
@@ -8464,6 +8494,30 @@
             return new Date(conv.otherReadAt) >= new Date(messageCreatedAt) ? 'read' : 'delivered';
         }
 
+        // Update reply row visibility based on moon state
+        function updateReplyRowMoonGate() {
+            const replyRow = document.getElementById('replyRow');
+            const moonGate = document.getElementById('replyMoonGate');
+            const replyInput = document.getElementById('replyInput');
+            const replySendBtn = document.getElementById('replySendBtn');
+            const replyPhotoLabel = document.getElementById('replyPhotoLabel');
+            const addLunarLink = document.getElementById('addLunarLink');
+            if (!replyRow) return;
+
+            if (moonData.isVisible) {
+                replyRow.style.display = '';
+                if (moonGate) moonGate.style.display = 'none';
+                if (replyInput) { replyInput.disabled = false; replyInput.placeholder = 'Write a reply...'; }
+                if (replySendBtn) replySendBtn.disabled = false;
+                if (replyPhotoLabel) replyPhotoLabel.style.display = '';
+                if (addLunarLink) addLunarLink.style.display = '';
+            } else {
+                replyRow.style.display = 'none';
+                if (moonGate) moonGate.style.display = '';
+                if (addLunarLink) addLunarLink.style.display = 'none';
+            }
+        }
+
         // Render the full conversation thread (all messages + replies chronologically)
         function renderConversationThread() {
             if (!currentConversation) return;
@@ -8644,6 +8698,9 @@
             }
 
             content.innerHTML = html;
+
+            // Update reply row moon gating every time thread renders
+            updateReplyRowMoonGate();
         }
 
         // Keep renderDetailContent as alias for compatibility with lunar note sending
@@ -8871,20 +8928,18 @@
             const hasPhoto = !!window['_pendingPhotoFile_reply'];
             if (!input.value.trim() && !hasPhoto) return;
 
-            // Bug fix #2: Save conversation key BEFORE any mutations so we can restore after rebuild
+            // Save conversation key BEFORE any mutations
             const prevKey = currentConversation?.otherKey;
 
-            // Find the target message by dbId (stable reference that survives rebuilds)
+            // Find the target message by dbId (stable reference)
             let targetDbId = null;
             if (currentConversation) {
                 targetDbId = currentConversation.messages[0]?.dbId;
             } else if (currentMessageIndex >= 0) {
                 targetDbId = messages[currentMessageIndex]?.dbId;
             }
-            // Find the actual message object from the global messages array (canonical source)
             let targetMsg = targetDbId ? messages.find(m => m.dbId === targetDbId) : null;
             if (!targetMsg) {
-                // Fallback: try direct reference
                 if (currentConversation) targetMsg = currentConversation.messages[0];
                 else if (currentMessageIndex >= 0) targetMsg = messages[currentMessageIndex];
             }
@@ -8895,46 +8950,56 @@
             const replyText = input.value.trim();
             const now = new Date().toISOString();
 
-            // Optimistic reply (with data URL for instant display)
+            // Optimistic reply
             const optimisticReply = { text: replyText, time: 'Just now', createdAt: now, sent: true, senderId: currentAuthUser?.id, photoUrl: pendingReplyPhoto || null };
             targetMsg.replies.push(optimisticReply);
 
-            // Render immediately with optimistic data (before async operations)
+            // Clear input immediately for snappy feel
+            input.value = '';
+            const hadPhoto = hasPhoto;
+
+            // Render immediately with optimistic data
             renderConversationThread();
             document.getElementById('detailContent').scrollTop = document.getElementById('detailContent').scrollHeight;
 
-            // Compress & upload photo
-            let replyPhotoUrl = null;
-            if (hasPhoto) {
-                replyPhotoUrl = await compressAndUpload('reply', 'replies');
-                if (replyPhotoUrl) optimisticReply.photoUrl = replyPhotoUrl;
-            }
+            // Block realtime reloads during send to prevent the view from flashing
+            isReloadingMessages = true;
 
-            // Save to Supabase
-            if (currentAuthUser && targetMsg.dbId) {
-                const insertData = {
-                    message_id: targetMsg.dbId,
-                    sender_id: currentAuthUser.id,
-                    text: replyText || '🌕'
-                };
-                if (replyPhotoUrl) insertData.photo_url = replyPhotoUrl;
-                const { data: replyData, error } = await sb.from('replies').insert(insertData).select().single();
-                if (error) {
-                    console.error('Reply save failed:', error);
-                    // Remove optimistic reply on failure
-                    const idx = targetMsg.replies.findIndex(r => r.createdAt === now && r.text === replyText);
-                    if (idx >= 0) targetMsg.replies.splice(idx, 1);
-                    renderConversationThread();
-                    return;
+            try {
+                // Compress & upload photo
+                let replyPhotoUrl = null;
+                if (hadPhoto) {
+                    replyPhotoUrl = await compressAndUpload('reply', 'replies');
+                    if (replyPhotoUrl) optimisticReply.photoUrl = replyPhotoUrl;
                 }
-                // Update the optimistic reply with the real timestamp
-                const lastReply = targetMsg.replies.find(r => r.createdAt === now && r.text === replyText);
-                if (lastReply && replyData) lastReply.createdAt = replyData.created_at;
+                clearReplyPhoto();
+
+                // Save to Supabase
+                if (currentAuthUser && targetMsg.dbId) {
+                    const insertData = {
+                        message_id: targetMsg.dbId,
+                        sender_id: currentAuthUser.id,
+                        text: replyText || '🌕'
+                    };
+                    if (replyPhotoUrl) insertData.photo_url = replyPhotoUrl;
+                    const { data: replyData, error } = await sb.from('replies').insert(insertData).select().single();
+                    if (error) {
+                        console.error('Reply save failed:', error);
+                        const idx = targetMsg.replies.findIndex(r => r.createdAt === now && r.text === replyText);
+                        if (idx >= 0) targetMsg.replies.splice(idx, 1);
+                        renderConversationThread();
+                        return;
+                    }
+                    // Update optimistic reply with real timestamp
+                    const lastReply = targetMsg.replies.find(r => r.createdAt === now && r.text === replyText);
+                    if (lastReply && replyData) lastReply.createdAt = replyData.created_at;
+                }
+            } finally {
+                // Unblock realtime reloads after a cooldown
+                setTimeout(() => { isReloadingMessages = false; }, 1500);
             }
 
-            input.value = '';
-            clearReplyPhoto();
-            // Update conversation preview after reply — restore by stable key
+            // Update inbox preview — restore conversation by stable key
             buildConversations();
             if (prevKey) {
                 const newConv = conversations.find(c => c.otherKey === prevKey);
@@ -10547,29 +10612,45 @@
 
         // Called after messages reload to detect new arrivals and trigger notifications
         function checkForNewMessageNotifications() {
-            if (!moonData.isVisible) return; // No notifications when moon is down
             const receivedCount = messages.filter(m => m.type === 'received').length;
             if (_lastKnownReceivedCount > 0 && receivedCount > _lastKnownReceivedCount) {
                 const newCount = receivedCount - _lastKnownReceivedCount;
                 playMessageSound();
 
                 // Find the newest received message for the toast
-                const newest = messages.find(m => m.type === 'received');
-                if (newest) {
-                    const senderName = newest.sender || 'Someone';
-                    showNotificationToast(newCount === 1
-                        ? `New message from ${senderName}`
-                        : `${newCount} new messages received`);
-                }
+                const newestReceived = [...messages].filter(m => m.type === 'received')
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+                const senderName = newestReceived?.sender || 'Someone';
 
-                // Flash the top conversation row after render
+                showNotificationToast(newCount === 1
+                    ? `New message from ${senderName}`
+                    : `${newCount} new messages received`);
+
+                // Flash the specific conversation row(s) with new messages
                 requestAnimationFrame(() => {
-                    const firstRow = document.querySelector('.message-item');
-                    if (firstRow) {
-                        firstRow.classList.add('new-message-flash');
-                        setTimeout(() => firstRow.classList.remove('new-message-flash'), 600);
+                    if (newestReceived) {
+                        const senderKey = newestReceived.senderId || newestReceived.sender;
+                        const convIdx = conversations.findIndex(c => c.otherKey === senderKey);
+                        if (convIdx >= 0) {
+                            const rows = document.querySelectorAll('.message-item');
+                            if (rows[convIdx]) {
+                                rows[convIdx].classList.add('new-message-flash');
+                                setTimeout(() => rows[convIdx].classList.remove('new-message-flash'), 1200);
+                            }
+                        }
                     }
                 });
+
+                // Also trigger browser notification if permission granted
+                if (Notification.permission === 'granted' && document.hidden) {
+                    try {
+                        new Notification('MoonPop', {
+                            body: newCount === 1 ? `New message from ${senderName}` : `${newCount} new messages`,
+                            icon: '🌙',
+                            tag: 'moonpop-new-msg'
+                        });
+                    } catch(e) { /* notification API may not be available */ }
+                }
             }
             _lastKnownReceivedCount = receivedCount;
         }
