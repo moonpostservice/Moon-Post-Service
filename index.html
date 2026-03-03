@@ -4723,9 +4723,9 @@
     <div class="message-page" id="messageModal">
         <div class="message-page-inner">
             <div class="message-page-header" id="composeHeader" style="justify-content:space-between;">
-                <span style="width:34px;"></span>
+                <button class="message-page-back" onclick="backToRecipientPicker()" style="font-size:20px;">←</button>
                 <span style="font-weight:700;color:var(--blue);font-size:15px;">New Moon Message</span>
-                <button class="message-page-back" onclick="closeModal()" style="font-size:20px;">&times;</button>
+                <span style="width:34px;"></span>
             </div>
             <div class="message-page-body" style="padding:20px 24px;overflow-y:auto;">
             
@@ -4823,7 +4823,7 @@
                     <div style="flex:1;min-width:200px;">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                             <span>🎵</span>
-                            <input type="text" id="songInput" placeholder="Search for a song or paste a YouTube link" style="flex:1;" oninput="onSongInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();if(!extractYouTubeId(this.value.trim()))searchYouTubeSong();}">
+                            <input type="text" id="songInput" placeholder="Search for a song or paste a Spotify link" style="flex:1;" oninput="onSongInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();if(!extractYouTubeId(this.value.trim()) && !extractSpotifyTrackId(this.value.trim()))searchYouTubeSong();}">
                             <button onclick="searchYouTubeSong()" id="songSearchBtn" style="background:var(--blue);color:white;border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;display:none;">Search</button>
                         </div>
                         <div id="songSearchResults" style="max-height:180px;overflow-y:auto;display:none;margin-bottom:8px;"></div>
@@ -4847,7 +4847,7 @@
                 </div>
                 
                 <div style="display:flex;justify-content:center;margin-top:20px;">
-                    <button class="send-button" id="composeMainBtn" onclick="composeMainAction()" style="max-width:280px;">Continue →</button>
+                    <button class="send-button" id="composeMainBtn" onclick="composeMainAction()" style="max-width:280px;">Release to the Moon 🌙</button>
                 </div>
             </div>
             
@@ -4906,7 +4906,7 @@
                     <div class="city-dropdown" id="newContactCityDropdown"></div>
                 </div>
                 
-                <button class="send-button" id="saveContactBtn" onclick="confirmNewContact()" disabled>Save & Continue</button>
+                <button class="send-button" id="saveContactBtn" onclick="confirmNewContact()" disabled>Save & Compose Message</button>
             </div>
             </div>
         </div>
@@ -7306,7 +7306,38 @@
             isReloadingMessages = true;
             try {
                 const prevKey = currentConversation?.otherKey;
+
+                // CRITICAL: Save existing replies + reactions before reload
+                // loadMessages() creates new message objects WITHOUT replies/reactions.
+                // Without preserving them, inbox previews show stale text and
+                // open conversations lose their thread history.
+                const prevReplies = {};
+                const prevReactions = {};
+                messages.forEach(m => {
+                    if (m.dbId) {
+                        if (m.replies && m.replies.length > 0) prevReplies[m.dbId] = m.replies;
+                        if (m.reactions && m.reactions.length > 0) prevReactions[m.dbId] = m.reactions;
+                    }
+                });
+
                 await loadMessages();
+
+                // Restore replies and reactions to the new message objects
+                messages.forEach(m => {
+                    if (m.dbId) {
+                        if (prevReplies[m.dbId] && (!m.replies || m.replies.length === 0)) {
+                            m.replies = prevReplies[m.dbId];
+                        }
+                        if (prevReactions[m.dbId] && (!m.reactions || m.reactions.length === 0)) {
+                            m.reactions = prevReactions[m.dbId];
+                        }
+                    }
+                });
+
+                // Rebuild conversations WITH replies restored (for accurate previews)
+                buildConversations();
+                await loadConversationMetadata();
+
                 if (prevKey) {
                     const newConv = conversations.find(c => c.otherKey === prevKey);
                     if (newConv) { currentConversation = newConv; currentConversationIndex = conversations.indexOf(newConv); }
@@ -7314,9 +7345,39 @@
                 renderMessages();
                 renderMessageDots();
                 checkForNewMessageNotifications();
-                if (currentConversation) renderConversationThread();
+
+                // If conversation is open, reload its replies from DB for freshness
+                if (currentConversation) {
+                    const msgIds = currentConversation.messages.filter(m => m.dbId).map(m => m.dbId);
+                    if (msgIds.length > 0 && currentAuthUser) {
+                        const { data: freshReplies } = await sb.from('replies')
+                            .select('*')
+                            .in('message_id', msgIds)
+                            .order('created_at', { ascending: true });
+                        if (freshReplies) {
+                            const replyMap = {};
+                            freshReplies.forEach(r => {
+                                if (!replyMap[r.message_id]) replyMap[r.message_id] = [];
+                                replyMap[r.message_id].push({
+                                    text: r.text,
+                                    time: timeAgo(r.created_at),
+                                    createdAt: r.created_at,
+                                    sent: r.sender_id === currentAuthUser.id,
+                                    senderId: r.sender_id,
+                                    isLunarNote: r.is_lunar_note || false,
+                                    photoUrl: r.photo_url || null
+                                });
+                            });
+                            currentConversation.messages.forEach(msg => {
+                                if (msg.dbId && replyMap[msg.dbId]) {
+                                    msg.replies = replyMap[msg.dbId];
+                                }
+                            });
+                        }
+                    }
+                    renderConversationThread();
+                }
             } finally {
-                // Allow next reload after a short cooldown
                 setTimeout(() => { isReloadingMessages = false; }, 1000);
             }
         }
@@ -8634,12 +8695,14 @@
                         const st = getReadReceiptStatus(item.createdAt, conv);
                         return `<span class="read-receipt ${st}">✓✓</span>`;
                     })() : '';
+                    const lunarReactionsHtml = (item.isMessage && item.msgIndex >= 0) ? renderReactionsBar(item.msgIndex, 'lunar') : '';
                     html += `
                         <div class="bubble-lunar-note ${item.sent ? 'sent-lunar' : ''}" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
                             <div class="bubble-lunar-label">🌙 Lunar Note</div>
                             <div class="bubble-lunar-text">${item.text}</div>
                             ${item.closing ? `<div class="bubble-lunar-closing">${item.closing}</div>` : ''}
                             <div class="message-bubble-time">${item.time || 'Recently'} ${lunarReceipt}</div>
+                            ${lunarReactionsHtml}
                         </div>
                     `;
                 } else if (item.type === 'text') {
@@ -8647,11 +8710,13 @@
                         const st = getReadReceiptStatus(item.createdAt, conv);
                         return `<span class="read-receipt ${st}">✓✓</span>`;
                     })() : '';
+                    const reactionsHtml = (item.isMessage && item.msgIndex >= 0) ? renderReactionsBar(item.msgIndex, 'thread') : '';
                     html += `
                         <div class="message-bubble ${item.sent ? 'sent' : ''}">
                             ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
                             ${item.text ? `<p>${item.text}</p>` : ''}
                             <div class="message-bubble-time">${item.time || 'Recently'} ${textReceipt}</div>
+                            ${reactionsHtml}
                         </div>
                     `;
                     if (item.status === 'In Transit') {
@@ -9149,36 +9214,36 @@
 
         // Large pool of moon-themed songs
         const MOON_SONGS = [
-            { url: 'https://youtu.be/xbvNODMfNHM', title: 'Talking to the Moon — Bruno Mars', short: 'Talking to the Moon' },
-            { url: 'https://youtu.be/nVMOlosNeMM', title: 'Moon River — Audrey Hepburn', short: 'Moon River' },
-            { url: 'https://youtu.be/ZEcqHA7dbwM', title: 'Fly Me to the Moon — Sinatra', short: 'Fly Me to the Moon' },
-            { url: 'https://youtu.be/4Tr0otuiQuU', title: 'Moonlight Sonata — Beethoven', short: 'Moonlight Sonata' },
-            { url: 'https://youtu.be/cGYNuoCigGY', title: 'Dancing in the Moonlight — King Harvest', short: 'Dancing in the Moonlight' },
-            { url: 'https://youtu.be/hgOHRBqFMEI', title: 'Moondance — Van Morrison', short: 'Moondance' },
-            { url: 'https://youtu.be/wQTbkEeCRUE', title: 'Bad Moon Rising — CCR', short: 'Bad Moon Rising' },
-            { url: 'https://youtu.be/kE0pwJ5PMDg', title: 'Moonlight Shadow — Mike Oldfield', short: 'Moonlight Shadow' },
-            { url: 'https://youtu.be/ANBpGBuKADM', title: 'Bark at the Moon — Ozzy Osbourne', short: 'Bark at the Moon' },
-            { url: 'https://youtu.be/rn_YodiJO6k', title: 'Harvest Moon — Neil Young', short: 'Harvest Moon' },
-            { url: 'https://youtu.be/k80UQWWUIYs', title: 'Claro de Luna — Debussy', short: 'Clair de Lune' },
-            { url: 'https://youtu.be/p5fa3yBpG9I', title: 'Blue Moon — The Marcels', short: 'Blue Moon' },
-            { url: 'https://youtu.be/FxzBvqY5PP0', title: 'Total Eclipse of the Heart — Bonnie Tyler', short: 'Total Eclipse of the Heart' },
-            { url: 'https://youtu.be/weidWE4-mEE', title: 'Half Moon Serenade — 半月小夜曲', short: 'Half Moon Serenade' },
-            { url: 'https://youtu.be/6IFoaHLCbNE', title: 'Man on the Moon — R.E.M.', short: 'Man on the Moon' },
-            { url: 'https://youtu.be/OMOGaugKpzs', title: 'Walking on the Moon — The Police', short: 'Walking on the Moon' },
-            { url: 'https://youtu.be/bU1sLx1zhGg', title: 'Rocket Man — Elton John', short: 'Rocket Man' },
-            { url: 'https://youtu.be/KyA9AtUOqRM', title: 'Moon Song — Phoebe Bridgers', short: 'Moon Song' },
-            { url: 'https://youtu.be/HUHC9tYz8ik', title: 'Here Comes the Moon — George Harrison', short: 'Here Comes the Moon' },
-            { url: 'https://youtu.be/v8wLxNIQVCE', title: 'Moonshadow — Cat Stevens', short: 'Moonshadow' },
-            { url: 'https://youtu.be/5IsSpAOD6K8', title: 'Space Oddity — David Bowie', short: 'Space Oddity' },
-            { url: 'https://youtu.be/TfBcJgbGCUk', title: 'To the Moon and Back — Savage Garden', short: 'To the Moon and Back' },
-            { url: 'https://youtu.be/I-BYzaDwNoE', title: 'Counting Stars — OneRepublic', short: 'Counting Stars' },
-            { url: 'https://youtu.be/psuRGfAaju4', title: 'A Sky Full of Stars — Coldplay', short: 'A Sky Full of Stars' },
-            { url: 'https://youtu.be/Qsy7kJyizoc', title: 'The Night We Met — Lord Huron', short: 'The Night We Met' },
-            { url: 'https://youtu.be/RBtlPT23PTM', title: 'I\'ll Follow You into the Dark — Death Cab', short: 'I\'ll Follow You into the Dark' },
-            { url: 'https://youtu.be/VPRjCeoBqrI', title: 'A Thousand Years — Christina Perri', short: 'A Thousand Years' },
-            { url: 'https://youtu.be/aJOTlE1K90k', title: 'Moon — Kanye West', short: 'Moon' },
-            { url: 'https://youtu.be/2OTDilAkKdI', title: 'Lullaby — Sigala & Paloma Faith', short: 'Lullaby' },
-            { url: 'https://youtu.be/e-fA-gBCkj0', title: 'Tonight — West Side Story', short: 'Tonight' },
+            { url: 'https://open.spotify.com/track/2iuZJX9X9P0GKaE93xcPjk', title: 'Talking to the Moon — Bruno Mars', short: 'Talking to the Moon' },
+            { url: 'https://open.spotify.com/track/4hcRMBR9PxDCIG6MbceHqn', title: 'Moon River — Frank Ocean', short: 'Moon River' },
+            { url: 'https://open.spotify.com/track/5b7OgMGTUBLFKZKhcHMpPl', title: 'Fly Me to the Moon — Frank Sinatra', short: 'Fly Me to the Moon' },
+            { url: 'https://open.spotify.com/track/3CuU9JRx4mkyJfMVuaIGBR', title: 'Moonlight Sonata — Beethoven', short: 'Moonlight Sonata' },
+            { url: 'https://open.spotify.com/track/5xJpHo5gchc0peBkmCfziS', title: 'Moondance — Van Morrison', short: 'Moondance' },
+            { url: 'https://open.spotify.com/track/20OFwXhEXf12DzwXmaV7fj', title: 'Bad Moon Rising — CCR', short: 'Bad Moon Rising' },
+            { url: 'https://open.spotify.com/track/3gdewACMIVMEWVbyb8O9sY', title: 'Rocket Man — Elton John', short: 'Rocket Man' },
+            { url: 'https://open.spotify.com/track/72Z17vmmeQKAg8bptWvpVG', title: 'Space Oddity — David Bowie', short: 'Space Oddity' },
+            { url: 'https://open.spotify.com/track/6Uy6K2JZymJCi44B6Ij5cn', title: 'Harvest Moon — Neil Young', short: 'Harvest Moon' },
+            { url: 'https://open.spotify.com/track/1S3JMefVKIx6gBPjRdCOPE', title: 'Clair de Lune — Debussy', short: 'Clair de Lune' },
+            { url: 'https://open.spotify.com/track/0lY11JLscSWjoCiDa8gFaV', title: 'Total Eclipse of the Heart — Bonnie Tyler', short: 'Total Eclipse of the Heart' },
+            { url: 'https://open.spotify.com/track/2C3QkLmK4kNmuRRwkbQzxi', title: 'Moon Song — Phoebe Bridgers', short: 'Moon Song' },
+            { url: 'https://open.spotify.com/track/76LVXPC8MLNhHNDVFBT3Cb', title: 'Moonshadow — Cat Stevens', short: 'Moonshadow' },
+            { url: 'https://open.spotify.com/track/2TfSHkHiFO4gGeldtDBhfz', title: 'To the Moon and Back — Savage Garden', short: 'To the Moon and Back' },
+            { url: 'https://open.spotify.com/track/2tpWsVSb9UEmDRxAl1zhX1', title: 'Counting Stars — OneRepublic', short: 'Counting Stars' },
+            { url: 'https://open.spotify.com/track/0FDzzruyVECATHXKHnpAkG', title: 'A Sky Full of Stars — Coldplay', short: 'A Sky Full of Stars' },
+            { url: 'https://open.spotify.com/track/0QZ5yyl6B6utIWkxeBDxQN', title: 'The Night We Met — Lord Huron', short: 'The Night We Met' },
+            { url: 'https://open.spotify.com/track/6lanRgr6wXibZr8KgzXxBl', title: 'A Thousand Years — Christina Perri', short: 'A Thousand Years' },
+            { url: 'https://open.spotify.com/track/0fFJOwNBXOXUWrDBZyp0tT', title: 'Dancing in the Moonlight — Toploader', short: 'Dancing in the Moonlight' },
+            { url: 'https://open.spotify.com/track/4gMgiXfqyzZLMhsksGmbQV', title: 'Moonlight — XXXTENTACION', short: 'Moonlight' },
+            { url: 'https://open.spotify.com/track/3hRV0jL3vUpRrcy398teAU', title: 'Moon — Kanye West', short: 'Moon' },
+            { url: 'https://open.spotify.com/track/1YQWosTIljIvxAgHWTp7KP', title: 'Moonlight on the River — Mac DeMarco', short: 'Moonlight on the River' },
+            { url: 'https://open.spotify.com/track/3AJwUDP919kvQ9QcozQPxg', title: 'Yellow — Coldplay', short: 'Yellow' },
+            { url: 'https://open.spotify.com/track/4aWmUDTfIPGksMNLV2rQP2', title: 'Slow Dancing in the Dark — Joji', short: 'Slow Dancing in the Dark' },
+            { url: 'https://open.spotify.com/track/3GCL1PBwZJyBfMciiRfJQo', title: 'New Light — John Mayer', short: 'New Light' },
+            { url: 'https://open.spotify.com/track/1mea3bSkSGXuIRvnydlB5b', title: 'Viva la Vida — Coldplay', short: 'Viva la Vida' },
+            { url: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b', title: 'Blinding Lights — The Weeknd', short: 'Blinding Lights' },
+            { url: 'https://open.spotify.com/track/7qiZfU4dY1lWllzX7mPBI3', title: 'Shape of You — Ed Sheeran', short: 'Shape of You' },
+            { url: 'https://open.spotify.com/track/5HCyWlXZPP0y6Gqq8TgA20', title: 'Stairway to Heaven — Led Zeppelin', short: 'Stairway to Heaven' },
+            { url: 'https://open.spotify.com/track/4u7EnebtmKWzUH433cf5Qv', title: 'Bohemian Rhapsody — Queen', short: 'Bohemian Rhapsody' },
         ];
         let lastSongSuggestions = [];
 
@@ -9197,15 +9262,12 @@
         async function searchYouTubeSong() {
             const input = document.getElementById('songInput');
             const query = input.value.trim();
-            if (!query || extractYouTubeId(query)) return;
+            if (!query || extractYouTubeId(query) || extractSpotifyTrackId(query)) return;
             const resultsDiv = document.getElementById('songSearchResults');
             resultsDiv.style.display = 'block';
-            resultsDiv.innerHTML = '<div style="padding:8px;color:var(--text-muted);font-size:12px;">Searching YouTube...</div>';
+            resultsDiv.innerHTML = '<div style="padding:8px;color:var(--text-muted);font-size:12px;">Searching songs...</div>';
             try {
-                // Use YouTube's oEmbed-based search via a public endpoint
-                const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' song')}&sp=EgIQAQ%3D%3D`;
-                // We can't directly call YouTube search API without a key, so we'll search via an iframe approach
-                // Instead, show curated results from our pool that match the query + open YouTube search link
+                // Search curated pool first, then offer Spotify search link
                 const q = query.toLowerCase();
                 const matches = MOON_SONGS.filter(s =>
                     s.title.toLowerCase().includes(q) || s.short.toLowerCase().includes(q)
@@ -9219,14 +9281,14 @@
                         </div>`
                     ).join('');
                 }
-                html += `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(query)}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;text-decoration:none;border-top:1px solid #f0ece4;margin-top:4px;" onmouseover="this.style.background='rgba(53,125,197,0.06)'" onmouseout="this.style.background=''">
+                html += `<a href="https://open.spotify.com/search/${encodeURIComponent(query)}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;text-decoration:none;border-top:1px solid #f0ece4;margin-top:4px;" onmouseover="this.style.background='rgba(53,125,197,0.06)'" onmouseout="this.style.background=''">
                     <span>🔍</span>
-                    <div style="flex:1;font-size:13px;color:var(--blue);font-weight:500;">Search "${query}" on YouTube</div>
+                    <div style="flex:1;font-size:13px;color:var(--blue);font-weight:500;">Search "${query}" on Spotify</div>
                     <span style="font-size:11px;color:var(--text-muted);">↗</span>
                 </a>`;
                 resultsDiv.innerHTML = html;
             } catch(e) {
-                resultsDiv.innerHTML = `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(query)}" target="_blank" style="display:block;padding:10px;font-size:13px;color:var(--blue);text-decoration:none;">🔍 Search "${query}" on YouTube ↗</a>`;
+                resultsDiv.innerHTML = `<a href="https://open.spotify.com/search/${encodeURIComponent(query)}" target="_blank" style="display:block;padding:10px;font-size:13px;color:var(--blue);text-decoration:none;">🔍 Search "${query}" on Spotify ↗</a>`;
             }
         }
 
@@ -9242,11 +9304,18 @@
             }
             return null;
         }
+
+        function extractSpotifyTrackId(url) {
+            if (!url) return null;
+            const m = url.match(/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/);
+            return m ? m[1] : null;
+        }
         
         function onSongInput() {
             const input = document.getElementById('songInput');
             const val = input.value.trim();
             const videoId = extractYouTubeId(val);
+            const spotifyId = extractSpotifyTrackId(val);
             const searchBtn = document.getElementById('songSearchBtn');
             const searchResults = document.getElementById('songSearchResults');
             const suggestions = document.getElementById('songSuggestions');
@@ -9255,8 +9324,28 @@
             const existing = document.getElementById('ytEmbed');
             if (existing) existing.remove();
 
-            if (videoId) {
-                // It's a YouTube URL — embed it
+            if (spotifyId) {
+                // It's a Spotify URL — embed compact player
+                searchBtn.style.display = 'none';
+                searchResults.style.display = 'none';
+                suggestions.style.display = 'none';
+                const title = selectedSongTitle || '';
+                const embed = document.createElement('div');
+                embed.className = 'yt-embed';
+                embed.id = 'ytEmbed';
+                embed.innerHTML = `
+                    <div style="border-radius:12px;overflow:hidden;">
+                        <iframe src="https://open.spotify.com/embed/track/${spotifyId}?utm_source=generator&theme=0" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="border-radius:12px;border:none;"></iframe>
+                    </div>
+                    <div class="yt-embed-bar">
+                        <span class="yt-embed-title">${title || 'Spotify Track'}</span>
+                        <button class="yt-embed-remove" onclick="clearSong()" title="Remove">×</button>
+                    </div>
+                `;
+                const container = document.getElementById('ytEmbedContainer');
+                if (container) container.appendChild(embed);
+            } else if (videoId) {
+                // It's a YouTube URL — embed it (legacy support)
                 searchBtn.style.display = 'none';
                 searchResults.style.display = 'none';
                 suggestions.style.display = 'none';
@@ -9951,11 +10040,19 @@
             const contact = currentContactDetail;
             closeContactDetail();
             closeContactsPage();
-            openModal();
-            setTimeout(() => {
-                selectedRecipient = { name: contact.name, email: contact.email, location: contact.location, isOnMoonpop: contact.isOnMoonpop, linkedProfileId: contact.linkedProfileId };
-                document.getElementById('recipient').value = contact.name;
-            }, 100);
+            // WhatsApp-style: go directly to compose with recipient pre-filled
+            if (!moonData.isVisible) {
+                openMoonDownModal();
+                return;
+            }
+            selectedRecipient = {
+                name: contact.name,
+                email: contact.email,
+                location: contact.location,
+                isOnMoonpop: contact.isOnMoonpop,
+                linkedProfileId: contact.linkedProfileId
+            };
+            openModalForRecipient();
         }
 
         function contactAction(contactName) {
@@ -10405,24 +10502,36 @@
         function openNewContactForMessage() {
             closeNewMessagePicker();
             selectedRecipient = null;
-            openModal();
-            // Jump straight to new contact form
-            setTimeout(() => {
-                goToRecipientStep();
-                showNewContactForm();
-            }, 50);
+            // Open compose modal directly to new contact form
+            showDefaultCompose();
+            document.getElementById('messageModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            // Show new contact form immediately
+            document.getElementById('composeStep1').style.display = 'none';
+            document.getElementById('composeNewContact').style.display = 'block';
+            // Update header
+            const header = document.getElementById('composeHeader');
+            header.innerHTML = `
+                <button class="message-page-back" onclick="backToRecipientPicker()">←</button>
+                <span style="font-weight:700;color:var(--blue);font-size:15px;">New Contact</span>
+                <span style="width:34px;"></span>
+            `;
         }
 
-        // Open compose modal with a pre-selected recipient (skip step 2)
+        // Open compose modal with a pre-selected recipient (WhatsApp-style: always recipient first)
         function openModalForRecipient() {
             showDefaultCompose();
             document.getElementById('messageModal').classList.add('active');
             document.body.style.overflow = 'hidden';
 
+            // Refresh song suggestions each time compose opens
+            refreshSongSuggestions();
+
             // Auto-activate lunar note
             if (!lunarNoteActive) {
                 lunarNoteActive = true;
-                currentPromptSet = getTodaysPromptSet();
+                currentPromptSet = getNextPromptSet();
+                currentLunarTemplate = -1;
                 const ps = PROMPT_SETS[currentPromptSet];
                 for (let i = 0; i < 3; i++) {
                     document.getElementById('lunarLabel' + (i+1)).textContent = ps.prompts[i].label;
@@ -10435,40 +10544,18 @@
             if (selectedRecipient) {
                 const header = document.getElementById('composeHeader');
                 header.innerHTML = `
-                    <button class="message-page-back" onclick="closeModal()" style="font-size:20px;">←</button>
+                    <button class="message-page-back" onclick="backToRecipientPicker()" style="font-size:20px;">←</button>
                     <span style="font-weight:700;color:var(--blue);font-size:15px;">${selectedRecipient.name}</span>
                     <span style="width:34px;"></span>
                 `;
                 const mainBtn = document.getElementById('composeMainBtn');
-                if (mainBtn) mainBtn.textContent = 'Release to the Moon';
+                if (mainBtn) mainBtn.textContent = 'Release to the Moon 🌙';
             }
         }
 
         function openModal() {
-            if (!moonData.isVisible) {
-                // Show moon-down modal instead
-                openMoonDownModal();
-                return;
-            }
-            showDefaultCompose();
-            document.getElementById('messageModal').classList.add('active');
-            document.body.style.overflow = 'hidden';
-
-            // Refresh song suggestions each time compose opens
-            refreshSongSuggestions();
-
-            // Auto-activate lunar note (panel is open by default)
-            if (!lunarNoteActive) {
-                lunarNoteActive = true;
-                currentPromptSet = getNextPromptSet();
-                currentLunarTemplate = -1;
-                const ps = PROMPT_SETS[currentPromptSet];
-                for (let i = 0; i < 3; i++) {
-                    document.getElementById('lunarLabel' + (i+1)).textContent = ps.prompts[i].label;
-                    document.getElementById('lunarInput' + (i+1)).placeholder = ps.prompts[i].placeholder;
-                }
-                goLunarStep(1);
-            }
+            // WhatsApp-style: always pick recipient first
+            openNewMessagePicker();
         }
 
         function openMoonDownModal() {
@@ -10729,6 +10816,14 @@
             resetForm();
         }
 
+        // Go back from compose to contact picker (WhatsApp-style)
+        function backToRecipientPicker() {
+            document.getElementById('messageModal').classList.remove('active');
+            resetForm();
+            // Re-open the contact picker
+            openNewMessagePicker();
+        }
+
         function openPublicModal() {
             if (!moonData.isVisible) {
                 openMoonDownModal();
@@ -10767,7 +10862,7 @@
             const lookupDiv = document.getElementById('emailLookupResult');
             if (lookupDiv) lookupDiv.style.display = 'none';
 
-            // Update header
+            // Update header — back goes to recipient picker
             const header = document.getElementById('composeHeader');
             header.innerHTML = `
                 <button class="message-page-back" onclick="backFromNewContact()">←</button>
@@ -10777,26 +10872,15 @@
         }
 
         function backFromNewContact() {
-            document.getElementById('composeNewContact').style.display = 'none';
-            document.getElementById('composeStep2').style.display = 'block';
-            // Restore step 2 header
-            const header = document.getElementById('composeHeader');
-            header.innerHTML = `
-                <button class="message-page-back" onclick="backToStep1()">←</button>
-                <span style="font-weight:700;color:var(--blue);font-size:15px;">Send to</span>
-                <span style="width:34px;"></span>
-            `;
+            // Go back to recipient picker (WhatsApp-style)
+            document.getElementById('messageModal').classList.remove('active');
+            resetForm();
+            openNewMessagePicker();
         }
         
-        // Compose step navigation (now: message=step1, recipient=step2)
+        // Compose action: recipient is always pre-selected (WhatsApp-style), send directly
         function composeMainAction() {
-            if (selectedRecipient) {
-                // Recipient already picked — send directly
-                handleComposeSend();
-            } else {
-                // No recipient yet — go to step 2
-                goToRecipientStep();
-            }
+            handleComposeSend();
         }
 
         function goToRecipientStep() {
@@ -10841,17 +10925,8 @@
         }
         
         function backToStep1() {
-            document.getElementById('composeStep1').style.display = 'block';
-            document.getElementById('composeStep2').style.display = 'none';
-            document.getElementById('composeNewContact').style.display = 'none';
-
-            // Restore header: X close
-            const header = document.getElementById('composeHeader');
-            header.innerHTML = `
-                <span style="width:34px;"></span>
-                <span style="font-weight:700;color:var(--blue);font-size:15px;">New Moon Message</span>
-                <button class="message-page-back" onclick="closeModal()" style="font-size:20px;">&times;</button>
-            `;
+            // Legacy: now goes back to recipient picker
+            backToRecipientPicker();
         }
         
         // Confirm new contact and go to compose
@@ -10997,12 +11072,56 @@
             
             // Store as selected recipient
             selectedRecipient = { name, email, location: city, isNew: true, isOnMoonpop: isOnMps, linkedProfileId };
-            
-            // Go to recipient step with name filled
-            document.getElementById('recipient').value = name;
+
+            // Save to contacts array
+            const newContact = {
+                name, email, location: city,
+                isOnMoonpop: isOnMps,
+                linkedProfileId
+            };
+            if (!contacts.find(c => c.email === email)) {
+                contacts.push(newContact);
+                if (currentAuthUser) {
+                    sb.from('contacts').insert({
+                        owner_id: currentAuthUser.id,
+                        name: name,
+                        email: email,
+                        city: city,
+                        is_on_moonpop: isOnMps,
+                        linked_profile_id: linkedProfileId
+                    });
+                }
+            }
+
+            // WhatsApp-style: go to compose step with recipient shown in header
             document.getElementById('composeNewContact').style.display = 'none';
-            document.getElementById('composeStep2').style.display = 'block';
-            updateDeliveryInfo();
+            document.getElementById('composeStep1').style.display = 'block';
+
+            // Refresh song suggestions
+            refreshSongSuggestions();
+
+            // Auto-activate lunar note
+            if (!lunarNoteActive) {
+                lunarNoteActive = true;
+                currentPromptSet = getNextPromptSet();
+                currentLunarTemplate = -1;
+                const ps = PROMPT_SETS[currentPromptSet];
+                for (let i = 0; i < 3; i++) {
+                    document.getElementById('lunarLabel' + (i+1)).textContent = ps.prompts[i].label;
+                    document.getElementById('lunarInput' + (i+1)).placeholder = ps.prompts[i].placeholder;
+                }
+                goLunarStep(1);
+            }
+
+            // Update header to show recipient name
+            const header = document.getElementById('composeHeader');
+            header.innerHTML = `
+                <button class="message-page-back" onclick="backToRecipientPicker()" style="font-size:20px;">←</button>
+                <span style="font-weight:700;color:var(--blue);font-size:15px;">${selectedRecipient.name}</span>
+                <span style="width:34px;"></span>
+            `;
+            const mainBtn = document.getElementById('composeMainBtn');
+            if (mainBtn) mainBtn.textContent = 'Release to the Moon 🌙';
         }
         
         // Lunar Note state
@@ -11011,7 +11130,7 @@
         let currentPromptSet = 0;
         let lunarPromptHistory = []; // tracks recently used prompt indices to avoid repeats
 
-        // 30 prompt sets — shuffled each time, never repeats until all used
+        // 100 prompt sets — shuffled each time, never repeats until all used
         const PROMPT_SETS = [
             { prompts: [{ label: 'an emotion', placeholder: 'anything that comes to mind' }, { label: 'a different emotion', placeholder: 'something else entirely' }, { label: 'something you pretend not to care about', placeholder: 'you know the one' }] },
             { prompts: [{ label: 'a color', placeholder: 'the first one you see' }, { label: 'a sound you heard today', placeholder: 'big or small' }, { label: 'a time of day', placeholder: 'morning? 3am?' }] },
@@ -11043,9 +11162,80 @@
             { prompts: [{ label: 'a letter you never sent', placeholder: 'who was it for?' }, { label: 'something sweet', placeholder: 'literally or not' }, { label: 'a thing that always works', placeholder: 'your go-to' }] },
             { prompts: [{ label: 'something that hums', placeholder: 'a fridge? a feeling?' }, { label: 'a pair of shoes', placeholder: 'whose?' }, { label: 'the best part of today', placeholder: 'even if small' }] },
             { prompts: [{ label: 'a wish you outgrew', placeholder: 'what replaced it?' }, { label: 'something crooked', placeholder: 'charmingly so' }, { label: 'the space between two breaths', placeholder: 'what lives there?' }] },
+            // 31–100: new prompt sets
+            { prompts: [{ label: 'a shadow', placeholder: 'yours or someone else\'s' }, { label: 'something forgotten on purpose', placeholder: 'you remember anyway' }, { label: 'a corner of a room', placeholder: 'which room?' }] },
+            { prompts: [{ label: 'a fruit', placeholder: 'ripe or not' }, { label: 'a secret place', placeholder: 'only you know' }, { label: 'a goodbye you didn\'t say', placeholder: 'to whom?' }] },
+            { prompts: [{ label: 'a word you mispronounce', placeholder: 'on purpose or not' }, { label: 'something you collect', placeholder: 'rocks? moments?' }, { label: 'a sound that comforts you', placeholder: 'rain? humming?' }] },
+            { prompts: [{ label: 'a plant', placeholder: 'real or remembered' }, { label: 'something you fixed', placeholder: 'or tried to' }, { label: 'a lie you tell yourself kindly', placeholder: 'the gentle kind' }] },
+            { prompts: [{ label: 'a bridge', placeholder: 'real or metaphorical' }, { label: 'something bitter', placeholder: 'taste or feeling' }, { label: 'the first star you see', placeholder: 'what do you wish?' }] },
+            { prompts: [{ label: 'a kitchen smell', placeholder: 'whose kitchen?' }, { label: 'something you outgrew', placeholder: 'literally or not' }, { label: 'a lullaby', placeholder: 'who sang it?' }] },
+            { prompts: [{ label: 'a coin', placeholder: 'heads or tails?' }, { label: 'something tangled', placeholder: 'headphones? thoughts?' }, { label: 'a view from a window', placeholder: 'which window?' }] },
+            { prompts: [{ label: 'a language you don\'t speak', placeholder: 'but you understand' }, { label: 'something dusty', placeholder: 'shelves? memories?' }, { label: 'an echo', placeholder: 'of what?' }] },
+            { prompts: [{ label: 'a stain', placeholder: 'on what?' }, { label: 'something you do alone', placeholder: 'and like it' }, { label: 'a night that changed something', placeholder: 'what changed?' }] },
+            { prompts: [{ label: 'a map', placeholder: 'of where?' }, { label: 'something you lost and found', placeholder: 'the same or different?' }, { label: 'a ritual before sleep', placeholder: 'every night' }] },
+            { prompts: [{ label: 'a tree you remember', placeholder: 'where was it?' }, { label: 'something that cracks', placeholder: 'ice? knuckles? dawn?' }, { label: 'a name you almost forgot', placeholder: 'whose?' }] },
+            { prompts: [{ label: 'a recipe', placeholder: 'from who?' }, { label: 'something silver', placeholder: 'shiny or worn' }, { label: 'a dare you never took', placeholder: 'do you regret it?' }] },
+            { prompts: [{ label: 'a photograph you\'d take right now', placeholder: 'of what?' }, { label: 'something borrowed and never returned', placeholder: 'oops' }, { label: 'a sound from childhood', placeholder: 'close your eyes' }] },
+            { prompts: [{ label: 'a type of rain', placeholder: 'drizzle? storm? mist?' }, { label: 'something you read twice', placeholder: 'why twice?' }, { label: 'a face in a crowd', placeholder: 'did they see you?' }] },
+            { prompts: [{ label: 'a key', placeholder: 'to what?' }, { label: 'something you\'d say to your past self', placeholder: 'keep it short' }, { label: 'a kind of dark', placeholder: 'cozy? vast? velvet?' }] },
+            { prompts: [{ label: 'a jacket', placeholder: 'whose?' }, { label: 'something that sparkles', placeholder: 'literally or not' }, { label: 'a word your family uses that nobody else does', placeholder: 'what does it mean?' }] },
+            { prompts: [{ label: 'a stone', placeholder: 'smooth or rough?' }, { label: 'something you pretend to understand', placeholder: 'you\'ll figure it out' }, { label: 'the feeling right before music starts', placeholder: 'that pause' }] },
+            { prompts: [{ label: 'a ceiling you stared at', placeholder: 'whose?' }, { label: 'something you did for the first time recently', placeholder: 'how did it go?' }, { label: 'a cloud shape', placeholder: 'what did you see?' }] },
+            { prompts: [{ label: 'a thread', placeholder: 'real or metaphorical' }, { label: 'something you ate standing up', placeholder: 'when?' }, { label: 'a goodbye that was actually a beginning', placeholder: 'to what?' }] },
+            { prompts: [{ label: 'a bell', placeholder: 'church? door? alarm?' }, { label: 'something underground', placeholder: 'roots? secrets? trains?' }, { label: 'a thing you always carry', placeholder: 'in your bag or heart' }] },
+            { prompts: [{ label: 'a fence', placeholder: 'what\'s on the other side?' }, { label: 'something you said too loudly', placeholder: 'where were you?' }, { label: 'a nap', placeholder: 'the best one' }] },
+            { prompts: [{ label: 'a postcard', placeholder: 'from where?' }, { label: 'something scratchy', placeholder: 'wool? voice? record?' }, { label: 'an hour that felt like a minute', placeholder: 'what were you doing?' }] },
+            { prompts: [{ label: 'a mirror', placeholder: 'what did you see?' }, { label: 'something you wave at', placeholder: 'people? planes? goodbye?' }, { label: 'a flavor from childhood', placeholder: 'taste it again' }] },
+            { prompts: [{ label: 'a train', placeholder: 'where was it going?' }, { label: 'something half-done', placeholder: 'will you finish it?' }, { label: 'the sky at 6am', placeholder: 'what color?' }] },
+            { prompts: [{ label: 'a blanket', placeholder: 'warm? heavy? thin?' }, { label: 'something you counted', placeholder: 'stars? steps? days?' }, { label: 'a word that tastes like something', placeholder: 'what flavor?' }] },
+            { prompts: [{ label: 'a path you took once', placeholder: 'would you again?' }, { label: 'something magnetic', placeholder: 'attracting what?' }, { label: 'a thing you learned by accident', placeholder: 'how?' }] },
+            { prompts: [{ label: 'a candle', placeholder: 'what scent?' }, { label: 'something you whispered', placeholder: 'to who?' }, { label: 'a page in a book you dog-eared', placeholder: 'which book?' }] },
+            { prompts: [{ label: 'a river', placeholder: 'fast or slow?' }, { label: 'something you kept from a trip', placeholder: 'a ticket? a feeling?' }, { label: 'a midnight thought', placeholder: 'the recurring one' }] },
+            { prompts: [{ label: 'a scar', placeholder: 'visible or not' }, { label: 'something you arranged carefully', placeholder: 'flowers? words? plans?' }, { label: 'a toast you\'d make right now', placeholder: 'to what?' }] },
+            { prompts: [{ label: 'a pocket', placeholder: 'what\'s in it?' }, { label: 'something that blooms', placeholder: 'flower? idea? friendship?' }, { label: 'the last thing you wrote by hand', placeholder: 'on what?' }] },
+            { prompts: [{ label: 'a ladder', placeholder: 'going up or down?' }, { label: 'something spilled', placeholder: 'milk? secrets? light?' }, { label: 'a thing you\'d like to be good at', placeholder: 'why that?' }] },
+            { prompts: [{ label: 'a curtain', placeholder: 'open or closed?' }, { label: 'something you said yes to too fast', placeholder: 'do you regret it?' }, { label: 'a kind of love', placeholder: 'the quiet kind?' }] },
+            { prompts: [{ label: 'a hat', placeholder: 'whose?' }, { label: 'something you heard in a dream', placeholder: 'words or sounds?' }, { label: 'a thing you do slowly on purpose', placeholder: 'savoring it' }] },
+            { prompts: [{ label: 'a moth', placeholder: 'or a butterfly?' }, { label: 'something you haven\'t told anyone', placeholder: 'not a big deal, just yours' }, { label: 'a patch of sunlight', placeholder: 'where did it fall?' }] },
+            { prompts: [{ label: 'a bruise', placeholder: 'you don\'t remember getting' }, { label: 'something ancient', placeholder: 'old but present' }, { label: 'a conversation with no words', placeholder: 'who was it with?' }] },
+            { prompts: [{ label: 'a knot', placeholder: 'in rope? stomach? wood?' }, { label: 'something that arrives unexpectedly', placeholder: 'a letter? a mood?' }, { label: 'the exact middle of the day', placeholder: 'what happens there?' }] },
+            { prompts: [{ label: 'a shelf', placeholder: 'what\'s on it?' }, { label: 'something out of tune', placeholder: 'a guitar? a day?' }, { label: 'an apology you owe yourself', placeholder: 'for what?' }] },
+            { prompts: [{ label: 'a harbor', placeholder: 'busy or still?' }, { label: 'something you can hear but not see', placeholder: 'what is it?' }, { label: 'a thing you\'d bring to a desert island', placeholder: 'be honest' }] },
+            { prompts: [{ label: 'a lamp', placeholder: 'where is it?' }, { label: 'something you make look easy', placeholder: 'but it isn\'t' }, { label: 'a promise the night makes', placeholder: 'does it keep it?' }] },
+            { prompts: [{ label: 'a stamp', placeholder: 'postage or rubber?' }, { label: 'something you fold', placeholder: 'laundry? paper? feelings?' }, { label: 'a moment you\'d pause', placeholder: 'and stay in forever' }] },
+            { prompts: [{ label: 'a crack', placeholder: 'in what?' }, { label: 'something warm from an oven', placeholder: 'bread? comfort?' }, { label: 'a game you used to play', placeholder: 'with who?' }] },
+            { prompts: [{ label: 'a puddle', placeholder: 'what\'s reflected?' }, { label: 'something you repaired', placeholder: 'did it hold?' }, { label: 'the feeling after a deep breath', placeholder: 'name it' }] },
+            { prompts: [{ label: 'a feather', placeholder: 'from what bird?' }, { label: 'something you misplaced', placeholder: 'your keys? your cool?' }, { label: 'a color you\'d paint your mood', placeholder: 'right now' }] },
+            { prompts: [{ label: 'a vine', placeholder: 'growing where?' }, { label: 'something that clicks', placeholder: 'a lock? an idea?' }, { label: 'the last song you heard', placeholder: 'where were you?' }] },
+            { prompts: [{ label: 'a tide', placeholder: 'coming in or going out?' }, { label: 'something you noticed about a stranger', placeholder: 'just one thing' }, { label: 'a thing you save for later', placeholder: 'do you ever use it?' }] },
+            { prompts: [{ label: 'a spoon', placeholder: 'silver? wooden? plastic?' }, { label: 'something you inherited', placeholder: 'a trait? an object?' }, { label: 'a wish made on something unlikely', placeholder: 'an eyelash? a clock?' }] },
+            { prompts: [{ label: 'a rooftop', placeholder: 'what can you see?' }, { label: 'something you started and stopped', placeholder: 'will you start again?' }, { label: 'a kind of courage', placeholder: 'the small everyday kind' }] },
+            { prompts: [{ label: 'a bookmark', placeholder: 'in which book?' }, { label: 'something that hides in plain sight', placeholder: 'what is it?' }, { label: 'a conversation you\'d have with the moon', placeholder: 'what would you ask?' }] },
+            { prompts: [{ label: 'a compass', placeholder: 'which direction?' }, { label: 'something fragile you held', placeholder: 'did it survive?' }, { label: 'a night that smelled different', placeholder: 'like what?' }] },
+            { prompts: [{ label: 'a drawer you haven\'t opened', placeholder: 'what\'s inside?' }, { label: 'something you overheard', placeholder: 'on purpose or by accident?' }, { label: 'a rhythm', placeholder: 'heartbeat? footsteps? rain?' }] },
+            { prompts: [{ label: 'a photograph that doesn\'t exist', placeholder: 'describe it' }, { label: 'something you returned to', placeholder: 'a place? a habit?' }, { label: 'the space between stars', placeholder: 'what fills it?' }] },
+            { prompts: [{ label: 'a ticket', placeholder: 'to where?' }, { label: 'something you left behind', placeholder: 'on purpose?' }, { label: 'the sound of morning', placeholder: 'in your house' }] },
+            { prompts: [{ label: 'a cup', placeholder: 'half full or half gone?' }, { label: 'something that unravels', placeholder: 'thread? plans? evenings?' }, { label: 'a thing your body remembers', placeholder: 'that your mind forgot' }] },
+            { prompts: [{ label: 'a cloud', placeholder: 'what shape?' }, { label: 'something you gave away', placeholder: 'do you miss it?' }, { label: 'the last time you danced', placeholder: 'alone or with someone?' }] },
+            { prompts: [{ label: 'a wall', placeholder: 'what color?' }, { label: 'something you taught someone', placeholder: 'who learned it?' }, { label: 'a dream you had more than once', placeholder: 'the same one' }] },
+            { prompts: [{ label: 'a wave', placeholder: 'ocean? hand? feeling?' }, { label: 'something you peeled', placeholder: 'an orange? a label? a layer?' }, { label: 'the last time you felt small', placeholder: 'in a good way' }] },
+            { prompts: [{ label: 'a clock', placeholder: 'ticking or digital?' }, { label: 'something you water', placeholder: 'plants? friendships?' }, { label: 'an old song that still works', placeholder: 'hum a few bars' }] },
+            { prompts: [{ label: 'a hill', placeholder: 'steep or gentle?' }, { label: 'something you mended', placeholder: 'with what?' }, { label: 'the feeling of walking barefoot', placeholder: 'on what surface?' }] },
+            { prompts: [{ label: 'a spark', placeholder: 'from what?' }, { label: 'something that surprises you every time', placeholder: 'even though you know' }, { label: 'a road you\'d drive down again', placeholder: 'windows down' }] },
+            { prompts: [{ label: 'a ring', placeholder: 'on which finger?' }, { label: 'something you saved from the rain', placeholder: 'just in time' }, { label: 'a kind of quiet only you know', placeholder: 'where do you find it?' }] },
+            { prompts: [{ label: 'a staircase', placeholder: 'spiral? creaky? grand?' }, { label: 'something you tasted in the dark', placeholder: 'what was it?' }, { label: 'a thing you hope someone remembers about you', placeholder: 'which thing?' }] },
+            { prompts: [{ label: 'a gate', placeholder: 'open or closed?' }, { label: 'something you whistle', placeholder: 'a tune? through your teeth?' }, { label: 'a thing the night sky reminds you of', placeholder: 'every time' }] },
+            { prompts: [{ label: 'a flicker', placeholder: 'of what?' }, { label: 'something you keep in a box', placeholder: 'literal or not' }, { label: 'the feeling of being found', placeholder: 'by who?' }] },
+            { prompts: [{ label: 'a handshake', placeholder: 'firm or gentle?' }, { label: 'something you traced with your finger', placeholder: 'on glass? on skin? in dust?' }, { label: 'a sound the house makes at night', placeholder: 'settling? sighing?' }] },
+            { prompts: [{ label: 'a seed', placeholder: 'planted or not yet' }, { label: 'something you said that echoed', placeholder: 'where did it land?' }, { label: 'a color that doesn\'t have a name', placeholder: 'describe it' }] },
+            { prompts: [{ label: 'an anchor', placeholder: 'holding what?' }, { label: 'something you read on a wall', placeholder: 'graffiti? a sign? a menu?' }, { label: 'the weight of a good day', placeholder: 'how heavy?' }] },
+            { prompts: [{ label: 'a wrinkle', placeholder: 'in fabric? in time?' }, { label: 'something you discovered by walking', placeholder: 'where?' }, { label: 'a sound you make when you\'re alone', placeholder: 'be honest' }] },
+            { prompts: [{ label: 'a footprint', placeholder: 'in sand? in snow?' }, { label: 'something you caught mid-air', placeholder: 'a ball? a thought?' }, { label: 'a ritual you do with someone', placeholder: 'who?' }] },
+            { prompts: [{ label: 'a tunnel', placeholder: 'what\'s at the end?' }, { label: 'something you polished', placeholder: 'shoes? an argument?' }, { label: 'a thing that only exists at night', placeholder: 'name it' }] },
+            { prompts: [{ label: 'a constellation', placeholder: 'real or invented' }, { label: 'something you stacked', placeholder: 'blocks? worries? pancakes?' }, { label: 'the softest thing you own', placeholder: 'touch it right now' }] },
         ];
 
-        // 30 poem templates — (a, b, c) → { lines, closing }
+        // 100 poem templates — (a, b, c) → { lines, closing }
         const lunarTemplates = [
             (a, b, c) => ({ lines: `Under the moon, I feel ${a},\nthen ${b}—no harm.\n${capitalize(c)} is just part of the charm.`, closing: '— the moon is smiling' }),
             (a, b, c) => ({ lines: `A little ${a}, a lot of ${b},\nand somewhere in the middle:\n${c}.`, closing: '— not bad for tonight' }),
@@ -11077,6 +11267,77 @@
             (a, b, c) => ({ lines: `I found ${a} in my pocket.\n${capitalize(b)} was under the pillow.\n${capitalize(c)} was exactly where I left it:\nright here.`, closing: '— nothing\'s lost' }),
             (a, b, c) => ({ lines: `${capitalize(a)} before coffee.\n${capitalize(b)} after dark.\n${capitalize(c)} in that gap\nwhere the day holds its breath.`, closing: '— daily rhythm' }),
             (a, b, c) => ({ lines: `Two truths and a moon:\n${a} is real.\n${capitalize(b)} is real.\n${capitalize(c)}? That one depends\non how the light hits it.`, closing: '— take your pick' }),
+            // 31–100: new templates
+            (a, b, c) => ({ lines: `${capitalize(a)} opened the window.\n${capitalize(b)} climbed through.\n${capitalize(c)} was waiting\non the other side.`, closing: '— come on in' }),
+            (a, b, c) => ({ lines: `The moon whispered ${a}\nto the dark side of ${b}.\n${capitalize(c)} overheard\nand smiled.`, closing: '— walls have ears' }),
+            (a, b, c) => ({ lines: `First: ${a}.\nThen: ${b}.\nAlways: ${c}.`, closing: '— in that order' }),
+            (a, b, c) => ({ lines: `I left ${a} at the door,\ncarried ${b} up the stairs,\nand found ${c}\nalready asleep in my bed.`, closing: '— make yourself at home' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} rang the doorbell.\n${capitalize(b)} answered.\nNeither expected ${c},\nbut there it was.`, closing: '— surprise guest' }),
+            (a, b, c) => ({ lines: `Ingredients for tonight:\n${a}, slightly bruised.\n${capitalize(b)}, room temperature.\n${capitalize(c)}, straight from the garden.`, closing: '— no recipe needed' }),
+            (a, b, c) => ({ lines: `The tide brought in ${a},\ntook away ${b},\nand left ${c}\nshining on the shore.`, closing: '— the moon keeps what it wants' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} fits in a teaspoon.\n${capitalize(b)} fills a room.\n${capitalize(c)} is the size\nof whatever you need it to be.`, closing: '— flexible like that' }),
+            (a, b, c) => ({ lines: `Someone painted ${a}\non the ceiling.\nSomeone else hung ${b}\nfrom the rafters.\n${capitalize(c)} just grew there\non its own.`, closing: '— gallery opening tonight' }),
+            (a, b, c) => ({ lines: `The alarm clock says ${a}.\nThe mirror says ${b}.\nThe moon says ${c},\nand the moon is usually right.`, closing: '— trust the moon' }),
+            (a, b, c) => ({ lines: `I traded ${a} for ${b}\nat the corner of midnight.\nKept ${c}\nin my back pocket\njust in case.`, closing: '— smart move' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} hums a little.\n${capitalize(b)} creaks.\nAnd ${c}?\n${capitalize(c)} doesn't make a sound,\nwhich is how you know it's there.`, closing: '— the quiet ones' }),
+            (a, b, c) => ({ lines: `The postman brought ${a}.\nThe wind brought ${b}.\n${capitalize(c)} just walked in\nwithout knocking.`, closing: '— delivery complete' }),
+            (a, b, c) => ({ lines: `${capitalize(a)}, underlined.\n${capitalize(b)}, circled twice.\n${capitalize(c)}, written in the margin\nwhere no one looks.`, closing: '— annotated night' }),
+            (a, b, c) => ({ lines: `Plant ${a} in April.\nWater with ${b}.\nBy moonrise,\n${c} will have bloomed.`, closing: '— lunar gardening' }),
+            (a, b, c) => ({ lines: `The elevator stopped at ${a}.\nThe doors opened to ${b}.\nI pressed the button for ${c}\nand held my breath.`, closing: '— going up' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} has a shadow\nthat looks like ${b}.\nAnd ${c}?\n${capitalize(c)}'s shadow looks like tomorrow.`, closing: '— look down' }),
+            (a, b, c) => ({ lines: `If ${a} had a key,\nit would unlock ${b}.\nBehind that door:\n${c}, wearing pajamas.`, closing: '— wasn\'t expecting company' }),
+            (a, b, c) => ({ lines: `Tonight I am:\n60% ${a},\n30% ${b},\n10% ${c}.\nThe math doesn't matter.`, closing: '— approximately me' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} knows the shortcut.\n${capitalize(b)} takes the long way.\n${capitalize(c)} never arrives\nbut somehow is always there.`, closing: '— different routes' }),
+            (a, b, c) => ({ lines: `A museum of tonight\nwould display:\n${a} under glass,\n${b} on the wall,\nand ${c} in the gift shop.`, closing: '— admission free' }),
+            (a, b, c) => ({ lines: `The fortune cookie said:\n${a} will lead to ${b}.\n${capitalize(c)} was the lucky number\nall along.`, closing: '— in bed' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} turned off the lights.\n${capitalize(b)} lit a candle.\n${capitalize(c)} sat down\nand the room felt full.`, closing: '— that\'s enough' }),
+            (a, b, c) => ({ lines: `Dear Moon,\nplease file ${a} under "important."\nFile ${b} under "later."\n${capitalize(c)} goes in the drawer\nthat doesn't have a label.`, closing: '— your filing system' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} before the comma.\n${capitalize(b)} after the semicolon.\n${capitalize(c)} in the space\nwhere punctuation gives up.`, closing: '— grammar of the heart' }),
+            (a, b, c) => ({ lines: `The suitcase held ${a}.\nThe carry-on held ${b}.\n${capitalize(c)} rode in my chest\nthe whole flight.`, closing: '— no baggage fee' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} is a Tuesday word.\n${capitalize(b)} is a Saturday word.\n${capitalize(c)} belongs to whatever day\nyou're reading this.`, closing: '— today\'s word' }),
+            (a, b, c) => ({ lines: `The map shows ${a}\nnear the coast of ${b}.\n${capitalize(c)} isn't on any map.\nThat's what makes it real.`, closing: '— off the grid' }),
+            (a, b, c) => ({ lines: `Some nights taste like ${a}.\nOther nights hum like ${b}.\nTonight just whispers\n${c}.\nAnd that's plenty.`, closing: '— enough said' }),
+            (a, b, c) => ({ lines: `I left ${a} on the bus.\n${capitalize(b)} on the bench.\n${capitalize(c)} followed me home\nlike a stray thought.`, closing: '— lost and found' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} is the inhale.\n${capitalize(b)} is the exhale.\n${capitalize(c)} is the pause\nwhere everything rests.`, closing: '— breathe' }),
+            (a, b, c) => ({ lines: `A haiku, almost:\n${a}.\n${capitalize(b)}.\n${capitalize(c)}.\n…close enough.`, closing: '— five-seven-whatever' }),
+            (a, b, c) => ({ lines: `The bottom of the ocean\nhas ${a}.\nThe top of the sky\nhas ${b}.\nRight here, right now,\nI have ${c}.`, closing: '— depth chart' }),
+            (a, b, c) => ({ lines: `Knock knock.\nWho's there?\n${capitalize(a)}.\n${capitalize(a)} who?\n${capitalize(a)} that somehow became ${b}\nwhen ${c} wasn't looking.`, closing: '— the punchline is tenderness' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} pressed record.\n${capitalize(b)} pressed pause.\n${capitalize(c)} pressed play\nat exactly the right moment.`, closing: '— perfect timing' }),
+            (a, b, c) => ({ lines: `The bath water was ${a}.\nThe soap smelled like ${b}.\nAnd ${c} floated\nthe way good things do.`, closing: '— soak it in' }),
+            (a, b, c) => ({ lines: `The first chapter is ${a}.\nThe plot twist is ${b}.\nThe ending?\n${capitalize(c)}, probably.\nI haven't finished yet.`, closing: '— no spoilers' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} wears boots.\n${capitalize(b)} wears slippers.\n${capitalize(c)} goes barefoot\nand never complains.`, closing: '— dressed for the occasion' }),
+            (a, b, c) => ({ lines: `The fridge light illuminated ${a}.\nThe streetlight caught ${b}.\nBut only the moon\ncould see ${c}.`, closing: '— different kinds of light' }),
+            (a, b, c) => ({ lines: `Fold ${a} in half.\nTuck ${b} underneath.\nLeave ${c} on top\nwhere the morning can find it.`, closing: '— origami evening' }),
+            (a, b, c) => ({ lines: `The radio played ${a}.\nI changed the station to ${b}.\n${capitalize(c)} was on every channel.`, closing: '— no escaping it' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} takes the stairs.\n${capitalize(b)} takes the fire escape.\n${capitalize(c)} was already\non the roof.`, closing: '— always one step ahead' }),
+            (a, b, c) => ({ lines: `Three knocks:\n${a}.\n${b}.\n${c}.\nThe door opens\nfrom the inside.`, closing: '— who\'s there?' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} is the headline.\n${capitalize(b)} is the fine print.\n${capitalize(c)} is the part\nthey forgot to publish.`, closing: '— read between the lines' }),
+            (a, b, c) => ({ lines: `I keep ${a}\nin the junk drawer.\n${capitalize(b)}\nin the medicine cabinet.\n${capitalize(c)}\nnext to my heart.`, closing: '— organized chaos' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} fell like snow.\n${capitalize(b)} melted like morning.\n${capitalize(c)} stayed\nthe way good frost does\non the inside of windows.`, closing: '— winter tonight' }),
+            (a, b, c) => ({ lines: `The voicemail said:\n"Hey, it's ${a}.\nJust calling about ${b}.\nAlso—\n${c}.\nOkay, bye."`, closing: '— *beep*' }),
+            (a, b, c) => ({ lines: `Page one: ${a}.\nChapter two: ${b}.\nThe epilogue\nis just ${c},\nrepeated softly.`, closing: '— a short story' }),
+            (a, b, c) => ({ lines: `The bus to ${a}\nstops at ${b}\nevery other Tuesday.\n${capitalize(c)} gets on\nwithout a ticket.`, closing: '— free ride' }),
+            (a, b, c) => ({ lines: `If the moon kept a diary:\nMonday—saw ${a}.\nTuesday—thought about ${b}.\nWednesday—finally understood ${c}.`, closing: '— dear diary' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} rhymes with nothing.\n${capitalize(b)} rhymes with everything.\n${capitalize(c)} doesn't need to rhyme.\nIt just is.`, closing: '— free verse' }),
+            (a, b, c) => ({ lines: `In the garden of tonight:\n${a} is the soil.\n${capitalize(b)} is the rain.\n${capitalize(c)} is whatever grows\nwhen nobody's tending.`, closing: '— wild things' }),
+            (a, b, c) => ({ lines: `${capitalize(a)}, served cold.\n${capitalize(b)}, served warm.\n${capitalize(c)}, served\nat exactly the right temperature\nwithout trying.`, closing: '— bon appétit' }),
+            (a, b, c) => ({ lines: `The password is ${a}.\nThe secret handshake is ${b}.\nThe thing you actually need\nto get in\nis just ${c}.`, closing: '— open sesame' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} borrowed the car.\n${capitalize(b)} called shotgun.\n${capitalize(c)} sat in the back\nwith the windows down,\nsinging.`, closing: '— road trip' }),
+            (a, b, c) => ({ lines: `They bottled ${a} in 2004.\nAged ${b} in oak.\n${capitalize(c)} they served straight,\nno glass needed.`, closing: '— vintage night' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} cast a long shadow.\n${capitalize(b)} cast a short one.\n${capitalize(c)} cast no shadow at all,\nwhich meant the light\nwas coming from inside.`, closing: '— illuminated' }),
+            (a, b, c) => ({ lines: `The clock struck ${a}.\nThe cat knocked over ${b}.\n${capitalize(c)} landed softly,\nlike it knew\nthis would happen.`, closing: '— right on time' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} is the lock.\n${capitalize(b)} is the key.\n${capitalize(c)} is the sound the door makes\nwhen it finally\nswings open.`, closing: '— click' }),
+            (a, b, c) => ({ lines: `A telegram from tonight:\n${a} STOP\n${b} STOP\n${c} NEVER STOP`, closing: '— urgent delivery' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} packed light.\n${capitalize(b)} packed heavy.\n${capitalize(c)} didn't pack at all—\njust showed up\nand fit right in.`, closing: '— travel light' }),
+            (a, b, c) => ({ lines: `The aquarium of tonight holds:\n${a}, swimming slow.\n${capitalize(b)}, near the surface.\n${capitalize(c)}, glowing\nin the deep end.`, closing: '— don\'t tap the glass' }),
+            (a, b, c) => ({ lines: `I put ${a} on the left speaker.\n${capitalize(b)} on the right.\n${capitalize(c)} came through\nin surround sound.`, closing: '— full stereo' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} left a note.\n${capitalize(b)} left a voicemail.\n${capitalize(c)} left\na feeling in the room\nthat stayed warm for hours.`, closing: '— message received' }),
+            (a, b, c) => ({ lines: `The vending machine offered:\nA1: ${a}\nB2: ${b}\nC3: ${c}\nI pressed all three.`, closing: '— hungry tonight' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} wore its Sunday best.\n${capitalize(b)} came in sweatpants.\n${capitalize(c)} came as itself,\nwhich was enough.`, closing: '— dress code: optional' }),
+            (a, b, c) => ({ lines: `The subtitles read:\n[${a} intensifies]\n[${b} softens]\n[${c} remains]`, closing: '— foreign film night' }),
+            (a, b, c) => ({ lines: `I planted ${a} by the window.\nWatered it with ${b}.\nBy morning,\n${c} had bloomed\nwhere nothing was.`, closing: '— moonlight fertilizer' }),
+            (a, b, c) => ({ lines: `${capitalize(a)} drew first.\n${capitalize(b)} colored inside the lines.\n${capitalize(c)} scribbled outside them\nand it was perfect.`, closing: '— art class tonight' }),
+            (a, b, c) => ({ lines: `Last call:\n${a} for the road.\n${capitalize(b)} for the morning.\n${capitalize(c)} for keeps.`, closing: '— closing time' }),
         ];
 
         function capitalize(s) {
@@ -11248,12 +11509,12 @@
                 return;
             }
 
-            // Validate recipient
-            const recipientVal = document.getElementById('recipient').value.trim();
-            if (!recipientVal && !selectedRecipient) {
-                alert('Please select or enter a recipient');
+            // Validate recipient (WhatsApp-style: selectedRecipient always set)
+            if (!selectedRecipient) {
+                alert('Please select a recipient first');
                 return;
             }
+            const recipientVal = selectedRecipient.name;
             
             const textMessage = document.getElementById('messageText').value.trim();
             const songVal = document.getElementById('songInput')?.value.trim() || '';
@@ -11350,19 +11611,19 @@
             document.getElementById('newContactCity').value = '';
             document.getElementById('newContactCityDropdown').classList.remove('active');
             
-            // Restore header to X close
+            // Restore header (will be overridden when openModalForRecipient sets it)
             const header = document.getElementById('composeHeader');
             if (header) {
                 header.innerHTML = `
-                    <span style="width:34px;"></span>
+                    <button class="message-page-back" onclick="closeModal()" style="font-size:20px;">←</button>
                     <span style="font-weight:700;color:var(--blue);font-size:15px;">New Moon Message</span>
-                    <button class="message-page-back" onclick="closeModal()" style="font-size:20px;">&times;</button>
+                    <span style="width:34px;"></span>
                 `;
             }
 
             // Reset main button text
             const mainBtn = document.getElementById('composeMainBtn');
-            if (mainBtn) mainBtn.textContent = 'Continue →';
+            if (mainBtn) mainBtn.textContent = 'Release to the Moon 🌙';
 
             // Switch back to step 1
             showDefaultCompose();
