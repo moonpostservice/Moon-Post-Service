@@ -1,5 +1,5 @@
 // MoonPop Service Worker v3
-const CACHE_NAME = 'moonpop-v3';
+const CACHE_NAME = 'moonpop-v4';
 const STATIC_ASSETS = [
   // Only precache CDN assets (immutable, safe to cache-first)
   // App shell (index.html) is NOT precached — it uses network-first strategy
@@ -51,6 +51,21 @@ self.addEventListener('fetch', (event) => {
 
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
+
+  // Supabase Storage (moon-photos, avatars) — cache-first (immutable uploads)
+  if ((url.hostname.includes('supabase.co') || url.hostname.includes('supabase.in')) &&
+      url.pathname.includes('/storage/v1/object/public/')) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        return cached || fetch(event.request).then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
+        });
+      })
+    );
+    return;
+  }
 
   // Supabase API / Edge Functions — network-only (never serve stale API data)
   if (url.hostname.includes('supabase.co') || url.hostname.includes('supabase.in')) {
