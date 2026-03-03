@@ -9180,13 +9180,25 @@
             const prevKey = currentConversation?.otherKey;
 
             // Find the target message by dbId (stable reference)
+            // IMPORTANT: search currentConversation.messages FIRST, because
+            // loadFullConversationThread() replaces them with different objects
+            // than the global messages array. The reply must go on the object
+            // that renderConversationThread() actually renders.
             let targetDbId = null;
             if (currentConversation) {
                 targetDbId = currentConversation.messages[0]?.dbId;
             } else if (currentMessageIndex >= 0) {
                 targetDbId = messages[currentMessageIndex]?.dbId;
             }
-            let targetMsg = targetDbId ? messages.find(m => m.dbId === targetDbId) : null;
+            let targetMsg = null;
+            if (targetDbId) {
+                if (currentConversation) {
+                    targetMsg = currentConversation.messages.find(m => m.dbId === targetDbId);
+                }
+                if (!targetMsg) {
+                    targetMsg = messages.find(m => m.dbId === targetDbId);
+                }
+            }
             if (!targetMsg) {
                 if (currentConversation) targetMsg = currentConversation.messages[0];
                 else if (currentMessageIndex >= 0) targetMsg = messages[currentMessageIndex];
