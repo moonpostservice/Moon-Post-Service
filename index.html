@@ -7479,8 +7479,13 @@
                 renderMessageDots();
                 checkForNewMessageNotifications();
 
-                // If conversation is open, reload its replies from DB for freshness
-                if (currentConversation) {
+                // If conversation is open, reload the FULL thread from DB
+                // buildConversations() only keeps a subset of messages from the global array.
+                // We need to re-fetch ALL messages for this conversation so replies aren't lost.
+                if (currentConversation && currentConversation.dbConversationId) {
+                    await loadFullConversationThread(currentConversation);
+
+                    // Now load replies + reactions for ALL messages in the full thread
                     const msgIds = currentConversation.messages.filter(m => m.dbId).map(m => m.dbId);
                     if (msgIds.length > 0 && currentAuthUser) {
                         const { data: freshReplies } = await sb.from('replies')
@@ -7504,6 +7509,25 @@
                             currentConversation.messages.forEach(msg => {
                                 if (msg.dbId && replyMap[msg.dbId]) {
                                     msg.replies = replyMap[msg.dbId];
+                                }
+                            });
+                        }
+
+                        // Also load reactions for all messages
+                        const { data: freshReactions } = await sb.from('reactions')
+                            .select('*')
+                            .in('message_id', msgIds);
+                        if (freshReactions) {
+                            const rxnMap = {};
+                            freshReactions.forEach(r => {
+                                if (!rxnMap[r.message_id]) rxnMap[r.message_id] = {};
+                                if (!rxnMap[r.message_id][r.emoji]) rxnMap[r.message_id][r.emoji] = { emoji: r.emoji, count: 0, mine: false };
+                                rxnMap[r.message_id][r.emoji].count++;
+                                if (r.user_id === currentAuthUser.id) rxnMap[r.message_id][r.emoji].mine = true;
+                            });
+                            currentConversation.messages.forEach(msg => {
+                                if (msg.dbId && rxnMap[msg.dbId]) {
+                                    msg.reactions = Object.values(rxnMap[msg.dbId]);
                                 }
                             });
                         }
