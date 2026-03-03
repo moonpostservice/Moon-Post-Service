@@ -6689,18 +6689,46 @@
         }
 
         // Load conversation metadata: unread counts + read receipts from DB
+        // Uses localStorage as fallback when DB read receipts query fails (RLS issues)
+        function getLocalReadReceipts() {
+            try {
+                return JSON.parse(localStorage.getItem('moonpop_read_receipts') || '{}');
+            } catch { return {}; }
+        }
+        function saveLocalReadReceipt(convId) {
+            try {
+                const receipts = getLocalReadReceipts();
+                receipts[convId] = new Date().toISOString();
+                localStorage.setItem('moonpop_read_receipts', JSON.stringify(receipts));
+            } catch {}
+        }
+
         async function loadConversationMetadata() {
             if (!currentAuthUser) return;
             try {
                 // 1. Fetch my read_receipts (to calculate unread counts)
-                const { data: myReceipts } = await sb.from('read_receipts')
+                const { data: myReceipts, error: receiptErr } = await sb.from('read_receipts')
                     .select('conversation_id, last_read_at')
                     .eq('user_id', currentAuthUser.id);
 
+                if (receiptErr) {
+                    console.error('read_receipts SELECT failed:', receiptErr.message, receiptErr.code);
+                }
+
+                // Build receipt map from DB, then merge localStorage fallback
                 const myReceiptMap = {};
-                if (myReceipts) {
+                const localReceipts = getLocalReadReceipts();
+
+                // DB receipts first (authoritative)
+                if (myReceipts && myReceipts.length > 0) {
                     myReceipts.forEach(r => { myReceiptMap[r.conversation_id] = r.last_read_at; });
                 }
+                // Merge localStorage fallback (use whichever is more recent)
+                Object.entries(localReceipts).forEach(([convId, readAt]) => {
+                    if (!myReceiptMap[convId] || new Date(readAt) > new Date(myReceiptMap[convId])) {
+                        myReceiptMap[convId] = readAt;
+                    }
+                });
 
                 // 2. Fetch other participants' read_receipts (for blue checkmarks on sent messages)
                 const myConvIds = conversations.map(c => c.dbConversationId).filter(Boolean);
@@ -6713,7 +6741,6 @@
 
                     if (otherReceipts) {
                         otherReceipts.forEach(r => {
-                            // Keep the most recent read time per conversation
                             if (!otherReceiptMap[r.conversation_id] || new Date(r.last_read_at) > new Date(otherReceiptMap[r.conversation_id])) {
                                 otherReceiptMap[r.conversation_id] = r.last_read_at;
                             }
@@ -8598,9 +8625,11 @@
             page.classList.add('active');
             document.body.style.overflow = 'hidden';
 
-            // Mark conversation as read
-            if (conv.unreadCount > 0 && conv.dbConversationId && currentAuthUser) {
+            // Mark conversation as read (always, even if unreadCount is 0 — keeps receipt fresh)
+            if (conv.dbConversationId && currentAuthUser) {
                 conv.unreadCount = 0;
+                // Always save to localStorage (reliable fallback)
+                saveLocalReadReceipt(conv.dbConversationId);
                 renderMessages(); // Re-render inbox to clear badge
 
                 // Save read receipt in DB — try upsert first, fallback to insert
