@@ -5179,25 +5179,19 @@
 
         // Moon Phase Calculation (real astronomical calculation)
         function getMoonPhase(date = new Date()) {
-            // Calculate moon phase using synodic month
-            const synodicMonth = 29.53058867; // days
-            
-            // Known new moon: January 6, 2000 at 18:14 UTC
-            const knownNewMoon = new Date(Date.UTC(2000, 0, 6, 18, 14, 0));
-            
-            // Days since known new moon
-            const daysSince = (date - knownNewMoon) / (1000 * 60 * 60 * 24);
-            
-            // Current position in cycle (0 to 1)
-            const cyclePosition = (daysSince % synodicMonth) / synodicMonth;
-            
-            // Moon age in days
-            const moonAge = Math.floor((daysSince % synodicMonth));
-            
-            // Illumination (0 to 1, peaks at 0.5 in cycle)
-            const illumination = (1 - Math.cos(cyclePosition * 2 * Math.PI)) / 2;
-            
-            // Determine phase name
+            // Use SunCalc for accurate moon phase data
+            const illum = SunCalc.getMoonIllumination(date);
+            // illum.phase: 0.0–1.0 (0=new, 0.25=first quarter, 0.5=full, 0.75=last quarter)
+            // illum.fraction: 0.0–1.0 (illuminated fraction)
+            // illum.angle: midpoint angle of illuminated limb
+            const cyclePosition = illum.phase;
+            const illumination = illum.fraction;
+
+            // Moon age in days (synodic month ≈ 29.53 days)
+            const synodicMonth = 29.53058867;
+            const moonAge = Math.floor(cyclePosition * synodicMonth);
+
+            // Determine phase name from SunCalc's accurate phase value
             let phaseName;
             if (cyclePosition < 0.025 || cyclePosition >= 0.975) {
                 phaseName = 'New Moon';
@@ -5216,15 +5210,16 @@
             } else {
                 phaseName = 'Waning Crescent';
             }
-            
+
             // Calculate next full moon
             let daysToFull = (0.5 - cyclePosition) * synodicMonth;
             if (daysToFull < 0) daysToFull += synodicMonth;
             const nextFullMoon = new Date(date.getTime() + daysToFull * 24 * 60 * 60 * 1000);
-            
+
             // Moon distance approximation (perigee 356500, apogee 406700)
-            // Simple model based on anomalistic month
             const anomalisticMonth = 27.55455;
+            const knownNewMoon = new Date(Date.UTC(2000, 0, 6, 18, 14, 0));
+            const daysSince = (date - knownNewMoon) / (1000 * 60 * 60 * 24);
             const anomPos = (daysSince % anomalisticMonth) / anomalisticMonth;
             const avgDist = 384400;
             const distAmplitude = 25150;
