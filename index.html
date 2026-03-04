@@ -1156,17 +1156,17 @@
 
         .moon-icon {
             position: absolute;
-            top: -12px;
+            top: -20px;
             left: 50%;
             transform: translateX(-50%);
-            width: 24px;
-            height: 24px;
+            width: 40px;
+            height: 40px;
         }
 
         .moon-icon svg {
             width: 100%;
             height: 100%;
-            filter: drop-shadow(0 2px 4px rgba(255, 85, 88, 0.3));
+            filter: drop-shadow(0 2px 6px rgba(255, 85, 88, 0.4));
         }
 
         /* Message dots on orbit - positioned using rotation like the moon */
@@ -4497,15 +4497,8 @@
 
             <!-- Moon position - brand crescent moon on the orbit stroke -->
             <div class="moon-orbit" id="moonOrbit">
-                <div class="moon-icon">
-                    <!-- Crescent moon icon: coral circle with cream crescent -->
-                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="50" cy="50" r="50" fill="#ff5558"/>
-                        <path d="M75,50 
-                            A35,35 0 1,1 75,50.01 
-                            A25,35 0 1,0 75,50" 
-                            fill="#FDF6E3"/>
-                    </svg>
+                <div class="moon-icon" id="orbitMoonIcon">
+                    <!-- Moon phase icon: dynamically updated by updateMoonPhaseIcon() -->
                 </div>
             </div>
 
@@ -5318,23 +5311,42 @@
             }
         }
 
+        // Moon phase SVG icons (inline, from /moon phases/*.svg)
+        const MOON_PHASE_SVGS = {
+            'New Moon': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0Z" fill="#FF5659"/></svg>',
+            'Waxing Crescent': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0ZM33.8838 14.0244C33.4209 13.9076 32.9627 14.2224 32.7773 14.5469C32.5537 14.9383 32.6251 15.3787 32.9268 15.7354C34.0723 17.0901 34.8115 18.6624 35.2002 20.3838C36.0645 24.2035 34.9348 28.1679 32.1885 30.9834C29.4817 33.7578 25.5076 35.0844 21.5645 34.4805C19.3641 34.1436 17.3781 33.1939 15.6738 31.833C15.3746 31.5943 14.9778 31.5853 14.6211 31.6885C14.3169 31.7768 14.1327 32.0503 14.001 32.3672V32.7861C15.1543 37.2821 18.0658 41.0484 22.3184 43.2051C28.9939 46.591 37.1771 45.0872 42.0947 39.5137C44.4065 36.8946 45.7953 33.5964 45.9756 30.1035C46.0012 29.6101 46.0121 29.1501 45.9814 28.6592L45.9463 28.0947C45.5371 21.4967 40.4917 15.7 33.8838 14.0244Z" fill="#FF5659"/></svg>',
+            'First Quarter': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0ZM29.5 47C39.165 47 47 39.165 47 29.5C47 19.835 39.165 12 29.5 12V47Z" fill="#FF5659"/></svg>',
+            'Waxing Gibbous': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0ZM29.5 12C25.0159 12 21.514 17.4999 20.5 19C19.486 20.5 17.5465 25.0919 17.5 29.5C17.4535 33.9081 18.4995 39.2387 20.25 41.5C22.0005 43.7613 25.2973 47 29.5 47C39.165 47 47 39.165 47 29.5C47 19.835 39.165 12 29.5 12Z" fill="#FF5659"/></svg>',
+            'Full Moon': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><mask id="fm-mask" fill="white"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0Z"/></mask><path d="M30 0V13C39.3888 13 47 20.6112 47 30H60H73C73 6.25176 53.7482 -13 30 -13V0ZM60 30H47C47 39.3888 39.3888 47 30 47V60V73C53.7482 73 73 53.7482 73 30H60ZM30 60V47C20.6112 47 13 39.3888 13 30H0H-13C-13 53.7482 6.25176 73 30 73V60ZM0 30H13C13 20.6112 20.6112 13 30 13V0V-13C6.25176 -13 -13 6.25176 -13 30H0Z" fill="#FF5659" mask="url(#fm-mask)"/></svg>',
+            'Waning Gibbous': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 60C13.4315 60 1.17422e-06 46.5685 2.62268e-06 30C4.07115e-06 13.4315 13.4315 -4.07115e-06 30 -2.62268e-06C46.5685 -1.17422e-06 60 13.4315 60 30C60 46.5685 46.5685 60 30 60ZM30.5 48C34.9841 48 38.486 42.5001 39.5 41C40.514 39.5 42.4535 34.9081 42.5 30.5C42.5465 26.0919 41.5005 20.7613 39.75 18.5C37.9995 16.2387 34.7027 13 30.5 13C20.835 13 13 20.835 13 30.5C13 40.165 20.835 48 30.5 48Z" fill="#FF5659"/></svg>',
+            'Last Quarter': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 60C13.4315 60 1.17422e-06 46.5685 2.62268e-06 30C4.07115e-06 13.4315 13.4315 -4.07115e-06 30 -2.62268e-06C46.5685 -1.17422e-06 60 13.4315 60 30C60 46.5685 46.5685 60 30 60ZM30.5 13C20.835 13 13 20.835 13 30.5C13 40.165 20.835 48 30.5 48L30.5 13Z" fill="#FF5659"/></svg>',
+            'Waning Crescent': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0ZM27.2236 14.5469C27.0383 14.2226 26.5808 13.9079 26.1182 14.0244C19.5103 15.7 14.4648 21.4967 14.0557 28.0947L14.0195 28.6592C13.9889 29.1501 14.0008 29.6101 14.0264 30.1035C14.2067 33.5964 15.5945 36.8946 17.9062 39.5137C22.8238 45.0873 31.007 46.5909 37.6826 43.2051C41.9352 41.0485 44.8466 37.2821 46 32.7861V32.3672C45.8683 32.0502 45.6842 31.7767 45.3799 31.6885C45.0232 31.5854 44.6273 31.5944 44.3281 31.833C42.6238 33.1941 40.6379 34.1436 38.4375 34.4805C34.4943 35.0846 30.5203 33.7578 27.8135 30.9834C25.067 28.1679 23.9364 24.2036 24.8008 20.3838C25.1895 18.6624 25.9287 17.0901 27.0742 15.7354C27.376 15.3786 27.4474 14.9384 27.2236 14.5469Z" fill="#FF5659"/></svg>'
+        };
+
+        // Update the orbit moon icon to match the current phase
+        function updateMoonPhaseIcon() {
+            const iconEl = document.getElementById('orbitMoonIcon');
+            if (!iconEl) return;
+            const phase = moonData.phase || getMoonPhase();
+            const phaseName = phase.phaseName || 'Waxing Crescent';
+            const svg = MOON_PHASE_SVGS[phaseName] || MOON_PHASE_SVGS['Waxing Crescent'];
+            iconEl.innerHTML = svg;
+        }
+
         // Update moon display
         function updateMoonDisplay() {
             const phase = getMoonPhase();
-            
-            // Header moon icon removed
-            
-            
+
+            // Update orbit moon phase icon to match real-time phase
+            moonData.phase = phase;
+            updateMoonPhaseIcon();
+
+
             // Populate moon data bar
             const ageBarEl = document.getElementById('moonAgeBar');
             const distBarEl = document.getElementById('moonDistanceBar');
             if (ageBarEl) ageBarEl.textContent = phase.moonAge + ' days';
             if (distBarEl) distBarEl.textContent = phase.distance.toLocaleString() + ' km';
-            
-            // Tonight's moon visual removed
-            
-            // Store phase data
-            moonData.phase = phase;
             
             // Draw in sticky header
             const headerSvg = document.getElementById('headerMoonSvg');
