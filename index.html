@@ -8410,11 +8410,9 @@
             const pad = (n) => String(n).padStart(2, '0');
             const timerStr = `${pad(countdown.hours)}:${pad(countdown.minutes)}:${pad(countdown.seconds)}`;
 
-            // Count incoming messages (received that are in_transit OR released but moon-gated)
-            const pendingMessages = messages.filter(m => m.type === 'received' && (m.status === 'In Transit' || m.status === 'Arriving')).length;
-            // Also count released messages waiting to be revealed when moon rises
-            const moonGatedMessages = !moonData.isVisible ? messages.filter(m => m.type === 'received' && !m.contentVisible).length : 0;
-            const totalWaiting = Math.max(pendingMessages, moonGatedMessages);
+            // Count genuinely NEW unread messages (not already-read old messages)
+            // Uses conversation unread counts which are based on read receipts
+            const totalWaiting = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
 
             // If no location set yet, show a prompt
             if (!moonData.userLat) {
