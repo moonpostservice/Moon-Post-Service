@@ -7017,12 +7017,15 @@
                     const senderCity = sp?.city || 'Unknown';
 
                     // Determine if message content should be revealed
-                    // Moon must be in user's horizon to see received message content
+                    // The moon being in the user's sky IS the release gate.
+                    // Server-side status (in_transit/released) is a background mechanism
+                    // and shouldn't block visibility when the moon is actually up.
                     const isReleased = m.status === 'released';
                     const releasePassed = m.release_at && new Date(m.release_at) <= new Date();
                     const noReleaseTime = !m.release_at;
-                    const normallyVisible = isReleased || releasePassed || noReleaseTime;
-                    const contentVisible = moonData.isVisible && normallyVisible;
+                    const serverReleased = isReleased || releasePassed || noReleaseTime;
+                    // Moon visible = messages are readable. When moon is down, fall back to server status.
+                    const contentVisible = moonData.isVisible || serverReleased;
 
                     allMessages.push({
                         dbId: m.id,
@@ -8627,9 +8630,9 @@
                     const isReleased = m.status === 'released';
                     const releasePassed = m.release_at && new Date(m.release_at) <= new Date();
                     const noReleaseTime = !m.release_at;
-                    const normallyVisible = isReleased || releasePassed || noReleaseTime;
-                    // Sent messages always visible; received require moon in horizon
-                    const contentVisible = isSent || (moonData.isVisible && normallyVisible);
+                    const serverReleased = isReleased || releasePassed || noReleaseTime;
+                    // Sent messages always visible; received: moon visible OR server-released
+                    const contentVisible = isSent || moonData.isVisible || serverReleased;
 
                     // For sender name: use profile, then recipient_name ONLY for sent messages
                     // (for received messages, recipient_name = current user, NOT the sender)
