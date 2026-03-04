@@ -5325,7 +5325,12 @@
             const phase = moonData.phase || getMoonPhase();
             const phaseName = phase.phaseName || 'Waxing Crescent';
             const svg = MOON_PHASE_SVGS[phaseName] || MOON_PHASE_SVGS['Waxing Crescent'];
-            iconEl.innerHTML = svg;
+            // Inject a background circle (matching page bg) so the orbit ring
+            // doesn't show through the transparent parts of the moon icon
+            iconEl.innerHTML = svg.replace(
+                /(<svg[^>]*>)/,
+                '$1<circle cx="30" cy="30" r="30" fill="#FCF0D9"/>'
+            );
         }
 
         // Update moon display
