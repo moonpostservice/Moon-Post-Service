@@ -5826,11 +5826,21 @@
         }
         
         // Main: calculate moonrise, moonset, visibility, position
+        let _prevMoonVisible = null; // Track visibility transitions
         function calculateMoonTimes(lat, lon) {
             const now = new Date();
             const tz = moonData.userTz;
             const visible = isMoonVisible(now, lat, lon);
+            const visibilityChanged = _prevMoonVisible !== null && _prevMoonVisible !== visible;
+            _prevMoonVisible = visible;
             moonData.isVisible = visible;
+
+            // When moon visibility changes (rise or set), reload messages
+            // so contentVisible gets recalculated for all received messages
+            if (visibilityChanged && _appDataLoaded) {
+                console.log('[moon] Visibility changed to', visible, '— reloading messages');
+                debouncedReloadMessages();
+            }
             
             // We need to find the moonrise/moonset pair that brackets
             // the CURRENT visible period, plus the next moonrise.
