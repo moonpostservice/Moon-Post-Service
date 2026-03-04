@@ -7022,15 +7022,10 @@
                     const senderCity = sp?.city || 'Unknown';
 
                     // Determine if message content should be revealed
-                    // The moon being in the user's sky IS the release gate.
-                    // Server-side status (in_transit/released) is a background mechanism
-                    // and shouldn't block visibility when the moon is actually up.
-                    const isReleased = m.status === 'released';
-                    const releasePassed = m.release_at && new Date(m.release_at) <= new Date();
-                    const noReleaseTime = !m.release_at;
-                    const serverReleased = isReleased || releasePassed || noReleaseTime;
-                    // Moon visible = messages are readable. When moon is down, fall back to server status.
-                    const contentVisible = moonData.isVisible || serverReleased;
+                    // Rule: Moon MUST be in your sky to read received messages.
+                    // When moon is up, ignore server status (pg_cron may lag).
+                    // When moon is down, content is always hidden.
+                    const contentVisible = !!moonData.isVisible;
 
                     allMessages.push({
                         dbId: m.id,
@@ -8630,12 +8625,8 @@
                     const rp = m.recipient_id ? profileMap[m.recipient_id] : null;
                     const otherProfile = isSent ? rp : sp;
 
-                    const isReleased = m.status === 'released';
-                    const releasePassed = m.release_at && new Date(m.release_at) <= new Date();
-                    const noReleaseTime = !m.release_at;
-                    const serverReleased = isReleased || releasePassed || noReleaseTime;
-                    // Sent messages always visible; received: moon visible OR server-released
-                    const contentVisible = isSent || moonData.isVisible || serverReleased;
+                    // Sent messages always visible; received: moon MUST be in sky
+                    const contentVisible = isSent || !!moonData.isVisible;
 
                     // For sender name: use profile, then recipient_name ONLY for sent messages
                     // (for received messages, recipient_name = current user, NOT the sender)
@@ -12031,11 +12022,14 @@
             const recipientMoonrise = getRecipientMoonrise(pendingMessage.location);
             let releaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
 
-            // Bug fix #3: If moonrise can't be calculated, always instant-deliver.
-            // Never allow in_transit with null release_at (causes messages to be stuck forever).
-            const recipientOnline = recipientId && onlineUsers[recipientId];
-            const moonriseVerySoon = recipientMoonrise && recipientMoonrise.hoursUntil < (5/60);
-            const instantDeliver = recipientOnline || !releaseAt || moonriseVerySoon;
+            // Check if recipient's moon is currently in their sky
+            const recipientMoonStatus = getContactMoonStatus(pendingMessage.location);
+            const recipientMoonUp = recipientMoonStatus && recipientMoonStatus.isUp;
+
+            // Instant deliver only if:
+            // - Recipient's moon is currently up (they can read it now), OR
+            // - Can't calculate moonrise (no city data — don't leave it stuck)
+            const instantDeliver = recipientMoonUp || !releaseAt;
             const messageStatus = instantDeliver ? 'released' : 'in_transit';
 
             // Safety: if somehow still in_transit but no release_at, set a 24h fallback
@@ -12157,6 +12151,8 @@
                 lunarNote: pendingMessage.lunarNoteText ? { text: pendingMessage.lunarNoteText, closing: pendingMessage.lunarClosing || '' } : null,
                 songUrl: pendingMessage.song || null,
                 photoUrl: messagePhotoUrl || null,
+                releaseAt: releaseAt || null,
+                contentVisible: true,
                 reactions: [],
                 replies: []
             });
