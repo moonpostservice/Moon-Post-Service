@@ -39,6 +39,30 @@
             overflow-x: hidden;
         }
 
+        /* SVG Icon utility classes */
+        .app-icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.125em;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+        .app-icon.sm { width: 14px; height: 14px; }
+        .app-icon.md { width: 18px; height: 18px; }
+        .app-icon.lg { width: 24px; height: 24px; }
+        .app-icon.xl { width: 32px; height: 32px; }
+        .app-icon.xxl { width: 40px; height: 40px; }
+
+        /* Moon phase icon specific - circular with subtle bg */
+        .phase-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .phase-icon .app-icon { fill: none; } /* phases use their own fills */
+
         /* Header */
         .header {
             display: flex;
@@ -1074,6 +1098,27 @@
             position: relative;
         }
 
+        /* Moon illustration background inside the ring */
+        .orbit-bg-illustration {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 95%;
+            height: 95%;
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .orbit-bg-illustration img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
         /* Moonrise/moonset horizon markers on the orbit stroke */
         .horizon-marker {
             position: absolute;
@@ -1932,6 +1977,32 @@
         .message-dot.releasing {
             opacity: 1;
             transform: translateX(-50%) scale(1.1);
+        }
+
+        /* Incoming message dots on orbit ring */
+        .message-dot.incoming {
+            background-color: var(--blue);
+            animation: incomingPulse 2s ease-in-out infinite;
+        }
+
+        .message-dot.incoming:hover {
+            box-shadow: 0 0 12px rgba(53, 125, 197, 0.5);
+        }
+
+        @keyframes incomingPulse {
+            0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.2); }
+        }
+
+        /* Incoming transit progress bar (blue-to-moon gradient) */
+        .transit-progress-bar.incoming {
+            background: linear-gradient(90deg, var(--blue), #8bb8e8);
+        }
+
+        /* Arriving badge style */
+        .message-status-badge.arriving {
+            background: rgba(53, 125, 197, 0.12);
+            color: var(--blue);
         }
 
         /* Toast notification */
@@ -4250,6 +4321,155 @@
     <!-- EmailJS removed — email now sent via Supabase Edge Function (send-email) -->
 </head>
 <body>
+    <!-- ======================== -->
+    <!-- SVG ICON SPRITE SHEET   -->
+    <!-- ======================== -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+        <!-- MOON PHASE ICONS (viewBox 0 0 32 32) -->
+        <symbol id="icon-new-moon" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#1a2332" stroke="#357dc5" stroke-width="1" stroke-opacity="0.3"/>
+        </symbol>
+        <symbol id="icon-waxing-crescent" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#1a2332"/>
+            <path d="M16,2 A14,14 0 0,1 16,30 A8,14 0 0,0 16,2" fill="#FDF6E3"/>
+        </symbol>
+        <symbol id="icon-first-quarter" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#1a2332"/>
+            <path d="M16,2 A14,14 0 0,1 16,30 L16,2 Z" fill="#FDF6E3"/>
+        </symbol>
+        <symbol id="icon-waxing-gibbous" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#FDF6E3"/>
+            <path d="M16,2 A14,14 0 0,0 16,30 A8,14 0 0,1 16,2" fill="#1a2332"/>
+        </symbol>
+        <symbol id="icon-full-moon" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#FDF6E3"/>
+            <circle cx="16" cy="16" r="13.5" fill="none" stroke="#d4c9a8" stroke-width="0.5" opacity="0.5"/>
+            <circle cx="11" cy="12" r="2.5" fill="#e8dcc6" opacity="0.3"/>
+            <circle cx="19" cy="18" r="3" fill="#e8dcc6" opacity="0.25"/>
+            <circle cx="14" cy="21" r="1.5" fill="#e8dcc6" opacity="0.2"/>
+        </symbol>
+        <symbol id="icon-waning-gibbous" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#FDF6E3"/>
+            <path d="M16,2 A14,14 0 0,1 16,30 A8,14 0 0,0 16,2" fill="#1a2332"/>
+        </symbol>
+        <symbol id="icon-last-quarter" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#1a2332"/>
+            <path d="M16,2 A14,14 0 0,0 16,30 L16,2 Z" fill="#FDF6E3"/>
+        </symbol>
+        <symbol id="icon-waning-crescent" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#1a2332"/>
+            <path d="M16,2 A14,14 0 0,0 16,30 A8,14 0 0,1 16,2" fill="#FDF6E3"/>
+        </symbol>
+
+        <!-- UI ICONS -->
+        <!-- Lunar Note (crescent + sparkle) -->
+        <symbol id="icon-lunar-note" viewBox="0 0 24 24">
+            <path d="M12,3 A8,8 0 1,0 12,21 A6,8 0 1,1 12,3" fill="currentColor" opacity="0.9"/>
+            <circle cx="18" cy="5" r="1" fill="currentColor"/>
+            <circle cx="20" cy="8" r="0.6" fill="currentColor" opacity="0.6"/>
+        </symbol>
+
+        <!-- Orbiting (ring with dot) -->
+        <symbol id="icon-orbiting" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/>
+            <circle cx="12" cy="4" r="2.5" fill="currentColor"/>
+        </symbol>
+
+        <!-- On Its Way (crescent with motion lines) -->
+        <symbol id="icon-on-its-way" viewBox="0 0 24 24">
+            <path d="M14,4 A8,8 0 1,0 14,20 A5.5,8 0 1,1 14,4" fill="currentColor" opacity="0.85"/>
+            <line x1="2" y1="10" x2="6" y2="10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
+            <line x1="1" y1="13" x2="5" y2="13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
+            <line x1="3" y1="16" x2="6" y2="16" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+        </symbol>
+
+        <!-- Contacts / People -->
+        <symbol id="icon-contacts" viewBox="0 0 24 24">
+            <circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M2,20 Q2,14 9,14 Q16,14 16,20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="17" cy="9" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+            <path d="M15,15 Q17,13 21,15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        </symbol>
+
+        <!-- Compose / New Message (quill pen) -->
+        <symbol id="icon-compose" viewBox="0 0 24 24">
+            <path d="M16,3 L21,8 L8,21 L3,21 L3,16 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            <line x1="13" y1="6" x2="18" y2="11" stroke="currentColor" stroke-width="1.8"/>
+        </symbol>
+
+        <!-- Send (paper plane) -->
+        <symbol id="icon-send" viewBox="0 0 24 24">
+            <path d="M3,3 L21,12 L3,21 L6,12 Z" fill="currentColor" opacity="0.9"/>
+        </symbol>
+
+        <!-- Back Arrow -->
+        <symbol id="icon-back" viewBox="0 0 24 24">
+            <polyline points="15,4 7,12 15,20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </symbol>
+
+        <!-- Close (X) -->
+        <symbol id="icon-close" viewBox="0 0 24 24">
+            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </symbol>
+
+        <!-- Settings Gear -->
+        <symbol id="icon-settings" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M12,1 L13.5,4 L16.5,3 L16,6 L19.5,7 L17.5,9.5 L20,12 L17.5,14.5 L19.5,17 L16,18 L16.5,21 L13.5,20 L12,23 L10.5,20 L7.5,21 L8,18 L4.5,17 L6.5,14.5 L4,12 L6.5,9.5 L4.5,7 L8,6 L7.5,3 L10.5,4 Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        </symbol>
+
+        <!-- Location Pin -->
+        <symbol id="icon-location" viewBox="0 0 24 24">
+            <path d="M12,2 C8,2 5,5.5 5,9.5 C5,15 12,22 12,22 C12,22 19,15 19,9.5 C19,5.5 16,2 12,2 Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="12" cy="9.5" r="2.5" fill="currentColor" opacity="0.4"/>
+        </symbol>
+
+        <!-- Bell (notifications) -->
+        <symbol id="icon-bell" viewBox="0 0 24 24">
+            <path d="M12,3 C8.5,3 6,6 6,9 L6,14 L4,17 L20,17 L18,14 L18,9 C18,6 15.5,3 12,3 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            <path d="M10,17 Q10,20 12,20 Q14,20 14,17" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        </symbol>
+
+        <!-- Sign Out -->
+        <symbol id="icon-signout" viewBox="0 0 24 24">
+            <path d="M14,4 L4,4 L4,20 L14,20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="10,12 20,12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <polyline points="17,9 20,12 17,15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </symbol>
+
+        <!-- Moon Key (key + crescent) -->
+        <symbol id="icon-moonkey" viewBox="0 0 24 24">
+            <circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="8" cy="8" r="2" fill="currentColor" opacity="0.3"/>
+            <line x1="12" y1="12" x2="20" y2="20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="18" y1="18" x2="20" y2="16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </symbol>
+
+        <!-- Circle (moon circle group) -->
+        <symbol id="icon-circle" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 2"/>
+            <circle cx="12" cy="5" r="2" fill="currentColor" opacity="0.7"/>
+            <circle cx="7" cy="17" r="2" fill="currentColor" opacity="0.7"/>
+            <circle cx="17" cy="17" r="2" fill="currentColor" opacity="0.7"/>
+        </symbol>
+
+        <!-- Reactions: moon phases as reaction icons -->
+        <symbol id="icon-react-new" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="8" fill="#1a2332" stroke="#357dc5" stroke-width="0.5" stroke-opacity="0.4"/>
+        </symbol>
+        <symbol id="icon-react-half" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="8" fill="#1a2332"/>
+            <path d="M10,2 A8,8 0 0,1 10,18 L10,2 Z" fill="#FDF6E3"/>
+        </symbol>
+        <symbol id="icon-react-full" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="8" fill="#FDF6E3"/>
+            <circle cx="10" cy="10" r="7.5" fill="none" stroke="#d4c9a8" stroke-width="0.5"/>
+            <circle cx="7" cy="8" r="1.5" fill="#e8dcc6" opacity="0.3"/>
+            <circle cx="12" cy="12" r="2" fill="#e8dcc6" opacity="0.25"/>
+        </symbol>
+    </svg>
+
     <!-- Header -->
     <header class="header">
         <svg class="logo" viewBox="0 0 529.49 72.65" xmlns="http://www.w3.org/2000/svg">
@@ -4427,7 +4647,7 @@
                     </div>
                 </div>
                 <button class="onboarding-primary" id="authSendBtn" onclick="sendMoonKey()">
-                    Send Moon Key 🌙
+                    Send Moon Key <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>
                 </button>
                 <p class="auth-note">No password needed. We'll send a 6-digit code to your inbox.</p>
             </div>
@@ -4463,7 +4683,7 @@
     <!-- Moon Down Modal (when trying to compose) -->
     <div class="modal-overlay" id="moonDownModal">
         <div class="modal moon-down-modal">
-            <button class="modal-close" onclick="closeMoonDownModal()">&times;</button>
+            <button class="modal-close" onclick="closeMoonDownModal()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-close"/></svg></button>
             <div class="moon-down-content">
                 <div class="moon-down-icon"></div>
                 <h2>Moon below horizon</h2>
@@ -4491,6 +4711,11 @@
     <main class="main-content">
         <div class="orbit-container">
             <div class="orbit-ring"></div>
+
+            <!-- Moon illustration background -->
+            <div class="orbit-bg-illustration">
+                <img src="assests/moonillustrationinsiering.svg" alt="" aria-hidden="true">
+            </div>
 
             <!-- Message dots - positioned dynamically by JS based on recipient moonrise -->
             <div id="messageDots"></div>
@@ -4559,9 +4784,9 @@
             <div class="inbox-header">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <span class="inbox-title">INBOX</span>
-                    <button onclick="openContactsPage()" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 6px;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Contacts">👥</button>
+                    <button onclick="openContactsPage()" style="background:none;border:none;cursor:pointer;padding:2px 6px;opacity:0.7;transition:opacity 0.2s;color:var(--blue);" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Contacts"><svg class="app-icon lg"><use href="#icon-contacts"/></svg></button>
                 </div>
-                <button class="new-message-btn" onclick="openNewMessagePicker()">+</button>
+                <button class="new-message-btn" onclick="openNewMessagePicker()"><svg class="app-icon lg"><use href="#icon-compose"/></svg></button>
             </div>
             <!-- Shared Sky as first row (public chat) -->
             <div class="shared-sky-row" onclick="openSharedSkyModal()">
@@ -4576,7 +4801,7 @@
             <div id="circleRows"><!-- Populated by JS --></div>
             <!-- Create new circle -->
             <div class="create-circle-option" onclick="openCreateCircle()">
-                <div class="create-circle-icon">+</div>
+                <div class="create-circle-icon"><svg class="app-icon" style="width:20px;height:20px;color:var(--blue)"><use href="#icon-circle"/></svg></div>
                 <span>New Moon Circle</span>
             </div>
             <ul class="message-list" id="messageList">
@@ -4589,7 +4814,7 @@
     <div class="message-page" id="sharedSkyPage">
         <div class="message-page-inner">
             <div class="message-page-header" style="justify-content:space-between;">
-                <button class="message-page-back" onclick="closeSharedSkyModal()">←</button>
+                <button class="message-page-back" onclick="closeSharedSkyModal()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
                 <span style="font-weight:700;color:var(--blue);font-size:15px;">🌍 Shared Sky</span>
                 <span style="width:34px;"></span>
             </div>
@@ -4607,7 +4832,7 @@
                     <label for="sharedSkyPhotoInput" style="cursor:pointer;font-size:20px;padding:4px;">🌕</label>
                     <input type="file" id="sharedSkyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleSharedSkyPhoto(this)">
                     <input type="text" class="message-page-input" placeholder="Share something with the sky..." id="sharedSkyInput" onkeydown="if(event.key==='Enter')sendSharedSkyMessage()">
-                    <button class="message-page-send" onclick="sendSharedSkyMessage()">↑</button>
+                    <button class="message-page-send" onclick="sendSharedSkyMessage()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
                 </div>
             </div>
         </div>
@@ -4637,7 +4862,7 @@
     <div class="message-page" id="newMessagePicker">
         <div class="message-page-inner">
             <div class="message-page-header" style="justify-content:space-between;">
-                <button class="message-page-back" onclick="closeNewMessagePicker()">←</button>
+                <button class="message-page-back" onclick="closeNewMessagePicker()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
                 <span style="font-weight:700;color:var(--blue);font-size:15px;">New Message</span>
                 <span style="width:34px;"></span>
             </div>
@@ -4654,7 +4879,7 @@
     <div class="message-page" id="circleDetailPage">
         <div class="message-page-inner">
             <div class="message-page-header" style="justify-content:space-between;">
-                <button class="message-page-back" onclick="closeCircleDetail()">←</button>
+                <button class="message-page-back" onclick="closeCircleDetail()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
                 <span id="circleDetailTitle" style="font-weight:700;color:var(--blue);font-size:15px;">Moon Circle</span>
                 <span style="width:34px;"></span>
             </div>
@@ -4668,7 +4893,7 @@
     <div class="message-page" id="createCirclePage">
         <div class="message-page-inner">
             <div class="message-page-header" style="justify-content:space-between;">
-                <button class="message-page-back" onclick="closeCreateCircle()">←</button>
+                <button class="message-page-back" onclick="closeCreateCircle()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
                 <span style="font-weight:700;color:var(--blue);font-size:15px;">New Moon Circle</span>
                 <span style="width:34px;"></span>
             </div>
@@ -4739,7 +4964,7 @@
                         <div class="lunar-note-inline" id="lunarNoteInline">
                             <div class="lunar-note-panel" id="lunarNotePanel" style="display: block;">
                                 <div class="lunar-panel-header">
-                                    <span class="lunar-panel-label">🌙 Lunar Note</span>
+                                    <span class="lunar-panel-label"><svg class="app-icon sm" style="color:var(--blue)"><use href="#icon-lunar-note"/></svg> Lunar Note</span>
                                     <button class="lunar-panel-close" onclick="toggleLunarNote()" title="Remove Lunar Note">&times;</button>
                                 </div>
                                 <p class="lunar-intro">Give me three things. The moon does the rest.</p>
@@ -4767,7 +4992,7 @@
                                         <label class="lunar-step-label" id="lunarLabel2">a different emotion</label>
                                         <input type="text" id="lunarInput2" class="lunar-input" placeholder="something else entirely" autocomplete="off">
                                         <div class="lunar-step-nav">
-                                            <button class="lunar-step-back" onclick="goLunarStep(1)">← Back</button>
+                                            <button class="lunar-step-back" onclick="goLunarStep(1)"><svg class="app-icon sm"><use href="#icon-back"/></svg> Back</button>
                                             <button class="lunar-step-next" id="lunarNext2" onclick="goLunarStep(3)" disabled>Next →</button>
                                         </div>
                                     </div>
@@ -4781,7 +5006,7 @@
                                         <label class="lunar-step-label" id="lunarLabel3">something you pretend not to care about</label>
                                         <input type="text" id="lunarInput3" class="lunar-input" placeholder="you know the one" autocomplete="off">
                                         <div class="lunar-step-nav">
-                                            <button class="lunar-step-back" onclick="goLunarStep(2)">← Back</button>
+                                            <button class="lunar-step-back" onclick="goLunarStep(2)"><svg class="app-icon sm"><use href="#icon-back"/></svg> Back</button>
                                             <button class="lunar-step-next" id="lunarNext3" onclick="revealLunarNote()" disabled>Reveal 🌙</button>
                                         </div>
                                     </div>
@@ -4909,7 +5134,7 @@
     <!-- Public Message Modal -->
     <div class="modal-overlay public-modal" id="publicModal">
         <div class="modal">
-            <button class="modal-close" onclick="closePublicModal()">&times;</button>
+            <button class="modal-close" onclick="closePublicModal()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-close"/></svg></button>
             <div class="modal-header">
                 <h2>Add to Shared Sky</h2>
                 <p class="modal-subtitle">A whisper for others looking up</p>
@@ -4954,7 +5179,7 @@
 
             <!-- Error state / invite landing for non-users -->
             <div id="revealError" style="display:none;text-align:center;padding:40px;">
-                <div style="font-size:36px;margin-bottom:16px;">🌙</div>
+                <div style="margin-bottom:16px;color:#FDF6E3;"><svg class="app-icon xxl"><use href="#icon-lunar-note"/></svg></div>
                 <p style="color:rgba(255,255,255,0.9);font-size:18px;font-weight:600;">Someone sent you a moon message</p>
                 <p style="color:rgba(255,255,255,0.5);font-size:14px;margin-top:12px;line-height:1.6;">
                     Messages on MoonPop travel with the moon.<br>
@@ -4986,13 +5211,13 @@
                     <p class="reveal-message-text" id="revealMessageText"></p>
                     <div id="revealLunarNote" style="display:none;">
                         <div style="margin-top:20px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;border-left:3px solid rgba(255,255,255,0.2);">
-                            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:8px;">🌙 Lunar Note</div>
+                            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:8px;display:flex;align-items:center;gap:4px;justify-content:center;"><svg class="app-icon sm"><use href="#icon-lunar-note"/></svg> Lunar Note</div>
                             <p id="revealLunarText" style="white-space:pre-line;color:rgba(255,255,255,0.85);"></p>
                             <p id="revealLunarClosing" style="color:rgba(255,255,255,0.5);font-style:italic;margin-top:8px;"></p>
                         </div>
                     </div>
                     <div class="reveal-message-meta">
-                        Sent under a <span id="revealPhaseName">waxing gibbous</span> moon
+                        <span id="revealPhaseIcon" style="display:inline-flex;vertical-align:middle;margin-right:4px;"></span>Sent under a <span id="revealPhaseName">waxing gibbous</span> moon
                     </div>
                 </div>
 
@@ -5043,7 +5268,7 @@
     <div class="message-page" id="messagePageView">
         <div class="message-page-inner">
             <div class="message-page-header">
-                <button class="message-page-back" onclick="closeMessageDetail()">←</button>
+                <button class="message-page-back" onclick="closeMessageDetail()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
                 <div class="message-page-avatar" id="detailAvatar"><span id="detailAvatarInitial">J</span><img id="detailAvatarImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;display:none;"></div>
                 <div class="message-page-info">
                     <h3 id="detailSender">Jonah Doyle</h3>
@@ -5058,7 +5283,7 @@
                 <div class="thread-lunar-panel" id="threadLunarPanel" style="display:none;">
                     <div class="thread-lunar-header">
                         <span>🌙 Lunar Note</span>
-                        <button class="thread-lunar-close" onclick="closeThreadLunar()">×</button>
+                        <button class="thread-lunar-close" onclick="closeThreadLunar()"><svg class="app-icon" style="width:16px;height:16px"><use href="#icon-close"/></svg></button>
                     </div>
                     <p class="thread-lunar-intro" id="threadLunarIntro">Give me three things.</p>
                     <div class="thread-lunar-steps">
@@ -5088,13 +5313,13 @@
                     <label for="replyPhotoInput" id="replyPhotoLabel" style="cursor:pointer;font-size:20px;padding:4px;flex-shrink:0;">🌕</label>
                     <input type="file" id="replyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleReplyPhoto(this)">
                     <input type="text" class="message-page-input" placeholder="Write a reply..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()">
-                    <button class="message-page-send" id="replySendBtn" onclick="sendReply()">↑</button>
+                    <button class="message-page-send" id="replySendBtn" onclick="sendReply()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
                 </div>
                 <div id="replyMoonGate" style="text-align:center;padding:12px 16px;color:var(--text-muted);font-size:13px;">
-                    <div style="margin-bottom:4px;">🌙 The moon is below your horizon</div>
+                    <div style="margin-bottom:4px;"><svg class="app-icon sm" style="color:var(--blue)"><use href="#icon-lunar-note"/></svg> The moon is below your horizon</div>
                     <div id="replyMoonGateTime" style="font-size:11px;opacity:0.7;"></div>
                 </div>
-                <button class="add-lunar-link" id="addLunarLink" onclick="openThreadLunar()">🌙 Add a Lunar Note</button>
+                <button class="add-lunar-link" id="addLunarLink" onclick="openThreadLunar()"><svg class="app-icon sm" style="color:var(--blue)"><use href="#icon-lunar-note"/></svg> Add a Lunar Note</button>
             </div>
         </div>
     </div>
@@ -5130,6 +5355,33 @@
             _nextRise: null,
             _prevRise: null
         };
+
+        // ============================================
+        // SVG ICON HELPERS
+        // ============================================
+
+        // Map phase name to SVG icon ID
+        const PHASE_ICON_MAP = {
+            'new moon': 'icon-new-moon',
+            'waxing crescent': 'icon-waxing-crescent',
+            'first quarter': 'icon-first-quarter',
+            'waxing gibbous': 'icon-waxing-gibbous',
+            'full moon': 'icon-full-moon',
+            'waning gibbous': 'icon-waning-gibbous',
+            'last quarter': 'icon-last-quarter',
+            'waning crescent': 'icon-waning-crescent'
+        };
+
+        // Get SVG icon HTML for a moon phase name
+        function phaseIconSvg(phaseName, size = 'md') {
+            const id = PHASE_ICON_MAP[(phaseName || '').toLowerCase()] || 'icon-full-moon';
+            return `<svg class="app-icon ${size}"><use href="#${id}"/></svg>`;
+        }
+
+        // Get SVG icon HTML by icon ID
+        function iconSvg(name, size = 'md') {
+            return `<svg class="app-icon ${size}"><use href="#icon-${name}"/></svg>`;
+        }
 
         // ============================================
         // EMAIL NOTIFICATIONS via Supabase Edge Function (Resend)
@@ -6162,26 +6414,56 @@
                     console.log('Dots: no moonrise info for "' + msg.location + '" - city not found in list');
                     return;
                 }
-                
+
                 const deg = deliveryTimeToRingDegrees(info.date);
                 const isReleasing = info.hoursUntil < 2;
                 console.log('Dots: placing dot for', msg.location, 'at', deg, 'degrees, releasing:', isReleasing);
-                
+
                 const orbit = document.createElement('div');
                 orbit.className = 'dot-orbit';
                 orbit.style.transform = `rotate(${deg}deg)`;
-                
+
                 const dot = document.createElement('div');
                 dot.className = 'message-dot' + (isReleasing ? ' releasing' : '');
                 dot.dataset.to = msg.sender; // "sender" is actually recipient name in sent messages
                 dot.dataset.location = msg.location;
                 dot.dataset.release = info.timeStr;
                 dot.dataset.hours = info.hoursUntil.toFixed(1);
-                
+
                 orbit.appendChild(dot);
                 container.appendChild(orbit);
             });
-            
+
+            // Incoming messages in transit (received, not yet revealed at moonrise)
+            const incomingMessages = messages.filter(m => m.type === 'received' && m.status === 'Arriving' && m.releaseAt);
+            if (incomingMessages.length > 0) console.log('Dots: incoming messages:', incomingMessages.length);
+
+            incomingMessages.forEach((msg) => {
+                // Position at the delivery time (our moonrise) on the ring
+                const releaseDate = new Date(msg.releaseAt);
+                const deg = deliveryTimeToRingDegrees(releaseDate);
+                const hoursUntil = Math.max(0, (releaseDate - now) / 3600000);
+                const isNear = hoursUntil < 2;
+
+                const riseTimeStr = moonData.moonrise || '--:--';
+
+                console.log('Dots: incoming dot from', msg.sender, 'at', deg, 'degrees, hours until:', hoursUntil.toFixed(1));
+
+                const orbit = document.createElement('div');
+                orbit.className = 'dot-orbit';
+                orbit.style.transform = `rotate(${deg}deg)`;
+
+                const dot = document.createElement('div');
+                dot.className = 'message-dot incoming' + (isNear ? ' releasing' : '');
+                dot.dataset.from = msg.sender;
+                dot.dataset.release = riseTimeStr;
+                dot.dataset.hours = hoursUntil.toFixed(1);
+                dot.dataset.incoming = 'true';
+
+                orbit.appendChild(dot);
+                container.appendChild(orbit);
+            });
+
             // Update stats display
             updateMessageStats();
             
@@ -6200,20 +6482,27 @@
             
             document.querySelectorAll('.message-dot').forEach(dot => {
                 dot.addEventListener('mouseenter', (e) => {
-                    const to = dot.dataset.to || 'Someone';
-                    const location = dot.dataset.location || '';
+                    const isIncoming = dot.dataset.incoming === 'true';
                     const release = dot.dataset.release || 'moonrise';
                     const hours = parseFloat(dot.dataset.hours) || 0;
-                    
+
                     let eta = '';
                     if (hours < 1) {
                         eta = `in ${Math.round(hours * 60)}m`;
                     } else {
                         eta = `in ${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`;
                     }
-                    
-                    dotTooltip.querySelector('.tooltip-name').textContent = `To ${to}`;
-                    dotTooltip.querySelector('.tooltip-meta').textContent = `Moonrise at ${release} in ${location} · ${eta}`;
+
+                    if (isIncoming) {
+                        const from = dot.dataset.from || 'Someone';
+                        dotTooltip.querySelector('.tooltip-name').textContent = `From ${from}`;
+                        dotTooltip.querySelector('.tooltip-meta').textContent = `Arrives at your moonrise (${release}) · ${eta}`;
+                    } else {
+                        const to = dot.dataset.to || 'Someone';
+                        const location = dot.dataset.location || '';
+                        dotTooltip.querySelector('.tooltip-name').textContent = `To ${to}`;
+                        dotTooltip.querySelector('.tooltip-meta').textContent = `Moonrise at ${release} in ${location} · ${eta}`;
+                    }
                     dotTooltip.querySelector('.tooltip-phase').textContent = '';
                     dotTooltip.classList.add('visible');
                 });
@@ -6679,6 +6968,12 @@
                 conv.hasInTransit = !!transitMsg;
                 conv.transitCreatedAt = transitMsg?.createdAt || null;
                 conv.transitReleaseAt = transitMsg?.releaseAt || null;
+
+                // Also detect incoming messages in transit (received, not yet revealed)
+                const incomingTransitMsg = conv.messages.find(m => m.type === 'received' && m.status === 'Arriving');
+                conv.hasIncomingTransit = !!incomingTransitMsg;
+                conv.incomingTransitCreatedAt = incomingTransitMsg?.createdAt || null;
+                conv.incomingTransitReleaseAt = incomingTransitMsg?.releaseAt || null;
             });
 
             // Recalculate time strings and sort conversations by latest activity
@@ -7159,7 +7454,7 @@
             if (error) {
                 errorEl.textContent = error.message || 'Something went wrong. Please try again.';
                 errorEl.style.display = 'block';
-                btn.textContent = 'Send Moon Key 🌙';
+                btn.innerHTML = 'Send Moon Key <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
                 btn.disabled = false;
                 return;
             }
@@ -7257,7 +7552,7 @@
         function changeEmail() {
             document.getElementById('authStepCode').classList.remove('active');
             document.getElementById('authStepEmail').classList.add('active');
-            document.getElementById('authSendBtn').textContent = 'Send Moon Key 🌙';
+            document.getElementById('authSendBtn').innerHTML = 'Send Moon Key <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
             document.getElementById('authSendBtn').disabled = false;
             document.getElementById('authEmail').focus();
         }
@@ -8094,13 +8389,24 @@
             const overlay = document.getElementById('onboardingOverlay');
             if (!overlay) return;
             overlay.classList.remove('hidden');
-            
+
             // Add Enter key handler for email input
             const emailInput = document.getElementById('authEmail');
             if (emailInput) {
                 emailInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') sendMoonKey();
                 });
+
+                // Pre-fill email from invite link (?invite_email=...)
+                const params = new URLSearchParams(window.location.search);
+                const inviteEmail = params.get('invite_email');
+                if (inviteEmail) {
+                    emailInput.value = inviteEmail;
+                    // Clean the URL
+                    history.replaceState(null, '', window.location.pathname);
+                    // Auto-send the code after a short delay so user sees what happened
+                    setTimeout(() => sendMoonKey(), 400);
+                }
             }
         }
 
@@ -8435,7 +8741,7 @@
                 centerEl.innerHTML = `
                     <div class="standby-countdown live-timer">${timerStr}</div>
                     <p class="standby-label">until moonset</p>
-                    <button class="cta-button" onclick="openModal()">New Moon Message</button>
+                    <button class="cta-button" onclick="openModal()">${iconSvg('compose', 'md')} New Moon Message</button>
                     <p class="delivery-note">Arrives at moonrise in recipient's sky</p>
                 `;
             } else {
@@ -8497,11 +8803,11 @@
                     avatar = `<div class="msg-avatar">${onlineDot}<span>${initial}</span></div>`;
                 }
 
-                // Badge for orbiting messages
+                // Badge for orbiting messages (sent or incoming)
                 let badge = '';
                 let progressBar = '';
                 if (conv.hasInTransit) {
-                    badge = `<span class="message-status-badge orbiting">🔴 Orbiting</span>`;
+                    badge = `<span class="message-status-badge orbiting">${iconSvg('orbiting', 'sm')} Orbiting</span>`;
                     // Progress bar: how far along from sent → moonrise
                     if (conv.transitCreatedAt && conv.transitReleaseAt) {
                         const sent = new Date(conv.transitCreatedAt).getTime();
@@ -8512,15 +8818,27 @@
                         const pct = total > 0 ? Math.min(100, Math.max(2, (elapsed / total) * 100)) : 50;
                         progressBar = `<div class="transit-progress"><div class="transit-progress-bar" style="width:${pct.toFixed(1)}%"></div></div>`;
                     }
+                } else if (conv.hasIncomingTransit) {
+                    badge = `<span class="message-status-badge arriving">${iconSvg('on-its-way', 'sm')} On Its Way</span>`;
+                    // Progress bar: how far along from sent → your moonrise
+                    if (conv.incomingTransitCreatedAt && conv.incomingTransitReleaseAt) {
+                        const sent = new Date(conv.incomingTransitCreatedAt).getTime();
+                        const release = new Date(conv.incomingTransitReleaseAt).getTime();
+                        const now = Date.now();
+                        const total = release - sent;
+                        const elapsed = now - sent;
+                        const pct = total > 0 ? Math.min(100, Math.max(2, (elapsed / total) * 100)) : 50;
+                        progressBar = `<div class="transit-progress"><div class="transit-progress-bar incoming" style="width:${pct.toFixed(1)}%"></div></div>`;
+                    }
                 }
 
                 const unreadBadge = conv.unreadCount > 0 ? `<span class="unread-badge pulse">${conv.unreadCount}</span>` : '';
                 const isUnread = conv.unreadCount > 0;
 
-                // Bug fix #4: Only show moon transit bar when there's an in-transit message
-                const moonStatus = conv.hasInTransit ? getContactMoonStatus(conv.location) : null;
+                // Moon transit info for the other user (hide when sender has an orbiting message)
+                const moonStatus = !conv.hasInTransit ? getContactMoonStatus(conv.location) : null;
                 let transitBar = '';
-                if (moonStatus && conv.hasInTransit) {
+                if (moonStatus) {
                     const fillPct = Math.round(moonStatus.progress * 100);
                     const barClass = moonStatus.isUp ? 'active' : '';
                     // Their moonrise status
@@ -8957,7 +9275,7 @@
                     const lunarReactionsHtml = (item.isMessage && item.msgIndex >= 0) ? renderReactionsBar(item.msgIndex, 'lunar') : '';
                     html += `
                         <div class="bubble-lunar-note ${item.sent ? 'sent-lunar' : ''}" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
-                            <div class="bubble-lunar-label">🌙 Lunar Note</div>
+                            <div class="bubble-lunar-label">${iconSvg('lunar-note', 'sm')} Lunar Note</div>
                             <div class="bubble-lunar-text">${item.text}</div>
                             ${item.closing ? `<div class="bubble-lunar-closing">${item.closing}</div>` : ''}
                             <div class="message-bubble-time">${item.time || 'Recently'} ${lunarReceipt}</div>
@@ -9009,7 +9327,7 @@
                 } else if (item.type === 'lunar-reply') {
                     html += `
                         <div class="bubble-lunar-note" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
-                            <div class="bubble-lunar-label">🌙 Lunar Note</div>
+                            <div class="bubble-lunar-label">${iconSvg('lunar-note', 'sm')} Lunar Note</div>
                             <div class="bubble-lunar-text">${(item.text || '').replace('🌙 ', '')}</div>
                             <div class="message-bubble-time" style="text-align:right;">${item.time}</div>
                         </div>
@@ -10121,7 +10439,7 @@
                         type: 'invite',
                         recipientEmail: email,
                         senderName,
-                        revealLink: window.location.origin
+                        revealLink: window.location.origin + '?invite_email=' + encodeURIComponent(email)
                     }
                 });
                 if (error) throw error;
@@ -10168,7 +10486,7 @@
             if (visibleContacts.length === 0) {
                 container.innerHTML = `
                     <div style="text-align:center;padding:60px 20px;color:var(--text-muted);">
-                        <div style="font-size:40px;margin-bottom:12px;">👥</div>
+                        <div style="margin-bottom:12px;color:var(--blue);"><svg class="app-icon xxl"><use href="#icon-contacts"/></svg></div>
                         <h4 style="color:var(--blue);margin-bottom:8px;">No contacts yet</h4>
                         <p style="font-size:13px;margin-bottom:16px;">Search for MoonPop users or invite someone new.</p>
                         <button onclick="document.getElementById('contactSearchInput').focus()" style="background:var(--blue);color:white;border:none;border-radius:20px;padding:8px 20px;font-size:13px;cursor:pointer;">+ Add a contact</button>
@@ -10833,7 +11151,7 @@
             if (selectedRecipient) {
                 const header = document.getElementById('composeHeader');
                 header.innerHTML = `
-                    <button class="message-page-back" onclick="backToRecipientPicker()" style="font-size:20px;">←</button>
+                    <button class="message-page-back" onclick="backToRecipientPicker()" style="font-size:20px;"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
                     <span style="font-weight:700;color:var(--blue);font-size:15px;">${selectedRecipient.name}</span>
                     <span style="width:34px;"></span>
                 `;
@@ -11154,7 +11472,7 @@
             // Update header — back goes to recipient picker
             const header = document.getElementById('composeHeader');
             header.innerHTML = `
-                <button class="message-page-back" onclick="backFromNewContact()">←</button>
+                <button class="message-page-back" onclick="backFromNewContact()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
                 <span style="font-weight:700;color:var(--blue);font-size:15px;">New Contact</span>
                 <span style="width:34px;"></span>
             `;
@@ -11202,7 +11520,7 @@
             // Switch header: X → ← back
             const header = document.getElementById('composeHeader');
             header.innerHTML = `
-                <button class="message-page-back" onclick="backToStep1()">←</button>
+                <button class="message-page-back" onclick="backToStep1()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
                 <span style="font-weight:700;color:var(--blue);font-size:15px;">Send to</span>
                 <span style="width:34px;"></span>
             `;
@@ -12398,7 +12716,9 @@
             // Populate the reveal page
             const senderName = senderProfile?.username || 'Someone';
             document.getElementById('revealSenderName').textContent = senderName;
-            document.getElementById('revealPhaseName').textContent = msg.moon_phase || 'waxing gibbous';
+            const revealPhase = msg.moon_phase || 'waxing gibbous';
+            document.getElementById('revealPhaseName').textContent = revealPhase;
+            document.getElementById('revealPhaseIcon').innerHTML = phaseIconSvg(revealPhase, 'md');
             document.getElementById('revealCity').textContent = msg.recipient_city || 'your city';
 
             const isReleased = msg.status === 'released' || 
