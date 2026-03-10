@@ -4270,15 +4270,42 @@
         }
 
         /* ──── Split-screen layout ──── */
+
+        /* Header in split mode: full-width, proper sizing */
+        .header.split-active {
+            position: relative; /* page doesn't scroll, no need for sticky */
+            padding: 16px clamp(16px, 4vw, 48px);
+        }
+
+        .header.split-active .logo {
+            height: clamp(20px, 2.5vw, 28px);
+        }
+
+        /* Hero between header and split */
+        .hero.above-split {
+            text-align: center;
+            padding: 8px clamp(16px, 4vw, 48px) 4px;
+        }
+
+        .hero.above-split h1 {
+            font-size: clamp(18px, 3vw, 36px);
+            margin-bottom: 0;
+        }
+
+        .hero.above-split .subtitle {
+            font-size: clamp(13px, 1.4vw, 16px);
+        }
+
         .split-layout {
             display: flex;
-            height: calc(100vh - 48px); /* viewport minus compact header */
+            /* viewport minus header (~56px) minus hero (~50px) */
+            height: calc(100vh - 110px);
             overflow: hidden;           /* no page scroll */
         }
 
         .split-left {
             width: 45%;
-            min-width: 340px;
+            min-width: 320px;
             overflow-y: auto;
             border-right: 2px solid rgba(53, 125, 197, 0.12);
         }
@@ -4286,7 +4313,7 @@
         .split-left .inbox-section {
             max-width: none;
             margin: 0;
-            padding: 16px 24px 24px;
+            padding: 12px clamp(12px, 2vw, 24px) 24px;
             min-height: 100%;
             display: flex;
             flex-direction: column;
@@ -4311,27 +4338,45 @@
             justify-content: center;
             overflow: hidden;
             gap: 8px;
-        }
-
-        .split-right .hero {
-            padding: 10px 24px 4px;
+            padding: 8px;
         }
 
         .split-right .main-content {
             padding: 0;
+            width: 100%;
+            align-items: center;
         }
 
         .split-right .moon-data-bar {
             margin: 4px auto 0;
         }
 
-        /* When split layout is active, header should not be sticky-scrolling */
-        .header.split-active {
-            position: relative; /* not sticky since page doesn't scroll */
+        /* Scale orbit ring for available space */
+        .split-right .orbit-container {
+            width: min(420px, calc(100vh - 260px));
+            height: min(420px, calc(100vh - 260px));
         }
 
-        /* Responsive */
+        /* Responsive — mobile & tablets */
         @media (max-width: 900px) {
+            .header.split-active {
+                position: sticky;
+                top: 0;
+                padding: 12px 16px;
+            }
+
+            .hero.above-split {
+                padding: 8px 16px 4px;
+            }
+
+            .hero.above-split h1 {
+                font-size: 22px;
+            }
+
+            .hero.above-split .subtitle {
+                font-size: 13px;
+            }
+
             .split-layout {
                 flex-direction: column;
                 height: auto;
@@ -4348,7 +4393,7 @@
 
             .split-left .inbox-section {
                 padding: 0 16px;
-                margin: 30px auto;
+                margin: 20px auto;
                 max-width: 900px;
                 display: block;
                 min-height: unset;
@@ -4368,43 +4413,32 @@
                 width: 100%;
                 overflow: visible;
                 order: 1; /* orbit on top on mobile */
-            }
-
-            .split-right .hero {
-                padding: 10px 48px 20px;
+                padding: 0;
             }
 
             .split-right .main-content {
-                padding: 10px 24px;
+                padding: 10px 16px;
             }
 
-            .header.split-active {
-                position: sticky;
-                top: 0;
-            }
-
-            .orbit-container {
-                width: 300px;
-                height: 300px;
+            .split-right .orbit-container {
+                width: min(300px, 80vw);
+                height: min(300px, 80vw);
             }
 
             .moon-data-bar {
                 flex-wrap: wrap;
-                gap: 8px 20px;
-                padding: 12px 16px;
+                gap: 8px 16px;
+                padding: 10px 16px;
                 max-width: 90%;
-            }
-
-            .hero h1 {
-                font-size: 24px;
+                font-size: 11px;
             }
 
             .header {
-                padding: 16px 24px;
+                padding: 12px 16px;
             }
 
             .main-content {
-                padding: 10px 24px;
+                padding: 10px 16px;
             }
 
             .inbox-section {
@@ -4412,7 +4446,7 @@
             }
 
             .orbit-stats {
-                gap: 20px;
+                gap: 16px;
             }
 
             .stat-item {
@@ -4814,6 +4848,12 @@
     <!-- Notification Toast -->
     <div class="notification-toast" id="notificationToast"></div>
 
+    <!-- Hero Title (above split) -->
+    <section class="hero above-split">
+        <h1 id="heroTitle">MESSAGES RELEASED BY THE MOON</h1>
+        <p class="subtitle">The world's first moon postal service.</p>
+    </section>
+
     <!-- Split-screen layout: Inbox left, Moon right -->
     <div class="split-layout">
 
@@ -4853,11 +4893,6 @@
 
         <!-- RIGHT PANEL: Moon orbit (fixed, no scroll) -->
         <div class="split-right">
-            <section class="hero">
-                <h1 id="heroTitle">MESSAGES RELEASED BY THE MOON</h1>
-                <p class="subtitle">The world's first moon postal service.</p>
-            </section>
-
             <main class="main-content">
                 <div class="orbit-container">
                     <div class="orbit-ring"></div>
@@ -8505,15 +8540,14 @@
             }
         });
         // Split-layout: add class to header on desktop, listen to left-panel scroll
+        // Split-layout: toggle header class and body overflow based on viewport
         (function initSplitLayout() {
             const header = document.querySelector('.header');
-            const isMobile = () => window.innerWidth <= 900;
+            const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
 
             function applySplit() {
                 if (!isMobile()) {
                     header.classList.add('split-active');
-                    // Also apply scrolled style immediately since the header moon data is hidden
-                    header.classList.add('scrolled');
                     document.body.style.overflow = 'hidden';
                 } else {
                     header.classList.remove('split-active');
