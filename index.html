@@ -4269,8 +4269,120 @@
             cursor: pointer;
         }
 
+        /* ──── Split-screen layout ──── */
+        .split-layout {
+            display: flex;
+            height: calc(100vh - 48px); /* viewport minus compact header */
+            overflow: hidden;           /* no page scroll */
+        }
+
+        .split-left {
+            width: 45%;
+            min-width: 340px;
+            overflow-y: auto;
+            border-right: 2px solid rgba(53, 125, 197, 0.12);
+        }
+
+        .split-left .inbox-section {
+            max-width: none;
+            margin: 0;
+            padding: 16px 24px 24px;
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .split-left .inbox-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .split-left .message-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .split-right {
+            width: 55%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            gap: 8px;
+        }
+
+        .split-right .hero {
+            padding: 10px 24px 4px;
+        }
+
+        .split-right .main-content {
+            padding: 0;
+        }
+
+        .split-right .moon-data-bar {
+            margin: 4px auto 0;
+        }
+
+        /* When split layout is active, header should not be sticky-scrolling */
+        .header.split-active {
+            position: relative; /* not sticky since page doesn't scroll */
+        }
+
         /* Responsive */
         @media (max-width: 900px) {
+            .split-layout {
+                flex-direction: column;
+                height: auto;
+                overflow: visible;
+            }
+
+            .split-left {
+                width: 100%;
+                min-width: unset;
+                overflow-y: visible;
+                border-right: none;
+                order: 2; /* inbox below orbit on mobile */
+            }
+
+            .split-left .inbox-section {
+                padding: 0 16px;
+                margin: 30px auto;
+                max-width: 900px;
+                display: block;
+                min-height: unset;
+            }
+
+            .split-left .inbox-card {
+                flex: unset;
+                display: block;
+            }
+
+            .split-left .message-list {
+                flex: unset;
+                overflow-y: visible;
+            }
+
+            .split-right {
+                width: 100%;
+                overflow: visible;
+                order: 1; /* orbit on top on mobile */
+            }
+
+            .split-right .hero {
+                padding: 10px 48px 20px;
+            }
+
+            .split-right .main-content {
+                padding: 10px 24px;
+            }
+
+            .header.split-active {
+                position: sticky;
+                top: 0;
+            }
+
             .orbit-container {
                 width: 300px;
                 height: 300px;
@@ -4702,85 +4814,12 @@
     <!-- Notification Toast -->
     <div class="notification-toast" id="notificationToast"></div>
 
-    <!-- Hero -->
-    <section class="hero">
-        <h1 id="heroTitle">MESSAGES RELEASED BY THE MOON</h1>
-        <p class="subtitle">The world's first moon postal service.</p>
-    </section>
+    <!-- Split-screen layout: Inbox left, Moon right -->
+    <div class="split-layout">
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <div class="orbit-container">
-            <div class="orbit-ring"></div>
-
-            <!-- Moon illustration background -->
-            <div class="orbit-bg-illustration">
-                <img src="assests/moonillustrationinsiering.svg" alt="" aria-hidden="true">
-            </div>
-
-            <!-- Message dots - positioned dynamically by JS based on recipient moonrise -->
-            <div id="messageDots"></div>
-
-            <!-- Moon position - brand crescent moon on the orbit stroke -->
-            <div class="moon-orbit" id="moonOrbit">
-                <div class="moon-icon" id="orbitMoonIcon">
-                    <!-- Moon phase icon: dynamically updated by updateMoonPhaseIcon() -->
-                </div>
-            </div>
-
-            <!-- Moonrise/moonset markers - positioned dynamically by JS -->
-            <div class="horizon-marker" id="moonriseMarker">
-                <div class="horizon-dot rise"></div>
-                <div class="horizon-label rise-label">
-                    <span class="horizon-title">moonrise</span>
-                    <span class="horizon-time" id="moonriseLabel">--:--</span>
-                </div>
-            </div>
-            <div class="horizon-marker" id="moonsetMarker">
-                <div class="horizon-dot set"></div>
-                <div class="horizon-label set-label">
-                    <span class="horizon-title">moonset</span>
-                    <span class="horizon-time" id="moonsetLabel">--:--</span>
-                </div>
-            </div>
-
-            <!-- Center content -->
-            <div class="orbit-center" id="orbitCenter">
-                <!-- Content changes based on moon visibility -->
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Tooltip for dots -->
-    <div class="dot-tooltip" id="dotTooltip">
-        <span class="tooltip-name"></span>
-        <span class="tooltip-meta"></span>
-        <span class="tooltip-phase"></span>
-    </div>
-
-    <!-- Moon Data Bar -->
-    <div class="moon-data-bar">
-        <div class="moon-data-item">
-            <span class="moon-data-label">MOONRISE:</span>
-            <span class="moon-data-value" id="moonriseTime">18:33</span>
-        </div>
-        <div class="moon-data-item">
-            <span class="moon-data-label">MOONSET:</span>
-            <span class="moon-data-value" id="moonsetTime">23:45</span>
-        </div>
-        <div class="moon-data-item">
-            <span class="moon-data-label">MOON AGE:</span>
-            <span class="moon-data-value" id="moonAgeBar">— days</span>
-        </div>
-        <div class="moon-data-item">
-            <span class="moon-data-label">DISTANCE:</span>
-            <span class="moon-data-value" id="moonDistanceBar">— km</span>
-        </div>
-    </div>
-
-    <!-- Inbox Section -->
-    <section class="inbox-section">
+        <!-- LEFT PANEL: Inbox (scrollable) -->
+        <div class="split-left">
+            <section class="inbox-section">
         <div class="inbox-card">
             <div class="inbox-header">
                 <div style="display:flex;align-items:center;gap:10px;">
@@ -4810,6 +4849,86 @@
             </ul>
         </div>
     </section>
+        </div><!-- /split-left -->
+
+        <!-- RIGHT PANEL: Moon orbit (fixed, no scroll) -->
+        <div class="split-right">
+            <section class="hero">
+                <h1 id="heroTitle">MESSAGES RELEASED BY THE MOON</h1>
+                <p class="subtitle">The world's first moon postal service.</p>
+            </section>
+
+            <main class="main-content">
+                <div class="orbit-container">
+                    <div class="orbit-ring"></div>
+
+                    <!-- Moon illustration background -->
+                    <div class="orbit-bg-illustration">
+                        <img src="assests/moonillustrationinsiering.svg" alt="" aria-hidden="true">
+                    </div>
+
+                    <!-- Message dots - positioned dynamically by JS based on recipient moonrise -->
+                    <div id="messageDots"></div>
+
+                    <!-- Moon position - brand crescent moon on the orbit stroke -->
+                    <div class="moon-orbit" id="moonOrbit">
+                        <div class="moon-icon" id="orbitMoonIcon">
+                            <!-- Moon phase icon: dynamically updated by updateMoonPhaseIcon() -->
+                        </div>
+                    </div>
+
+                    <!-- Moonrise/moonset markers - positioned dynamically by JS -->
+                    <div class="horizon-marker" id="moonriseMarker">
+                        <div class="horizon-dot rise"></div>
+                        <div class="horizon-label rise-label">
+                            <span class="horizon-title">moonrise</span>
+                            <span class="horizon-time" id="moonriseLabel">--:--</span>
+                        </div>
+                    </div>
+                    <div class="horizon-marker" id="moonsetMarker">
+                        <div class="horizon-dot set"></div>
+                        <div class="horizon-label set-label">
+                            <span class="horizon-title">moonset</span>
+                            <span class="horizon-time" id="moonsetLabel">--:--</span>
+                        </div>
+                    </div>
+
+                    <!-- Center content -->
+                    <div class="orbit-center" id="orbitCenter">
+                        <!-- Content changes based on moon visibility -->
+                    </div>
+                </div>
+            </main>
+
+            <!-- Tooltip for dots -->
+            <div class="dot-tooltip" id="dotTooltip">
+                <span class="tooltip-name"></span>
+                <span class="tooltip-meta"></span>
+                <span class="tooltip-phase"></span>
+            </div>
+
+            <!-- Moon Data Bar -->
+            <div class="moon-data-bar">
+                <div class="moon-data-item">
+                    <span class="moon-data-label">MOONRISE:</span>
+                    <span class="moon-data-value" id="moonriseTime">18:33</span>
+                </div>
+                <div class="moon-data-item">
+                    <span class="moon-data-label">MOONSET:</span>
+                    <span class="moon-data-value" id="moonsetTime">23:45</span>
+                </div>
+                <div class="moon-data-item">
+                    <span class="moon-data-label">MOON AGE:</span>
+                    <span class="moon-data-value" id="moonAgeBar">— days</span>
+                </div>
+                <div class="moon-data-item">
+                    <span class="moon-data-label">DISTANCE:</span>
+                    <span class="moon-data-value" id="moonDistanceBar">— km</span>
+                </div>
+            </div>
+        </div><!-- /split-right -->
+
+    </div><!-- /split-layout -->
 
     <!-- Shared Sky (Full Page) -->
     <div class="message-page" id="sharedSkyPage">
@@ -8385,6 +8504,27 @@
                 }
             }
         });
+        // Split-layout: add class to header on desktop, listen to left-panel scroll
+        (function initSplitLayout() {
+            const header = document.querySelector('.header');
+            const isMobile = () => window.innerWidth <= 900;
+
+            function applySplit() {
+                if (!isMobile()) {
+                    header.classList.add('split-active');
+                    // Also apply scrolled style immediately since the header moon data is hidden
+                    header.classList.add('scrolled');
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    header.classList.remove('split-active');
+                    document.body.style.overflow = '';
+                }
+            }
+
+            applySplit();
+            window.addEventListener('resize', applySplit);
+        })();
+
         // Onboarding functions
         function showOnboarding() {
             const overlay = document.getElementById('onboardingOverlay');
