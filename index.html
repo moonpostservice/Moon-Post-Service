@@ -7472,10 +7472,10 @@
                     const senderCity = sp?.city || 'Unknown';
 
                     // Determine if message content should be revealed
-                    // Rule: Moon MUST be in your sky to read received messages.
-                    // When moon is up, ignore server status (pg_cron may lag).
-                    // When moon is down, content is always hidden.
-                    const contentVisible = !!moonData.isVisible;
+                    // Rule: Moon MUST be in your sky AND message must be released.
+                    // If release_at is in the future, message is still in transit — hide content.
+                    const stillInTransit = m.release_at && new Date(m.release_at) > new Date();
+                    const contentVisible = !!moonData.isVisible && !stillInTransit;
 
                     allMessages.push({
                         dbId: m.id,
@@ -9010,8 +9010,10 @@
                 const unreadBadge = conv.unreadCount > 0 ? `<span class="unread-badge pulse">${conv.unreadCount}</span>` : '';
                 const isUnread = conv.unreadCount > 0;
 
-                // Moon transit info for the other user (hide when sender has an orbiting message)
-                const moonStatus = !conv.hasInTransit ? getContactMoonStatus(conv.location) : null;
+                // Moon transit bar — only show when there's active transit AND no progressBar already
+                // Fixes: duplicate bars (Bug 2) + bars persisting after delivery (Bug 3)
+                const hasActiveTransit = conv.hasInTransit || conv.hasIncomingTransit;
+                const moonStatus = (hasActiveTransit && !progressBar) ? getContactMoonStatus(conv.location) : null;
                 let transitBar = '';
                 if (moonStatus) {
                     const fillPct = Math.round(moonStatus.progress * 100);
@@ -9118,8 +9120,9 @@
                     const rp = m.recipient_id ? profileMap[m.recipient_id] : null;
                     const otherProfile = isSent ? rp : sp;
 
-                    // Sent messages always visible; received: moon MUST be in sky
-                    const contentVisible = isSent || !!moonData.isVisible;
+                    // Sent messages always visible; received: moon MUST be in sky AND message released
+                    const stillInTransit = !isSent && m.release_at && new Date(m.release_at) > new Date();
+                    const contentVisible = isSent || (!!moonData.isVisible && !stillInTransit);
 
                     // For sender name: use profile, then recipient_name ONLY for sent messages
                     // (for received messages, recipient_name = current user, NOT the sender)
