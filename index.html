@@ -4458,11 +4458,508 @@
                 gap: 8px 16px;
             }
         }
-        /* Compose split: stack on mobile */
+        /* ============================== */
+        /* COMPOSE PAGE — DARK REDESIGN   */
+        /* ============================== */
+
+        /* Dark starfield background for compose modal */
+        #messageModal.active {
+            background: #0a1628;
+            background-image:
+                radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.12), transparent),
+                radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.08), transparent),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.15), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.1), transparent),
+                radial-gradient(2px 2px at 130px 80px, rgba(255,255,255,0.12), transparent),
+                radial-gradient(1px 1px at 160px 120px, rgba(255,255,255,0.08), transparent);
+            background-size: 200px 200px;
+        }
+        #messageModal .message-page-inner {
+            background: transparent;
+            box-shadow: none;
+            max-width: 720px;
+        }
+        #messageModal .message-page-header {
+            border-bottom: none;
+            padding: 16px 20px;
+        }
+        #messageModal .message-page-body {
+            padding: 0 20px 40px;
+        }
+
+        /* Compose header (dark theme) */
+        .compose-header-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+        .compose-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid #ffd54f;
+            padding: 2px;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .compose-avatar-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #357dc5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        .compose-avatar-sparkle {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+        }
+        .compose-recipient-name {
+            font-weight: 700;
+            font-size: 17px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .compose-recipient-badge {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 2px 8px;
+            background: rgba(255, 213, 79, 0.15);
+            color: #ffd54f;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 213, 79, 0.3);
+        }
+        .compose-arrival-time {
+            font-size: 12px;
+            color: rgba(79, 195, 247, 0.6);
+            font-weight: 500;
+        }
+        .compose-header-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+        .compose-header-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* Glass Card */
+        .compose-glass-card {
+            background: rgba(18, 35, 58, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(79, 195, 247, 0.5);
+            border-radius: 24px;
+            padding: 28px;
+            box-shadow: inset 0 0 10px rgba(79, 195, 247, 0.1), 0 0 15px rgba(79, 195, 247, 0.2), 0 0 20px rgba(0,0,0,0.4);
+        }
+
+        /* Segmented Toggle */
+        .compose-toggle-wrap {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        .compose-toggle {
+            display: flex;
+            align-items: center;
+            background: rgba(10, 22, 40, 0.6);
+            padding: 4px;
+            border-radius: 9999px;
+            border: 1px solid rgba(79, 195, 247, 0.15);
+        }
+        .compose-toggle-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border-radius: 9999px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.45);
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.25s;
+            font-family: inherit;
+        }
+        .compose-toggle-btn.active {
+            background: #4fc3f7;
+            color: #0a1628;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.4);
+        }
+        .compose-toggle-btn:not(.active):hover {
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* Open Note textarea */
+        .compose-textarea {
+            width: 100%;
+            min-height: 260px;
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-size: 18px;
+            color: white;
+            line-height: 1.7;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .compose-textarea::placeholder {
+            color: rgba(255,255,255,0.18);
+        }
+        .compose-transmit-label {
+            text-align: right;
+            color: rgba(79, 195, 247, 0.25);
+            font-size: 10px;
+            font-family: monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 8px;
+        }
+
+        /* Go Lunar overrides (dark theme) */
+        #messageModal .lunar-note-panel {
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin-bottom: 0;
+        }
+        #messageModal .lunar-panel-header { display: none; }
+        #messageModal .lunar-intro {
+            color: rgba(79, 195, 247, 0.5);
+            font-size: 12px;
+        }
+        #messageModal .lunar-step-card {
+            background: rgba(10, 22, 40, 0.4);
+            border-color: rgba(79, 195, 247, 0.15);
+            color: white;
+        }
+        #messageModal .lunar-step-label {
+            color: rgba(79, 195, 247, 0.5);
+        }
+        #messageModal .lunar-input {
+            background: rgba(10, 22, 40, 0.6);
+            border-color: rgba(255,255,255,0.1);
+            color: white;
+        }
+        #messageModal .lunar-input:focus {
+            border-color: rgba(79, 195, 247, 0.5);
+        }
+        #messageModal .lunar-input::placeholder {
+            color: rgba(255,255,255,0.2);
+        }
+        #messageModal .lunar-step-next {
+            background: rgba(79, 195, 247, 0.1);
+            border: 1px solid rgba(79, 195, 247, 0.4);
+            color: #4fc3f7;
+        }
+        #messageModal .lunar-step-next:hover:not(:disabled) {
+            background: #4fc3f7;
+            color: #0a1628;
+        }
+        #messageModal .lunar-step-back {
+            color: rgba(255,255,255,0.4);
+        }
+        #messageModal .lunar-dot {
+            background: rgba(255,255,255,0.15);
+        }
+        #messageModal .lunar-dot.active {
+            background: #4fc3f7;
+            box-shadow: 0 0 8px rgba(79, 195, 247, 0.8);
+        }
+        #messageModal .lunar-dot.done {
+            background: rgba(79, 195, 247, 0.4);
+        }
+        #messageModal .lunar-result-card {
+            background: rgba(18, 35, 58, 0.8);
+            border-color: rgba(79, 195, 247, 0.2);
+            color: white;
+        }
+        #messageModal .lunar-result-card::before {
+            background: linear-gradient(90deg, #4fc3f7, #ff5558, #4fc3f7);
+        }
+        #messageModal .lunar-result-label {
+            color: rgba(79, 195, 247, 0.5);
+        }
+        #messageModal .lunar-result-text { color: white; }
+        #messageModal .lunar-result-closing { color: rgba(255,255,255,0.4); }
+        #messageModal .lunar-action-btn { color: #4fc3f7; }
+        #messageModal .lunar-action-btn:hover { background: rgba(79, 195, 247, 0.1); }
+
+        /* ADD: row */
+        .compose-add-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+            padding: 0 4px;
+        }
+        .compose-add-label {
+            color: rgba(255,255,255,0.35);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .compose-add-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(79, 195, 247, 0.5);
+            background: #0a1628;
+            color: #4fc3f7;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .compose-add-btn:hover { background: rgba(79, 195, 247, 0.1); }
+        .compose-add-btn.active {
+            background: #4fc3f7;
+            color: #0a1628;
+            border-color: #4fc3f7;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.4);
+        }
+
+        /* Music expansion panel */
+        .compose-music-panel {
+            background: rgba(18, 35, 58, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 16px;
+            animation: composePanelIn 0.25s ease;
+        }
+        @keyframes composePanelIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .compose-music-search {
+            position: relative;
+        }
+        .compose-music-search input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 9999px;
+            padding: 12px 16px 12px 44px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .compose-music-search input::placeholder { color: rgba(255,255,255,0.35); }
+        .compose-music-search input:focus { border-color: rgba(79, 195, 247, 0.5); }
+        .compose-music-yt-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+        }
+        /* Song suggestions inside music panel (dark theme) */
+        #messageModal .song-suggestions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 14px;
+        }
+        #messageModal .song-suggestion {
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            color: rgba(255,255,255,0.85);
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+        #messageModal .song-suggestion:hover {
+            background: rgba(255,255,255,0.08);
+            color: white;
+        }
+        .compose-music-note {
+            text-align: center;
+            color: rgba(255,255,255,0.25);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 14px;
+        }
+        /* Song search results dark theme */
+        #messageModal #songSearchResults {
+            background: transparent;
+        }
+        #messageModal #songSearchResults div {
+            color: rgba(255,255,255,0.7);
+        }
+        #messageModal #songSearchResults a {
+            color: #4fc3f7;
+        }
+
+        /* Photo panel */
+        .compose-photo-panel {
+            background: rgba(18, 35, 58, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 16px;
+            animation: composePanelIn 0.25s ease;
+        }
+        .compose-photo-dropzone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            border: 2px dashed rgba(79, 195, 247, 0.3);
+            border-radius: 14px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .compose-photo-dropzone:hover {
+            border-color: rgba(79, 195, 247, 0.6);
+            background: rgba(79, 195, 247, 0.05);
+        }
+        .compose-photo-dropzone svg { color: rgba(79, 195, 247, 0.4); }
+        .compose-photo-dropzone-text {
+            color: rgba(255,255,255,0.4);
+            font-size: 13px;
+        }
+        #messageModal #moonPhotoPreview {
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        #messageModal #moonPhotoPreview img {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 14px;
+        }
+        .compose-photo-remove {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Send button (coral glow) */
+        .compose-send-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            margin-top: 36px;
+        }
+        .compose-send-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 18px 40px;
+            background: #ff5558;
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 0 25px rgba(255, 85, 88, 0.4);
+            transition: all 0.2s;
+        }
+        .compose-send-btn:hover {
+            background: rgba(255, 85, 88, 0.9);
+            box-shadow: 0 0 35px rgba(255, 85, 88, 0.5);
+        }
+        .compose-send-btn:active { transform: scale(0.97); }
+        .compose-send-icons {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .compose-footer-text {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255,255,255,0.3);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Dark theme overrides for new contact / step2 forms inside compose */
+        #messageModal .form-group label { color: rgba(79, 195, 247, 0.7); }
+        #messageModal .form-group input,
+        #messageModal .form-group textarea {
+            background: rgba(10, 22, 40, 0.6);
+            border-color: rgba(255,255,255,0.1);
+            color: white;
+        }
+        #messageModal .form-group input:focus,
+        #messageModal .form-group textarea:focus {
+            border-color: rgba(79, 195, 247, 0.5);
+        }
+        #messageModal .form-group input::placeholder { color: rgba(255,255,255,0.25); }
+        #messageModal .modal-header h2 { color: white; }
+        #messageModal .modal-subtitle { color: rgba(255,255,255,0.4) !important; }
+        #messageModal .new-contact-btn { color: #4fc3f7; border-color: rgba(79, 195, 247, 0.3); }
+        #messageModal .send-button {
+            background: #ff5558;
+            box-shadow: 0 0 20px rgba(255, 85, 88, 0.3);
+        }
+        #messageModal .send-button:hover { background: rgba(255, 85, 88, 0.9); }
+        #messageModal .recipient-selector input { background: rgba(10, 22, 40, 0.6); color: white; border-color: rgba(255,255,255,0.1); }
+        #messageModal .recipient-dropdown { background: rgba(18, 35, 58, 0.95); border-color: rgba(79, 195, 247, 0.2); }
+        #messageModal #newContactCityDropdown { background: rgba(18, 35, 58, 0.95); border-color: rgba(79, 195, 247, 0.2); }
+        #messageModal #newContactCityDropdown .city-option { color: rgba(255,255,255,0.7); }
+        #messageModal #newContactCityDropdown .city-option:hover { background: rgba(79, 195, 247, 0.1); }
+        #messageModal .delivery-info-box { background: rgba(79, 195, 247, 0.08); border-color: rgba(79, 195, 247, 0.2); color: rgba(255,255,255,0.6); }
+
+        /* Compose mobile responsive */
         @media (max-width: 640px) {
-            .compose-split {
-                flex-direction: column !important;
-            }
+            .compose-glass-card { padding: 20px; border-radius: 18px; }
+            .compose-toggle-btn { padding: 8px 16px; font-size: 12px; }
+            .compose-textarea { min-height: 200px; font-size: 16px; }
+            .compose-send-btn { padding: 16px 32px; font-size: 15px; }
         }
     </style>
     <!-- EmailJS removed — email now sent via Supabase Edge Function (send-email) -->
@@ -4614,6 +5111,60 @@
             <circle cx="10" cy="10" r="7.5" fill="none" stroke="#d4c9a8" stroke-width="0.5"/>
             <circle cx="7" cy="8" r="1.5" fill="#e8dcc6" opacity="0.3"/>
             <circle cx="12" cy="12" r="2" fill="#e8dcc6" opacity="0.25"/>
+        </symbol>
+
+        <!-- Music Note (for Add a Song) -->
+        <symbol id="icon-music" viewBox="0 0 24 24">
+            <path d="M9,3 L9,16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M9,3 L20,1 L20,14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <ellipse cx="6" cy="17" rx="3.5" ry="2.5" fill="currentColor" opacity="0.8"/>
+            <ellipse cx="17" cy="15" rx="3.5" ry="2.5" fill="currentColor" opacity="0.8"/>
+        </symbol>
+
+        <!-- Photo / Camera (for Lunar Visuals) -->
+        <symbol id="icon-photo" viewBox="0 0 24 24">
+            <rect x="2" y="5" width="20" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="12" cy="13" r="1.5" fill="currentColor" opacity="0.4"/>
+            <path d="M8,5 L9,2 L15,2 L16,5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </symbol>
+
+        <!-- Rocket (for Send to the Moon) -->
+        <symbol id="icon-rocket" viewBox="0 0 24 24">
+            <path d="M12,2 C12,2 8,6 8,14 L10,16 L14,16 L16,14 C16,6 12,2 12,2 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <circle cx="12" cy="10" r="1.5" fill="currentColor" opacity="0.6"/>
+            <path d="M8,14 Q5,14 4,18 L8,16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+            <path d="M16,14 Q19,14 20,18 L16,16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+            <path d="M10,16 L10,19 L12,21 L14,19 L14,16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        </symbol>
+
+        <!-- Play (for song suggestion chips) -->
+        <symbol id="icon-play" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <polygon points="10,7 10,17 18,12" fill="currentColor" opacity="0.85"/>
+        </symbol>
+
+        <!-- Sparkle / Star (decorative) -->
+        <symbol id="icon-sparkle" viewBox="0 0 24 24">
+            <path d="M12,2 L13.5,8.5 L20,7 L15,11 L20,17 L13.5,14 L12,22 L10.5,14 L4,17 L9,11 L4,7 L10.5,8.5 Z" fill="currentColor" opacity="0.85"/>
+        </symbol>
+
+        <!-- Moon Send (crescent with arrow — for Send to Moon button) -->
+        <symbol id="icon-moon-send" viewBox="0 0 24 24">
+            <path d="M10,4 A8,8 0 1,0 10,20 A5.5,8 0 1,1 10,4" fill="currentColor" opacity="0.8"/>
+            <polyline points="16,6 21,3 18,8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="21" y1="3" x2="15" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </symbol>
+
+        <!-- YouTube (play button in rounded rect) -->
+        <symbol id="icon-youtube" viewBox="0 0 24 24">
+            <rect x="2" y="5" width="20" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <polygon points="10,8 10,16 17,12" fill="currentColor" opacity="0.85"/>
+        </symbol>
+
+        <!-- Attach / Paperclip (for attachments) -->
+        <symbol id="icon-attach" viewBox="0 0 24 24">
+            <path d="M16,6 L16,16 A4,4 0 0,1 8,16 L8,8 A2.5,2.5 0 0,1 13,8 L13,15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </symbol>
     </svg>
 
@@ -5102,28 +5653,37 @@
             </div>
             <div class="message-page-body" style="padding:20px 24px;overflow-y:auto;">
             
-            <!-- Step 1: Compose your message + Lunar Note -->
+            <!-- Step 1: Compose (Dark Redesign) -->
             <div id="composeStep1">
-                <p class="modal-subtitle" style="text-align:center;margin-bottom:20px;color:var(--text-muted);font-size:13px;">Write something, add a Lunar Note, or both</p>
-                
-                <div class="compose-split" style="display:flex;gap:16px;">
-                    <!-- Left: Text message -->
-                    <div style="flex:1;min-width:0;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <textarea id="messageText" placeholder="Write a message..." style="min-height:180px;"></textarea>
+                <!-- Glass Card with Toggle + Content -->
+                <div class="compose-glass-card">
+                    <!-- Segmented Toggle: Open Note / Go Lunar -->
+                    <div class="compose-toggle-wrap">
+                        <div class="compose-toggle">
+                            <button class="compose-toggle-btn active" id="toggleOpenNote" onclick="composeToggleMode('open-note')">
+                                <svg class="app-icon sm" style="width:16px;height:16px"><use href="#icon-compose"/></svg> Open Note
+                            </button>
+                            <button class="compose-toggle-btn" id="toggleGoLunar" onclick="composeToggleMode('go-lunar')">
+                                <svg class="app-icon sm" style="width:16px;height:16px"><use href="#icon-lunar-note"/></svg> Go Lunar
+                            </button>
                         </div>
                     </div>
-                    
-                    <!-- Right: Lunar Note (open by default) -->
-                    <div style="flex:1;min-width:0;">
+
+                    <!-- Open Note mode: freeform text -->
+                    <div id="composeOpenNote">
+                        <textarea id="messageText" class="compose-textarea" placeholder="Whisper your message to the stars..."></textarea>
+                        <div class="compose-transmit-label">Transmitting via Luna-1</div>
+                    </div>
+
+                    <!-- Go Lunar mode: step wizard (hidden by default) -->
+                    <div id="composeGoLunar" style="display:none;">
                         <div class="lunar-note-inline" id="lunarNoteInline">
-                            <div class="lunar-note-panel" id="lunarNotePanel" style="display: block;">
+                            <div class="lunar-note-panel" id="lunarNotePanel" style="display:block;">
                                 <div class="lunar-panel-header">
-                                    <span class="lunar-panel-label"><svg class="app-icon sm" style="color:var(--blue)"><use href="#icon-lunar-note"/></svg> Lunar Note</span>
-                                    <button class="lunar-panel-close" onclick="toggleLunarNote()" title="Remove Lunar Note">&times;</button>
+                                    <span class="lunar-panel-label"><svg class="app-icon sm" style="color:#4fc3f7"><use href="#icon-lunar-note"/></svg> Lunar Note</span>
                                 </div>
                                 <p class="lunar-intro">Give me three things. The moon does the rest.</p>
-                    
+
                                 <!-- Step-through input cards -->
                                 <div class="lunar-step-container" id="lunarStepContainer">
                                     <!-- Card 1 -->
@@ -5166,9 +5726,9 @@
                                         </div>
                                     </div>
                                 </div>
-                    
+
                                 <!-- Generated result card -->
-                                <div class="lunar-result-card" id="lunarResultCard" style="display: none;">
+                                <div class="lunar-result-card" id="lunarResultCard" style="display:none;">
                                     <div class="lunar-result-label">Lunar Note</div>
                                     <div class="lunar-result-text" id="lunarResultText"></div>
                                     <div class="lunar-result-closing" id="lunarResultClosing"></div>
@@ -5178,49 +5738,65 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <!-- Re-add pill (hidden, shown when note is closed) -->
-                            <div class="lunar-note-toggle-area" id="lunarToggleArea" style="display:none;">
-                                <button class="lunar-note-pill" id="lunarNotePill" onclick="toggleLunarNote()" style="width:100%;margin-top:8px;">
-                                    <span class="lunar-pill-icon">🌙</span>
-                                    <span class="lunar-pill-text" id="lunarPillText">Add a Lunar Note</span>
-                                </button>
-                            </div>
-                        </div>
+                <!-- ADD: row with music + photo buttons -->
+                <div class="compose-add-row">
+                    <span class="compose-add-label">ADD:</span>
+                    <button class="compose-add-btn" id="composeMusicBtn" onclick="toggleComposeMusic()">
+                        <svg width="16" height="16" style="color:inherit"><use href="#icon-music"/></svg>
+                    </button>
+                    <button class="compose-add-btn" id="composePhotoBtn" onclick="toggleComposePhoto()">
+                        <svg width="16" height="16" style="color:inherit"><use href="#icon-photo"/></svg>
+                    </button>
+                </div>
+
+                <!-- Music expansion panel (hidden by default) -->
+                <div class="compose-music-panel" id="composeMusicPanel" style="display:none;">
+                    <div class="compose-music-search">
+                        <span class="compose-music-yt-icon">
+                            <svg width="18" height="18" style="color:white"><use href="#icon-youtube"/></svg>
+                        </span>
+                        <input type="text" id="songInput" placeholder="Search YouTube for a song..." oninput="onSongInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();if(!extractYouTubeId(this.value.trim()) && !extractSpotifyTrackId(this.value.trim()))searchYouTubeSong();}">
+                    </div>
+                    <button onclick="searchYouTubeSong()" id="songSearchBtn" style="display:none;margin-top:8px;background:#4fc3f7;color:#0a1628;border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;">Search</button>
+                    <div id="songSearchResults" style="max-height:180px;overflow-y:auto;display:none;margin-top:8px;"></div>
+                    <div class="song-suggestions" id="songSuggestions">
+                        <!-- Populated by JS on each compose open -->
+                    </div>
+                    <div id="ytEmbedContainer" style="margin-top:10px;"></div>
+                    <div class="compose-music-note">Songs play when the message is opened</div>
+                </div>
+
+                <!-- Photo panel (hidden by default) -->
+                <div class="compose-photo-panel" id="composePhotoPanel" style="display:none;">
+                    <label for="moonPhotoInput" class="compose-photo-dropzone" id="composePhotoDropzone">
+                        <svg width="32" height="32"><use href="#icon-photo"/></svg>
+                        <div class="compose-photo-dropzone-text" id="moonPhotoLabel">Tap to add a moon photo</div>
+                    </label>
+                    <input type="file" id="moonPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleMoonPhoto(this)">
+                    <div id="moonPhotoPreview" style="display:none;position:relative;margin-top:12px;">
+                        <img id="moonPhotoImg" style="width:100%;max-height:200px;object-fit:cover;border-radius:14px;">
+                        <button class="compose-photo-remove" onclick="clearMoonPhoto()">&times;</button>
                     </div>
                 </div>
-                
-                <!-- Attachments row -->
-                <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;align-items:flex-start;">
-                    <!-- Song link -->
-                    <div style="flex:1;min-width:200px;">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                            <span>🎵</span>
-                            <input type="text" id="songInput" placeholder="Search for a song or paste a Spotify link" style="flex:1;" oninput="onSongInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();if(!extractYouTubeId(this.value.trim()) && !extractSpotifyTrackId(this.value.trim()))searchYouTubeSong();}">
-                            <button onclick="searchYouTubeSong()" id="songSearchBtn" style="background:var(--blue);color:white;border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;display:none;">Search</button>
-                        </div>
-                        <div id="songSearchResults" style="max-height:180px;overflow-y:auto;display:none;margin-bottom:8px;"></div>
-                        <div class="song-suggestions" id="songSuggestions">
-                            <!-- Populated by JS on each compose open -->
-                        </div>
-                        <div id="ytEmbedContainer" style="margin-top:8px;"></div>
+
+                <!-- Send to the Moon button -->
+                <div class="compose-send-container">
+                    <button class="compose-send-btn" id="composeMainBtn" onclick="composeMainAction()">
+                        Send to the Moon
+                        <span class="compose-send-icons">
+                            <svg width="22" height="22" style="color:white"><use href="#icon-rocket"/></svg>
+                            <svg width="18" height="18" style="color:white"><use href="#icon-moon-send"/></svg>
+                        </span>
+                    </button>
+                    <div class="compose-footer-text">
+                        <svg width="10" height="10" style="color:rgba(255,255,255,0.3)"><use href="#icon-sparkle"/></svg>
+                        Transmission encrypted via MoonPop protocol
+                        <svg width="10" height="10" style="color:rgba(255,255,255,0.3)"><use href="#icon-sparkle"/></svg>
                     </div>
-                    <!-- Moon photo -->
-                    <div style="min-width:140px;">
-                        <label for="moonPhotoInput" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;border:1px dashed #ccc;border-radius:10px;font-size:13px;color:var(--text-muted);transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='#ccc'">
-                            <span style="font-size:18px;">🌕</span>
-                            <span id="moonPhotoLabel">Attach a moon photo</span>
-                        </label>
-                        <input type="file" id="moonPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleMoonPhoto(this)">
-                        <div id="moonPhotoPreview" style="margin-top:8px;display:none;position:relative;">
-                            <img id="moonPhotoImg" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;">
-                            <button onclick="clearMoonPhoto()" style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="display:flex;justify-content:center;margin-top:20px;">
-                    <button class="send-button" id="composeMainBtn" onclick="composeMainAction()" style="max-width:280px;">Release to the Moon 🌙</button>
                 </div>
             </div>
             
@@ -10281,7 +10857,7 @@
 
         function clearMoonPhoto() {
             pendingMoonPhoto = null;
-            clearPhotoAttachment('moonPhotoInput', 'moonPhotoPreview', 'moonPhotoLabel', 'Attach a moon photo', 'compose');
+            clearPhotoAttachment('moonPhotoInput', 'moonPhotoPreview', 'moonPhotoLabel', 'Tap to add a moon photo', 'compose');
         }
 
 
@@ -11294,12 +11870,14 @@
             // Show new contact form immediately
             document.getElementById('composeStep1').style.display = 'none';
             document.getElementById('composeNewContact').style.display = 'block';
-            // Update header
+            // Update header (dark theme)
             const header = document.getElementById('composeHeader');
             header.innerHTML = `
-                <button class="message-page-back" onclick="backToRecipientPicker()">←</button>
-                <span style="font-weight:700;color:var(--blue);font-size:15px;">New Contact</span>
-                <span style="width:34px;"></span>
+                <button class="compose-header-btn" onclick="backToRecipientPicker()">
+                    <svg width="18" height="18" style="color:white"><use href="#icon-back"/></svg>
+                </button>
+                <span style="font-weight:700;color:white;font-size:15px;">New Contact</span>
+                <span style="width:36px;"></span>
             `;
         }
 
@@ -11312,30 +11890,96 @@
             // Refresh song suggestions each time compose opens
             refreshSongSuggestions();
 
-            // Auto-activate lunar note
-            if (!lunarNoteActive) {
-                lunarNoteActive = true;
-                currentPromptSet = getNextPromptSet();
-                currentLunarTemplate = -1;
-                const ps = PROMPT_SETS[currentPromptSet];
-                for (let i = 0; i < 3; i++) {
-                    document.getElementById('lunarLabel' + (i+1)).textContent = ps.prompts[i].label;
-                    document.getElementById('lunarInput' + (i+1)).placeholder = ps.prompts[i].placeholder;
-                }
-                goLunarStep(1);
-            }
+            // Start in Open Note mode (default)
+            composeToggleMode('open-note');
 
-            // Show who we're composing to in the header and update button
+            // Show dark-themed header with recipient info
             if (selectedRecipient) {
                 const header = document.getElementById('composeHeader');
+                const initials = selectedRecipient.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
                 header.innerHTML = `
-                    <button class="message-page-back" onclick="backToRecipientPicker()" style="font-size:20px;"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
-                    <span style="font-weight:700;color:var(--blue);font-size:15px;">${selectedRecipient.name}</span>
-                    <span style="width:34px;"></span>
+                    <button class="compose-header-btn" onclick="backToRecipientPicker()">
+                        <svg width="18" height="18" style="color:white"><use href="#icon-back"/></svg>
+                    </button>
+                    <div class="compose-header-content">
+                        <div class="compose-avatar">
+                            <div class="compose-avatar-inner">${initials}</div>
+                            <div class="compose-avatar-sparkle">
+                                <svg width="10" height="10" style="color:#ffd54f"><use href="#icon-sparkle"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="compose-recipient-name">
+                                ${selectedRecipient.name}
+                                <span class="compose-recipient-badge">Recipient</span>
+                            </div>
+                            <div class="compose-arrival-time">Arrives at moonrise</div>
+                        </div>
+                    </div>
+                    <button class="compose-header-btn" onclick="closeModal()">
+                        <svg width="18" height="18" style="color:white"><use href="#icon-close"/></svg>
+                    </button>
                 `;
-                const mainBtn = document.getElementById('composeMainBtn');
-                if (mainBtn) mainBtn.textContent = 'Release to the Moon 🌙';
             }
+        }
+
+        // Compose toggle between Open Note and Go Lunar modes
+        function composeToggleMode(mode) {
+            const openNoteBtn = document.getElementById('toggleOpenNote');
+            const goLunarBtn = document.getElementById('toggleGoLunar');
+            const openNoteContent = document.getElementById('composeOpenNote');
+            const goLunarContent = document.getElementById('composeGoLunar');
+            if (!openNoteBtn || !goLunarBtn) return;
+
+            if (mode === 'open-note') {
+                openNoteBtn.classList.add('active');
+                goLunarBtn.classList.remove('active');
+                openNoteContent.style.display = 'block';
+                goLunarContent.style.display = 'none';
+                lunarNoteActive = false;
+            } else {
+                openNoteBtn.classList.remove('active');
+                goLunarBtn.classList.add('active');
+                openNoteContent.style.display = 'none';
+                goLunarContent.style.display = 'block';
+
+                // Activate lunar note wizard
+                if (!lunarNoteActive) {
+                    lunarNoteActive = true;
+                    currentPromptSet = getNextPromptSet();
+                    currentLunarTemplate = -1;
+                    const ps = PROMPT_SETS[currentPromptSet];
+                    for (let i = 0; i < 3; i++) {
+                        document.getElementById('lunarLabel' + (i+1)).textContent = ps.prompts[i].label;
+                        document.getElementById('lunarInput' + (i+1)).placeholder = ps.prompts[i].placeholder;
+                    }
+                    goLunarStep(1);
+                }
+            }
+        }
+
+        // Toggle music expansion panel
+        function toggleComposeMusic() {
+            const panel = document.getElementById('composeMusicPanel');
+            const btn = document.getElementById('composeMusicBtn');
+            if (!panel || !btn) return;
+            const isVisible = panel.style.display !== 'none';
+            panel.style.display = isVisible ? 'none' : 'block';
+            btn.classList.toggle('active', !isVisible);
+            if (!isVisible) {
+                refreshSongSuggestions();
+                setTimeout(() => document.getElementById('songInput')?.focus(), 100);
+            }
+        }
+
+        // Toggle photo expansion panel
+        function toggleComposePhoto() {
+            const panel = document.getElementById('composePhotoPanel');
+            const btn = document.getElementById('composePhotoBtn');
+            if (!panel || !btn) return;
+            const isVisible = panel.style.display !== 'none';
+            panel.style.display = isVisible ? 'none' : 'block';
+            btn.classList.toggle('active', !isVisible);
         }
 
         function openModal() {
@@ -11647,12 +12291,14 @@
             const lookupDiv = document.getElementById('emailLookupResult');
             if (lookupDiv) lookupDiv.style.display = 'none';
 
-            // Update header — back goes to recipient picker
+            // Update header (dark theme) — back goes to recipient picker
             const header = document.getElementById('composeHeader');
             header.innerHTML = `
-                <button class="message-page-back" onclick="backFromNewContact()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
-                <span style="font-weight:700;color:var(--blue);font-size:15px;">New Contact</span>
-                <span style="width:34px;"></span>
+                <button class="compose-header-btn" onclick="backFromNewContact()">
+                    <svg width="18" height="18" style="color:white"><use href="#icon-back"/></svg>
+                </button>
+                <span style="font-weight:700;color:white;font-size:15px;">New Contact</span>
+                <span style="width:36px;"></span>
             `;
         }
 
@@ -11695,12 +12341,14 @@
             document.getElementById('composeStep1').style.display = 'none';
             document.getElementById('composeStep2').style.display = 'block';
 
-            // Switch header: X → ← back
+            // Switch header (dark theme)
             const header = document.getElementById('composeHeader');
             header.innerHTML = `
-                <button class="message-page-back" onclick="backToStep1()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
-                <span style="font-weight:700;color:var(--blue);font-size:15px;">Send to</span>
-                <span style="width:34px;"></span>
+                <button class="compose-header-btn" onclick="backToStep1()">
+                    <svg width="18" height="18" style="color:white"><use href="#icon-back"/></svg>
+                </button>
+                <span style="font-weight:700;color:white;font-size:15px;">Send to</span>
+                <span style="width:36px;"></span>
             `;
         }
         
@@ -12362,19 +13010,20 @@
             document.getElementById('recipient').value = '';
             selectedRecipient = null;
             isNewContact = false;
-            
+
             // Reset message
             document.getElementById('messageText').value = '';
-            
-            // Reset lunar note back to open/step1 (open by default)
+
+            // Reset toggle to Open Note mode
+            composeToggleMode('open-note');
+
+            // Reset lunar note
             for (let i = 1; i <= 3; i++) document.getElementById('lunarInput' + i).value = '';
             document.getElementById('lunarResultCard').style.display = 'none';
             lunarNoteActive = false;
             currentLunarTemplate = -1;
             document.getElementById('lunarNotePanel').style.display = 'block';
-            const toggleArea = document.getElementById('lunarToggleArea');
-            if (toggleArea) toggleArea.style.display = 'none';
-            
+
             // Reset song
             if (document.getElementById('songInput')) document.getElementById('songInput').value = '';
             selectedSongTitle = '';
@@ -12383,32 +13032,40 @@
 
             // Reset moon photo
             clearMoonPhoto();
-            
+
             // Reset next buttons
             for (let i = 1; i <= 3; i++) {
                 const btn = document.getElementById('lunarNext' + i);
                 if (btn) btn.disabled = true;
             }
-            
+
+            // Reset expansion panels
+            const musicPanel = document.getElementById('composeMusicPanel');
+            const photoPanel = document.getElementById('composePhotoPanel');
+            const musicBtn = document.getElementById('composeMusicBtn');
+            const photoBtn = document.getElementById('composePhotoBtn');
+            if (musicPanel) musicPanel.style.display = 'none';
+            if (photoPanel) photoPanel.style.display = 'none';
+            if (musicBtn) musicBtn.classList.remove('active');
+            if (photoBtn) photoBtn.classList.remove('active');
+
             // Reset new contact view
             document.getElementById('newContactName').value = '';
             document.getElementById('newContactEmail').value = '';
             document.getElementById('newContactCity').value = '';
             document.getElementById('newContactCityDropdown').classList.remove('active');
-            
-            // Restore header (will be overridden when openModalForRecipient sets it)
+
+            // Restore header (dark theme — will be overridden when openModalForRecipient sets it)
             const header = document.getElementById('composeHeader');
             if (header) {
                 header.innerHTML = `
-                    <button class="message-page-back" onclick="closeModal()" style="font-size:20px;">←</button>
-                    <span style="font-weight:700;color:var(--blue);font-size:15px;">New Moon Message</span>
-                    <span style="width:34px;"></span>
+                    <button class="compose-header-btn" onclick="closeModal()">
+                        <svg width="18" height="18" style="color:white"><use href="#icon-back"/></svg>
+                    </button>
+                    <span style="font-weight:700;color:white;font-size:15px;">New Moon Message</span>
+                    <span style="width:36px;"></span>
                 `;
             }
-
-            // Reset main button text
-            const mainBtn = document.getElementById('composeMainBtn');
-            if (mainBtn) mainBtn.textContent = 'Release to the Moon 🌙';
 
             // Switch back to step 1
             showDefaultCompose();
