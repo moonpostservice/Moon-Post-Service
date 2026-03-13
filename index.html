@@ -1093,9 +1093,23 @@
         .orbit-ring {
             width: 100%;
             height: 100%;
-            border: 3px solid var(--blue);
+            border: 2px solid rgba(79, 195, 247, 0.3);
             border-radius: 50%;
             position: relative;
+            transition: border-color 0.6s ease, box-shadow 0.6s ease;
+        }
+
+        /* Double-ring effect: inner faint ring */
+        .orbit-ring::before {
+            content: '';
+            position: absolute;
+            top: 4%;
+            left: 4%;
+            width: 92%;
+            height: 92%;
+            border: 1px solid rgba(79, 195, 247, 0.08);
+            border-radius: 50%;
+            pointer-events: none;
         }
 
         /* Moon illustration background inside the ring */
@@ -1132,22 +1146,23 @@
 
         .horizon-dot {
             position: absolute;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            top: -2.5px;
+            width: 10px;
+            height: 10px;
+            top: -4px;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translateX(-50%) rotate(45deg);
+            border-radius: 1px;
         }
 
         .horizon-dot.rise {
-            background: var(--blue);
-            opacity: 0.6;
+            background: #4fc3f7;
+            box-shadow: 0 0 8px rgba(79, 195, 247, 0.5);
         }
 
         .horizon-dot.set {
-            background: var(--blue);
-            opacity: 0.4;
+            background: #4fc3f7;
+            opacity: 0.6;
+            box-shadow: 0 0 6px rgba(79, 195, 247, 0.3);
         }
 
         .horizon-label {
@@ -1158,34 +1173,39 @@
             gap: 2px;
             white-space: nowrap;
             pointer-events: none;
-            top: -32px;
+            top: -48px;
             left: 50%;
             /* counter-rotation set dynamically by JS */
         }
 
         .horizon-title {
             font-size: 8px;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            opacity: 0.6;
+            letter-spacing: 0.8px;
+            opacity: 0.8;
         }
 
         .horizon-time {
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
         }
 
         .rise-label .horizon-title {
-            color: var(--blue);
+            color: #4fc3f7;
         }
 
         .rise-label .horizon-time {
-            color: var(--blue);
+            color: #4fc3f7;
         }
 
-        .set-label {
+        .set-label .horizon-title {
+            color: #4fc3f7;
+        }
+
+        .set-label .horizon-time {
+            color: #4fc3f7;
             opacity: 0.6;
         }
 
@@ -1200,6 +1220,26 @@
             pointer-events: none;
         }
 
+        /* Moon comet trail */
+        .moon-orbit::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255, 213, 79, 0.3), transparent);
+            border-radius: 2px;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            pointer-events: none;
+        }
+
+        .moon-visible .moon-orbit::before {
+            opacity: 1;
+        }
+
         .moon-icon {
             position: absolute;
             top: -20px;
@@ -1207,6 +1247,8 @@
             transform: translateX(-50%);
             width: 40px;
             height: 40px;
+            pointer-events: auto;
+            cursor: pointer;
         }
 
         .moon-icon svg {
@@ -1242,25 +1284,47 @@
             transform: translateX(-50%);
         }
 
+        /* Dot trailing afterglow */
+        .message-dot::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 100%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 4px;
+            background: linear-gradient(270deg, rgba(255, 85, 88, 0.4), transparent);
+            border-radius: 2px;
+            pointer-events: none;
+        }
+
+        .message-dot.incoming::after {
+            background: linear-gradient(270deg, rgba(79, 195, 247, 0.4), transparent);
+        }
+
         .message-dot:hover {
             transform: translateX(-50%) scale(1.3);
             box-shadow: 0 0 12px rgba(255, 85, 88, 0.5);
         }
 
-        /* Tooltip for dot hover - always horizontal */
+        /* Tooltip for dot hover - dark glass card */
         .dot-tooltip {
             position: fixed;
-            background: var(--white);
-            padding: 12px 16px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            background: rgba(10, 22, 40, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             font-size: 13px;
             z-index: 1000;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
             white-space: nowrap;
-            max-width: 260px;
+            max-width: 280px;
+            color: white;
         }
 
         .dot-tooltip.visible {
@@ -1269,22 +1333,150 @@
 
         .dot-tooltip .tooltip-name {
             font-weight: 700;
-            color: var(--text-dark);
+            color: white;
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            font-size: 14px;
         }
 
         .dot-tooltip .tooltip-meta {
-            color: var(--text-muted);
+            color: rgba(255, 255, 255, 0.6);
             display: block;
             font-size: 12px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .dot-tooltip .tooltip-phase {
-            color: var(--coral);
+            color: #4fc3f7;
             font-size: 11px;
             display: block;
+        }
+
+        .dot-tooltip .tooltip-progress {
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .dot-tooltip .tooltip-progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #4fc3f7, #ffd54f);
+            transition: width 0.3s ease;
+        }
+
+        .dot-tooltip .tooltip-progress-fill.outgoing {
+            background: linear-gradient(90deg, #ff5558, #ffd54f);
+        }
+
+        /* Moon phase detail popup */
+        .moon-phase-popup {
+            position: fixed;
+            background: rgba(8, 18, 32, 0.96);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 16px 20px;
+            border-radius: 14px;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(8px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            min-width: 200px;
+            color: white;
+        }
+
+        .moon-phase-popup.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+            max-width: calc(100vw - 32px);
+        }
+
+        .moon-phase-popup-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(79, 195, 247, 0.12);
+        }
+
+        .moon-phase-emoji {
+            font-size: 24px;
+        }
+
+        .moon-phase-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #4fc3f7;
+        }
+
+        .moon-phase-popup-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .moon-phase-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .moon-phase-stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .moon-phase-stat-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Moon carrying indicator — orbit center */
+        .moon-carrying-indicator {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        .moon-carrying-count {
+            color: #4fc3f7;
+            font-weight: 700;
+        }
+
+        /* Moon live indicator */
+        .moon-live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: rgba(255, 213, 79, 0.8);
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .moon-live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ffd54f;
+            animation: livePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes livePulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; box-shadow: 0 0 6px rgba(255, 213, 79, 0.5); }
         }
 
         /* Center content */
@@ -1385,7 +1577,7 @@
             align-items: center;
             gap: 32px;
             padding: 10px 28px;
-            margin: 12px auto 0;
+            margin: 28px auto 0;
             max-width: 720px;
             border: 1px solid #0075EA;
             border-radius: 32px;
@@ -4278,7 +4470,7 @@
         }
 
         .header.split-active .logo {
-            height: clamp(20px, 2.5vw, 28px);
+            height: clamp(40px, 5vw, 56px);
         }
 
         /* Hero between header and split */
@@ -4348,7 +4540,7 @@
         }
 
         .split-right .moon-data-bar {
-            margin: 4px auto 0;
+            margin: 24px auto 0;
         }
 
         /* Scale orbit ring for available space */
@@ -4990,7 +5182,7 @@
             background: rgba(10, 22, 40, 0.85);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(79, 195, 247, 0.1);
+            border-bottom: none;
         }
         .header.scrolled {
             box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
@@ -5003,11 +5195,11 @@
             gap: 14px;
         }
         .header-brand .logo {
-            height: 36px;
+            height: 56px;
             width: auto;
         }
         .header.scrolled .header-brand .logo {
-            height: 28px;
+            height: 40px;
         }
         .header-tagline {
             font-size: 11px;
@@ -5092,7 +5284,7 @@
 
         /* Split layout — dark theme */
         .split-left {
-            border-right-color: rgba(79, 195, 247, 0.08);
+            border-right: none;
         }
 
         /* Inbox card — dark glass */
@@ -5159,38 +5351,44 @@
         .circle-row { border-bottom-color: rgba(79, 195, 247, 0.06) !important; }
         .circle-row:hover { background: rgba(79, 195, 247, 0.05) !important; }
 
-        /* Orbit ring — dark theme */
+        /* Orbit ring — dark theme with ambient glow */
         .orbit-ring {
-            border-color: rgba(79, 195, 247, 0.25);
-            transition: border-color 0.6s ease, box-shadow 0.6s ease;
+            border-color: rgba(79, 195, 247, 0.2);
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.04), inset 0 0 12px rgba(79, 195, 247, 0.02);
         }
 
-        /* Orbit illustration — brighter on dark */
+        .orbit-ring.moon-visible {
+            border-color: rgba(79, 195, 247, 0.4);
+            box-shadow: 0 0 24px rgba(79, 195, 247, 0.1), inset 0 0 24px rgba(79, 195, 247, 0.05);
+        }
+
+        .orbit-ring::before {
+            border-color: rgba(79, 195, 247, 0.06);
+        }
+
+        .orbit-ring.moon-visible::before {
+            border-color: rgba(79, 195, 247, 0.1);
+        }
+
+        /* Orbit illustration — darker than page bg */
         .orbit-bg-illustration {
-            opacity: 0.25;
-            filter: sepia(0.5) saturate(2) hue-rotate(190deg) brightness(1.2);
+            opacity: 0.15;
+            filter: sepia(0.5) saturate(1.5) hue-rotate(200deg) brightness(0.5);
         }
 
         /* Orbit center text — dark */
         .orbit-center { color: white; }
-        .visibility-text { color: rgba(255, 255, 255, 0.6) !important; }
+        .visibility-text { color: rgba(255, 255, 255, 0.5) !important; }
         .standby-countdown { color: #4fc3f7 !important; }
-        .standby-label { color: rgba(255, 255, 255, 0.5) !important; }
-        .moon-down-lockout { color: rgba(255, 255, 255, 0.3) !important; }
-
-        /* Horizon markers — dark theme */
-        .horizon-dot.rise { background: #4fc3f7; }
-        .horizon-dot.set { background: rgba(79, 195, 247, 0.4); }
-        .rise-label .horizon-title { color: #4fc3f7; }
-        .rise-label .horizon-time { color: #4fc3f7; }
-        .set-label .horizon-title { color: rgba(255, 255, 255, 0.4); }
-        .set-label .horizon-time { color: rgba(255, 255, 255, 0.5); }
-        .horizon-title { color: rgba(255, 255, 255, 0.4); }
+        .standby-label { color: rgba(255, 255, 255, 0.4) !important; }
+        .moon-down-lockout { color: rgba(255, 255, 255, 0.25) !important; font-size: 11px !important; }
 
         /* Message dots on orbit — brighter on dark */
         .message-dot { box-shadow: 0 0 8px rgba(255, 85, 88, 0.4); }
         .message-dot:hover { box-shadow: 0 0 16px rgba(255, 85, 88, 0.6); }
         .message-dot.releasing { box-shadow: 0 0 12px rgba(255, 85, 88, 0.5); }
+        .message-dot.incoming { box-shadow: 0 0 8px rgba(79, 195, 247, 0.4); }
+        .message-dot.incoming:hover { box-shadow: 0 0 16px rgba(79, 195, 247, 0.6); }
 
         /* Moon data bar — dark glass */
         .moon-data-bar {
@@ -5202,13 +5400,6 @@
         .moon-data-item { color: rgba(79, 195, 247, 0.6); }
         .moon-data-label { color: rgba(255, 255, 255, 0.35); }
         .moon-data-value { color: #4fc3f7; }
-
-        /* Dot tooltip — dark */
-        .dot-tooltip {
-            background: rgba(10, 22, 40, 0.95) !important;
-            border: 1px solid rgba(79, 195, 247, 0.2) !important;
-            color: white !important;
-        }
 
         /* Moon Down modal — dark theme */
         .moon-down-modal { background: rgba(10, 22, 40, 0.95); }
@@ -5290,7 +5481,7 @@
         /* Responsive — tagline hidden on small screens */
         @media (max-width: 768px) {
             .header-tagline { display: none; }
-            .header-brand .logo { height: 30px; }
+            .header-brand .logo { height: 44px; }
         }
 
         /* ============================== */
@@ -5950,7 +6141,7 @@
 
             <!-- Contacts -->
             <button class="header-contacts-btn" onclick="openContactsPage()" aria-label="Contacts" title="Contacts">
-                <svg class="app-icon" style="width:20px;height:20px;"><use href="#icon-contacts"/></svg>
+                <svg class="app-icon" style="width:28px;height:28px;"><use href="#icon-contacts"/></svg>
             </button>
 
             <!-- User / Settings -->
@@ -6255,6 +6446,16 @@
                 <span class="tooltip-name"></span>
                 <span class="tooltip-meta"></span>
                 <span class="tooltip-phase"></span>
+                <div class="tooltip-progress"><div class="tooltip-progress-fill"></div></div>
+            </div>
+
+            <!-- Moon phase detail popup -->
+            <div class="moon-phase-popup" id="moonPhasePopup">
+                <div class="moon-phase-popup-header">
+                    <span class="moon-phase-emoji" id="moonPhaseEmoji"></span>
+                    <span class="moon-phase-name" id="moonPhaseName"></span>
+                </div>
+                <div class="moon-phase-popup-stats" id="moonPhaseStats"></div>
             </div>
 
             <!-- Moon Data Bar -->
@@ -7983,11 +8184,11 @@
             // Stats display removed - function kept for compatibility
         }
         
-        // Attach tooltip handlers to all current message dots
+        // Attach tooltip + click handlers to all current message dots
         function attachDotTooltips() {
             const dotTooltip = document.getElementById('dotTooltip');
             if (!dotTooltip) return;
-            
+
             document.querySelectorAll('.message-dot').forEach(dot => {
                 dot.addEventListener('mouseenter', (e) => {
                     const isIncoming = dot.dataset.incoming === 'true';
@@ -7996,36 +8197,123 @@
 
                     let eta = '';
                     if (hours < 1) {
-                        eta = `in ${Math.round(hours * 60)}m`;
+                        const mins = Math.round(hours * 60);
+                        eta = mins <= 1 ? 'arriving soon' : `arriving in ${mins}m`;
                     } else {
-                        eta = `in ${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`;
+                        eta = `arriving in ${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`;
                     }
+
+                    // Calculate transit progress (estimate: assume 12h max transit)
+                    const maxTransit = 12;
+                    const elapsed = maxTransit - hours;
+                    const progress = Math.min(100, Math.max(5, (elapsed / maxTransit) * 100));
+
+                    const progressFill = dotTooltip.querySelector('.tooltip-progress-fill');
 
                     if (isIncoming) {
                         const from = dot.dataset.from || 'Someone';
                         dotTooltip.querySelector('.tooltip-name').textContent = `From ${from}`;
-                        dotTooltip.querySelector('.tooltip-meta').textContent = `Arrives at your moonrise (${release}) · ${eta}`;
+                        dotTooltip.querySelector('.tooltip-meta').textContent = `Moonrise ${release} · ${eta}`;
+                        dotTooltip.querySelector('.tooltip-phase').textContent = '↓ Incoming';
+                        progressFill.className = 'tooltip-progress-fill';
                     } else {
                         const to = dot.dataset.to || 'Someone';
                         const location = dot.dataset.location || '';
                         dotTooltip.querySelector('.tooltip-name').textContent = `To ${to}`;
-                        dotTooltip.querySelector('.tooltip-meta').textContent = `Moonrise at ${release} in ${location} · ${eta}`;
+                        dotTooltip.querySelector('.tooltip-meta').textContent = location ? `📍 ${location} · ${release} · ${eta}` : `${release} · ${eta}`;
+                        dotTooltip.querySelector('.tooltip-phase').textContent = '↑ Outgoing';
+                        progressFill.className = 'tooltip-progress-fill outgoing';
                     }
-                    dotTooltip.querySelector('.tooltip-phase').textContent = '';
+                    progressFill.style.width = progress + '%';
                     dotTooltip.classList.add('visible');
                 });
-                
+
                 dot.addEventListener('mousemove', (e) => {
                     dotTooltip.style.left = (e.clientX + 15) + 'px';
                     dotTooltip.style.top = (e.clientY - 10) + 'px';
                 });
-                
+
                 dot.addEventListener('mouseleave', () => {
                     dotTooltip.classList.remove('visible');
                 });
+
+                // Click: open conversation with this sender/recipient
+                dot.addEventListener('click', () => {
+                    dotTooltip.classList.remove('visible');
+                    const isIncoming = dot.dataset.incoming === 'true';
+                    const name = isIncoming ? dot.dataset.from : dot.dataset.to;
+                    if (!name) return;
+                    const conv = conversations.find(c => c.otherName === name);
+                    if (conv) openConversation(conv);
+                });
             });
         }
-        
+
+        // Moon phase popup — show on moon icon click
+        function initMoonPhasePopup() {
+            const moonIcon = document.getElementById('orbitMoonIcon');
+            const popup = document.getElementById('moonPhasePopup');
+            if (!moonIcon || !popup) return;
+
+            moonIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (popup.classList.contains('visible')) {
+                    popup.classList.remove('visible');
+                    return;
+                }
+
+                // Get phase data from SunCalc
+                const now = new Date();
+                const illum = SunCalc.getMoonIllumination(now);
+
+                // Phase name + emoji
+                const phaseAngle = illum.phase;
+                let phaseName, phaseEmoji;
+                if (phaseAngle < 0.03 || phaseAngle > 0.97) { phaseName = 'New Moon'; phaseEmoji = '🌑'; }
+                else if (phaseAngle < 0.22) { phaseName = 'Waxing Crescent'; phaseEmoji = '🌒'; }
+                else if (phaseAngle < 0.28) { phaseName = 'First Quarter'; phaseEmoji = '🌓'; }
+                else if (phaseAngle < 0.47) { phaseName = 'Waxing Gibbous'; phaseEmoji = '🌔'; }
+                else if (phaseAngle < 0.53) { phaseName = 'Full Moon'; phaseEmoji = '🌕'; }
+                else if (phaseAngle < 0.72) { phaseName = 'Waning Gibbous'; phaseEmoji = '🌖'; }
+                else if (phaseAngle < 0.78) { phaseName = 'Last Quarter'; phaseEmoji = '🌗'; }
+                else { phaseName = 'Waning Crescent'; phaseEmoji = '🌘'; }
+
+                document.getElementById('moonPhaseEmoji').textContent = phaseEmoji;
+                document.getElementById('moonPhaseName').textContent = phaseName;
+
+                // Stats
+                const illumination = Math.round(illum.fraction * 100);
+                const altitude = moonData.altitude !== undefined ? moonData.altitude.toFixed(1) + '°' : '—';
+                // Pull distance & age from phase data or data bar
+                const phase = moonData.phase || {};
+                const distance = phase.distance ? Math.round(phase.distance).toLocaleString() + ' km' : (document.getElementById('moonDistanceBar')?.textContent || '—');
+                const age = phase.moonAge !== undefined ? phase.moonAge + ' days' : (phaseAngle * 29.53).toFixed(1) + ' days';
+
+                document.getElementById('moonPhaseStats').innerHTML = `
+                    <div class="moon-phase-stat"><span class="moon-phase-stat-label">Illumination</span><span class="moon-phase-stat-value">${illumination}%</span></div>
+                    <div class="moon-phase-stat"><span class="moon-phase-stat-label">Altitude</span><span class="moon-phase-stat-value">${altitude}</span></div>
+                    <div class="moon-phase-stat"><span class="moon-phase-stat-label">Distance</span><span class="moon-phase-stat-value">${distance}</span></div>
+                    <div class="moon-phase-stat"><span class="moon-phase-stat-label">Age</span><span class="moon-phase-stat-value">${age}</span></div>
+                `;
+
+                // Position popup near the moon icon, clamped to viewport
+                const rect = moonIcon.getBoundingClientRect();
+                let left = rect.left + rect.width / 2 - 110;
+                left = Math.max(16, Math.min(left, window.innerWidth - 230));
+                popup.style.left = left + 'px';
+                popup.style.top = (rect.bottom + 12) + 'px';
+
+                popup.classList.add('visible');
+            });
+
+            // Dismiss on click-outside
+            document.addEventListener('click', (e) => {
+                if (!popup.contains(e.target) && !moonIcon.contains(e.target)) {
+                    popup.classList.remove('visible');
+                }
+            });
+        }
+
         // Format a Date in the selected city's timezone as "HH:MM"
         function formatTimeInZone(date, tz) {
             if (!date) return '--:--';
@@ -9841,6 +10129,7 @@
             updateOrbitCenter();
             // Re-render after moon display is calculated (moon cycle data now available)
             renderMessageDots();
+            initMoonPhasePopup();
 
             setInterval(() => {
                 updateOrbitCenter();
@@ -10274,19 +10563,25 @@
             }
 
             if (moonData.isVisible) {
-                // Moon is up - compose available
+                // Moon is up — clean, minimal center
                 document.body.classList.remove('moon-down');
                 if (heroTitle) heroTitle.textContent = 'MESSAGES RELEASED BY THE MOON';
+
+                // In-transit message count
+                const inTransit = messages.filter(m => m.type === 'sent' && m.status === 'In Transit').length;
+                const inTransitLine = inTransit > 0
+                    ? `<p class="moon-carrying-indicator"><span class="moon-carrying-count">${inTransit}</span> ${inTransit === 1 ? 'message' : 'messages'} in orbit</p>`
+                    : '';
+
                 centerEl.innerHTML = `
                     <div class="standby-countdown live-timer">${timerStr}</div>
                     <p class="standby-label">until moonset</p>
-                    <button class="cta-button" onclick="openModal()">${iconSvg('compose', 'md')} New Moon Message</button>
-                    <p class="delivery-note">Arrives at moonrise in recipient's sky</p>
+                    <div class="moon-live-indicator"><span class="moon-live-dot"></span> Moon is live</div>
+                    ${inTransitLine}
                 `;
             } else {
-                // Moon is down - compose locked
+                // Moon is down — compose locked
                 document.body.classList.add('moon-down');
-                const riseTime = moonData.moonrise !== '--:--' ? moonData.moonrise : '—';
 
                 // Update hero title based on pending messages
                 if (heroTitle) {
@@ -10302,19 +10597,16 @@
                 // Message indicator
                 let messageIndicator = '';
                 if (totalWaiting > 0) {
-                    const plural = totalWaiting === 1 ? 'message is' : 'messages are';
-                    messageIndicator = `<p class="moon-carrying-indicator"><span class="moon-carrying-count">${totalWaiting}</span> ${plural} traveling with the moon toward you.</p>`;
+                    const plural = totalWaiting === 1 ? 'message' : 'messages';
+                    messageIndicator = `<p class="moon-carrying-indicator"><span class="moon-carrying-count">${totalWaiting}</span> ${plural} in transit</p>`;
                 } else {
-                    messageIndicator = `<p class="moon-carrying-indicator">The moon travels light tonight. No messages waiting.</p>`;
+                    messageIndicator = `<p class="moon-carrying-indicator" style="opacity:0.4;">No messages waiting</p>`;
                 }
 
                 centerEl.innerHTML = `
-                    <div class="standby-content">
-                        <div class="standby-countdown live-timer">${timerStr}</div>
-                        <p class="standby-label">until moonrise</p>
-                        ${messageIndicator}
-                        <p class="moon-down-lockout">Our services will open at moonrise (${riseTime}).</p>
-                    </div>
+                    <div class="standby-countdown live-timer" style="opacity:0.6;">${timerStr}</div>
+                    <p class="standby-label">until moonrise</p>
+                    ${messageIndicator}
                 `;
             }
 
