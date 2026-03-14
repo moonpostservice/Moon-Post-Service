@@ -4638,8 +4638,8 @@
 
         .split-layout {
             display: flex;
-            /* viewport minus header (~56px) minus hero (~40px) */
-            height: calc(100vh - 96px);
+            /* viewport minus header+hero (~120px) minus bottom gap (48px) */
+            height: calc(100vh - 168px);
             overflow: hidden;           /* no page scroll */
         }
 
@@ -4650,6 +4650,8 @@
             border-right: none;
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 200; /* Above chat so it visually covers the slide animation */
         }
 
         .split-left .inbox-section {
@@ -4779,12 +4781,12 @@
         }
 
         @keyframes msgPageInDesktop {
-            from { opacity: 0; transform: translateY(40px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateX(-80px); }
+            to { opacity: 1; transform: translateX(0); }
         }
         @keyframes msgPageOutDesktop {
-            from { opacity: 1; transform: translateY(0); }
-            to { opacity: 0; transform: translateY(40px); }
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(-80px); }
         }
 
         /* Responsive — mobile & tablets */
@@ -11337,6 +11339,10 @@
                 });
 
                 // Replace conversation's messages with the full set
+                // Also update the global messages array so indexOf lookups work (needed for reactions)
+                const oldMsgIds = new Set(conv.messages.filter(m => m.dbId).map(m => m.dbId));
+                messages = messages.filter(m => !oldMsgIds.has(m.dbId));
+                messages.push(...fullMessages);
                 conv.messages = fullMessages;
                 conv._fullThreadLoaded = true;
                 console.log('loadFullConversationThread: loaded', fullMessages.length, 'messages for conversation', conv.dbConversationId);
