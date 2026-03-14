@@ -3590,6 +3590,61 @@
         }
 
         /* Reactions */
+        /* Hover reaction trigger on message bubbles */
+        .message-bubble,
+        .bubble-lunar-note {
+            position: relative;
+        }
+        .msg-react-trigger {
+            position: absolute;
+            top: 6px;
+            right: -14px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            background: rgba(8, 18, 35, 0.9);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.15s, transform 0.15s;
+            z-index: 5;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .message-bubble:hover .msg-react-trigger,
+        .bubble-lunar-note:hover .msg-react-trigger {
+            opacity: 1;
+        }
+        .msg-react-trigger:hover {
+            opacity: 1 !important;
+            background: rgba(79, 195, 247, 0.15);
+            border-color: #4fc3f7;
+            color: #4fc3f7;
+            transform: scale(1.1);
+        }
+        /* On mobile/touch, always show trigger */
+        @media (hover: none) {
+            .msg-react-trigger {
+                opacity: 0.6;
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-top: 6px;
+                display: inline-flex;
+            }
+        }
+        /* Hover reaction picker — positioned from trigger */
+        .msg-react-trigger .reaction-picker {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            left: auto;
+        }
+
         .reactions-bar {
             position: relative;
             z-index: 1;
@@ -4695,7 +4750,7 @@
             text-align: center;
             align-self: center;
             padding: 0 clamp(16px, 3vw, 32px);
-            margin: 0 0 16px 0;
+            margin: 0 0 32px 0;
             line-height: 1.4;
             letter-spacing: 0.3px;
             flex-shrink: 0;
@@ -7002,7 +7057,7 @@
                 </div>
                 <div class="reply-row">
                     <label for="sharedSkyPhotoInput" style="cursor:pointer;font-size:20px;padding:4px;">🌕</label>
-                    <input type="file" id="sharedSkyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleSharedSkyPhoto(this)">
+                    <input type="file" id="sharedSkyPhotoInput" accept="image/*" style="display:none;" onchange="handleSharedSkyPhoto(this)">
                     <input type="text" class="message-page-input" placeholder="Share something with the sky..." id="sharedSkyInput" onkeydown="if(event.key==='Enter')sendSharedSkyMessage()">
                     <button class="message-page-send" onclick="sendSharedSkyMessage()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
                 </div>
@@ -7242,7 +7297,7 @@
                         <svg width="32" height="32"><use href="#icon-photo"/></svg>
                         <div class="compose-photo-dropzone-text" id="moonPhotoLabel">Tap to add a moon photo</div>
                     </label>
-                    <input type="file" id="moonPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleMoonPhoto(this)">
+                    <input type="file" id="moonPhotoInput" accept="image/*" style="display:none;" onchange="handleMoonPhoto(this)">
                     <div id="moonPhotoPreview" style="display:none;position:relative;margin-top:12px;">
                         <img id="moonPhotoImg" style="width:100%;max-height:200px;object-fit:cover;border-radius:14px;">
                         <button class="compose-photo-remove" onclick="clearMoonPhoto()">&times;</button>
@@ -7504,7 +7559,7 @@
                             <input type="text" class="message-page-input" placeholder="Whisper your message to the stars..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()" oninput="emitTyping()">
                         </div>
                         <button class="message-page-send" id="replySendBtn" onclick="sendReply()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
-                        <input type="file" id="replyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleReplyPhoto(this)">
+                        <input type="file" id="replyPhotoInput" accept="image/*" style="display:none;" onchange="handleReplyPhoto(this)">
                     </div>
                     <div class="attach-menu" id="attachMenu" style="display:none;">
                         <button class="attach-option" onclick="triggerPhotoAttach()">📷 Photo</button>
@@ -12408,28 +12463,37 @@
         function renderReactionsBar(msgIndex, part) {
             const msg = messages[msgIndex];
             const reactions = msg.reactions || [];
-            
+
             let chips = reactions.map((r, ri) => `
                 <span class="reaction-chip ${r.mine ? 'active' : ''}" onclick="event.stopPropagation(); toggleReaction(${msgIndex}, ${ri})">
                     <span>${r.emoji}</span>
                     <span class="reaction-count">${r.count > 1 ? r.count : ''}</span>
                 </span>
             `).join('');
-            
-            return `
-                <div class="reactions-bar" style="position:relative;">
-                    ${chips}
-                    <button class="add-reaction-btn" onclick="event.stopPropagation(); toggleReactionPicker(this, ${msgIndex})">+</button>
+
+            // Hover trigger icon (shows on bubble hover, positioned at top-right)
+            const hoverTrigger = `
+                <button class="msg-react-trigger" onclick="event.stopPropagation(); toggleReactionPicker(this, ${msgIndex})" title="React">
+                    🌙
                     <div class="reaction-picker" id="picker-${msgIndex}-${part}">
                         <span class="reaction-picker-label">Moon Phases</span>
                         ${MOON_REACTIONS.map(e => `<button class="reaction-option" onclick="event.stopPropagation(); addReaction(${msgIndex}, '${e}', this)">${e}</button>`).join('')}
                     </div>
-                </div>
+                </button>
             `;
+
+            // Chips bar (only shows if there are existing reactions)
+            const chipsBar = chips ? `
+                <div class="reactions-bar" style="position:relative;">
+                    ${chips}
+                </div>
+            ` : '';
+
+            return hoverTrigger + chipsBar;
         }
         
         function toggleReactionPicker(btn, msgIndex) {
-            const picker = btn.nextElementSibling;
+            const picker = btn.querySelector('.reaction-picker') || btn.nextElementSibling;
             const wasActive = picker.classList.contains('active');
             document.querySelectorAll('.reaction-picker').forEach(p => p.classList.remove('active'));
             if (!wasActive) picker.classList.add('active');
