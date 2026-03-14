@@ -4610,10 +4610,10 @@
         }
 
         .split-left {
-            width: 45%;
-            min-width: 320px;
+            width: 33%;
+            min-width: 280px;
             overflow-y: auto;
-            border-right: 2px solid rgba(53, 125, 197, 0.12);
+            border-right: none;
         }
 
         .split-left .inbox-section {
@@ -4637,7 +4637,7 @@
         }
 
         .split-right {
-            width: 55%;
+            width: 67%;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -4682,25 +4682,28 @@
         /* replaces the ring in the right panel   */
         /* ====================================== */
         @media (min-width: 901px) {
-            body.chat-open .split-left {
-                width: 33%;
-                min-width: 280px;
-                transition: width 0.25s ease;
-            }
-            body.chat-open .split-right {
-                width: 67%;
-            }
             /* Hide ring elements when chat is open */
             body.chat-open .ring-title,
             body.chat-open .main-content,
             body.chat-open .moon-data-bar {
                 display: none !important;
             }
-            /* Connecting line between inbox and chat */
-            body.chat-open .split-left {
-                border-right: 1.5px solid rgba(79, 195, 247, 0.2);
+            /* Horizontal connecting line from active inbox item to chat */
+            body.chat-open .message-item.active {
+                background: rgba(79, 195, 247, 0.10);
+                border-left: 3px solid #4fc3f7;
+                position: relative;
             }
-            /* Reposition chat overlay into right panel */
+            body.chat-open .message-item.active::after {
+                content: '';
+                position: absolute;
+                right: -24px;
+                top: 50%;
+                width: 24px;
+                height: 1.5px;
+                background: rgba(79, 195, 247, 0.25);
+            }
+            /* Reposition chat overlay into right panel with margin */
             body.chat-open #messagePageView.active {
                 position: fixed;
                 z-index: 100;
@@ -4708,18 +4711,15 @@
                 border: 1.5px solid rgba(79, 195, 247, 0.2);
                 border-radius: 16px;
                 overflow: hidden;
+                margin-right: 24px;
             }
             body.chat-open #messagePageView .message-page-inner {
-                max-width: 800px;
+                max-width: 720px;
+                margin: 0 auto;
             }
             /* Close animation */
             body.chat-open #messagePageView.closing {
                 animation: msgPageOutDesktop 0.2s ease forwards;
-            }
-            /* Active conversation highlight */
-            body.chat-open .message-item.active {
-                background: rgba(79, 195, 247, 0.10);
-                border-left: 3px solid #4fc3f7;
             }
         }
 
@@ -5613,6 +5613,31 @@
         }
         .inbox-title { color: #4fc3f7; }
 
+        /* New Transmission button at bottom of inbox */
+        .new-transmission-bar {
+            padding: 12px clamp(12px, 2vw, 24px);
+            flex-shrink: 0;
+        }
+        .new-transmission-btn {
+            width: 100%;
+            padding: 12px 20px;
+            background: transparent;
+            border: 1.5px solid rgba(79, 195, 247, 0.3);
+            border-radius: 24px;
+            color: #4fc3f7;
+            font-family: var(--font);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .new-transmission-btn:hover {
+            background: rgba(79, 195, 247, 0.1);
+            border-color: #4fc3f7;
+            box-shadow: 0 0 16px rgba(79, 195, 247, 0.15);
+        }
+
         /* New message button — dark */
         .new-message-btn {
             background: rgba(79, 195, 247, 0.15);
@@ -6449,7 +6474,7 @@
     <!-- Header -->
     <header class="header">
         <div class="header-brand">
-            <img class="logo" src="assests/Asset 2.svg" alt="MoonPop">
+            <img class="logo" src="assests/logo.svg" alt="MoonPop">
             <span class="header-tagline">The World's First Moon Postal Service</span>
         </div>
         <!-- Mini moon phase (visible when scrolled) -->
@@ -6711,6 +6736,12 @@
             </ul>
         </div>
     </section>
+            <!-- New Transmission button -->
+            <div class="new-transmission-bar">
+                <button class="new-transmission-btn" onclick="openNewMessagePicker()">
+                    + INITIATE TRANSMISSION
+                </button>
+            </div>
         </div><!-- /split-left -->
 
         <!-- RIGHT PANEL: Moon orbit (fixed, no scroll) -->
@@ -7292,12 +7323,41 @@
                 <!-- Message bubbles will be inserted here -->
             </div>
             <div class="message-page-footer">
-                <!-- In-thread Lunar Note panel (hidden by default) -->
-                <div class="thread-lunar-panel" id="threadLunarPanel" style="display:none;">
-                    <div class="thread-lunar-header">
-                        <span>🌙 Lunar Note</span>
-                        <button class="thread-lunar-close" onclick="closeThreadLunar()"><svg class="app-icon" style="width:16px;height:16px"><use href="#icon-close"/></svg></button>
+                <!-- Reply context bar (shown when replying to a specific message) -->
+                <div id="replyContextBar" style="display:none;padding:8px 12px;border-left:3px solid #4fc3f7;margin:0 0 8px;background:rgba(18,35,58,0.5);border-radius:0 8px 8px 0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span id="replyContextText" style="font-size:12px;color:rgba(255,255,255,0.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"></span>
+                        <button onclick="clearReplyContext()" style="background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:14px;padding:0 0 0 8px;">✕</button>
                     </div>
+                </div>
+                <div id="replyPhotoPreview" style="display:none;padding:8px 8px 0;">
+                    <div style="position:relative;display:inline-block;">
+                        <img id="replyPhotoImg" style="max-height:100px;border-radius:8px;">
+                        <button onclick="clearReplyPhoto()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:12px;cursor:pointer;">&times;</button>
+                    </div>
+                </div>
+                <!-- Note type toggle -->
+                <div class="note-toggle-bar">
+                    <button class="note-toggle active" id="openNoteToggle" onclick="setNoteMode('open')">✏ OPEN NOTE</button>
+                    <button class="note-toggle" id="lunarNoteToggle" onclick="setNoteMode('lunar')">🌙 LUNAR NOTE</button>
+                </div>
+                <!-- Open Note: regular reply input -->
+                <div id="openNotePanel">
+                    <div class="reply-row" id="replyRow">
+                        <div class="reply-input-wrapper">
+                            <button class="reply-attach-btn" id="attachBtn" onclick="toggleAttachMenu()">+</button>
+                            <input type="text" class="message-page-input" placeholder="Whisper your message to the stars..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()" oninput="emitTyping()">
+                        </div>
+                        <button class="message-page-send" id="replySendBtn" onclick="sendReply()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
+                        <input type="file" id="replyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleReplyPhoto(this)">
+                    </div>
+                    <div class="attach-menu" id="attachMenu" style="display:none;">
+                        <button class="attach-option" onclick="triggerPhotoAttach()">📷 Photo</button>
+                        <button class="attach-option" onclick="triggerYoutubeAttach()">🔗 YouTube Link</button>
+                    </div>
+                </div>
+                <!-- Lunar Note: 3-step creative wizard -->
+                <div class="thread-lunar-panel" id="threadLunarPanel" style="display:none;">
                     <p class="thread-lunar-intro" id="threadLunarIntro">Give me three things.</p>
                     <div class="thread-lunar-steps">
                         <div class="thread-lunar-step" id="threadStep1">
@@ -7315,38 +7375,6 @@
                     </div>
                     <div class="thread-lunar-result" id="threadLunarResult" style="display:none;"></div>
                     <button class="thread-lunar-send" id="threadLunarSendBtn" onclick="sendThreadLunarNote()" disabled>Send Lunar Note</button>
-                </div>
-                <!-- Reply context bar (shown when replying to a specific message) -->
-                <div id="replyContextBar" style="display:none;padding:8px 12px;border-left:3px solid #4fc3f7;margin:0 0 8px;background:rgba(18,35,58,0.5);border-radius:0 8px 8px 0;display:none;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <span id="replyContextText" style="font-size:12px;color:rgba(255,255,255,0.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"></span>
-                        <button onclick="clearReplyContext()" style="background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:14px;padding:0 0 0 8px;">✕</button>
-                    </div>
-                </div>
-                <div id="replyPhotoPreview" style="display:none;padding:8px 8px 0;">
-                    <div style="position:relative;display:inline-block;">
-                        <img id="replyPhotoImg" style="max-height:100px;border-radius:8px;">
-                        <button onclick="clearReplyPhoto()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:12px;cursor:pointer;">&times;</button>
-                    </div>
-                </div>
-                <!-- Note type toggle -->
-                <div class="note-toggle-bar">
-                    <button class="note-toggle active" id="openNoteToggle" onclick="setNoteMode('open')">✏ OPEN NOTE</button>
-                    <button class="note-toggle" id="lunarNoteToggle" onclick="setNoteMode('lunar')">🌙 LUNAR NOTE</button>
-                </div>
-                <!-- Reply input row -->
-                <div class="reply-row" id="replyRow">
-                    <div class="reply-input-wrapper">
-                        <button class="reply-attach-btn" id="attachBtn" onclick="toggleAttachMenu()">+</button>
-                        <input type="text" class="message-page-input" placeholder="Whisper your message to the stars..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()" oninput="emitTyping()">
-                    </div>
-                    <button class="message-page-send" id="replySendBtn" onclick="sendReply()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
-                    <input type="file" id="replyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleReplyPhoto(this)">
-                </div>
-                <!-- Attachment popover -->
-                <div class="attach-menu" id="attachMenu" style="display:none;">
-                    <button class="attach-option" onclick="triggerPhotoAttach()">📷 Photo</button>
-                    <button class="attach-option" onclick="triggerYoutubeAttach()">🔗 YouTube Link</button>
                 </div>
                 <div style="text-align:center;padding:2px 0;">
                     <span style="color:rgba(255,255,255,0.12);font-size:8px;font-family:monospace;text-transform:uppercase;letter-spacing:2px;">🔒 END-TO-END QUANTUM ENCRYPTION ACTIVE</span>
@@ -9905,7 +9933,7 @@
                         const _lp = document.querySelector('.split-left');
                         const _sl = document.querySelector('.split-layout');
                         if (_lp && _sl) {
-                            _page.style.left = _lp.getBoundingClientRect().right + 'px';
+                            _page.style.left = (_lp.getBoundingClientRect().right + 24) + 'px';
                             _page.style.top = _sl.getBoundingClientRect().top + 'px';
                         }
                         renderMessages();
@@ -9936,7 +9964,7 @@
                 const leftPanel = document.querySelector('.split-left');
                 const splitLayout = document.querySelector('.split-layout');
                 if (leftPanel && splitLayout) {
-                    page.style.left = leftPanel.getBoundingClientRect().right + 'px';
+                    page.style.left = (leftPanel.getBoundingClientRect().right + 24) + 'px';
                     page.style.top = splitLayout.getBoundingClientRect().top + 'px';
                 }
             }
@@ -11332,7 +11360,7 @@
                 const leftPanel = document.querySelector('.split-left');
                 const splitLayout = document.querySelector('.split-layout');
                 if (leftPanel && splitLayout) {
-                    page.style.left = leftPanel.getBoundingClientRect().right + 'px';
+                    page.style.left = (leftPanel.getBoundingClientRect().right + 24) + 'px';
                     page.style.top = splitLayout.getBoundingClientRect().top + 'px';
                 }
                 renderMessages(); // refresh inbox to show active highlight
@@ -11828,17 +11856,20 @@
         function setNoteMode(mode) {
             const openBtn = document.getElementById('openNoteToggle');
             const lunarBtn = document.getElementById('lunarNoteToggle');
-            const replyRow = document.getElementById('replyRow');
+            const openPanel = document.getElementById('openNotePanel');
+            const lunarPanel = document.getElementById('threadLunarPanel');
             if (mode === 'lunar') {
                 openThreadLunar();
                 if (lunarBtn) lunarBtn.classList.add('active');
                 if (openBtn) openBtn.classList.remove('active');
-                if (replyRow) replyRow.style.display = 'none';
+                if (openPanel) openPanel.style.display = 'none';
+                if (lunarPanel) lunarPanel.style.display = 'block';
             } else {
                 closeThreadLunar();
                 if (openBtn) openBtn.classList.add('active');
                 if (lunarBtn) lunarBtn.classList.remove('active');
-                if (replyRow) replyRow.style.display = 'flex';
+                if (openPanel) openPanel.style.display = 'block';
+                if (lunarPanel) lunarPanel.style.display = 'none';
             }
         }
 
