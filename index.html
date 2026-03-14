@@ -1093,9 +1093,23 @@
         .orbit-ring {
             width: 100%;
             height: 100%;
-            border: 3px solid var(--blue);
+            border: 2px solid rgba(79, 195, 247, 0.3);
             border-radius: 50%;
             position: relative;
+            transition: border-color 0.6s ease, box-shadow 0.6s ease;
+        }
+
+        /* Double-ring effect: inner faint ring */
+        .orbit-ring::before {
+            content: '';
+            position: absolute;
+            top: 4%;
+            left: 4%;
+            width: 92%;
+            height: 92%;
+            border: 1px solid rgba(79, 195, 247, 0.08);
+            border-radius: 50%;
+            pointer-events: none;
         }
 
         /* Moon illustration background inside the ring */
@@ -1132,22 +1146,23 @@
 
         .horizon-dot {
             position: absolute;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            top: -2.5px;
+            width: 10px;
+            height: 10px;
+            top: -4px;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translateX(-50%) rotate(45deg);
+            border-radius: 1px;
         }
 
         .horizon-dot.rise {
-            background: var(--blue);
-            opacity: 0.6;
+            background: #4fc3f7;
+            box-shadow: 0 0 8px rgba(79, 195, 247, 0.5);
         }
 
         .horizon-dot.set {
-            background: var(--blue);
-            opacity: 0.4;
+            background: #4fc3f7;
+            opacity: 0.6;
+            box-shadow: 0 0 6px rgba(79, 195, 247, 0.3);
         }
 
         .horizon-label {
@@ -1155,37 +1170,42 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2px;
+            gap: 3px;
             white-space: nowrap;
             pointer-events: none;
-            top: -32px;
+            top: -58px;
             left: 50%;
             /* counter-rotation set dynamically by JS */
         }
 
         .horizon-title {
-            font-size: 8px;
-            font-weight: 600;
+            font-size: 10px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            opacity: 0.6;
+            letter-spacing: 1px;
+            opacity: 0.85;
         }
 
         .horizon-time {
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
         }
 
         .rise-label .horizon-title {
-            color: var(--blue);
+            color: #4fc3f7;
         }
 
         .rise-label .horizon-time {
-            color: var(--blue);
+            color: #4fc3f7;
         }
 
-        .set-label {
+        .set-label .horizon-title {
+            color: #4fc3f7;
+        }
+
+        .set-label .horizon-time {
+            color: #4fc3f7;
             opacity: 0.6;
         }
 
@@ -1200,6 +1220,26 @@
             pointer-events: none;
         }
 
+        /* Moon comet trail */
+        .moon-orbit::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255, 213, 79, 0.3), transparent);
+            border-radius: 2px;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            pointer-events: none;
+        }
+
+        .moon-visible .moon-orbit::before {
+            opacity: 1;
+        }
+
         .moon-icon {
             position: absolute;
             top: -20px;
@@ -1207,12 +1247,14 @@
             transform: translateX(-50%);
             width: 40px;
             height: 40px;
+            pointer-events: auto;
+            cursor: pointer;
         }
 
         .moon-icon svg {
             width: 100%;
             height: 100%;
-            filter: drop-shadow(0 2px 6px rgba(255, 85, 88, 0.4));
+            filter: drop-shadow(0 2px 6px rgba(79, 195, 247, 0.4));
         }
 
         /* Message dots on orbit - positioned using rotation like the moon */
@@ -1242,25 +1284,47 @@
             transform: translateX(-50%);
         }
 
+        /* Dot trailing afterglow */
+        .message-dot::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 100%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 4px;
+            background: linear-gradient(270deg, rgba(255, 85, 88, 0.4), transparent);
+            border-radius: 2px;
+            pointer-events: none;
+        }
+
+        .message-dot.incoming::after {
+            background: linear-gradient(270deg, rgba(79, 195, 247, 0.4), transparent);
+        }
+
         .message-dot:hover {
             transform: translateX(-50%) scale(1.3);
             box-shadow: 0 0 12px rgba(255, 85, 88, 0.5);
         }
 
-        /* Tooltip for dot hover - always horizontal */
+        /* Tooltip for dot hover - dark glass card */
         .dot-tooltip {
             position: fixed;
-            background: var(--white);
-            padding: 12px 16px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            background: rgba(10, 22, 40, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             font-size: 13px;
             z-index: 1000;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
             white-space: nowrap;
-            max-width: 260px;
+            max-width: 280px;
+            color: white;
         }
 
         .dot-tooltip.visible {
@@ -1269,22 +1333,150 @@
 
         .dot-tooltip .tooltip-name {
             font-weight: 700;
-            color: var(--text-dark);
+            color: white;
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            font-size: 14px;
         }
 
         .dot-tooltip .tooltip-meta {
-            color: var(--text-muted);
+            color: rgba(255, 255, 255, 0.6);
             display: block;
             font-size: 12px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .dot-tooltip .tooltip-phase {
-            color: var(--coral);
+            color: #4fc3f7;
             font-size: 11px;
             display: block;
+        }
+
+        .dot-tooltip .tooltip-progress {
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .dot-tooltip .tooltip-progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #4fc3f7, #ffd54f);
+            transition: width 0.3s ease;
+        }
+
+        .dot-tooltip .tooltip-progress-fill.outgoing {
+            background: linear-gradient(90deg, #ff5558, #ffd54f);
+        }
+
+        /* Moon phase detail popup */
+        .moon-phase-popup {
+            position: fixed;
+            background: rgba(8, 18, 32, 0.96);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 16px 20px;
+            border-radius: 14px;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(8px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            min-width: 200px;
+            color: white;
+        }
+
+        .moon-phase-popup.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+            max-width: calc(100vw - 32px);
+        }
+
+        .moon-phase-popup-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(79, 195, 247, 0.12);
+        }
+
+        .moon-phase-emoji {
+            font-size: 24px;
+        }
+
+        .moon-phase-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #4fc3f7;
+        }
+
+        .moon-phase-popup-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .moon-phase-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .moon-phase-stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .moon-phase-stat-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Moon carrying indicator — orbit center */
+        .moon-carrying-indicator {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        .moon-carrying-count {
+            color: #4fc3f7;
+            font-weight: 700;
+        }
+
+        /* Moon live indicator */
+        .moon-live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: rgba(255, 213, 79, 0.8);
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .moon-live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ffd54f;
+            animation: livePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes livePulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; box-shadow: 0 0 6px rgba(255, 213, 79, 0.5); }
         }
 
         /* Center content */
@@ -1385,7 +1577,7 @@
             align-items: center;
             gap: 32px;
             padding: 10px 28px;
-            margin: 12px auto 0;
+            margin: 36px auto 0;
             max-width: 720px;
             border: 1px solid #0075EA;
             border-radius: 32px;
@@ -2885,6 +3077,119 @@
             background: rgba(53, 125, 197, 0.15);
         }
 
+        /* X close button (right side of header) */
+        .message-page-close {
+            margin-left: auto;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            background: rgba(79, 195, 247, 0.08);
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .message-page-close:hover {
+            background: rgba(79, 195, 247, 0.15);
+            color: white;
+            border-color: rgba(79, 195, 247, 0.4);
+        }
+
+        /* Note type toggle bar */
+        .note-toggle-bar {
+            display: flex;
+            gap: 8px;
+            padding: 8px 0 4px;
+        }
+        .note-toggle {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            background: transparent;
+            color: rgba(255, 255, 255, 0.4);
+            transition: all 0.2s;
+            font-family: var(--font);
+        }
+        .note-toggle:hover {
+            background: rgba(79, 195, 247, 0.06);
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .note-toggle.active {
+            background: rgba(79, 195, 247, 0.15);
+            border-color: #4fc3f7;
+            color: #4fc3f7;
+        }
+
+        /* Reply input wrapper (+ button inside input) */
+        .reply-input-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            border: 1.5px solid rgba(79, 195, 247, 0.2);
+            border-radius: 24px;
+            background: rgba(10, 22, 40, 0.6);
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .reply-input-wrapper:focus-within {
+            border-color: rgba(79, 195, 247, 0.4);
+        }
+        .reply-attach-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: transparent;
+            color: #4fc3f7;
+            font-size: 22px;
+            font-weight: 300;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .reply-attach-btn:hover {
+            background: rgba(79, 195, 247, 0.1);
+        }
+        .reply-input-wrapper .message-page-input {
+            border: none !important;
+            background: transparent !important;
+            outline: none;
+            padding-left: 0;
+        }
+
+        /* Attachment menu popover */
+        .attach-menu {
+            display: flex;
+            gap: 8px;
+            padding: 6px 0;
+        }
+        .attach-option {
+            padding: 6px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            background: rgba(10, 22, 40, 0.8);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.2s;
+        }
+        .attach-option:hover {
+            background: rgba(79, 195, 247, 0.1);
+            border-color: rgba(79, 195, 247, 0.35);
+            color: white;
+        }
+
         .message-page-avatar {
             width: 38px;
             height: 38px;
@@ -3364,7 +3669,7 @@
             z-index: 20;
             gap: 2px;
             flex-wrap: wrap;
-            width: 260px;
+            width: 300px;
         }
 
         .reaction-picker.active {
@@ -3379,12 +3684,12 @@
         }
 
         .reaction-option {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 8px;
             border: none;
             background: none;
-            font-size: 20px;
+            font-size: 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -4312,18 +4617,19 @@
         }
 
         .header.split-active .logo {
-            height: clamp(20px, 2.5vw, 28px);
+            height: clamp(56px, 7vw, 88px);
         }
 
         /* Hero between header and split */
         .hero.above-split {
-            text-align: center;
+            text-align: left;
             padding: 2px clamp(16px, 4vw, 48px) 0;
         }
 
         .hero.above-split h1 {
-            font-size: clamp(18px, 3vw, 36px);
+            font-size: clamp(16px, 2vw, 22px);
             margin-bottom: 0;
+            text-align: left;
         }
 
         .hero.above-split .subtitle {
@@ -4338,17 +4644,20 @@
         }
 
         .split-left {
-            width: 45%;
-            min-width: 320px;
-            overflow-y: auto;
-            border-right: 2px solid rgba(53, 125, 197, 0.12);
+            width: 33%;
+            min-width: 280px;
+            overflow-y: hidden;
+            border-right: none;
+            display: flex;
+            flex-direction: column;
         }
 
         .split-left .inbox-section {
             max-width: none;
             margin: 0;
-            padding: 12px clamp(12px, 2vw, 24px) 24px;
-            min-height: 100%;
+            padding: 12px clamp(12px, 2vw, 24px) 0;
+            flex: 1;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
         }
@@ -4365,7 +4674,7 @@
         }
 
         .split-right {
-            width: 55%;
+            width: 67%;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -4375,6 +4684,19 @@
             padding: 8px;
         }
 
+        .ring-title {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 20px;
+            font-weight: 700;
+            text-align: center;
+            align-self: center;
+            padding: 0 clamp(16px, 3vw, 32px);
+            margin: 0;
+            line-height: 1.4;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
+        }
+
         .split-right .main-content {
             padding: 0;
             width: 100%;
@@ -4382,13 +4704,83 @@
         }
 
         .split-right .moon-data-bar {
-            margin: 4px auto 0;
+            margin: 36px auto 0;
         }
 
         /* Scale orbit ring for available space */
         .split-right .orbit-container {
             width: min(420px, calc(100vh - 260px));
             height: min(420px, calc(100vh - 260px));
+        }
+
+        /* ====================================== */
+        /* INLINE CHAT — Desktop only            */
+        /* When a conversation is open, the chat  */
+        /* replaces the ring in the right panel   */
+        /* ====================================== */
+        @media (min-width: 901px) {
+            /* Hide ring elements when chat is open */
+            body.chat-open .ring-title,
+            body.chat-open .main-content,
+            body.chat-open .moon-data-bar {
+                display: none !important;
+            }
+            /* Horizontal connecting line from active inbox item to chat */
+            body.chat-open .message-item.active {
+                background: rgba(79, 195, 247, 0.10);
+                border-left: 3px solid #4fc3f7;
+                position: relative;
+            }
+            body.chat-open .message-item.active::after {
+                content: '';
+                position: absolute;
+                right: -24px;
+                top: 50%;
+                width: 24px;
+                height: 1.5px;
+                background: rgba(79, 195, 247, 0.25);
+            }
+            /* Reposition chat overlay into right panel with margin */
+            body.chat-open #messagePageView.active {
+                position: fixed;
+                z-index: 100;
+                animation: msgPageInDesktop 0.2s ease;
+                border: 2px solid rgba(79, 195, 247, 0.3);
+                border-radius: 16px;
+                overflow: hidden;
+                margin-right: 24px;
+                box-shadow: 0 0 20px rgba(79, 195, 247, 0.06);
+            }
+            body.chat-open #messagePageView .message-page-inner {
+                max-width: 720px;
+                margin: 0 auto;
+                height: 100%;
+            }
+            /* Chat header — subtle bg like active inbox item */
+            body.chat-open #messagePageView .message-page-header {
+                background: rgba(79, 195, 247, 0.08);
+                border-bottom: 1px solid rgba(79, 195, 247, 0.15);
+                backdrop-filter: none;
+            }
+            /* Chat footer — subtle bg like active inbox item */
+            body.chat-open #messagePageView .message-page-footer {
+                background: rgba(79, 195, 247, 0.06);
+                border-top: 1px solid rgba(79, 195, 247, 0.12);
+                backdrop-filter: none;
+            }
+            /* Close animation */
+            body.chat-open #messagePageView.closing {
+                animation: msgPageOutDesktop 0.2s ease forwards;
+            }
+        }
+
+        @keyframes msgPageInDesktop {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes msgPageOutDesktop {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.96); }
         }
 
         /* Responsive — mobile & tablets */
@@ -4498,7 +4890,7 @@
 
         /* Dark starfield background for compose modal */
         #messageModal.active {
-            background: #0a1628;
+            background: #050a14;
             background-image:
                 radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.12), transparent),
                 radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.08), transparent),
@@ -4760,7 +5152,7 @@
             height: 36px;
             border-radius: 50%;
             border: 1px solid rgba(79, 195, 247, 0.5);
-            background: #0a1628;
+            background: #050a14;
             color: #4fc3f7;
             cursor: pointer;
             display: flex;
@@ -4771,7 +5163,7 @@
         .compose-add-btn:hover { background: rgba(79, 195, 247, 0.1); }
         .compose-add-btn.active {
             background: #4fc3f7;
-            color: #0a1628;
+            color: #050a14;
             border-color: #4fc3f7;
             box-shadow: 0 0 15px rgba(79, 195, 247, 0.4);
         }
@@ -4995,10 +5387,942 @@
             .compose-textarea { min-height: 200px; font-size: 16px; }
             .compose-send-btn { padding: 16px 32px; font-size: 15px; }
         }
+
+        /* ====================================== */
+        /* MAIN PAGE — DARK RETRO-FUTURISTIC     */
+        /* Unified theme across entire app        */
+        /* ====================================== */
+
+        /* Body starfield background */
+        body {
+            background: #050a14;
+            position: relative;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Static star layers — scattered tiny dots */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                /* Bright prominent stars */
+                radial-gradient(2.2px 2.2px at 5% 8%, rgba(255,255,255,0.30), transparent),
+                radial-gradient(2px 2px at 18% 42%, rgba(255,255,255,0.25), transparent),
+                radial-gradient(2.3px 2.3px at 33% 15%, rgba(255,255,255,0.28), transparent),
+                radial-gradient(1.8px 1.8px at 47% 71%, rgba(255,255,255,0.22), transparent),
+                radial-gradient(2px 2px at 62% 5%, rgba(255,255,255,0.26), transparent),
+                radial-gradient(2.2px 2.2px at 76% 55%, rgba(255,255,255,0.24), transparent),
+                radial-gradient(1.8px 1.8px at 88% 28%, rgba(255,255,255,0.27), transparent),
+                radial-gradient(2px 2px at 95% 82%, rgba(255,255,255,0.22), transparent),
+                radial-gradient(2.2px 2.2px at 12% 90%, rgba(255,255,255,0.25), transparent),
+                radial-gradient(1.8px 1.8px at 55% 38%, rgba(255,255,255,0.23), transparent),
+                /* Medium stars */
+                radial-gradient(1.3px 1.3px at 2% 25%, rgba(255,255,255,0.16), transparent),
+                radial-gradient(1.2px 1.2px at 8% 58%, rgba(255,255,255,0.13), transparent),
+                radial-gradient(1.3px 1.3px at 14% 3%, rgba(255,255,255,0.15), transparent),
+                radial-gradient(1.2px 1.2px at 21% 76%, rgba(255,255,255,0.12), transparent),
+                radial-gradient(1.3px 1.3px at 27% 34%, rgba(255,255,255,0.14), transparent),
+                radial-gradient(1.2px 1.2px at 35% 62%, rgba(255,255,255,0.11), transparent),
+                radial-gradient(1.3px 1.3px at 41% 9%, rgba(255,255,255,0.16), transparent),
+                radial-gradient(1.2px 1.2px at 48% 85%, rgba(255,255,255,0.13), transparent),
+                radial-gradient(1.3px 1.3px at 54% 47%, rgba(255,255,255,0.15), transparent),
+                radial-gradient(1.2px 1.2px at 61% 19%, rgba(255,255,255,0.12), transparent),
+                radial-gradient(1.3px 1.3px at 68% 73%, rgba(255,255,255,0.14), transparent),
+                radial-gradient(1.2px 1.2px at 74% 41%, rgba(255,255,255,0.11), transparent),
+                radial-gradient(1.3px 1.3px at 81% 93%, rgba(255,255,255,0.16), transparent),
+                radial-gradient(1.2px 1.2px at 87% 16%, rgba(255,255,255,0.13), transparent),
+                radial-gradient(1.3px 1.3px at 93% 65%, rgba(255,255,255,0.15), transparent),
+                radial-gradient(1.2px 1.2px at 99% 48%, rgba(255,255,255,0.12), transparent),
+                /* Dim tiny stars — dense fill */
+                radial-gradient(0.8px 0.8px at 1% 12%, rgba(255,255,255,0.08), transparent),
+                radial-gradient(0.8px 0.8px at 4% 37%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.8px 0.8px at 7% 68%, rgba(255,255,255,0.07), transparent),
+                radial-gradient(0.8px 0.8px at 10% 95%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.8px 0.8px at 13% 22%, rgba(255,255,255,0.08), transparent),
+                radial-gradient(0.8px 0.8px at 16% 51%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.8px 0.8px at 19% 83%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.8px 0.8px at 23% 7%, rgba(255,255,255,0.07), transparent),
+                radial-gradient(0.8px 0.8px at 26% 44%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.8px 0.8px at 30% 71%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.8px 0.8px at 34% 18%, rgba(255,255,255,0.08), transparent),
+                radial-gradient(0.8px 0.8px at 37% 55%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.8px 0.8px at 40% 88%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.8px 0.8px at 44% 31%, rgba(255,255,255,0.07), transparent),
+                radial-gradient(0.8px 0.8px at 47% 63%, rgba(255,255,255,0.04), transparent),
+                radial-gradient(0.8px 0.8px at 51% 2%, rgba(255,255,255,0.08), transparent),
+                radial-gradient(0.8px 0.8px at 54% 40%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.8px 0.8px at 58% 77%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.8px 0.8px at 62% 14%, rgba(255,255,255,0.07), transparent),
+                radial-gradient(0.8px 0.8px at 65% 52%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.8px 0.8px at 69% 86%, rgba(255,255,255,0.04), transparent),
+                radial-gradient(0.8px 0.8px at 72% 29%, rgba(255,255,255,0.08), transparent),
+                radial-gradient(0.8px 0.8px at 76% 60%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.8px 0.8px at 79% 9%, rgba(255,255,255,0.07), transparent),
+                radial-gradient(0.8px 0.8px at 83% 45%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.8px 0.8px at 86% 79%, rgba(255,255,255,0.04), transparent),
+                radial-gradient(0.8px 0.8px at 90% 21%, rgba(255,255,255,0.08), transparent),
+                radial-gradient(0.8px 0.8px at 93% 56%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.8px 0.8px at 97% 38%, rgba(255,255,255,0.07), transparent),
+                radial-gradient(0.8px 0.8px at 99% 74%, rgba(255,255,255,0.06), transparent),
+                /* Extra-bright big stars */
+                radial-gradient(3.5px 3.5px at 10% 33%, rgba(255,255,255,0.40), transparent),
+                radial-gradient(3px 3px at 42% 78%, rgba(255,255,255,0.38), transparent),
+                radial-gradient(3.2px 3.2px at 71% 12%, rgba(255,255,255,0.42), transparent),
+                radial-gradient(3px 3px at 85% 67%, rgba(255,255,255,0.36), transparent),
+                radial-gradient(3.5px 3.5px at 28% 91%, rgba(255,255,255,0.40), transparent),
+                /* Additional bright stars */
+                radial-gradient(2.5px 2.5px at 3% 72%, rgba(255,255,255,0.28), transparent),
+                radial-gradient(2.3px 2.3px at 22% 18%, rgba(255,255,255,0.26), transparent),
+                radial-gradient(2.5px 2.5px at 39% 52%, rgba(255,255,255,0.30), transparent),
+                radial-gradient(2px 2px at 58% 89%, rgba(255,255,255,0.24), transparent),
+                radial-gradient(2.3px 2.3px at 81% 4%, rgba(255,255,255,0.27), transparent),
+                radial-gradient(2.5px 2.5px at 67% 42%, rgba(255,255,255,0.25), transparent),
+                radial-gradient(2px 2px at 92% 31%, rgba(255,255,255,0.28), transparent),
+                radial-gradient(2.3px 2.3px at 15% 61%, rgba(255,255,255,0.22), transparent),
+                /* Additional medium stars */
+                radial-gradient(1.5px 1.5px at 6% 45%, rgba(255,255,255,0.18), transparent),
+                radial-gradient(1.5px 1.5px at 22% 62%, rgba(255,255,255,0.16), transparent),
+                radial-gradient(1.5px 1.5px at 39% 28%, rgba(255,255,255,0.17), transparent),
+                radial-gradient(1.5px 1.5px at 57% 85%, rgba(255,255,255,0.15), transparent),
+                radial-gradient(1.5px 1.5px at 73% 8%, rgba(255,255,255,0.18), transparent),
+                radial-gradient(1.5px 1.5px at 91% 51%, rgba(255,255,255,0.16), transparent),
+                /* More dim fill */
+                radial-gradient(0.6px 0.6px at 3% 56%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.6px 0.6px at 17% 29%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.6px 0.6px at 31% 83%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.6px 0.6px at 46% 11%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.6px 0.6px at 60% 68%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.6px 0.6px at 75% 35%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.6px 0.6px at 89% 92%, rgba(255,255,255,0.06), transparent),
+                /* Colored stars — yellow */
+                radial-gradient(2.2px 2.2px at 15% 22%, rgba(255,213,79,0.28), transparent),
+                radial-gradient(1.5px 1.5px at 55% 68%, rgba(255,213,79,0.18), transparent),
+                radial-gradient(1.8px 1.8px at 88% 14%, rgba(255,213,79,0.22), transparent),
+                /* Colored stars — pink/rose */
+                radial-gradient(2px 2px at 82% 35%, rgba(255,138,128,0.22), transparent),
+                radial-gradient(1.5px 1.5px at 38% 88%, rgba(255,138,128,0.16), transparent),
+                radial-gradient(1.8px 1.8px at 8% 72%, rgba(255,138,128,0.20), transparent),
+                /* Colored stars — light blue */
+                radial-gradient(1.8px 1.8px at 64% 26%, rgba(128,216,255,0.20), transparent),
+                radial-gradient(1.5px 1.5px at 29% 54%, rgba(128,216,255,0.15), transparent);
+            background-size: 200px 200px;
+        }
+
+        /* Twinkling stars overlay */
+        .starfield-twinkle {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            border-radius: 50%;
+            background: white;
+            animation: twinkle var(--dur) ease-in-out infinite;
+            animation-delay: var(--delay);
+            opacity: 0;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; }
+            50% { opacity: var(--peak, 0.6); box-shadow: 0 0 3px rgba(255,255,255,0.4); }
+        }
+
+        /* Header — dark theme (semi-transparent to show stars) */
+        .header {
+            background: rgba(5, 10, 20, 0.70);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: none;
+        }
+        .header.scrolled {
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Header brand (logo + tagline) */
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .header-brand .logo {
+            height: 88px;
+            width: auto;
+            filter: brightness(0) invert(1);
+        }
+        .header.scrolled .header-brand .logo {
+            height: 60px;
+        }
+        .header-tagline {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.4);
+            white-space: nowrap;
+        }
+
+        /* Header contacts button */
+        .header-contacts-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 6px;
+            border-radius: 50%;
+            transition: color 0.2s, background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .header-contacts-btn:hover {
+            color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.1);
+        }
+
+        /* Header moon — dark theme */
+        .header-moon {
+            border-color: rgba(79, 195, 247, 0.4);
+        }
+        .header-moon:hover {
+            border-color: #ffd54f;
+        }
+
+        /* User button — dark theme */
+        .user-btn {
+            border-color: rgba(79, 195, 247, 0.4);
+            color: white;
+        }
+        .user-btn:hover {
+            background: rgba(79, 195, 247, 0.1);
+        }
+        .user-initials { color: #4fc3f7; }
+        .settings-arrow { color: rgba(255, 255, 255, 0.4); }
+
+        /* Settings dropdown — dark theme */
+        .settings-dropdown {
+            background: rgba(10, 22, 40, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+        }
+        .settings-section + .settings-section { border-top-color: rgba(79, 195, 247, 0.1); }
+        .settings-section-header:active { background: rgba(79, 195, 247, 0.05); }
+        .settings-section-header .section-summary { color: rgba(255, 255, 255, 0.85); }
+        .settings-section-header .section-chevron { color: rgba(79, 195, 247, 0.4); }
+        .settings-dropdown label { color: rgba(255, 255, 255, 0.5); }
+        .settings-dropdown input,
+        .settings-dropdown select,
+        .settings-select {
+            background: rgba(18, 35, 58, 0.6) !important;
+            border: 1px solid rgba(79, 195, 247, 0.15) !important;
+            color: white !important;
+            border-radius: 8px;
+        }
+        .settings-dropdown input::placeholder { color: rgba(255, 255, 255, 0.3); }
+        .settings-dropdown p { color: rgba(255, 255, 255, 0.4) !important; }
+        .settings-dropdown .send-button {
+            background: rgba(79, 195, 247, 0.2);
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            color: #4fc3f7;
+        }
+        .settings-dropdown a { color: #4fc3f7 !important; }
+        .settings-location-name { color: rgba(255, 255, 255, 0.7) !important; }
+
+        /* Hero — dark theme */
+        .hero h1 {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 22px;
+            font-weight: 700;
+            text-align: left;
+            letter-spacing: 0.3px;
+            line-height: 1.4;
+        }
+        .hero .subtitle { color: rgba(79, 195, 247, 0.5); }
+
+        /* Split layout — dark theme */
+        .split-left {
+            border-right: none;
+        }
+
+        /* Inbox card — dark glass */
+        .inbox-card {
+            background: rgba(18, 35, 58, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(79, 195, 247, 0.15);
+        }
+        .inbox-header {
+            border-bottom: 1px solid rgba(79, 195, 247, 0.12);
+        }
+        .inbox-title { color: #4fc3f7; }
+
+        /* New Transmission button at bottom of inbox */
+        .new-transmission-bar {
+            padding: 12px clamp(12px, 2vw, 24px);
+            flex-shrink: 0;
+        }
+        .new-transmission-btn {
+            width: 100%;
+            padding: 12px 20px;
+            background: transparent;
+            border: 1.5px solid rgba(79, 195, 247, 0.3);
+            border-radius: 24px;
+            color: #4fc3f7;
+            font-family: var(--font);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .new-transmission-btn:hover {
+            background: rgba(79, 195, 247, 0.1);
+            border-color: #4fc3f7;
+            box-shadow: 0 0 16px rgba(79, 195, 247, 0.15);
+        }
+        .new-transmission-btn.moon-up {
+            background: rgba(79, 195, 247, 0.12);
+            border-color: #4fc3f7;
+        }
+
+        /* New message button — dark */
+        .new-message-btn {
+            background: rgba(79, 195, 247, 0.15);
+            border: 1px solid rgba(79, 195, 247, 0.25);
+            color: #4fc3f7;
+        }
+        .new-message-btn:hover {
+            background: rgba(79, 195, 247, 0.25);
+        }
+
+        /* Shared sky row — dark */
+        .shared-sky-row {
+            background: rgba(79, 195, 247, 0.04);
+            border-bottom-color: rgba(79, 195, 247, 0.08);
+        }
+        .shared-sky-row:hover { background: rgba(79, 195, 247, 0.08); }
+        .shared-sky-row-title { color: #4fc3f7; }
+        .shared-sky-row-preview { color: rgba(255, 255, 255, 0.4); }
+
+        /* Create circle option — dark */
+        .create-circle-option { color: rgba(255, 255, 255, 0.5); }
+        .create-circle-option:hover { background: rgba(79, 195, 247, 0.05); }
+
+        /* Message list items — dark */
+        .message-item {
+            border-bottom-color: rgba(79, 195, 247, 0.06);
+        }
+        .message-item:hover { background: rgba(79, 195, 247, 0.05); }
+        .message-sender { color: rgba(255, 255, 255, 0.9); }
+        .message-preview { color: rgba(255, 255, 255, 0.4); }
+        .message-time, .message-meta { color: rgba(79, 195, 247, 0.4) !important; }
+        .msg-avatar {
+            background: rgba(79, 195, 247, 0.15);
+            border: 1px solid rgba(79, 195, 247, 0.25);
+        }
+        .message-avatar.outline {
+            background: transparent;
+            border-color: rgba(255, 85, 88, 0.5);
+        }
+        .message-direction.sent-arrow {
+            background: rgba(255, 85, 88, 0.15);
+        }
+        .message-direction.recv-arrow {
+            background: rgba(79, 195, 247, 0.15);
+            color: #4fc3f7;
+        }
+        .message-list::-webkit-scrollbar-thumb { background: rgba(79, 195, 247, 0.3); }
+
+        /* Circle rows — dark */
+        .circle-row { border-bottom-color: rgba(79, 195, 247, 0.06) !important; }
+        .circle-row:hover { background: rgba(79, 195, 247, 0.05) !important; }
+
+        /* Orbit ring — dark theme with ambient glow */
+        .orbit-ring {
+            border-color: rgba(79, 195, 247, 0.2);
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.04), inset 0 0 12px rgba(79, 195, 247, 0.02);
+        }
+
+        .orbit-ring.moon-visible {
+            border-color: rgba(79, 195, 247, 0.4);
+            box-shadow: 0 0 24px rgba(79, 195, 247, 0.1), inset 0 0 24px rgba(79, 195, 247, 0.05);
+        }
+
+        .orbit-ring::before {
+            border-color: rgba(79, 195, 247, 0.06);
+        }
+
+        .orbit-ring.moon-visible::before {
+            border-color: rgba(79, 195, 247, 0.1);
+        }
+
+        /* Orbit illustration — solid dark, darker than page bg */
+        .orbit-bg-illustration {
+            opacity: 1;
+            filter: none;
+            background: #050c16;
+        }
+        .orbit-bg-illustration img {
+            display: none;
+        }
+
+        /* Orbit center text — dark */
+        .orbit-center { color: white; }
+        .visibility-text { color: rgba(255, 255, 255, 0.5) !important; }
+        .standby-countdown { color: #4fc3f7 !important; }
+        .standby-label { color: rgba(255, 255, 255, 0.4) !important; }
+        .moon-down-lockout { color: rgba(255, 255, 255, 0.25) !important; font-size: 11px !important; }
+
+        /* Message dots on orbit — brighter on dark */
+        .message-dot { box-shadow: 0 0 8px rgba(255, 85, 88, 0.4); }
+        .message-dot:hover { box-shadow: 0 0 16px rgba(255, 85, 88, 0.6); }
+        .message-dot.releasing { box-shadow: 0 0 12px rgba(255, 85, 88, 0.5); }
+        .message-dot.incoming { box-shadow: 0 0 8px rgba(79, 195, 247, 0.4); }
+        .message-dot.incoming:hover { box-shadow: 0 0 16px rgba(79, 195, 247, 0.6); }
+
+        /* Moon data bar — dark glass */
+        .moon-data-bar {
+            background: rgba(18, 35, 58, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(79, 195, 247, 0.15);
+        }
+        .moon-data-item { color: rgba(79, 195, 247, 0.6); }
+        .moon-data-label { color: rgba(255, 255, 255, 0.35); }
+        .moon-data-value { color: #4fc3f7; }
+
+        /* Moon Down modal — dark theme */
+        .moon-down-modal { background: rgba(10, 22, 40, 0.95); }
+        .moon-down-modal h2 { color: #4fc3f7; }
+        .moon-down-countdown .countdown-value { color: #ffd54f; }
+
+        /* Moon-down standby overrides for dark theme */
+        body.moon-down .cta-button {
+            background: rgba(79, 195, 247, 0.1);
+        }
+        body.moon-down .new-message-btn {
+            opacity: 0.2;
+        }
+
+        /* ======================================= */
+        /* MOON GLOW — when above horizon          */
+        /* ======================================= */
+        .moon-icon.moon-glow svg {
+            filter:
+                drop-shadow(0 0 6px rgba(79, 195, 247, 0.7))
+                drop-shadow(0 0 16px rgba(79, 195, 247, 0.4))
+                drop-shadow(0 0 32px rgba(79, 195, 247, 0.2));
+            animation: moonPulseGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes moonPulseGlow {
+            0%, 100% {
+                filter:
+                    drop-shadow(0 0 6px rgba(79, 195, 247, 0.7))
+                    drop-shadow(0 0 16px rgba(79, 195, 247, 0.4))
+                    drop-shadow(0 0 32px rgba(79, 195, 247, 0.2));
+            }
+            50% {
+                filter:
+                    drop-shadow(0 0 10px rgba(79, 195, 247, 0.9))
+                    drop-shadow(0 0 24px rgba(79, 195, 247, 0.5))
+                    drop-shadow(0 0 40px rgba(79, 195, 247, 0.3));
+            }
+        }
+
+        /* Orbit ring glows when moon is visible */
+        .orbit-ring.moon-visible {
+            border-color: rgba(79, 195, 247, 0.45);
+            box-shadow:
+                0 0 20px rgba(79, 195, 247, 0.08),
+                inset 0 0 20px rgba(79, 195, 247, 0.04);
+        }
+
+        /* Onboarding overlay — dark theme */
+        .onboarding-card {
+            background: rgba(10, 22, 40, 0.95) !important;
+            border: 1px solid rgba(79, 195, 247, 0.2) !important;
+            color: white !important;
+        }
+
+        /* Modal overlays — dark glass */
+        .modal-overlay { background: rgba(5, 10, 20, 0.8); }
+        .modal {
+            background: rgba(10, 22, 40, 0.95);
+            border: 1px solid rgba(79, 195, 247, 0.15);
+            color: white;
+        }
+
+        /* CTA button — dark theme */
+        .cta-button {
+            background: rgba(79, 195, 247, 0.2);
+            border: 1px solid rgba(79, 195, 247, 0.35);
+            color: #4fc3f7;
+            box-shadow: 0 0 20px rgba(79, 195, 247, 0.1);
+        }
+        .cta-button:hover {
+            background: rgba(79, 195, 247, 0.3);
+            box-shadow: 0 0 30px rgba(79, 195, 247, 0.2);
+        }
+        .delivery-note { color: rgba(255, 255, 255, 0.35); }
+        .moon-carrying-indicator { color: rgba(255, 255, 255, 0.5) !important; }
+        .moon-carrying-count { color: #ffd54f !important; }
+
+        /* Responsive — tagline hidden on small screens */
+        @media (max-width: 768px) {
+            .header-tagline { display: none; }
+            .header-brand .logo { height: 64px; }
+        }
+
+        /* ============================== */
+        /* CHAT VIEW — DARK THEME         */
+        /* Matches compose page aesthetic  */
+        /* ============================== */
+
+        /* Dark starfield background */
+        #messagePageView.active {
+            background: #050a14;
+            background-image:
+                radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.12), transparent),
+                radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.08), transparent),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.15), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.1), transparent),
+                radial-gradient(2px 2px at 130px 80px, rgba(255,255,255,0.12), transparent),
+                radial-gradient(1px 1px at 160px 120px, rgba(255,255,255,0.08), transparent);
+            background-size: 200px 200px;
+        }
+        #messagePageView .message-page-inner {
+            background: transparent;
+            box-shadow: none;
+        }
+
+        /* Chat header — dark theme */
+        #messagePageView .message-page-header {
+            border-bottom: 1px solid rgba(79, 195, 247, 0.12);
+            background: rgba(5, 10, 20, 0.85);
+            backdrop-filter: blur(12px);
+        }
+        #messagePageView .message-page-back {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+        }
+        #messagePageView .message-page-back:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        #messagePageView .message-page-avatar {
+            border: 2px solid #ffd54f;
+            padding: 2px;
+            background: #357dc5;
+        }
+        #messagePageView .message-page-info h3 {
+            color: white;
+        }
+        #messagePageView .message-page-info p {
+            color: rgba(79, 195, 247, 0.6);
+        }
+
+        /* Chat body */
+        #messagePageView .message-page-body {
+            padding: 20px;
+            padding-bottom: 20px;
+        }
+
+        /* Date separators in chat */
+        #messagePageView .message-page-body .chat-date-sep {
+            color: rgba(255,255,255,0.35);
+            background: rgba(18, 35, 58, 0.7);
+        }
+
+        /* Message bubbles — dark theme */
+        #messagePageView .message-bubble {
+            background: rgba(18, 35, 58, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(79, 195, 247, 0.15);
+            max-width: 80%;
+        }
+        #messagePageView .message-bubble p {
+            color: rgba(255,255,255,0.9);
+        }
+        #messagePageView .message-bubble-time {
+            color: rgba(255,255,255,0.35);
+        }
+
+        /* Sent bubbles — slightly brighter blue */
+        #messagePageView .message-bubble.sent {
+            background: rgba(53, 125, 197, 0.35);
+            border: 1px solid rgba(79, 195, 247, 0.25);
+        }
+        #messagePageView .message-bubble.sent p {
+            color: white;
+        }
+        #messagePageView .message-bubble.sent .message-bubble-time {
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* Lunar Note bubbles — dark glass with shimmer border */
+        #messagePageView .bubble-lunar-note {
+            background: rgba(18, 35, 58, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1.5px solid rgba(79, 195, 247, 0.3);
+            box-shadow: inset 0 0 10px rgba(79, 195, 247, 0.08), 0 0 20px rgba(79, 195, 247, 0.1);
+        }
+        #messagePageView .bubble-lunar-note::before {
+            background: linear-gradient(90deg, #4fc3f7, #ff5558, #4fc3f7);
+            opacity: 0.6;
+            height: 2px;
+        }
+        #messagePageView .bubble-lunar-label {
+            color: #ffd54f;
+        }
+        #messagePageView .bubble-lunar-text {
+            color: rgba(255,255,255,0.9);
+            font-size: 15px;
+            line-height: 1.7;
+        }
+        #messagePageView .bubble-lunar-closing {
+            color: rgba(79, 195, 247, 0.5);
+        }
+        #messagePageView .bubble-lunar-note .message-bubble-time {
+            color: rgba(255,255,255,0.3);
+        }
+        #messagePageView .bubble-lunar-note .read-receipt.delivered {
+            color: rgba(255,255,255,0.4);
+        }
+        #messagePageView .bubble-lunar-note .read-receipt.read {
+            color: #4fc3f7;
+        }
+
+        /* Read receipts — dark theme */
+        #messagePageView .read-receipt.delivered {
+            color: rgba(255,255,255,0.4);
+        }
+        #messagePageView .read-receipt.read {
+            color: #4fc3f7;
+        }
+
+        /* Reactions — dark theme */
+        #messagePageView .reaction-chip {
+            background: rgba(79, 195, 247, 0.08);
+            border-color: rgba(79, 195, 247, 0.2);
+        }
+        #messagePageView .reaction-chip:hover {
+            background: rgba(79, 195, 247, 0.15);
+            border-color: rgba(79, 195, 247, 0.35);
+        }
+        #messagePageView .reaction-chip.active {
+            background: rgba(79, 195, 247, 0.15);
+            border-color: #4fc3f7;
+        }
+        #messagePageView .reaction-chip .reaction-count {
+            color: rgba(255,255,255,0.5);
+        }
+        #messagePageView .reaction-chip.active .reaction-count {
+            color: #4fc3f7;
+        }
+        #messagePageView .add-reaction-btn {
+            border-color: rgba(79, 195, 247, 0.2);
+            color: rgba(255,255,255,0.35);
+        }
+        #messagePageView .add-reaction-btn:hover {
+            border-color: #4fc3f7;
+            color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.08);
+        }
+
+        /* Reaction picker popup — dark glass */
+        #messagePageView .reaction-picker {
+            background: rgba(18, 35, 58, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+        #messagePageView .reaction-picker-divider {
+            background: rgba(79, 195, 247, 0.15);
+        }
+        #messagePageView .reaction-picker-label {
+            color: rgba(79, 195, 247, 0.5);
+        }
+        #messagePageView .reaction-option:hover {
+            background: rgba(79, 195, 247, 0.15);
+        }
+
+        /* Chat footer — dark glass */
+        #messagePageView .message-page-footer {
+            border-top: 1px solid rgba(79, 195, 247, 0.12);
+            background: rgba(5, 10, 20, 0.85);
+            backdrop-filter: blur(12px);
+        }
+
+        /* Chat input — dark theme */
+        #messagePageView .message-page-input {
+            background: rgba(10, 22, 40, 0.6);
+            border: 1.5px solid rgba(79, 195, 247, 0.2);
+            color: white;
+            font-size: 14px;
+        }
+        #messagePageView .message-page-input::placeholder {
+            color: rgba(255,255,255,0.25);
+        }
+        #messagePageView .message-page-input:focus {
+            border-color: rgba(79, 195, 247, 0.5);
+        }
+
+        /* Send button — coral glow */
+        #messagePageView .message-page-send {
+            background: #ff5558;
+            box-shadow: 0 0 15px rgba(255, 85, 88, 0.3);
+        }
+        #messagePageView .message-page-send:hover {
+            background: rgba(255, 85, 88, 0.9);
+            box-shadow: 0 0 20px rgba(255, 85, 88, 0.4);
+        }
+
+        /* Photo label emoji in reply row */
+        #messagePageView #replyPhotoLabel {
+            filter: none;
+        }
+
+        /* Lunar Note pill button — dark */
+        #messagePageView .lunar-note-pill-sm {
+            border-color: rgba(79, 195, 247, 0.3);
+            background: rgba(79, 195, 247, 0.05);
+        }
+        #messagePageView .lunar-note-pill-sm:hover {
+            background: rgba(79, 195, 247, 0.12);
+            border-color: #4fc3f7;
+        }
+
+        /* Add Lunar Link — dark */
+        #messagePageView .add-lunar-link {
+            color: #4fc3f7;
+        }
+
+        /* Moon gate — dark theme */
+        #messagePageView #replyMoonGate {
+            color: rgba(255,255,255,0.4);
+        }
+        #messagePageView #replyMoonGate svg {
+            color: #4fc3f7 !important;
+        }
+
+        /* Thread Lunar Note panel — dark glass */
+        #messagePageView .thread-lunar-panel {
+            background: rgba(18, 35, 58, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(79, 195, 247, 0.15);
+            border-radius: 12px 12px 0 0;
+        }
+        #messagePageView .thread-lunar-header {
+            color: #ffd54f;
+        }
+        #messagePageView .thread-lunar-close {
+            background: rgba(255, 85, 88, 0.15);
+            color: #ff5558;
+        }
+        #messagePageView .thread-lunar-intro {
+            color: rgba(79, 195, 247, 0.5);
+        }
+        #messagePageView .thread-lunar-label {
+            color: rgba(79, 195, 247, 0.6);
+        }
+        #messagePageView .thread-lunar-input {
+            background: rgba(10, 22, 40, 0.6);
+            border-color: rgba(79, 195, 247, 0.2);
+            color: white;
+        }
+        #messagePageView .thread-lunar-input::placeholder {
+            color: rgba(255,255,255,0.2);
+        }
+        #messagePageView .thread-lunar-input:focus {
+            border-color: rgba(79, 195, 247, 0.5);
+        }
+        #messagePageView .thread-lunar-result {
+            background: rgba(10, 22, 40, 0.5);
+            border-color: rgba(79, 195, 247, 0.15);
+            color: rgba(255,255,255,0.9);
+        }
+        #messagePageView .thread-lunar-result .lunar-closing {
+            color: rgba(79, 195, 247, 0.5);
+        }
+        #messagePageView .thread-lunar-send {
+            background: #ff5558;
+            box-shadow: 0 0 15px rgba(255, 85, 88, 0.3);
+        }
+        #messagePageView .thread-lunar-send:not(:disabled):hover {
+            background: rgba(255, 85, 88, 0.9);
+        }
+
+        /* Reply photo preview — dark */
+        #messagePageView #replyPhotoPreview img {
+            border: 1px solid rgba(79, 195, 247, 0.2);
+        }
+
+        /* Transit/arriving messages — dark */
+        #messagePageView .chat-transit-msg {
+            background: rgba(18, 35, 58, 0.5);
+            border: 1px dashed rgba(79, 195, 247, 0.25);
+            color: rgba(79, 195, 247, 0.7);
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            margin-bottom: 8px;
+        }
+        .typing-indicator-bubble {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 10px 16px;
+            background: rgba(18, 35, 58, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(79, 195, 247, 0.15);
+            border-radius: 16px;
+            border-bottom-left-radius: 4px;
+        }
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #4fc3f7;
+            animation: typingPulse 1.4s ease-in-out infinite;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingPulse {
+            0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+            30% { opacity: 1; transform: scale(1); }
+        }
+        .typing-indicator-label {
+            font-size: 11px;
+            color: rgba(79, 195, 247, 0.5);
+            font-style: italic;
+        }
+
+        /* Comment thread on messages */
+        .msg-comments-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: #4fc3f7;
+            cursor: pointer;
+            margin-top: 4px;
+            padding: 2px 0;
+            opacity: 0.7;
+            transition: opacity 0.15s;
+            background: none;
+            border: none;
+            font-family: inherit;
+        }
+        .msg-comments-link:hover {
+            opacity: 1;
+        }
+        .msg-comments-thread {
+            margin-top: 8px;
+            padding-left: 16px;
+            border-left: 2px solid rgba(79, 195, 247, 0.15);
+        }
+        .msg-comment-item {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .msg-comment-avatar {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(79, 195, 247, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4fc3f7;
+            font-size: 10px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .msg-comment-body {
+            flex: 1;
+        }
+        .msg-comment-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.6);
+        }
+        .msg-comment-text {
+            font-size: 13px;
+            color: rgba(255,255,255,0.8);
+            line-height: 1.4;
+        }
+        .msg-comment-time {
+            font-size: 10px;
+            color: rgba(255,255,255,0.25);
+        }
+        .msg-comment-input-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-top: 6px;
+        }
+        .msg-comment-input {
+            flex: 1;
+            padding: 6px 12px;
+            background: rgba(10, 22, 40, 0.5);
+            border: 1px solid rgba(79, 195, 247, 0.15);
+            border-radius: 16px;
+            color: white;
+            font-size: 12px;
+            font-family: inherit;
+            outline: none;
+        }
+        .msg-comment-input::placeholder {
+            color: rgba(255,255,255,0.2);
+        }
+        .msg-comment-input:focus {
+            border-color: rgba(79, 195, 247, 0.4);
+        }
+        .msg-comment-send {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(79, 195, 247, 0.15);
+            border: none;
+            color: #4fc3f7;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .msg-comment-send:hover {
+            background: rgba(79, 195, 247, 0.25);
+        }
+
+        /* Chat mobile responsive */
+        @media (max-width: 640px) {
+            #messagePageView .message-bubble,
+            #messagePageView .bubble-lunar-note { max-width: 88%; }
+        }
     </style>
     <!-- EmailJS removed — email now sent via Supabase Edge Function (send-email) -->
 </head>
 <body>
+    <!-- Twinkling stars -->
+    <div class="starfield-twinkle" id="starfieldTwinkle"></div>
+
     <!-- ======================== -->
     <!-- SVG ICON SPRITE SHEET   -->
     <!-- ======================== -->
@@ -5204,15 +6528,10 @@
 
     <!-- Header -->
     <header class="header">
-        <svg class="logo" viewBox="0 0 529.49 72.65" xmlns="http://www.w3.org/2000/svg">
-            <path fill="#357dc5" d="M196.78,72.65h-10.63c-.57-1.25-1.89-1.37-3.52-1.85-18.75-5.51-29.64-24-25.22-43.08C161.43,10.41,178.37-1.89,197.26.25s32.95,17.82,32.4,37.06c-.52,18.14-14.48,32.13-32.89,35.34Z"/>
-            <path fill="#357dc5" d="M425.49,72.65h-11.63c-.58-1.24-1.89-1.38-3.51-1.86-18.73-5.51-29.64-23.96-25.22-43.06,4-17.28,20.89-29.61,39.82-27.49,18.05,2.02,32.47,17.24,32.45,36.09-.02,18.32-13.64,32.32-31.91,36.32Z"/>
-            <path fill="#357dc5" d="M118.88,72.65h-10.99c-.57-1.15-1.87-1.22-3.42-1.64-18.85-5.13-30.12-23.35-26.13-42.49C81.95,11.14,98.55-1.5,117.38.14c18.55,1.62,33.42,16.98,33.41,36.19-.01,18.31-13.66,32.32-31.91,36.32Z"/>
-            <polygon fill="#357dc5" points="306.61 71.76 260.34 59.26 259.73 70.65 236.71 70.65 236.75 .38 283.01 13.03 283.64 1.62 306.66 1.61 306.61 71.76"/>
-            <polygon fill="#357dc5" points="69.64 2.09 70.01 70.68 0 70.69 .05 1.92 34.97 21.62 69.64 2.09"/>
-            <path fill="#357dc5" d="M495.04,59c-1.08,4.08-.07,7.51-.63,11.66h-28.97s0-69.08,0-69.08l35.96.14c16.98.07,29.35,15.19,27.99,31.03-1.44,16.8-16.49,28.68-34.35,26.25Z"/>
-            <path fill="#357dc5" d="M346.23,59c-1.09,4.08-.07,7.5-.63,11.65h-28.97s0-69.08,0-69.08l35.96.15c17,.07,29.34,15.16,28,31.03-1.42,16.78-16.5,28.68-34.35,26.26Z"/>
-        </svg>
+        <div class="header-brand">
+            <img class="logo" src="assests/logo.svg" alt="MoonPop">
+            <span class="header-tagline">The World's First Moon Postal Service</span>
+        </div>
         <!-- Mini moon phase (visible when scrolled) -->
         <div class="header-moon" id="headerMoon">
             <svg class="header-moon-svg" id="headerMoonSvg" viewBox="0 0 100 100"></svg>
@@ -5220,7 +6539,12 @@
         <div class="header-right" style="position:relative;">
             <!-- Hidden location element (used by JS) -->
             <span id="userLocation" style="display:none;">—</span>
-            
+
+            <!-- Contacts -->
+            <button class="header-contacts-btn" onclick="openContactsPage()" aria-label="Contacts" title="Contacts">
+                <svg class="app-icon" style="width:28px;height:28px;"><use href="#icon-contacts"/></svg>
+            </button>
+
             <!-- User / Settings -->
             <button class="user-btn" onclick="toggleSettings()" aria-label="Settings">
                 <span class="user-initials" id="userInitials">A</span>
@@ -5433,12 +6757,6 @@
     <!-- Notification Toast -->
     <div class="notification-toast" id="notificationToast"></div>
 
-    <!-- Hero Title (above split) -->
-    <section class="hero above-split">
-        <h1 id="heroTitle">MESSAGES RELEASED BY THE MOON</h1>
-        <p class="subtitle">The world's first moon postal service.</p>
-    </section>
-
     <!-- Split-screen layout: Inbox left, Moon right -->
     <div class="split-layout">
 
@@ -5449,7 +6767,6 @@
             <div class="inbox-header">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <span class="inbox-title">INBOX</span>
-                    <button onclick="openContactsPage()" style="background:none;border:none;cursor:pointer;padding:2px 6px;opacity:0.7;transition:opacity 0.2s;color:var(--blue);" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Contacts"><svg class="app-icon lg"><use href="#icon-contacts"/></svg></button>
                 </div>
                 <button class="new-message-btn" onclick="openNewMessagePicker()"><svg class="app-icon lg"><use href="#icon-compose"/></svg></button>
             </div>
@@ -5478,10 +6795,17 @@
             </div>
         </div>
     </section>
+            <!-- New Transmission button -->
+            <div class="new-transmission-bar">
+                <button class="new-transmission-btn" id="inboxTransmitBtn" onclick="openNewMessagePicker()">
+                    + INITIATE TRANSMISSION
+                </button>
+            </div>
         </div><!-- /split-left -->
 
         <!-- RIGHT PANEL: Moon orbit (fixed, no scroll) -->
         <div class="split-right">
+            <h1 class="ring-title" id="heroTitle">MESSAGES RELEASED BY THE MOON</h1>
             <main class="main-content">
                 <div class="orbit-container">
                     <div class="orbit-ring"></div>
@@ -5529,6 +6853,16 @@
                 <span class="tooltip-name"></span>
                 <span class="tooltip-meta"></span>
                 <span class="tooltip-phase"></span>
+                <div class="tooltip-progress"><div class="tooltip-progress-fill"></div></div>
+            </div>
+
+            <!-- Moon phase detail popup -->
+            <div class="moon-phase-popup" id="moonPhasePopup">
+                <div class="moon-phase-popup-header">
+                    <span class="moon-phase-emoji" id="moonPhaseEmoji"></span>
+                    <span class="moon-phase-name" id="moonPhaseName"></span>
+                </div>
+                <div class="moon-phase-popup-stats" id="moonPhaseStats"></div>
             </div>
 
             <!-- Moon Data Bar -->
@@ -6044,18 +7378,47 @@
                         <p id="detailLocation">London · Received under waxing gibbous</p>
                     </div>
                 </div>
-                <button class="message-page-back" onclick="closeMessageDetail()" style="flex-shrink:0;"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-close"/></svg></button>
+                <button class="message-page-close" onclick="closeMessageDetail()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="message-page-body" id="detailContent">
                 <!-- Message bubbles will be inserted here -->
             </div>
             <div class="message-page-footer">
-                <!-- In-thread Lunar Note panel (hidden by default) -->
-                <div class="thread-lunar-panel" id="threadLunarPanel" style="display:none;">
-                    <div class="thread-lunar-header">
-                        <span>🌙 Lunar Note</span>
-                        <button class="thread-lunar-close" onclick="closeThreadLunar()"><svg class="app-icon" style="width:16px;height:16px"><use href="#icon-close"/></svg></button>
+                <!-- Reply context bar (shown when replying to a specific message) -->
+                <div id="replyContextBar" style="display:none;padding:8px 12px;border-left:3px solid #4fc3f7;margin:0 0 8px;background:rgba(18,35,58,0.5);border-radius:0 8px 8px 0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span id="replyContextText" style="font-size:12px;color:rgba(255,255,255,0.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"></span>
+                        <button onclick="clearReplyContext()" style="background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:14px;padding:0 0 0 8px;">✕</button>
                     </div>
+                </div>
+                <div id="replyPhotoPreview" style="display:none;padding:8px 8px 0;">
+                    <div style="position:relative;display:inline-block;">
+                        <img id="replyPhotoImg" style="max-height:100px;border-radius:8px;">
+                        <button onclick="clearReplyPhoto()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:12px;cursor:pointer;">&times;</button>
+                    </div>
+                </div>
+                <!-- Note type toggle -->
+                <div class="note-toggle-bar">
+                    <button class="note-toggle active" id="openNoteToggle" onclick="setNoteMode('open')">✏ OPEN NOTE</button>
+                    <button class="note-toggle" id="lunarNoteToggle" onclick="setNoteMode('lunar')">🌙 LUNAR NOTE</button>
+                </div>
+                <!-- Open Note: regular reply input -->
+                <div id="openNotePanel">
+                    <div class="reply-row" id="replyRow">
+                        <div class="reply-input-wrapper">
+                            <button class="reply-attach-btn" id="attachBtn" onclick="toggleAttachMenu()">+</button>
+                            <input type="text" class="message-page-input" placeholder="Whisper your message to the stars..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()" oninput="emitTyping()">
+                        </div>
+                        <button class="message-page-send" id="replySendBtn" onclick="sendReply()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
+                        <input type="file" id="replyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleReplyPhoto(this)">
+                    </div>
+                    <div class="attach-menu" id="attachMenu" style="display:none;">
+                        <button class="attach-option" onclick="triggerPhotoAttach()">📷 Photo</button>
+                        <button class="attach-option" onclick="triggerYoutubeAttach()">🔗 YouTube Link</button>
+                    </div>
+                </div>
+                <!-- Lunar Note: 3-step creative wizard -->
+                <div class="thread-lunar-panel" id="threadLunarPanel" style="display:none;">
                     <p class="thread-lunar-intro" id="threadLunarIntro">Give me three things.</p>
                     <div class="thread-lunar-steps">
                         <div class="thread-lunar-step" id="threadStep1">
@@ -6086,23 +7449,13 @@
                         <button class="thread-lunar-send" id="threadLunarSendBtn" onclick="sendThreadLunarNote()" disabled style="flex:1;">Send Lunar Note</button>
                     </div>
                 </div>
-                <div id="replyPhotoPreview" style="display:none;padding:8px 8px 0;">
-                    <div style="position:relative;display:inline-block;">
-                        <img id="replyPhotoImg" style="max-height:100px;border-radius:8px;">
-                        <button onclick="clearReplyPhoto()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:12px;cursor:pointer;">&times;</button>
-                    </div>
+                <div style="text-align:center;padding:2px 0;">
+                    <span style="color:rgba(255,255,255,0.12);font-size:8px;font-family:monospace;text-transform:uppercase;letter-spacing:2px;">🔒 END-TO-END QUANTUM ENCRYPTION ACTIVE</span>
                 </div>
-                <div class="reply-row" id="replyRow">
-                    <label for="replyPhotoInput" id="replyPhotoLabel" style="cursor:pointer;font-size:20px;padding:4px;flex-shrink:0;">🌕</label>
-                    <input type="file" id="replyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleReplyPhoto(this)">
-                    <input type="text" class="message-page-input" placeholder="Write a reply..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()">
-                    <button class="message-page-send" id="replySendBtn" onclick="sendReply()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
-                </div>
-                <div id="replyMoonGate" style="text-align:center;padding:12px 16px;color:var(--text-muted);font-size:13px;">
-                    <div style="margin-bottom:4px;"><svg class="app-icon sm" style="color:var(--blue)"><use href="#icon-lunar-note"/></svg> The moon is below your horizon</div>
+                <div id="replyMoonGate" style="text-align:center;padding:12px 16px;font-size:13px;">
+                    <div style="margin-bottom:4px;"><svg class="app-icon sm" style="color:#4fc3f7"><use href="#icon-lunar-note"/></svg> The moon is below your horizon</div>
                     <div id="replyMoonGateTime" style="font-size:11px;opacity:0.7;"></div>
                 </div>
-                <button class="add-lunar-link" id="addLunarLink" onclick="openThreadLunar()"><svg class="app-icon sm" style="color:var(--blue)"><use href="#icon-lunar-note"/></svg> Add a Lunar Note</button>
             </div>
         </div>
     </div>
@@ -6343,14 +7696,14 @@
 
         // Moon phase SVG icons (inline, from /moon phases/*.svg)
         const MOON_PHASE_SVGS = {
-            'New Moon': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0Z" fill="#FF5659"/></svg>',
-            'Waxing Crescent': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0ZM33.8838 14.0244C33.4209 13.9076 32.9627 14.2224 32.7773 14.5469C32.5537 14.9383 32.6251 15.3787 32.9268 15.7354C34.0723 17.0901 34.8115 18.6624 35.2002 20.3838C36.0645 24.2035 34.9348 28.1679 32.1885 30.9834C29.4817 33.7578 25.5076 35.0844 21.5645 34.4805C19.3641 34.1436 17.3781 33.1939 15.6738 31.833C15.3746 31.5943 14.9778 31.5853 14.6211 31.6885C14.3169 31.7768 14.1327 32.0503 14.001 32.3672V32.7861C15.1543 37.2821 18.0658 41.0484 22.3184 43.2051C28.9939 46.591 37.1771 45.0872 42.0947 39.5137C44.4065 36.8946 45.7953 33.5964 45.9756 30.1035C46.0012 29.6101 46.0121 29.1501 45.9814 28.6592L45.9463 28.0947C45.5371 21.4967 40.4917 15.7 33.8838 14.0244Z" fill="#FF5659"/></svg>',
-            'First Quarter': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0ZM29.5 47C39.165 47 47 39.165 47 29.5C47 19.835 39.165 12 29.5 12V47Z" fill="#FF5659"/></svg>',
-            'Waxing Gibbous': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0ZM29.5 12C25.0159 12 21.514 17.4999 20.5 19C19.486 20.5 17.5465 25.0919 17.5 29.5C17.4535 33.9081 18.4995 39.2387 20.25 41.5C22.0005 43.7613 25.2973 47 29.5 47C39.165 47 47 39.165 47 29.5C47 19.835 39.165 12 29.5 12Z" fill="#FF5659"/></svg>',
-            'Full Moon': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><mask id="fm-mask" fill="white"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0Z"/></mask><path d="M30 0V13C39.3888 13 47 20.6112 47 30H60H73C73 6.25176 53.7482 -13 30 -13V0ZM60 30H47C47 39.3888 39.3888 47 30 47V60V73C53.7482 73 73 53.7482 73 30H60ZM30 60V47C20.6112 47 13 39.3888 13 30H0H-13C-13 53.7482 6.25176 73 30 73V60ZM0 30H13C13 20.6112 20.6112 13 30 13V0V-13C6.25176 -13 -13 6.25176 -13 30H0Z" fill="#FF5659" mask="url(#fm-mask)"/></svg>',
-            'Waning Gibbous': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 60C13.4315 60 1.17422e-06 46.5685 2.62268e-06 30C4.07115e-06 13.4315 13.4315 -4.07115e-06 30 -2.62268e-06C46.5685 -1.17422e-06 60 13.4315 60 30C60 46.5685 46.5685 60 30 60ZM30.5 48C34.9841 48 38.486 42.5001 39.5 41C40.514 39.5 42.4535 34.9081 42.5 30.5C42.5465 26.0919 41.5005 20.7613 39.75 18.5C37.9995 16.2387 34.7027 13 30.5 13C20.835 13 13 20.835 13 30.5C13 40.165 20.835 48 30.5 48Z" fill="#FF5659"/></svg>',
-            'Last Quarter': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 60C13.4315 60 1.17422e-06 46.5685 2.62268e-06 30C4.07115e-06 13.4315 13.4315 -4.07115e-06 30 -2.62268e-06C46.5685 -1.17422e-06 60 13.4315 60 30C60 46.5685 46.5685 60 30 60ZM30.5 13C20.835 13 13 20.835 13 30.5C13 40.165 20.835 48 30.5 48L30.5 13Z" fill="#FF5659"/></svg>',
-            'Waning Crescent': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0ZM27.2236 14.5469C27.0383 14.2226 26.5808 13.9079 26.1182 14.0244C19.5103 15.7 14.4648 21.4967 14.0557 28.0947L14.0195 28.6592C13.9889 29.1501 14.0008 29.6101 14.0264 30.1035C14.2067 33.5964 15.5945 36.8946 17.9062 39.5137C22.8238 45.0873 31.007 46.5909 37.6826 43.2051C41.9352 41.0485 44.8466 37.2821 46 32.7861V32.3672C45.8683 32.0502 45.6842 31.7767 45.3799 31.6885C45.0232 31.5854 44.6273 31.5944 44.3281 31.833C42.6238 33.1941 40.6379 34.1436 38.4375 34.4805C34.4943 35.0846 30.5203 33.7578 27.8135 30.9834C25.067 28.1679 23.9364 24.2036 24.8008 20.3838C25.1895 18.6624 25.9287 17.0901 27.0742 15.7354C27.376 15.3786 27.4474 14.9384 27.2236 14.5469Z" fill="#FF5659"/></svg>'
+            'New Moon': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0Z" fill="#4fc3f7"/></svg>',
+            'Waxing Crescent': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0ZM33.8838 14.0244C33.4209 13.9076 32.9627 14.2224 32.7773 14.5469C32.5537 14.9383 32.6251 15.3787 32.9268 15.7354C34.0723 17.0901 34.8115 18.6624 35.2002 20.3838C36.0645 24.2035 34.9348 28.1679 32.1885 30.9834C29.4817 33.7578 25.5076 35.0844 21.5645 34.4805C19.3641 34.1436 17.3781 33.1939 15.6738 31.833C15.3746 31.5943 14.9778 31.5853 14.6211 31.6885C14.3169 31.7768 14.1327 32.0503 14.001 32.3672V32.7861C15.1543 37.2821 18.0658 41.0484 22.3184 43.2051C28.9939 46.591 37.1771 45.0872 42.0947 39.5137C44.4065 36.8946 45.7953 33.5964 45.9756 30.1035C46.0012 29.6101 46.0121 29.1501 45.9814 28.6592L45.9463 28.0947C45.5371 21.4967 40.4917 15.7 33.8838 14.0244Z" fill="#4fc3f7"/></svg>',
+            'First Quarter': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0ZM29.5 47C39.165 47 47 39.165 47 29.5C47 19.835 39.165 12 29.5 12V47Z" fill="#4fc3f7"/></svg>',
+            'Waxing Gibbous': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0ZM29.5 12C25.0159 12 21.514 17.4999 20.5 19C19.486 20.5 17.5465 25.0919 17.5 29.5C17.4535 33.9081 18.4995 39.2387 20.25 41.5C22.0005 43.7613 25.2973 47 29.5 47C39.165 47 47 39.165 47 29.5C47 19.835 39.165 12 29.5 12Z" fill="#4fc3f7"/></svg>',
+            'Full Moon': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><mask id="fm-mask" fill="white"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0Z"/></mask><path d="M30 0V13C39.3888 13 47 20.6112 47 30H60H73C73 6.25176 53.7482 -13 30 -13V0ZM60 30H47C47 39.3888 39.3888 47 30 47V60V73C53.7482 73 73 53.7482 73 30H60ZM30 60V47C20.6112 47 13 39.3888 13 30H0H-13C-13 53.7482 6.25176 73 30 73V60ZM0 30H13C13 20.6112 20.6112 13 30 13V0V-13C6.25176 -13 -13 6.25176 -13 30H0Z" fill="#4fc3f7" mask="url(#fm-mask)"/></svg>',
+            'Waning Gibbous': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 60C13.4315 60 1.17422e-06 46.5685 2.62268e-06 30C4.07115e-06 13.4315 13.4315 -4.07115e-06 30 -2.62268e-06C46.5685 -1.17422e-06 60 13.4315 60 30C60 46.5685 46.5685 60 30 60ZM30.5 48C34.9841 48 38.486 42.5001 39.5 41C40.514 39.5 42.4535 34.9081 42.5 30.5C42.5465 26.0919 41.5005 20.7613 39.75 18.5C37.9995 16.2387 34.7027 13 30.5 13C20.835 13 13 20.835 13 30.5C13 40.165 20.835 48 30.5 48Z" fill="#4fc3f7"/></svg>',
+            'Last Quarter': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 60C13.4315 60 1.17422e-06 46.5685 2.62268e-06 30C4.07115e-06 13.4315 13.4315 -4.07115e-06 30 -2.62268e-06C46.5685 -1.17422e-06 60 13.4315 60 30C60 46.5685 46.5685 60 30 60ZM30.5 13C20.835 13 13 20.835 13 30.5C13 40.165 20.835 48 30.5 48L30.5 13Z" fill="#4fc3f7"/></svg>',
+            'Waning Crescent': '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30 0C46.5685 0 60 13.4315 60 30C60 46.5685 46.5685 60 30 60C13.4315 60 0 46.5685 0 30C0 13.4315 13.4315 0 30 0ZM27.2236 14.5469C27.0383 14.2226 26.5808 13.9079 26.1182 14.0244C19.5103 15.7 14.4648 21.4967 14.0557 28.0947L14.0195 28.6592C13.9889 29.1501 14.0008 29.6101 14.0264 30.1035C14.2067 33.5964 15.5945 36.8946 17.9062 39.5137C22.8238 45.0873 31.007 46.5909 37.6826 43.2051C41.9352 41.0485 44.8466 37.2821 46 32.7861V32.3672C45.8683 32.0502 45.6842 31.7767 45.3799 31.6885C45.0232 31.5854 44.6273 31.5944 44.3281 31.833C42.6238 33.1941 40.6379 34.1436 38.4375 34.4805C34.4943 35.0846 30.5203 33.7578 27.8135 30.9834C25.067 28.1679 23.9364 24.2036 24.8008 20.3838C25.1895 18.6624 25.9287 17.0901 27.0742 15.7354C27.376 15.3786 27.4474 14.9384 27.2236 14.5469Z" fill="#4fc3f7"/></svg>'
         };
 
         // Update the orbit moon icon to match the current phase
@@ -6364,7 +7717,7 @@
             // doesn't show through the transparent parts of the moon icon
             iconEl.innerHTML = svg.replace(
                 /(<svg[^>]*>)/,
-                '$1<circle cx="30" cy="30" r="30" fill="#FCF0D9"/>'
+                '$1<circle cx="30" cy="30" r="30" fill="#060e1a"/>'
             );
         }
 
@@ -7258,11 +8611,11 @@
             // Stats display removed - function kept for compatibility
         }
         
-        // Attach tooltip handlers to all current message dots
+        // Attach tooltip + click handlers to all current message dots
         function attachDotTooltips() {
             const dotTooltip = document.getElementById('dotTooltip');
             if (!dotTooltip) return;
-            
+
             document.querySelectorAll('.message-dot').forEach(dot => {
                 dot.addEventListener('mouseenter', (e) => {
                     const isIncoming = dot.dataset.incoming === 'true';
@@ -7271,36 +8624,123 @@
 
                     let eta = '';
                     if (hours < 1) {
-                        eta = `in ${Math.round(hours * 60)}m`;
+                        const mins = Math.round(hours * 60);
+                        eta = mins <= 1 ? 'arriving soon' : `arriving in ${mins}m`;
                     } else {
-                        eta = `in ${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`;
+                        eta = `arriving in ${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`;
                     }
+
+                    // Calculate transit progress (estimate: assume 12h max transit)
+                    const maxTransit = 12;
+                    const elapsed = maxTransit - hours;
+                    const progress = Math.min(100, Math.max(5, (elapsed / maxTransit) * 100));
+
+                    const progressFill = dotTooltip.querySelector('.tooltip-progress-fill');
 
                     if (isIncoming) {
                         const from = dot.dataset.from || 'Someone';
                         dotTooltip.querySelector('.tooltip-name').textContent = `From ${from}`;
-                        dotTooltip.querySelector('.tooltip-meta').textContent = `Arrives at your moonrise (${release}) · ${eta}`;
+                        dotTooltip.querySelector('.tooltip-meta').textContent = `Moonrise ${release} · ${eta}`;
+                        dotTooltip.querySelector('.tooltip-phase').textContent = '↓ Incoming';
+                        progressFill.className = 'tooltip-progress-fill';
                     } else {
                         const to = dot.dataset.to || 'Someone';
                         const location = dot.dataset.location || '';
                         dotTooltip.querySelector('.tooltip-name').textContent = `To ${to}`;
-                        dotTooltip.querySelector('.tooltip-meta').textContent = `Moonrise at ${release} in ${location} · ${eta}`;
+                        dotTooltip.querySelector('.tooltip-meta').textContent = location ? `📍 ${location} · ${release} · ${eta}` : `${release} · ${eta}`;
+                        dotTooltip.querySelector('.tooltip-phase').textContent = '↑ Outgoing';
+                        progressFill.className = 'tooltip-progress-fill outgoing';
                     }
-                    dotTooltip.querySelector('.tooltip-phase').textContent = '';
+                    progressFill.style.width = progress + '%';
                     dotTooltip.classList.add('visible');
                 });
-                
+
                 dot.addEventListener('mousemove', (e) => {
                     dotTooltip.style.left = (e.clientX + 15) + 'px';
                     dotTooltip.style.top = (e.clientY - 10) + 'px';
                 });
-                
+
                 dot.addEventListener('mouseleave', () => {
                     dotTooltip.classList.remove('visible');
                 });
+
+                // Click: open conversation with this sender/recipient
+                dot.addEventListener('click', () => {
+                    dotTooltip.classList.remove('visible');
+                    const isIncoming = dot.dataset.incoming === 'true';
+                    const name = isIncoming ? dot.dataset.from : dot.dataset.to;
+                    if (!name) return;
+                    const conv = conversations.find(c => c.otherName === name);
+                    if (conv) openConversation(conv);
+                });
             });
         }
-        
+
+        // Moon phase popup — show on moon icon click
+        function initMoonPhasePopup() {
+            const moonIcon = document.getElementById('orbitMoonIcon');
+            const popup = document.getElementById('moonPhasePopup');
+            if (!moonIcon || !popup) return;
+
+            moonIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (popup.classList.contains('visible')) {
+                    popup.classList.remove('visible');
+                    return;
+                }
+
+                // Get phase data from SunCalc
+                const now = new Date();
+                const illum = SunCalc.getMoonIllumination(now);
+
+                // Phase name + emoji
+                const phaseAngle = illum.phase;
+                let phaseName, phaseEmoji;
+                if (phaseAngle < 0.03 || phaseAngle > 0.97) { phaseName = 'New Moon'; phaseEmoji = '🌑'; }
+                else if (phaseAngle < 0.22) { phaseName = 'Waxing Crescent'; phaseEmoji = '🌒'; }
+                else if (phaseAngle < 0.28) { phaseName = 'First Quarter'; phaseEmoji = '🌓'; }
+                else if (phaseAngle < 0.47) { phaseName = 'Waxing Gibbous'; phaseEmoji = '🌔'; }
+                else if (phaseAngle < 0.53) { phaseName = 'Full Moon'; phaseEmoji = '🌕'; }
+                else if (phaseAngle < 0.72) { phaseName = 'Waning Gibbous'; phaseEmoji = '🌖'; }
+                else if (phaseAngle < 0.78) { phaseName = 'Last Quarter'; phaseEmoji = '🌗'; }
+                else { phaseName = 'Waning Crescent'; phaseEmoji = '🌘'; }
+
+                document.getElementById('moonPhaseEmoji').textContent = phaseEmoji;
+                document.getElementById('moonPhaseName').textContent = phaseName;
+
+                // Stats
+                const illumination = Math.round(illum.fraction * 100);
+                const altitude = moonData.altitude !== undefined ? moonData.altitude.toFixed(1) + '°' : '—';
+                // Pull distance & age from phase data or data bar
+                const phase = moonData.phase || {};
+                const distance = phase.distance ? Math.round(phase.distance).toLocaleString() + ' km' : (document.getElementById('moonDistanceBar')?.textContent || '—');
+                const age = phase.moonAge !== undefined ? phase.moonAge + ' days' : (phaseAngle * 29.53).toFixed(1) + ' days';
+
+                document.getElementById('moonPhaseStats').innerHTML = `
+                    <div class="moon-phase-stat"><span class="moon-phase-stat-label">Illumination</span><span class="moon-phase-stat-value">${illumination}%</span></div>
+                    <div class="moon-phase-stat"><span class="moon-phase-stat-label">Altitude</span><span class="moon-phase-stat-value">${altitude}</span></div>
+                    <div class="moon-phase-stat"><span class="moon-phase-stat-label">Distance</span><span class="moon-phase-stat-value">${distance}</span></div>
+                    <div class="moon-phase-stat"><span class="moon-phase-stat-label">Age</span><span class="moon-phase-stat-value">${age}</span></div>
+                `;
+
+                // Position popup near the moon icon, clamped to viewport
+                const rect = moonIcon.getBoundingClientRect();
+                let left = rect.left + rect.width / 2 - 110;
+                left = Math.max(16, Math.min(left, window.innerWidth - 230));
+                popup.style.left = left + 'px';
+                popup.style.top = (rect.bottom + 12) + 'px';
+
+                popup.classList.add('visible');
+            });
+
+            // Dismiss on click-outside
+            document.addEventListener('click', (e) => {
+                if (!popup.contains(e.target) && !moonIcon.contains(e.target)) {
+                    popup.classList.remove('visible');
+                }
+            });
+        }
+
         // Format a Date in the selected city's timezone as "HH:MM"
         function formatTimeInZone(date, tz) {
             if (!date) return '--:--';
@@ -8556,13 +9996,58 @@
                         await loadFullConversationThread(conv);
                     }
                     renderConversationThread();
-                    document.getElementById('messagePageView').classList.add('active');
+                    const _page = document.getElementById('messagePageView');
+                    _page.classList.add('active');
                     document.body.style.overflow = 'hidden';
+                    // Desktop inline chat positioning
+                    const _mob = window.matchMedia('(max-width: 900px)').matches;
+                    if (!_mob) {
+                        document.body.classList.add('chat-open');
+                        const _lp = document.querySelector('.split-left');
+                        const _sl = document.querySelector('.split-layout');
+                        if (_lp && _sl) {
+                            const _slR = _sl.getBoundingClientRect();
+                            _page.style.left = (_lp.getBoundingClientRect().right + 24) + 'px';
+                            _page.style.top = _slR.top + 'px';
+                            _page.style.bottom = (window.innerHeight - _slR.bottom) + 'px';
+                            _page.style.height = 'auto';
+                        }
+                        renderMessages();
+                    }
                 }
             } else {
                 // Navigated back to inbox
                 _closeMessageDetailUI();
                 renderMessages();
+            }
+        });
+
+        // ========================
+        // RESIZE HANDLER — inline chat positioning
+        // ========================
+        window.addEventListener('resize', function() {
+            const page = document.getElementById('messagePageView');
+            if (!page || !page.classList.contains('active')) return;
+            const mob = window.matchMedia('(max-width: 900px)').matches;
+            if (mob) {
+                // Mobile: reset to full-page overlay
+                page.style.left = '';
+                page.style.top = '';
+                page.style.bottom = '';
+                page.style.height = '';
+                document.body.classList.remove('chat-open');
+            } else {
+                // Desktop: recalculate inline position
+                document.body.classList.add('chat-open');
+                const leftPanel = document.querySelector('.split-left');
+                const splitLayout = document.querySelector('.split-layout');
+                if (leftPanel && splitLayout) {
+                    const slRect = splitLayout.getBoundingClientRect();
+                    page.style.left = (leftPanel.getBoundingClientRect().right + 24) + 'px';
+                    page.style.top = slRect.top + 'px';
+                    page.style.bottom = (window.innerHeight - slRect.bottom) + 'px';
+                    page.style.height = 'auto';
+                }
             }
         });
 
@@ -9083,6 +10568,52 @@
         document.addEventListener('DOMContentLoaded', async () => {
             _domReady = true;
 
+            // Generate twinkling stars with color variety
+            (function() {
+                const container = document.getElementById('starfieldTwinkle');
+                if (!container) return;
+                const count = 110;
+                for (let i = 0; i < count; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    star.style.left = (Math.random() * 100) + '%';
+                    star.style.top = (Math.random() * 100) + '%';
+                    star.style.setProperty('--dur', (2 + Math.random() * 6) + 's');
+                    star.style.setProperty('--delay', (Math.random() * 10) + 's');
+                    const r = Math.random();
+                    if (r > 0.97) {
+                        star.style.width = star.style.height = '3.5px';
+                        star.style.setProperty('--peak', (0.6 + Math.random() * 0.35).toFixed(2));
+                        star.style.boxShadow = '0 0 6px rgba(255,255,255,0.5)';
+                    } else if (r > 0.92) {
+                        star.style.width = star.style.height = '2.5px';
+                        star.style.setProperty('--peak', (0.4 + Math.random() * 0.4).toFixed(2));
+                    } else if (r > 0.75) {
+                        star.style.width = star.style.height = '1.8px';
+                        star.style.setProperty('--peak', (0.3 + Math.random() * 0.45).toFixed(2));
+                    } else if (r > 0.5) {
+                        star.style.width = star.style.height = '1.2px';
+                        star.style.setProperty('--peak', (0.25 + Math.random() * 0.45).toFixed(2));
+                    } else {
+                        star.style.width = star.style.height = '0.8px';
+                        star.style.setProperty('--peak', (0.2 + Math.random() * 0.4).toFixed(2));
+                    }
+                    // Color variety: yellow, pink, blue, or white
+                    const colorRoll = Math.random();
+                    if (colorRoll > 0.88) {
+                        star.style.background = '#ffd54f';
+                        star.style.boxShadow = (star.style.boxShadow ? star.style.boxShadow + ',' : '') + '0 0 4px rgba(255,213,79,0.5)';
+                    } else if (colorRoll > 0.78) {
+                        star.style.background = '#ff8a80';
+                        star.style.boxShadow = (star.style.boxShadow ? star.style.boxShadow + ',' : '') + '0 0 4px rgba(255,138,128,0.5)';
+                    } else if (colorRoll > 0.73) {
+                        star.style.background = '#80d8ff';
+                        star.style.boxShadow = (star.style.boxShadow ? star.style.boxShadow + ',' : '') + '0 0 4px rgba(128,216,255,0.5)';
+                    }
+                    container.appendChild(star);
+                }
+            })();
+
             // Check for saved location first
             const savedLocation = localStorage.getItem('moonpop_location');
             if (savedLocation) {
@@ -9116,6 +10647,7 @@
             updateOrbitCenter();
             // Re-render after moon display is calculated (moon cycle data now available)
             renderMessageDots();
+            initMoonPhasePopup();
 
             setInterval(() => {
                 updateOrbitCenter();
@@ -9540,21 +11072,39 @@
             // Show/hide inbox CTA
             const inboxCta = document.getElementById('inboxNewMsgCta');
 
+            // Moon glow: toggle classes based on visibility
+            const moonIconEl = document.getElementById('orbitMoonIcon');
+            const orbitRingEl = document.querySelector('.orbit-ring');
             if (moonData.isVisible) {
-                // Moon is up - compose available
+                if (moonIconEl) moonIconEl.classList.add('moon-glow');
+                if (orbitRingEl) orbitRingEl.classList.add('moon-visible');
+            } else {
+                if (moonIconEl) moonIconEl.classList.remove('moon-glow');
+                if (orbitRingEl) orbitRingEl.classList.remove('moon-visible');
+            }
+
+            if (moonData.isVisible) {
+                // Moon is up — clean, minimal center
                 document.body.classList.remove('moon-down');
                 if (heroTitle) heroTitle.textContent = 'MESSAGES RELEASED BY THE MOON';
                 if (inboxCta) inboxCta.style.display = '';
+
+                // In-transit message count
+                const inTransit = messages.filter(m => m.type === 'sent' && m.status === 'In Transit').length;
+                const inTransitLine = inTransit > 0
+                    ? `<p class="moon-carrying-indicator"><span class="moon-carrying-count">${inTransit}</span> ${inTransit === 1 ? 'message' : 'messages'} in orbit</p>`
+                    : '';
+
                 centerEl.innerHTML = `
                     <div class="standby-countdown live-timer">${timerStr}</div>
                     <p class="standby-label">until moonset</p>
-                    <p class="delivery-note">Arrives at moonrise in recipient's sky</p>
+                    <div class="moon-live-indicator"><span class="moon-live-dot"></span> Moon is live</div>
+                    ${inTransitLine}
                 `;
             } else {
-                // Moon is down - compose locked
+                // Moon is down — compose locked
                 document.body.classList.add('moon-down');
                 if (inboxCta) inboxCta.style.display = 'none';
-                const riseTime = moonData.moonrise !== '--:--' ? moonData.moonrise : '—';
 
                 // Update hero title based on pending messages
                 if (heroTitle) {
@@ -9570,24 +11120,22 @@
                 // Message indicator
                 let messageIndicator = '';
                 if (totalWaiting > 0) {
-                    const plural = totalWaiting === 1 ? 'message is' : 'messages are';
-                    messageIndicator = `<p class="moon-carrying-indicator"><span class="moon-carrying-count">${totalWaiting}</span> ${plural} traveling with the moon toward you.</p>`;
+                    const plural = totalWaiting === 1 ? 'message' : 'messages';
+                    messageIndicator = `<p class="moon-carrying-indicator"><span class="moon-carrying-count">${totalWaiting}</span> ${plural} in transit</p>`;
                 } else {
-                    messageIndicator = `<p class="moon-carrying-indicator">The moon travels light tonight. No messages waiting.</p>`;
+                    messageIndicator = `<p class="moon-carrying-indicator" style="opacity:0.4;">No messages waiting</p>`;
                 }
 
                 centerEl.innerHTML = `
-                    <div class="standby-content">
-                        <div class="standby-countdown live-timer">${timerStr}</div>
-                        <p class="standby-label">until moonrise</p>
-                        ${messageIndicator}
-                        <p class="moon-down-lockout">Our services will open at moonrise (${riseTime}).</p>
-                    </div>
+                    <div class="standby-countdown live-timer" style="opacity:0.6;">${timerStr}</div>
+                    <p class="standby-label">until moonrise</p>
+                    ${messageIndicator}
                 `;
             }
 
             // Update reply row gating if conversation detail is open
             updateReplyRowMoonGate();
+            updateInboxTransmitBtn();
         }
 
         // Render all messages chronologically (IM-style)
@@ -9679,7 +11227,7 @@
                 }
 
                 return `
-                    <li class="message-item${isUnread ? ' unread' : ''}" data-sender="${conv.otherName}" data-orbiting="${conv.hasInTransit}" data-location="${conv.location || ''}"
+                    <li class="message-item${isUnread ? ' unread' : ''}${ci === currentConversationIndex ? ' active' : ''}" data-sender="${conv.otherName}" data-orbiting="${conv.hasInTransit}" data-location="${conv.location || ''}"
                         onclick="openConversation(${ci})"
                         onmouseenter="highlightOrbitDot('${conv.otherName}', true)"
                         onmouseleave="highlightOrbitDot('${conv.otherName}', false)">
@@ -9831,8 +11379,8 @@
             // Show location and online status
             const online = isContactOnline(contact);
             document.getElementById('detailLocation').textContent = online
-                ? `${conv.location || 'Unknown'} · Online now`
-                : `${conv.location || 'Unknown'} · ${conv.messages.length} moon message${conv.messages.length > 1 ? 's' : ''}`;
+                ? `${conv.location || 'Unknown'} · Online under the same sky`
+                : `${conv.location || 'Unknown'} · ${conv.messages.length} transmission${conv.messages.length > 1 ? 's' : ''}`;
 
             // Load replies for ALL messages in this conversation
             if (currentAuthUser) {
@@ -9891,6 +11439,25 @@
             renderConversationThread();
             page.classList.add('active');
             document.body.style.overflow = 'hidden';
+
+            // Desktop inline chat: position overlay in the right panel
+            const _isMobile = window.matchMedia('(max-width: 900px)').matches;
+            if (!_isMobile) {
+                document.body.classList.add('chat-open');
+                const leftPanel = document.querySelector('.split-left');
+                const splitLayout = document.querySelector('.split-layout');
+                if (leftPanel && splitLayout) {
+                    const slRect = splitLayout.getBoundingClientRect();
+                    page.style.left = (leftPanel.getBoundingClientRect().right + 24) + 'px';
+                    page.style.top = slRect.top + 'px';
+                    page.style.bottom = (window.innerHeight - slRect.bottom) + 'px';
+                    page.style.height = 'auto';
+                }
+                renderMessages(); // refresh inbox to show active highlight
+            }
+
+            // Setup typing indicator channel
+            setupTypingChannel(conv.dbConversationId);
 
             // Update URL to reflect the open conversation (deep-linkable)
             if (conv.dbConversationId) {
@@ -9975,6 +11542,19 @@
                 } else {
                     timeEl.textContent = 'Messaging opens when the moon rises';
                 }
+            }
+        }
+
+        // Update inbox transmission button based on moon state
+        function updateInboxTransmitBtn() {
+            const btn = document.getElementById('inboxTransmitBtn');
+            if (!btn) return;
+            if (moonData.isVisible) {
+                btn.textContent = '+ NEW MOON MESSAGE';
+                btn.classList.add('moon-up');
+            } else {
+                btn.textContent = '+ INITIATE TRANSMISSION';
+                btn.classList.remove('moon-up');
             }
         }
 
@@ -10073,7 +11653,7 @@
                 const itemDate = new Date(item.createdAt);
                 const dateStr = itemDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 if (dateStr !== lastDate && item.createdAt) {
-                    html += `<div style="text-align:center;padding:12px 0 8px;"><span style="font-size:11px;color:var(--text-muted);background:var(--cream);padding:4px 12px;border-radius:12px;">${dateStr}</span></div>`;
+                    html += `<div style="text-align:center;padding:12px 0 8px;"><span class="chat-date-sep" style="font-size:11px;color:rgba(255,255,255,0.35);background:rgba(18,35,58,0.7);padding:4px 12px;border-radius:12px;">${dateStr}</span></div>`;
                     lastDate = dateStr;
                 }
 
@@ -10083,6 +11663,7 @@
                         return `<span class="read-receipt ${st}">✓✓</span>`;
                     })() : '';
                     const lunarReactionsHtml = (item.isMessage && item.msgIndex >= 0) ? renderReactionsBar(item.msgIndex, 'lunar') : '';
+                    const lunarPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
                     html += `
                         <div class="bubble-lunar-note ${item.sent ? 'sent-lunar' : ''}" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
                             <div class="bubble-lunar-label">${iconSvg('lunar-note', 'sm')} Lunar Note</div>
@@ -10090,6 +11671,7 @@
                             ${item.closing ? `<div class="bubble-lunar-closing">${item.closing}</div>` : ''}
                             <div class="message-bubble-time">${item.time || 'Recently'} ${lunarReceipt}</div>
                             ${lunarReactionsHtml}
+                            <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('🌙 ${lunarPreview}')">↩ Reply</button>
                         </div>
                     `;
                 } else if (item.type === 'text') {
@@ -10098,24 +11680,26 @@
                         return `<span class="read-receipt ${st}">✓✓</span>`;
                     })() : '';
                     const reactionsHtml = (item.isMessage && item.msgIndex >= 0) ? renderReactionsBar(item.msgIndex, 'thread') : '';
+                    const textPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
                     html += `
                         <div class="message-bubble ${item.sent ? 'sent' : ''}">
                             ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
                             ${item.text ? `<p>${item.text}</p>` : ''}
                             <div class="message-bubble-time">${item.time || 'Recently'} ${textReceipt}</div>
                             ${reactionsHtml}
+                            <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('${textPreview.replace(/'/g, "\\'")}')">↩ Reply</button>
                         </div>
                     `;
                     if (item.status === 'In Transit') {
                         html += `
-                            <div style="text-align:center;padding:8px;color:var(--text-muted);font-size:11px;font-style:italic;">
+                            <div style="text-align:center;padding:8px;color:rgba(79,195,247,0.5);font-size:11px;font-style:italic;">
                                 Traveling toward moonrise...
                             </div>
                         `;
                     }
                 } else if (item.type === 'transit') {
                     html += `
-                        <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;font-style:italic;">
+                        <div style="text-align:center;padding:20px;color:rgba(79,195,247,0.5);font-size:13px;font-style:italic;">
                             Message traveling toward ${item.location}<br>
                             It will arrive at moonrise
                         </div>
@@ -10129,8 +11713,8 @@
                         arrivalNote = `A moon message is traveling toward you. It will arrive at moonrise (${timeStr}).`;
                     }
                     html += `
-                        <div style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(47,73,131,0.08);border:1px dashed rgba(47,73,131,0.2);margin-bottom:8px;">
-                            <div style="font-size:13px;color:var(--blue);font-style:italic;">${arrivalNote}</div>
+                        <div class="chat-transit-msg" style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(18,35,58,0.5);border:1px dashed rgba(79,195,247,0.25);margin-bottom:8px;">
+                            <div style="font-size:13px;color:rgba(79,195,247,0.7);font-style:italic;">${arrivalNote}</div>
                             <div class="message-bubble-time">${item.time}</div>
                         </div>
                     `;
@@ -10155,16 +11739,138 @@
 
             if (!html) {
                 html = `
-                    <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;font-style:italic;">
-                        No messages yet in this conversation
+                    <div style="text-align:center;padding:40px 20px;color:rgba(79,195,247,0.4);font-size:13px;font-style:italic;">
+                        ✦ No transmissions yet ✦
                     </div>
                 `;
             }
+
+            // Add typing indicator placeholder at the bottom
+            html += `<div class="typing-indicator" id="typingIndicator" style="display:none;">
+                <div class="typing-indicator-bubble">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
+                <span class="typing-indicator-label" id="typingLabel"></span>
+            </div>`;
 
             content.innerHTML = html;
 
             // Update reply row moon gating every time thread renders
             updateReplyRowMoonGate();
+            updateInboxTransmitBtn();
+
+            // Restore typing indicator if other user was typing
+            if (_otherUserTyping) showTypingIndicator(true);
+        }
+
+        // ========================
+        // TYPING INDICATOR
+        // ========================
+        let _otherUserTyping = false;
+        let _typingTimeout = null;
+        let _typingChannel = null;
+        let _myTypingTimeout = null;
+        let _lastTypingEmit = 0;
+
+        function setupTypingChannel(conversationId) {
+            // Clean up previous channel
+            if (_typingChannel) {
+                try { sb.removeChannel(_typingChannel); } catch(e) {}
+                _typingChannel = null;
+            }
+            if (!conversationId || !currentAuthUser) return;
+
+            _typingChannel = sb.channel(`typing-${conversationId}`);
+            _typingChannel.on('broadcast', { event: 'typing' }, (payload) => {
+                const data = payload.payload;
+                if (data.userId === currentAuthUser.id) return; // ignore own typing
+                if (data.isTyping) {
+                    _otherUserTyping = true;
+                    showTypingIndicator(true, data.username);
+                    // Auto-hide after 4s if no new typing event
+                    clearTimeout(_typingTimeout);
+                    _typingTimeout = setTimeout(() => {
+                        _otherUserTyping = false;
+                        showTypingIndicator(false);
+                    }, 4000);
+                } else {
+                    _otherUserTyping = false;
+                    showTypingIndicator(false);
+                }
+            });
+            _typingChannel.subscribe();
+        }
+
+        function emitTyping() {
+            if (!_typingChannel || !currentAuthUser || !currentConversation) return;
+            const now = Date.now();
+            // Throttle: only emit every 2 seconds
+            if (now - _lastTypingEmit < 2000) return;
+            _lastTypingEmit = now;
+
+            const profile = currentAuthUser.user_metadata || {};
+            _typingChannel.send({
+                type: 'broadcast',
+                event: 'typing',
+                payload: {
+                    userId: currentAuthUser.id,
+                    username: profile.username || profile.first_name || 'Someone',
+                    isTyping: true
+                }
+            });
+
+            // Auto-send "stopped typing" after 3s of no input
+            clearTimeout(_myTypingTimeout);
+            _myTypingTimeout = setTimeout(() => {
+                if (_typingChannel) {
+                    _typingChannel.send({
+                        type: 'broadcast',
+                        event: 'typing',
+                        payload: { userId: currentAuthUser.id, isTyping: false }
+                    });
+                }
+            }, 3000);
+        }
+
+        function showTypingIndicator(show, username) {
+            const el = document.getElementById('typingIndicator');
+            const label = document.getElementById('typingLabel');
+            if (!el) return;
+            el.style.display = show ? 'flex' : 'none';
+            if (label && username) {
+                label.textContent = `${username} is composing...`;
+            }
+            // Scroll to bottom when typing appears
+            if (show) {
+                const content = document.getElementById('detailContent');
+                if (content) content.scrollTop = content.scrollHeight;
+            }
+        }
+
+        // ========================
+        // REPLY TO SPECIFIC MESSAGE
+        // ========================
+        let _replyContext = null;
+
+        function setReplyContext(preview) {
+            _replyContext = preview;
+            const bar = document.getElementById('replyContextBar');
+            const text = document.getElementById('replyContextText');
+            if (bar && text) {
+                text.textContent = preview;
+                bar.style.display = 'block';
+            }
+            // Focus reply input
+            const input = document.getElementById('replyInput');
+            if (input) input.focus();
+        }
+
+        function clearReplyContext() {
+            _replyContext = null;
+            const bar = document.getElementById('replyContextBar');
+            if (bar) bar.style.display = 'none';
         }
 
         // Keep renderDetailContent as alias for compatibility with lunar note sending
@@ -10187,20 +11893,38 @@
 
         function _closeMessageDetailUI() {
             const page = document.getElementById('messagePageView');
-            if (page.classList.contains('active')) {
+            function doClose() {
                 page.classList.remove('active');
-                page.classList.add('closing');
-                page.addEventListener('animationend', function handler() {
-                    page.classList.remove('closing');
-                    page.removeEventListener('animationend', handler);
-                }, { once: true });
-            } else {
-                page.classList.remove('active');
+                page.classList.remove('closing');
+                page.style.left = '';
+                page.style.top = '';
+                page.style.bottom = '';
+                page.style.height = '';
+                document.body.style.overflow = '';
+                document.body.classList.remove('chat-open');
+                currentMessageIndex = -1;
+                currentConversationIndex = -1;
+                currentConversation = null;
+                if (_typingChannel) {
+                    try { sb.removeChannel(_typingChannel); } catch(e) {}
+                    _typingChannel = null;
+                }
+                _otherUserTyping = false;
+                // Reset note toggle to open note mode
+                if (typeof setNoteMode === 'function') setNoteMode('open');
+                // Hide attachment menu
+                const attachMenu = document.getElementById('attachMenu');
+                if (attachMenu) attachMenu.style.display = 'none';
+                renderMessages();
             }
-            document.body.style.overflow = '';
-            currentMessageIndex = -1;
-            currentConversationIndex = -1;
-            currentConversation = null;
+
+            // Animate out (slide down), then close
+            if (page.classList.contains('active')) {
+                page.classList.add('closing');
+                setTimeout(doClose, 250);
+            } else {
+                doClose();
+            }
         }
 
 
@@ -10209,9 +11933,7 @@
 
         function openThreadLunar() {
             const panel = document.getElementById('threadLunarPanel');
-            const link = document.getElementById('addLunarLink');
             panel.style.display = 'block';
-            link.style.display = 'none';
             threadLunarStep = 1;
             threadLunarGenerated = null;
 
@@ -10234,8 +11956,52 @@
 
         function closeThreadLunar() {
             document.getElementById('threadLunarPanel').style.display = 'none';
-            document.getElementById('addLunarLink').style.display = '';
+            const addLink = document.getElementById('addLunarLink');
+            if (addLink) addLink.style.display = '';
             threadLunarGenerated = null;
+        }
+
+        // Note mode toggle (Open Note / Lunar Note)
+        function setNoteMode(mode) {
+            const openBtn = document.getElementById('openNoteToggle');
+            const lunarBtn = document.getElementById('lunarNoteToggle');
+            const openPanel = document.getElementById('openNotePanel');
+            const lunarPanel = document.getElementById('threadLunarPanel');
+            if (mode === 'lunar') {
+                openThreadLunar();
+                if (lunarBtn) lunarBtn.classList.add('active');
+                if (openBtn) openBtn.classList.remove('active');
+                if (openPanel) openPanel.style.display = 'none';
+                if (lunarPanel) lunarPanel.style.display = 'block';
+            } else {
+                closeThreadLunar();
+                if (openBtn) openBtn.classList.add('active');
+                if (lunarBtn) lunarBtn.classList.remove('active');
+                if (openPanel) openPanel.style.display = 'block';
+                if (lunarPanel) lunarPanel.style.display = 'none';
+            }
+        }
+
+        // Attachment menu toggle
+        function toggleAttachMenu() {
+            const menu = document.getElementById('attachMenu');
+            if (!menu) return;
+            menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function triggerPhotoAttach() {
+            document.getElementById('replyPhotoInput').click();
+            document.getElementById('attachMenu').style.display = 'none';
+        }
+
+        function triggerYoutubeAttach() {
+            const url = prompt('Paste YouTube link:');
+            if (url && url.includes('youtu')) {
+                const input = document.getElementById('replyInput');
+                input.value = (input.value ? input.value + ' ' : '') + url;
+                input.focus();
+            }
+            document.getElementById('attachMenu').style.display = 'none';
         }
 
         function updateThreadLunarNextBtn(step) {
@@ -10449,8 +12215,14 @@
 
             if (!targetMsg.replies) targetMsg.replies = [];
 
-            const replyText = input.value.trim();
+            let replyText = input.value.trim();
             const now = new Date().toISOString();
+
+            // If replying to a specific message, prepend context
+            if (_replyContext) {
+                replyText = `↩ ${_replyContext}\n${replyText}`;
+                clearReplyContext();
+            }
 
             // Optimistic reply
             const optimisticReply = { text: replyText, time: 'Just now', createdAt: now, sent: true, senderId: currentAuthUser?.id, photoUrl: pendingReplyPhoto || null };
@@ -10458,6 +12230,11 @@
 
             // Clear input immediately for snappy feel
             input.value = '';
+
+            // Stop typing emission
+            if (_typingChannel && currentAuthUser) {
+                _typingChannel.send({ type: 'broadcast', event: 'typing', payload: { userId: currentAuthUser.id, isTyping: false } });
+            }
             const hadPhoto = hasPhoto;
 
             // Render immediately with optimistic data
