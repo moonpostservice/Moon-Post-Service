@@ -4613,7 +4613,7 @@
         /* Header in split mode: full-width, proper sizing */
         .header.split-active {
             position: relative; /* page doesn't scroll, no need for sticky */
-            padding: 16px clamp(16px, 4vw, 48px);
+            padding: 24px clamp(16px, 4vw, 48px);
         }
 
         .header.split-active .logo {
@@ -4641,6 +4641,8 @@
             /* viewport minus header+hero (~120px) minus bottom gap (48px) */
             height: calc(100vh - 168px);
             overflow: hidden;           /* no page scroll */
+            max-width: 1600px;
+            margin: 0 auto;
         }
 
         .split-left {
@@ -4760,15 +4762,15 @@
             }
             /* Chat header — subtle bg like active inbox item */
             body.chat-open #messagePageView .message-page-header {
-                background: rgba(5, 10, 20, 0.85);
-                border-bottom: 1px solid rgba(79, 195, 247, 0.15);
-                backdrop-filter: blur(12px);
+                background: rgba(8, 18, 35, 0.95);
+                border-bottom: 1px solid rgba(79, 195, 247, 0.18);
+                backdrop-filter: blur(16px);
             }
-            /* Chat footer — subtle bg like active inbox item */
+            /* Chat footer — dark glass bg */
             body.chat-open #messagePageView .message-page-footer {
-                background: rgba(5, 10, 20, 0.85);
-                border-top: 1px solid rgba(79, 195, 247, 0.12);
-                backdrop-filter: blur(12px);
+                background: rgba(8, 18, 35, 0.95);
+                border-top: 1px solid rgba(79, 195, 247, 0.18);
+                backdrop-filter: blur(16px);
             }
             /* Close animation */
             body.chat-open #messagePageView.closing {
@@ -4787,6 +4789,21 @@
         @keyframes msgPageOutDesktop {
             from { opacity: 1; transform: translateX(0); }
             to { opacity: 0; transform: translateX(-80px); }
+        }
+
+        /* Responsive — tablet landscape (901-1100px) */
+        @media (min-width: 901px) and (max-width: 1100px) {
+            .split-left {
+                width: 38%;
+                min-width: 260px;
+            }
+            .split-right {
+                width: 62%;
+            }
+            .split-right .orbit-container {
+                width: min(340px, calc(100vh - 260px));
+                height: min(340px, calc(100vh - 260px));
+            }
         }
 
         /* Responsive — mobile & tablets */
@@ -5385,6 +5402,82 @@
         #messageModal #newContactCityDropdown .city-option { color: rgba(255,255,255,0.7); }
         #messageModal #newContactCityDropdown .city-option:hover { background: rgba(79, 195, 247, 0.1); }
         #messageModal .delivery-info-box { background: rgba(79, 195, 247, 0.08); border-color: rgba(79, 195, 247, 0.2); color: rgba(255,255,255,0.6); }
+        /* Compose steps 2/3 — dark form overrides */
+        #messageModal .modal-header h2 { color: rgba(255,255,255,0.9); }
+        #messageModal .modal-subtitle { color: rgba(255,255,255,0.45); }
+        #messageModal .form-group label { color: rgba(255,255,255,0.5); }
+        #messageModal .form-group input,
+        #messageModal .form-group textarea {
+            background: rgba(10, 22, 40, 0.6);
+            color: rgba(255,255,255,0.9);
+            border-color: rgba(79, 195, 247, 0.15);
+        }
+        #messageModal .form-group input::placeholder { color: rgba(255,255,255,0.2); }
+        #messageModal .form-group input:focus {
+            border-color: rgba(79, 195, 247, 0.4);
+            box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.08);
+        }
+        #messageModal .new-contact-btn {
+            color: #4fc3f7;
+            border-color: rgba(79, 195, 247, 0.2);
+            background: rgba(79, 195, 247, 0.06);
+        }
+        #messageModal .new-contact-btn:hover { background: rgba(79, 195, 247, 0.12); }
+        #messageModal .recipient-dropdown .recipient-option { color: rgba(255,255,255,0.7); }
+        #messageModal .recipient-dropdown .recipient-option:hover { background: rgba(79, 195, 247, 0.1); }
+
+        /* ====================================== */
+        /* CONTACTS PAGE — DARK THEME             */
+        /* ====================================== */
+        #contactsPage {
+            background: #050a14;
+            background-image:
+                radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.12), transparent),
+                radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.08), transparent),
+                radial-gradient(1.5px 1.5px at 90px 40px, rgba(255,255,255,0.15), transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.06), transparent);
+            background-size: 200px 100px;
+        }
+        #contactsPage .message-page-inner {
+            background: transparent;
+            box-shadow: none;
+            max-width: 600px;
+        }
+        #contactsPage .message-page-header {
+            background: rgba(8, 18, 35, 0.9);
+            border-bottom: 1px solid rgba(79, 195, 247, 0.12);
+            backdrop-filter: blur(12px);
+        }
+        #contactsPage .message-page-header span {
+            color: #4fc3f7 !important;
+        }
+        #contactsPage .message-page-header button {
+            color: #4fc3f7 !important;
+        }
+        #contactsPage .message-page-body {
+            background: transparent;
+        }
+
+        /* Contacts search bar */
+        #contactsPage #contactSearchInput {
+            background: rgba(10, 22, 40, 0.6) !important;
+            color: rgba(255,255,255,0.9) !important;
+            border: 1px solid rgba(79, 195, 247, 0.15) !important;
+        }
+        #contactsPage #contactSearchInput::placeholder {
+            color: rgba(255,255,255,0.25) !important;
+        }
+        #contactsPage #contactSearchInput:focus {
+            border-color: rgba(79, 195, 247, 0.4) !important;
+            box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.08);
+            outline: none;
+        }
+
+        /* Contacts search container (overrides inline styles) */
+        #contactsPage .message-page-header + div {
+            background: rgba(10, 22, 40, 0.4) !important;
+            border-bottom-color: rgba(79, 195, 247, 0.1) !important;
+        }
 
         /* Compose mobile responsive */
         @media (max-width: 640px) {
@@ -12934,11 +13027,11 @@
                         }
 
                         return `
-                            <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid #f5f2ec;">
+                            <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(79,195,247,0.08);">
                                 ${avatarHtml}
                                 <div style="flex:1;min-width:0;">
-                                    <div style="font-size:14px;font-weight:600;color:var(--blue);">${fullName || displayName}${usernameTag}${selfBadge}</div>
-                                    <div style="font-size:11px;color:var(--text-muted);">${location || 'On MoonPop'}</div>
+                                    <div style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.9);">${fullName || displayName}${usernameTag}${selfBadge}</div>
+                                    <div style="font-size:11px;color:rgba(255,255,255,0.4);">${location || 'On MoonPop'}</div>
                                 </div>
                                 ${actionHtml}
                             </div>
@@ -12951,7 +13044,7 @@
                     const exactMatch = _lastSearchResults.find(u => u.email && u.email.toLowerCase() === query.toLowerCase());
                     if (!exactMatch) {
                         html += `
-                            <div style="display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid #f5f2ec;">
+                            <div style="display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid rgba(79,195,247,0.08);">
                                 <div style="width:36px;height:36px;border-radius:50%;background:var(--coral);color:white;display:flex;align-items:center;justify-content:center;font-size:16px;">✉</div>
                                 <div style="flex:1;">
                                     <div style="font-size:14px;font-weight:600;color:var(--coral);">${query}</div>
@@ -13116,12 +13209,12 @@
             let html = '';
             
             if (onMps.length > 0) {
-                html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;">On MoonPop · ${onMps.length}</div>`;
+                html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:#4fc3f7;text-transform:uppercase;letter-spacing:0.5px;">On MoonPop · ${onMps.length}</div>`;
                 html += onMps.map(c => renderContactRow(c, true)).join('');
             }
             
             if (offMps.length > 0) {
-                html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Invited · ${offMps.length}</div>`;
+                html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.5px;">Invited · ${offMps.length}</div>`;
                 html += offMps.map(c => renderContactRow(c, false)).join('');
             }
 
@@ -13136,7 +13229,7 @@
                 : `<span>${initial}</span>`;
             const online = isContactOnline(contact);
             const statusDotColor = online ? '#4caf50' : (isOnMps ? '#4caf50' : '');
-            const statusDot = statusDotColor ? `<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:${statusDotColor};border:2px solid white;z-index:1;${!online && isOnMps ? 'opacity:0.4;' : ''}"></span>` : '';
+            const statusDot = statusDotColor ? `<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:${statusDotColor};border:2px solid #0a1628;z-index:1;${!online && isOnMps ? 'opacity:0.4;' : ''}"></span>` : '';
 
             // Display name with username and self badge
             const displayName = contact.name || 'Unknown';
@@ -13144,22 +13237,22 @@
             const selfBadge = contact._isSelf ? `<span style="font-size:10px;color:var(--coral);font-weight:600;margin-left:6px;background:rgba(231,111,81,0.1);padding:2px 8px;border-radius:10px;">You</span>` : '';
 
             return `
-                <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid #f0ece4;gap:12px;">
+                <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid rgba(79,195,247,0.08);gap:12px;">
                     <div class="msg-avatar" style="margin-right:0;">
                         ${statusDot}
                         ${avatarInner}
                     </div>
                     <div style="flex:1;min-width:0;cursor:pointer;" onclick="openContactDetail('${escapedName}')">
-                        <div style="font-size:14px;font-weight:600;color:var(--blue);">
+                        <div style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.9);">
                             ${displayName}${usernameTag}${selfBadge}
                             ${online ? '<span style="font-size:11px;color:#4caf50;margin-left:6px;">● online</span>' : ''}
                         </div>
-                        <div style="font-size:11px;color:var(--text-muted);">
-                            ${isOnMps && !online ? '<span style="color:#4caf50;">On MoonPop</span>' : (!isOnMps ? 'Invited' : '')}
+                        <div style="font-size:11px;color:rgba(255,255,255,0.4);">
+                            ${isOnMps && !online ? '<span style="color:#4caf50;">On MoonPop</span>' : (!isOnMps ? '<span style="color:rgba(255,255,255,0.3);">Invited</span>' : '')}
                             ${contact.location && contact.location !== 'Unknown' ? ' · ' + contact.location : ''}
                         </div>
                     </div>
-                    <button onclick="event.stopPropagation();deleteContact('${escapedName}')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#ccc;padding:4px;" title="Remove">&times;</button>
+                    <button onclick="event.stopPropagation();deleteContact('${escapedName}')" style="background:none;border:none;cursor:pointer;font-size:16px;color:rgba(255,255,255,0.25);padding:4px;" title="Remove">&times;</button>
                 </div>
             `;
         }
