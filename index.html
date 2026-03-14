@@ -4691,7 +4691,7 @@
             text-align: center;
             align-self: center;
             padding: 0 clamp(16px, 3vw, 32px);
-            margin: 0;
+            margin: 0 0 16px 0;
             line-height: 1.4;
             letter-spacing: 0.3px;
             flex-shrink: 0;
@@ -4752,35 +4752,39 @@
                 box-shadow: 0 0 20px rgba(79, 195, 247, 0.06);
             }
             body.chat-open #messagePageView .message-page-inner {
-                max-width: 720px;
-                margin: 0 auto;
+                max-width: none;
+                margin: 0;
                 height: 100%;
             }
             /* Chat header — subtle bg like active inbox item */
             body.chat-open #messagePageView .message-page-header {
-                background: rgba(79, 195, 247, 0.08);
+                background: rgba(5, 10, 20, 0.85);
                 border-bottom: 1px solid rgba(79, 195, 247, 0.15);
-                backdrop-filter: none;
+                backdrop-filter: blur(12px);
             }
             /* Chat footer — subtle bg like active inbox item */
             body.chat-open #messagePageView .message-page-footer {
-                background: rgba(79, 195, 247, 0.06);
+                background: rgba(5, 10, 20, 0.85);
                 border-top: 1px solid rgba(79, 195, 247, 0.12);
-                backdrop-filter: none;
+                backdrop-filter: blur(12px);
             }
             /* Close animation */
             body.chat-open #messagePageView.closing {
                 animation: msgPageOutDesktop 0.2s ease forwards;
             }
+            /* Elevate header above chat so settings dropdown renders on top */
+            body.chat-open .header {
+                z-index: 10001;
+            }
         }
 
         @keyframes msgPageInDesktop {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(40px); }
             to { opacity: 1; transform: translateY(0); }
         }
         @keyframes msgPageOutDesktop {
-            from { opacity: 1; transform: scale(1); }
-            to { opacity: 0; transform: scale(0.96); }
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(40px); }
         }
 
         /* Responsive — mobile & tablets */
@@ -6795,12 +6799,7 @@
             </div>
         </div>
     </section>
-            <!-- New Transmission button -->
-            <div class="new-transmission-bar">
-                <button class="new-transmission-btn" id="inboxTransmitBtn" onclick="openNewMessagePicker()">
-                    + INITIATE TRANSMISSION
-                </button>
-            </div>
+            <!-- New Transmission button removed — CTA now inside inbox card -->
         </div><!-- /split-left -->
 
         <!-- RIGHT PANEL: Moon orbit (fixed, no scroll) -->
@@ -11460,9 +11459,14 @@
             setupTypingChannel(conv.dbConversationId);
 
             // Update URL to reflect the open conversation (deep-linkable)
+            // Use replaceState if already viewing a chat, to avoid stacking history entries
             if (conv.dbConversationId) {
                 const chatPath = window.location.pathname.replace(/\/chat\/.*$/, '').replace(/\/$/, '') + '/chat/' + conv.dbConversationId;
-                history.pushState({ chat: conv.dbConversationId }, '', chatPath);
+                if (window.location.pathname.match(/\/chat\//)) {
+                    history.replaceState({ chat: conv.dbConversationId }, '', chatPath);
+                } else {
+                    history.pushState({ chat: conv.dbConversationId }, '', chatPath);
+                }
             }
 
             // Mark conversation as read (always, even if unreadCount is 0 — keeps receipt fresh)
