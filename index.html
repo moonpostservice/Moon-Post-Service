@@ -4612,15 +4612,18 @@
         .split-left {
             width: 33%;
             min-width: 280px;
-            overflow-y: auto;
+            overflow-y: hidden;
             border-right: none;
+            display: flex;
+            flex-direction: column;
         }
 
         .split-left .inbox-section {
             max-width: none;
             margin: 0;
-            padding: 12px clamp(12px, 2vw, 24px) 24px;
-            min-height: 100%;
+            padding: 12px clamp(12px, 2vw, 24px) 0;
+            flex: 1;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
         }
@@ -4708,14 +4711,28 @@
                 position: fixed;
                 z-index: 100;
                 animation: msgPageInDesktop 0.2s ease;
-                border: 1.5px solid rgba(79, 195, 247, 0.2);
+                border: 2px solid rgba(79, 195, 247, 0.3);
                 border-radius: 16px;
                 overflow: hidden;
                 margin-right: 24px;
+                box-shadow: 0 0 20px rgba(79, 195, 247, 0.06);
             }
             body.chat-open #messagePageView .message-page-inner {
                 max-width: 720px;
                 margin: 0 auto;
+                height: 100%;
+            }
+            /* Chat header — subtle bg like active inbox item */
+            body.chat-open #messagePageView .message-page-header {
+                background: rgba(79, 195, 247, 0.08);
+                border-bottom: 1px solid rgba(79, 195, 247, 0.15);
+                backdrop-filter: none;
+            }
+            /* Chat footer — subtle bg like active inbox item */
+            body.chat-open #messagePageView .message-page-footer {
+                background: rgba(79, 195, 247, 0.06);
+                border-top: 1px solid rgba(79, 195, 247, 0.12);
+                backdrop-filter: none;
             }
             /* Close animation */
             body.chat-open #messagePageView.closing {
@@ -5636,6 +5653,10 @@
             background: rgba(79, 195, 247, 0.1);
             border-color: #4fc3f7;
             box-shadow: 0 0 16px rgba(79, 195, 247, 0.15);
+        }
+        .new-transmission-btn.moon-up {
+            background: rgba(79, 195, 247, 0.12);
+            border-color: #4fc3f7;
         }
 
         /* New message button — dark */
@@ -6738,7 +6759,7 @@
     </section>
             <!-- New Transmission button -->
             <div class="new-transmission-bar">
-                <button class="new-transmission-btn" onclick="openNewMessagePicker()">
+                <button class="new-transmission-btn" id="inboxTransmitBtn" onclick="openNewMessagePicker()">
                     + INITIATE TRANSMISSION
                 </button>
             </div>
@@ -9933,8 +9954,11 @@
                         const _lp = document.querySelector('.split-left');
                         const _sl = document.querySelector('.split-layout');
                         if (_lp && _sl) {
+                            const _slR = _sl.getBoundingClientRect();
                             _page.style.left = (_lp.getBoundingClientRect().right + 24) + 'px';
-                            _page.style.top = _sl.getBoundingClientRect().top + 'px';
+                            _page.style.top = _slR.top + 'px';
+                            _page.style.bottom = (window.innerHeight - _slR.bottom) + 'px';
+                            _page.style.height = 'auto';
                         }
                         renderMessages();
                     }
@@ -9957,6 +9981,8 @@
                 // Mobile: reset to full-page overlay
                 page.style.left = '';
                 page.style.top = '';
+                page.style.bottom = '';
+                page.style.height = '';
                 document.body.classList.remove('chat-open');
             } else {
                 // Desktop: recalculate inline position
@@ -9964,8 +9990,11 @@
                 const leftPanel = document.querySelector('.split-left');
                 const splitLayout = document.querySelector('.split-layout');
                 if (leftPanel && splitLayout) {
+                    const slRect = splitLayout.getBoundingClientRect();
                     page.style.left = (leftPanel.getBoundingClientRect().right + 24) + 'px';
-                    page.style.top = splitLayout.getBoundingClientRect().top + 'px';
+                    page.style.top = slRect.top + 'px';
+                    page.style.bottom = (window.innerHeight - slRect.bottom) + 'px';
+                    page.style.height = 'auto';
                 }
             }
         });
@@ -11049,6 +11078,7 @@
 
             // Update reply row gating if conversation detail is open
             updateReplyRowMoonGate();
+            updateInboxTransmitBtn();
         }
 
         // Render all messages chronologically (IM-style)
@@ -11360,8 +11390,11 @@
                 const leftPanel = document.querySelector('.split-left');
                 const splitLayout = document.querySelector('.split-layout');
                 if (leftPanel && splitLayout) {
+                    const slRect = splitLayout.getBoundingClientRect();
                     page.style.left = (leftPanel.getBoundingClientRect().right + 24) + 'px';
-                    page.style.top = splitLayout.getBoundingClientRect().top + 'px';
+                    page.style.top = slRect.top + 'px';
+                    page.style.bottom = (window.innerHeight - slRect.bottom) + 'px';
+                    page.style.height = 'auto';
                 }
                 renderMessages(); // refresh inbox to show active highlight
             }
@@ -11452,6 +11485,19 @@
                 } else {
                     timeEl.textContent = 'Messaging opens when the moon rises';
                 }
+            }
+        }
+
+        // Update inbox transmission button based on moon state
+        function updateInboxTransmitBtn() {
+            const btn = document.getElementById('inboxTransmitBtn');
+            if (!btn) return;
+            if (moonData.isVisible) {
+                btn.textContent = '+ NEW MOON MESSAGE';
+                btn.classList.add('moon-up');
+            } else {
+                btn.textContent = '+ INITIATE TRANSMISSION';
+                btn.classList.remove('moon-up');
             }
         }
 
@@ -11656,6 +11702,7 @@
 
             // Update reply row moon gating every time thread renders
             updateReplyRowMoonGate();
+            updateInboxTransmitBtn();
 
             // Restore typing indicator if other user was typing
             if (_otherUserTyping) showTypingIndicator(true);
@@ -11796,6 +11843,8 @@
                 page.classList.remove('closing');
                 page.style.left = '';
                 page.style.top = '';
+                page.style.bottom = '';
+                page.style.height = '';
                 document.body.style.overflow = '';
                 document.body.classList.remove('chat-open');
                 currentMessageIndex = -1;
@@ -11899,17 +11948,15 @@
             const v1 = document.getElementById('threadLunarInput1').value.trim();
             const v2 = document.getElementById('threadLunarInput2').value.trim();
             const v3 = document.getElementById('threadLunarInput3').value.trim();
-            
-            // Progressive reveal
-            if (v1 && threadLunarStep === 1) {
+
+            // Progressive reveal — require at least 2 characters before advancing
+            if (v1.length >= 2 && threadLunarStep === 1) {
                 document.getElementById('threadStep2').style.display = 'block';
                 threadLunarStep = 2;
-                document.getElementById('threadLunarInput2').focus();
             }
-            if (v2 && threadLunarStep === 2) {
+            if (v2.length >= 2 && threadLunarStep === 2) {
                 document.getElementById('threadStep3').style.display = 'block';
                 threadLunarStep = 3;
-                document.getElementById('threadLunarInput3').focus();
             }
             if (v1 && v2 && v3) {
                 // Generate the note
