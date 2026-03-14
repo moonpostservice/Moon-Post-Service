@@ -4563,6 +4563,47 @@
             height: min(420px, calc(100vh - 260px));
         }
 
+        /* ====================================== */
+        /* INLINE CHAT — Desktop only            */
+        /* When a conversation is open, the chat  */
+        /* replaces the ring in the right panel   */
+        /* ====================================== */
+        @media (min-width: 901px) {
+            body.chat-open .split-left {
+                width: 33%;
+                min-width: 280px;
+                transition: width 0.25s ease;
+            }
+            body.chat-open .split-right {
+                width: 67%;
+            }
+            /* Hide ring elements when chat is open */
+            body.chat-open .ring-title,
+            body.chat-open .main-content,
+            body.chat-open .moon-data-bar {
+                display: none !important;
+            }
+            /* Reposition chat overlay into right panel */
+            body.chat-open #messagePageView.active {
+                position: fixed;
+                z-index: 100;
+                animation: msgPageInDesktop 0.2s ease;
+            }
+            body.chat-open #messagePageView .message-page-inner {
+                max-width: 800px;
+            }
+            /* Active conversation highlight */
+            body.chat-open .message-item.active {
+                background: rgba(79, 195, 247, 0.10);
+                border-left: 3px solid #4fc3f7;
+            }
+        }
+
+        @keyframes msgPageInDesktop {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* Responsive — mobile & tablets */
         @media (max-width: 900px) {
             .header.split-active {
@@ -4670,7 +4711,7 @@
 
         /* Dark starfield background for compose modal */
         #messageModal.active {
-            background: #0a1628;
+            background: #050a14;
             background-image:
                 radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.12), transparent),
                 radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.08), transparent),
@@ -4932,7 +4973,7 @@
             height: 36px;
             border-radius: 50%;
             border: 1px solid rgba(79, 195, 247, 0.5);
-            background: #0a1628;
+            background: #050a14;
             color: #4fc3f7;
             cursor: pointer;
             display: flex;
@@ -4943,7 +4984,7 @@
         .compose-add-btn:hover { background: rgba(79, 195, 247, 0.1); }
         .compose-add-btn.active {
             background: #4fc3f7;
-            color: #0a1628;
+            color: #050a14;
             border-color: #4fc3f7;
             box-shadow: 0 0 15px rgba(79, 195, 247, 0.4);
         }
@@ -5175,7 +5216,7 @@
 
         /* Body starfield background */
         body {
-            background: #0a1628;
+            background: #050a14;
             position: relative;
             overflow: hidden;
             height: 100vh;
@@ -5247,7 +5288,37 @@
                 radial-gradient(0.8px 0.8px at 90% 21%, rgba(255,255,255,0.08), transparent),
                 radial-gradient(0.8px 0.8px at 93% 56%, rgba(255,255,255,0.05), transparent),
                 radial-gradient(0.8px 0.8px at 97% 38%, rgba(255,255,255,0.07), transparent),
-                radial-gradient(0.8px 0.8px at 99% 74%, rgba(255,255,255,0.06), transparent);
+                radial-gradient(0.8px 0.8px at 99% 74%, rgba(255,255,255,0.06), transparent),
+                /* Extra-bright big stars */
+                radial-gradient(3.5px 3.5px at 10% 33%, rgba(255,255,255,0.40), transparent),
+                radial-gradient(3px 3px at 42% 78%, rgba(255,255,255,0.38), transparent),
+                radial-gradient(3.2px 3.2px at 71% 12%, rgba(255,255,255,0.42), transparent),
+                radial-gradient(3px 3px at 85% 67%, rgba(255,255,255,0.36), transparent),
+                radial-gradient(3.5px 3.5px at 28% 91%, rgba(255,255,255,0.40), transparent),
+                /* Additional bright stars */
+                radial-gradient(2.5px 2.5px at 3% 72%, rgba(255,255,255,0.28), transparent),
+                radial-gradient(2.3px 2.3px at 22% 18%, rgba(255,255,255,0.26), transparent),
+                radial-gradient(2.5px 2.5px at 39% 52%, rgba(255,255,255,0.30), transparent),
+                radial-gradient(2px 2px at 58% 89%, rgba(255,255,255,0.24), transparent),
+                radial-gradient(2.3px 2.3px at 81% 4%, rgba(255,255,255,0.27), transparent),
+                radial-gradient(2.5px 2.5px at 67% 42%, rgba(255,255,255,0.25), transparent),
+                radial-gradient(2px 2px at 92% 31%, rgba(255,255,255,0.28), transparent),
+                radial-gradient(2.3px 2.3px at 15% 61%, rgba(255,255,255,0.22), transparent),
+                /* Additional medium stars */
+                radial-gradient(1.5px 1.5px at 6% 45%, rgba(255,255,255,0.18), transparent),
+                radial-gradient(1.5px 1.5px at 22% 62%, rgba(255,255,255,0.16), transparent),
+                radial-gradient(1.5px 1.5px at 39% 28%, rgba(255,255,255,0.17), transparent),
+                radial-gradient(1.5px 1.5px at 57% 85%, rgba(255,255,255,0.15), transparent),
+                radial-gradient(1.5px 1.5px at 73% 8%, rgba(255,255,255,0.18), transparent),
+                radial-gradient(1.5px 1.5px at 91% 51%, rgba(255,255,255,0.16), transparent),
+                /* More dim fill */
+                radial-gradient(0.6px 0.6px at 3% 56%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.6px 0.6px at 17% 29%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.6px 0.6px at 31% 83%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.6px 0.6px at 46% 11%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.6px 0.6px at 60% 68%, rgba(255,255,255,0.06), transparent),
+                radial-gradient(0.6px 0.6px at 75% 35%, rgba(255,255,255,0.05), transparent),
+                radial-gradient(0.6px 0.6px at 89% 92%, rgba(255,255,255,0.06), transparent);
             background-size: 200px 200px;
         }
 
@@ -5275,7 +5346,7 @@
 
         /* Header — dark theme */
         .header {
-            background: rgba(10, 22, 40, 0.85);
+            background: rgba(5, 10, 20, 0.92);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border-bottom: none;
@@ -5599,7 +5670,7 @@
 
         /* Dark starfield background */
         #messagePageView.active {
-            background: #0a1628;
+            background: #050a14;
             background-image:
                 radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.12), transparent),
                 radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.08), transparent),
@@ -5617,7 +5688,7 @@
         /* Chat header — dark theme */
         #messagePageView .message-page-header {
             border-bottom: 1px solid rgba(79, 195, 247, 0.12);
-            background: rgba(10, 22, 40, 0.8);
+            background: rgba(5, 10, 20, 0.85);
             backdrop-filter: blur(12px);
         }
         #messagePageView .message-page-back {
@@ -5768,7 +5839,7 @@
         /* Chat footer — dark glass */
         #messagePageView .message-page-footer {
             border-top: 1px solid rgba(79, 195, 247, 0.12);
-            background: rgba(10, 22, 40, 0.8);
+            background: rgba(5, 10, 20, 0.85);
             backdrop-filter: blur(12px);
         }
 
@@ -9676,13 +9747,50 @@
                         await loadFullConversationThread(conv);
                     }
                     renderConversationThread();
-                    document.getElementById('messagePageView').classList.add('active');
+                    const _page = document.getElementById('messagePageView');
+                    _page.classList.add('active');
                     document.body.style.overflow = 'hidden';
+                    // Desktop inline chat positioning
+                    const _mob = window.matchMedia('(max-width: 900px)').matches;
+                    if (!_mob) {
+                        document.body.classList.add('chat-open');
+                        const _lp = document.querySelector('.split-left');
+                        const _sl = document.querySelector('.split-layout');
+                        if (_lp && _sl) {
+                            _page.style.left = _lp.getBoundingClientRect().right + 'px';
+                            _page.style.top = _sl.getBoundingClientRect().top + 'px';
+                        }
+                        renderMessages();
+                    }
                 }
             } else {
                 // Navigated back to inbox
                 _closeMessageDetailUI();
                 renderMessages();
+            }
+        });
+
+        // ========================
+        // RESIZE HANDLER — inline chat positioning
+        // ========================
+        window.addEventListener('resize', function() {
+            const page = document.getElementById('messagePageView');
+            if (!page || !page.classList.contains('active')) return;
+            const mob = window.matchMedia('(max-width: 900px)').matches;
+            if (mob) {
+                // Mobile: reset to full-page overlay
+                page.style.left = '';
+                page.style.top = '';
+                document.body.classList.remove('chat-open');
+            } else {
+                // Desktop: recalculate inline position
+                document.body.classList.add('chat-open');
+                const leftPanel = document.querySelector('.split-left');
+                const splitLayout = document.querySelector('.split-layout');
+                if (leftPanel && splitLayout) {
+                    page.style.left = leftPanel.getBoundingClientRect().right + 'px';
+                    page.style.top = splitLayout.getBoundingClientRect().top + 'px';
+                }
             }
         });
 
@@ -10207,7 +10315,7 @@
             (function() {
                 const container = document.getElementById('starfieldTwinkle');
                 if (!container) return;
-                const count = 60;
+                const count = 110;
                 for (let i = 0; i < count; i++) {
                     const star = document.createElement('div');
                     star.className = 'star';
@@ -10215,12 +10323,29 @@
                     star.style.top = (Math.random() * 100) + '%';
                     star.style.setProperty('--dur', (3 + Math.random() * 8) + 's');
                     star.style.setProperty('--delay', (Math.random() * 12) + 's');
-                    star.style.setProperty('--peak', (0.25 + Math.random() * 0.55).toFixed(2));
-                    // Size variety: most tiny, some medium, a few bright
                     const r = Math.random();
-                    if (r > 0.92) { star.style.width = star.style.height = '2.5px'; }
-                    else if (r > 0.75) { star.style.width = star.style.height = '1.8px'; }
-                    else if (r > 0.5) { star.style.width = star.style.height = '1.2px'; }
+                    if (r > 0.97) {
+                        // ~3%: Big bright twinkling stars
+                        star.style.width = star.style.height = '3.5px';
+                        star.style.setProperty('--peak', (0.6 + Math.random() * 0.35).toFixed(2));
+                        star.style.boxShadow = '0 0 6px rgba(255,255,255,0.5)';
+                    } else if (r > 0.92) {
+                        // ~5%: Medium-large
+                        star.style.width = star.style.height = '2.5px';
+                        star.style.setProperty('--peak', (0.4 + Math.random() * 0.4).toFixed(2));
+                    } else if (r > 0.75) {
+                        // ~17%: Medium
+                        star.style.width = star.style.height = '1.8px';
+                        star.style.setProperty('--peak', (0.3 + Math.random() * 0.45).toFixed(2));
+                    } else if (r > 0.5) {
+                        // ~25%: Small
+                        star.style.width = star.style.height = '1.2px';
+                        star.style.setProperty('--peak', (0.25 + Math.random() * 0.45).toFixed(2));
+                    } else {
+                        // ~50%: Tiny
+                        star.style.width = star.style.height = '0.8px';
+                        star.style.setProperty('--peak', (0.2 + Math.random() * 0.4).toFixed(2));
+                    }
                     container.appendChild(star);
                 }
             })();
@@ -10832,7 +10957,7 @@
                 }
 
                 return `
-                    <li class="message-item${isUnread ? ' unread' : ''}" data-sender="${conv.otherName}" data-orbiting="${conv.hasInTransit}" data-location="${conv.location || ''}"
+                    <li class="message-item${isUnread ? ' unread' : ''}${ci === currentConversationIndex ? ' active' : ''}" data-sender="${conv.otherName}" data-orbiting="${conv.hasInTransit}" data-location="${conv.location || ''}"
                         onclick="openConversation(${ci})"
                         onmouseenter="highlightOrbitDot('${conv.otherName}', true)"
                         onmouseleave="highlightOrbitDot('${conv.otherName}', false)">
@@ -11044,6 +11169,19 @@
             renderConversationThread();
             page.classList.add('active');
             document.body.style.overflow = 'hidden';
+
+            // Desktop inline chat: position overlay in the right panel
+            const _isMobile = window.matchMedia('(max-width: 900px)').matches;
+            if (!_isMobile) {
+                document.body.classList.add('chat-open');
+                const leftPanel = document.querySelector('.split-left');
+                const splitLayout = document.querySelector('.split-layout');
+                if (leftPanel && splitLayout) {
+                    page.style.left = leftPanel.getBoundingClientRect().right + 'px';
+                    page.style.top = splitLayout.getBoundingClientRect().top + 'px';
+                }
+                renderMessages(); // refresh inbox to show active highlight
+            }
 
             // Setup typing indicator channel
             setupTypingChannel(conv.dbConversationId);
@@ -11467,8 +11605,13 @@
         }
 
         function _closeMessageDetailUI() {
-            document.getElementById('messagePageView').classList.remove('active');
+            const page = document.getElementById('messagePageView');
+            page.classList.remove('active');
+            // Clear desktop inline positioning
+            page.style.left = '';
+            page.style.top = '';
             document.body.style.overflow = '';
+            document.body.classList.remove('chat-open');
             currentMessageIndex = -1;
             currentConversationIndex = -1;
             currentConversation = null;
@@ -11478,6 +11621,7 @@
                 _typingChannel = null;
             }
             _otherUserTyping = false;
+            renderMessages(); // Refresh inbox to remove active highlight
         }
 
 
