@@ -3051,6 +3051,119 @@
             background: rgba(53, 125, 197, 0.15);
         }
 
+        /* X close button (right side of header) */
+        .message-page-close {
+            margin-left: auto;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            background: rgba(79, 195, 247, 0.08);
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .message-page-close:hover {
+            background: rgba(79, 195, 247, 0.15);
+            color: white;
+            border-color: rgba(79, 195, 247, 0.4);
+        }
+
+        /* Note type toggle bar */
+        .note-toggle-bar {
+            display: flex;
+            gap: 8px;
+            padding: 8px 0 4px;
+        }
+        .note-toggle {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            background: transparent;
+            color: rgba(255, 255, 255, 0.4);
+            transition: all 0.2s;
+            font-family: var(--font);
+        }
+        .note-toggle:hover {
+            background: rgba(79, 195, 247, 0.06);
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .note-toggle.active {
+            background: rgba(79, 195, 247, 0.15);
+            border-color: #4fc3f7;
+            color: #4fc3f7;
+        }
+
+        /* Reply input wrapper (+ button inside input) */
+        .reply-input-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            border: 1.5px solid rgba(79, 195, 247, 0.2);
+            border-radius: 24px;
+            background: rgba(10, 22, 40, 0.6);
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .reply-input-wrapper:focus-within {
+            border-color: rgba(79, 195, 247, 0.4);
+        }
+        .reply-attach-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: transparent;
+            color: #4fc3f7;
+            font-size: 22px;
+            font-weight: 300;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .reply-attach-btn:hover {
+            background: rgba(79, 195, 247, 0.1);
+        }
+        .reply-input-wrapper .message-page-input {
+            border: none !important;
+            background: transparent !important;
+            outline: none;
+            padding-left: 0;
+        }
+
+        /* Attachment menu popover */
+        .attach-menu {
+            display: flex;
+            gap: 8px;
+            padding: 6px 0;
+        }
+        .attach-option {
+            padding: 6px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            background: rgba(10, 22, 40, 0.8);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.2s;
+        }
+        .attach-option:hover {
+            background: rgba(79, 195, 247, 0.1);
+            border-color: rgba(79, 195, 247, 0.35);
+            color: white;
+        }
+
         .message-page-avatar {
             width: 38px;
             height: 38px;
@@ -4583,14 +4696,25 @@
             body.chat-open .moon-data-bar {
                 display: none !important;
             }
+            /* Connecting line between inbox and chat */
+            body.chat-open .split-left {
+                border-right: 1.5px solid rgba(79, 195, 247, 0.2);
+            }
             /* Reposition chat overlay into right panel */
             body.chat-open #messagePageView.active {
                 position: fixed;
                 z-index: 100;
                 animation: msgPageInDesktop 0.2s ease;
+                border: 1.5px solid rgba(79, 195, 247, 0.2);
+                border-radius: 16px;
+                overflow: hidden;
             }
             body.chat-open #messagePageView .message-page-inner {
                 max-width: 800px;
+            }
+            /* Close animation */
+            body.chat-open #messagePageView.closing {
+                animation: msgPageOutDesktop 0.2s ease forwards;
             }
             /* Active conversation highlight */
             body.chat-open .message-item.active {
@@ -4602,6 +4726,10 @@
         @keyframes msgPageInDesktop {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes msgPageOutDesktop {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.96); }
         }
 
         /* Responsive — mobile & tablets */
@@ -5318,7 +5446,18 @@
                 radial-gradient(0.6px 0.6px at 46% 11%, rgba(255,255,255,0.05), transparent),
                 radial-gradient(0.6px 0.6px at 60% 68%, rgba(255,255,255,0.06), transparent),
                 radial-gradient(0.6px 0.6px at 75% 35%, rgba(255,255,255,0.05), transparent),
-                radial-gradient(0.6px 0.6px at 89% 92%, rgba(255,255,255,0.06), transparent);
+                radial-gradient(0.6px 0.6px at 89% 92%, rgba(255,255,255,0.06), transparent),
+                /* Colored stars — yellow */
+                radial-gradient(2.2px 2.2px at 15% 22%, rgba(255,213,79,0.28), transparent),
+                radial-gradient(1.5px 1.5px at 55% 68%, rgba(255,213,79,0.18), transparent),
+                radial-gradient(1.8px 1.8px at 88% 14%, rgba(255,213,79,0.22), transparent),
+                /* Colored stars — pink/rose */
+                radial-gradient(2px 2px at 82% 35%, rgba(255,138,128,0.22), transparent),
+                radial-gradient(1.5px 1.5px at 38% 88%, rgba(255,138,128,0.16), transparent),
+                radial-gradient(1.8px 1.8px at 8% 72%, rgba(255,138,128,0.20), transparent),
+                /* Colored stars — light blue */
+                radial-gradient(1.8px 1.8px at 64% 26%, rgba(128,216,255,0.20), transparent),
+                radial-gradient(1.5px 1.5px at 29% 54%, rgba(128,216,255,0.15), transparent);
             background-size: 200px 200px;
         }
 
@@ -5344,10 +5483,10 @@
             50% { opacity: var(--peak, 0.6); box-shadow: 0 0 3px rgba(255,255,255,0.4); }
         }
 
-        /* Header — dark theme */
+        /* Header — dark theme (semi-transparent to show stars) */
         .header {
-            background: rgba(5, 10, 20, 0.92);
-            backdrop-filter: blur(16px);
+            background: rgba(5, 10, 20, 0.70);
+            backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(16px);
             border-bottom: none;
         }
@@ -7142,12 +7281,12 @@
     <div class="message-page" id="messagePageView">
         <div class="message-page-inner">
             <div class="message-page-header">
-                <button class="message-page-back" onclick="closeMessageDetail()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
                 <div class="message-page-avatar" id="detailAvatar"><span id="detailAvatarInitial">J</span><img id="detailAvatarImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;display:none;"></div>
                 <div class="message-page-info">
                     <h3 id="detailSender">Jonah Doyle</h3>
                     <p id="detailLocation">London · Received under waxing gibbous</p>
                 </div>
+                <button class="message-page-close" onclick="closeMessageDetail()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="message-page-body" id="detailContent">
                 <!-- Message bubbles will be inserted here -->
@@ -7190,18 +7329,27 @@
                         <button onclick="clearReplyPhoto()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:12px;cursor:pointer;">&times;</button>
                     </div>
                 </div>
-                <div class="reply-row" id="replyRow">
-                    <label for="replyPhotoInput" id="replyPhotoLabel" style="cursor:pointer;font-size:20px;padding:4px;flex-shrink:0;">🌕</label>
-                    <input type="file" id="replyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleReplyPhoto(this)">
-                    <input type="text" class="message-page-input" placeholder="Whisper your message..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()" oninput="emitTyping()">
-                    <button class="message-page-send" id="replySendBtn" onclick="sendReply()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
+                <!-- Note type toggle -->
+                <div class="note-toggle-bar">
+                    <button class="note-toggle active" id="openNoteToggle" onclick="setNoteMode('open')">✏ OPEN NOTE</button>
+                    <button class="note-toggle" id="lunarNoteToggle" onclick="setNoteMode('lunar')">🌙 LUNAR NOTE</button>
                 </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 2px;">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="color:rgba(255,255,255,0.2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;">ADD:</span>
-                        <button class="add-lunar-link" id="addLunarLink" onclick="openThreadLunar()" style="padding:0;opacity:1;"><svg class="app-icon sm" style="color:#4fc3f7"><use href="#icon-lunar-note"/></svg></button>
+                <!-- Reply input row -->
+                <div class="reply-row" id="replyRow">
+                    <div class="reply-input-wrapper">
+                        <button class="reply-attach-btn" id="attachBtn" onclick="toggleAttachMenu()">+</button>
+                        <input type="text" class="message-page-input" placeholder="Whisper your message to the stars..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()" oninput="emitTyping()">
                     </div>
-                    <span style="color:rgba(255,255,255,0.15);font-size:9px;font-family:monospace;text-transform:uppercase;letter-spacing:2px;">✦ TRANSMITTING VIA LUNA-1 ✦</span>
+                    <button class="message-page-send" id="replySendBtn" onclick="sendReply()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
+                    <input type="file" id="replyPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleReplyPhoto(this)">
+                </div>
+                <!-- Attachment popover -->
+                <div class="attach-menu" id="attachMenu" style="display:none;">
+                    <button class="attach-option" onclick="triggerPhotoAttach()">📷 Photo</button>
+                    <button class="attach-option" onclick="triggerYoutubeAttach()">🔗 YouTube Link</button>
+                </div>
+                <div style="text-align:center;padding:2px 0;">
+                    <span style="color:rgba(255,255,255,0.12);font-size:8px;font-family:monospace;text-transform:uppercase;letter-spacing:2px;">🔒 END-TO-END QUANTUM ENCRYPTION ACTIVE</span>
                 </div>
                 <div id="replyMoonGate" style="text-align:center;padding:12px 16px;font-size:13px;">
                     <div style="margin-bottom:4px;"><svg class="app-icon sm" style="color:#4fc3f7"><use href="#icon-lunar-note"/></svg> The moon is below your horizon</div>
@@ -10311,7 +10459,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             _domReady = true;
 
-            // Generate twinkling stars
+            // Generate twinkling stars with color variety
             (function() {
                 const container = document.getElementById('starfieldTwinkle');
                 if (!container) return;
@@ -10321,30 +10469,37 @@
                     star.className = 'star';
                     star.style.left = (Math.random() * 100) + '%';
                     star.style.top = (Math.random() * 100) + '%';
-                    star.style.setProperty('--dur', (3 + Math.random() * 8) + 's');
-                    star.style.setProperty('--delay', (Math.random() * 12) + 's');
+                    star.style.setProperty('--dur', (2 + Math.random() * 6) + 's');
+                    star.style.setProperty('--delay', (Math.random() * 10) + 's');
                     const r = Math.random();
                     if (r > 0.97) {
-                        // ~3%: Big bright twinkling stars
                         star.style.width = star.style.height = '3.5px';
                         star.style.setProperty('--peak', (0.6 + Math.random() * 0.35).toFixed(2));
                         star.style.boxShadow = '0 0 6px rgba(255,255,255,0.5)';
                     } else if (r > 0.92) {
-                        // ~5%: Medium-large
                         star.style.width = star.style.height = '2.5px';
                         star.style.setProperty('--peak', (0.4 + Math.random() * 0.4).toFixed(2));
                     } else if (r > 0.75) {
-                        // ~17%: Medium
                         star.style.width = star.style.height = '1.8px';
                         star.style.setProperty('--peak', (0.3 + Math.random() * 0.45).toFixed(2));
                     } else if (r > 0.5) {
-                        // ~25%: Small
                         star.style.width = star.style.height = '1.2px';
                         star.style.setProperty('--peak', (0.25 + Math.random() * 0.45).toFixed(2));
                     } else {
-                        // ~50%: Tiny
                         star.style.width = star.style.height = '0.8px';
                         star.style.setProperty('--peak', (0.2 + Math.random() * 0.4).toFixed(2));
+                    }
+                    // Color variety: yellow, pink, blue, or white
+                    const colorRoll = Math.random();
+                    if (colorRoll > 0.88) {
+                        star.style.background = '#ffd54f';
+                        star.style.boxShadow = (star.style.boxShadow ? star.style.boxShadow + ',' : '') + '0 0 4px rgba(255,213,79,0.5)';
+                    } else if (colorRoll > 0.78) {
+                        star.style.background = '#ff8a80';
+                        star.style.boxShadow = (star.style.boxShadow ? star.style.boxShadow + ',' : '') + '0 0 4px rgba(255,138,128,0.5)';
+                    } else if (colorRoll > 0.73) {
+                        star.style.background = '#80d8ff';
+                        star.style.boxShadow = (star.style.boxShadow ? star.style.boxShadow + ',' : '') + '0 0 4px rgba(128,216,255,0.5)';
                     }
                     container.appendChild(star);
                 }
@@ -11606,22 +11761,38 @@
 
         function _closeMessageDetailUI() {
             const page = document.getElementById('messagePageView');
-            page.classList.remove('active');
-            // Clear desktop inline positioning
-            page.style.left = '';
-            page.style.top = '';
-            document.body.style.overflow = '';
-            document.body.classList.remove('chat-open');
-            currentMessageIndex = -1;
-            currentConversationIndex = -1;
-            currentConversation = null;
-            // Clean up typing channel
-            if (_typingChannel) {
-                try { sb.removeChannel(_typingChannel); } catch(e) {}
-                _typingChannel = null;
+            const isDesktop = !window.matchMedia('(max-width: 900px)').matches;
+
+            function doClose() {
+                page.classList.remove('active');
+                page.classList.remove('closing');
+                page.style.left = '';
+                page.style.top = '';
+                document.body.style.overflow = '';
+                document.body.classList.remove('chat-open');
+                currentMessageIndex = -1;
+                currentConversationIndex = -1;
+                currentConversation = null;
+                if (_typingChannel) {
+                    try { sb.removeChannel(_typingChannel); } catch(e) {}
+                    _typingChannel = null;
+                }
+                _otherUserTyping = false;
+                // Reset note toggle to open note mode
+                setNoteMode('open');
+                // Hide attachment menu
+                const attachMenu = document.getElementById('attachMenu');
+                if (attachMenu) attachMenu.style.display = 'none';
+                renderMessages();
             }
-            _otherUserTyping = false;
-            renderMessages(); // Refresh inbox to remove active highlight
+
+            // Desktop: animate out, then close
+            if (isDesktop && document.body.classList.contains('chat-open')) {
+                page.classList.add('closing');
+                setTimeout(doClose, 200);
+            } else {
+                doClose();
+            }
         }
 
 
@@ -11630,9 +11801,7 @@
 
         function openThreadLunar() {
             const panel = document.getElementById('threadLunarPanel');
-            const link = document.getElementById('addLunarLink');
             panel.style.display = 'block';
-            link.style.display = 'none';
             threadLunarStep = 1;
             threadLunarGenerated = null;
             
@@ -11653,7 +11822,46 @@
 
         function closeThreadLunar() {
             document.getElementById('threadLunarPanel').style.display = 'none';
-            document.getElementById('addLunarLink').style.display = '';
+        }
+
+        // Note mode toggle (Open Note / Lunar Note)
+        function setNoteMode(mode) {
+            const openBtn = document.getElementById('openNoteToggle');
+            const lunarBtn = document.getElementById('lunarNoteToggle');
+            const replyRow = document.getElementById('replyRow');
+            if (mode === 'lunar') {
+                openThreadLunar();
+                if (lunarBtn) lunarBtn.classList.add('active');
+                if (openBtn) openBtn.classList.remove('active');
+                if (replyRow) replyRow.style.display = 'none';
+            } else {
+                closeThreadLunar();
+                if (openBtn) openBtn.classList.add('active');
+                if (lunarBtn) lunarBtn.classList.remove('active');
+                if (replyRow) replyRow.style.display = 'flex';
+            }
+        }
+
+        // Attachment menu toggle
+        function toggleAttachMenu() {
+            const menu = document.getElementById('attachMenu');
+            if (!menu) return;
+            menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function triggerPhotoAttach() {
+            document.getElementById('replyPhotoInput').click();
+            document.getElementById('attachMenu').style.display = 'none';
+        }
+
+        function triggerYoutubeAttach() {
+            const url = prompt('Paste YouTube link:');
+            if (url && url.includes('youtu')) {
+                const input = document.getElementById('replyInput');
+                input.value = (input.value ? input.value + ' ' : '') + url;
+                input.focus();
+            }
+            document.getElementById('attachMenu').style.display = 'none';
         }
 
         function checkThreadLunarStep() {
