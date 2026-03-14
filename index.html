@@ -291,16 +291,16 @@
 
         .settings-dropdown {
             display: none;
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
+            position: fixed;
+            top: 60px;
+            right: 16px;
             width: 320px;
             max-height: 80vh;
             overflow-y: auto;
             background: var(--white);
             border-radius: 14px;
             box-shadow: 0 12px 48px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
-            z-index: 600;
+            z-index: 10000;
             padding-bottom: 4px;
         }
 
@@ -1571,6 +1571,20 @@
             pointer-events: none;
         }
 
+        .inbox-new-msg-cta {
+            padding: 12px 20px;
+            border-top: 1px solid rgba(0, 117, 234, 0.15);
+            text-align: center;
+        }
+        .inbox-new-msg-cta .inbox-cta-btn {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 14px;
+        }
+        body.moon-down .inbox-new-msg-cta {
+            display: none !important;
+        }
+
         .message-list {
             list-style: none;
         }
@@ -2807,16 +2821,26 @@
             bottom: 0;
             background: #e8e4dc;
             z-index: 500;
-            animation: msgPageIn 0.25s ease;
+            animation: msgPageIn 0.3s ease;
         }
 
         .message-page.active {
             display: block;
         }
 
+        .message-page.closing {
+            display: block;
+            animation: msgPageOut 0.25s ease forwards;
+        }
+
+        @keyframes msgPageOut {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(100%); opacity: 0; }
+        }
+
         @keyframes msgPageIn {
-            from { transform: translateX(40%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
         .message-page-inner {
@@ -2837,6 +2861,8 @@
             align-items: center;
             gap: 12px;
             flex-shrink: 0;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .message-page-back {
@@ -2899,6 +2925,8 @@
             padding: 10px 16px;
             border-top: 1px solid #e0dcd4;
             flex-shrink: 0;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .reply-row {
@@ -3336,7 +3364,7 @@
             z-index: 20;
             gap: 2px;
             flex-wrap: wrap;
-            width: 220px;
+            width: 260px;
         }
 
         .reaction-picker.active {
@@ -3491,6 +3519,12 @@
 
         .thread-lunar-send:not(:disabled):hover {
             background: var(--blue-light);
+        }
+
+        .thread-lunar-next-btn {
+            padding: 8px 12px;
+            font-size: 12px;
+            margin-top: 6px;
         }
 
 
@@ -4284,7 +4318,7 @@
         /* Hero between header and split */
         .hero.above-split {
             text-align: center;
-            padding: 8px clamp(16px, 4vw, 48px) 4px;
+            padding: 2px clamp(16px, 4vw, 48px) 0;
         }
 
         .hero.above-split h1 {
@@ -4298,8 +4332,8 @@
 
         .split-layout {
             display: flex;
-            /* viewport minus header (~56px) minus hero (~50px) */
-            height: calc(100vh - 110px);
+            /* viewport minus header (~56px) minus hero (~40px) */
+            height: calc(100vh - 96px);
             overflow: hidden;           /* no page scroll */
         }
 
@@ -5438,6 +5472,10 @@
             <ul class="message-list" id="messageList">
                 <!-- Populated by JS -->
             </ul>
+            <!-- New Moon Message CTA inside inbox -->
+            <div id="inboxNewMsgCta" class="inbox-new-msg-cta" style="display:none;">
+                <button class="cta-button inbox-cta-btn" onclick="openModal()"><svg class="app-icon md" style="vertical-align:-3px;margin-right:4px;"><use href="#icon-compose"/></svg> New Moon Message</button>
+            </div>
         </div>
     </section>
         </div><!-- /split-left -->
@@ -5998,13 +6036,15 @@
     <!-- Full-page Message View -->
     <div class="message-page" id="messagePageView">
         <div class="message-page-inner">
-            <div class="message-page-header">
-                <button class="message-page-back" onclick="closeMessageDetail()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
-                <div class="message-page-avatar" id="detailAvatar"><span id="detailAvatarInitial">J</span><img id="detailAvatarImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;display:none;"></div>
-                <div class="message-page-info">
-                    <h3 id="detailSender">Jonah Doyle</h3>
-                    <p id="detailLocation">London · Received under waxing gibbous</p>
+            <div class="message-page-header" style="justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                    <div class="message-page-avatar" id="detailAvatar"><span id="detailAvatarInitial">J</span><img id="detailAvatarImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;display:none;"></div>
+                    <div class="message-page-info" style="min-width:0;">
+                        <h3 id="detailSender">Jonah Doyle</h3>
+                        <p id="detailLocation">London · Received under waxing gibbous</p>
+                    </div>
                 </div>
+                <button class="message-page-back" onclick="closeMessageDetail()" style="flex-shrink:0;"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-close"/></svg></button>
             </div>
             <div class="message-page-body" id="detailContent">
                 <!-- Message bubbles will be inserted here -->
@@ -6020,19 +6060,31 @@
                     <div class="thread-lunar-steps">
                         <div class="thread-lunar-step" id="threadStep1">
                             <label class="thread-lunar-label" id="threadLabel1">an emotion</label>
-                            <input type="text" class="thread-lunar-input" id="threadLunarInput1" placeholder="anything" oninput="checkThreadLunarStep()">
+                            <input type="text" class="thread-lunar-input" id="threadLunarInput1" placeholder="anything" oninput="updateThreadLunarNextBtn(1)">
+                            <button class="lunar-step-next thread-lunar-next-btn" id="threadNext1" onclick="advanceThreadStep(2)" disabled>Next →</button>
                         </div>
                         <div class="thread-lunar-step" id="threadStep2" style="display:none;">
                             <label class="thread-lunar-label" id="threadLabel2">a different emotion</label>
-                            <input type="text" class="thread-lunar-input" id="threadLunarInput2" placeholder="something else" oninput="checkThreadLunarStep()">
+                            <input type="text" class="thread-lunar-input" id="threadLunarInput2" placeholder="something else" oninput="updateThreadLunarNextBtn(2)">
+                            <div style="display:flex;gap:8px;margin-top:6px;">
+                                <button class="lunar-step-back" onclick="goBackThreadStep(1)" style="font-size:12px;background:none;border:none;color:var(--text-muted);cursor:pointer;">← Back</button>
+                                <button class="lunar-step-next thread-lunar-next-btn" id="threadNext2" onclick="advanceThreadStep(3)" disabled>Next →</button>
+                            </div>
                         </div>
                         <div class="thread-lunar-step" id="threadStep3" style="display:none;">
                             <label class="thread-lunar-label" id="threadLabel3">something you pretend not to care about</label>
-                            <input type="text" class="thread-lunar-input" id="threadLunarInput3" placeholder="you know" oninput="checkThreadLunarStep()">
+                            <input type="text" class="thread-lunar-input" id="threadLunarInput3" placeholder="you know" oninput="updateThreadLunarNextBtn(3)">
+                            <div style="display:flex;gap:8px;margin-top:6px;">
+                                <button class="lunar-step-back" onclick="goBackThreadStep(2)" style="font-size:12px;background:none;border:none;color:var(--text-muted);cursor:pointer;">← Back</button>
+                                <button class="lunar-step-next thread-lunar-next-btn" id="threadNext3" onclick="generateThreadLunarResult()" disabled>Reveal 🌙</button>
+                            </div>
                         </div>
                     </div>
                     <div class="thread-lunar-result" id="threadLunarResult" style="display:none;"></div>
-                    <button class="thread-lunar-send" id="threadLunarSendBtn" onclick="sendThreadLunarNote()" disabled>Send Lunar Note</button>
+                    <div style="display:flex;gap:8px;margin-top:8px;">
+                        <button class="thread-lunar-cancel" onclick="closeThreadLunar()" style="flex:1;padding:8px;border:1.5px solid rgba(53,125,197,0.2);border-radius:8px;background:none;color:var(--text-muted);font-family:'Satoshi',sans-serif;font-size:13px;cursor:pointer;">Cancel</button>
+                        <button class="thread-lunar-send" id="threadLunarSendBtn" onclick="sendThreadLunarNote()" disabled style="flex:1;">Send Lunar Note</button>
+                    </div>
                 </div>
                 <div id="replyPhotoPreview" style="display:none;padding:8px 8px 0;">
                     <div style="position:relative;display:inline-block;">
@@ -9485,19 +9537,23 @@
 
             const userName = localStorage.getItem('moonpop_username') || '';
 
+            // Show/hide inbox CTA
+            const inboxCta = document.getElementById('inboxNewMsgCta');
+
             if (moonData.isVisible) {
                 // Moon is up - compose available
                 document.body.classList.remove('moon-down');
                 if (heroTitle) heroTitle.textContent = 'MESSAGES RELEASED BY THE MOON';
+                if (inboxCta) inboxCta.style.display = '';
                 centerEl.innerHTML = `
                     <div class="standby-countdown live-timer">${timerStr}</div>
                     <p class="standby-label">until moonset</p>
-                    <button class="cta-button" onclick="openModal()">${iconSvg('compose', 'md')} New Moon Message</button>
                     <p class="delivery-note">Arrives at moonrise in recipient's sky</p>
                 `;
             } else {
                 // Moon is down - compose locked
                 document.body.classList.add('moon-down');
+                if (inboxCta) inboxCta.style.display = 'none';
                 const riseTime = moonData.moonrise !== '--:--' ? moonData.moonrise : '—';
 
                 // Update hero title based on pending messages
@@ -10130,7 +10186,17 @@
         }
 
         function _closeMessageDetailUI() {
-            document.getElementById('messagePageView').classList.remove('active');
+            const page = document.getElementById('messagePageView');
+            if (page.classList.contains('active')) {
+                page.classList.remove('active');
+                page.classList.add('closing');
+                page.addEventListener('animationend', function handler() {
+                    page.classList.remove('closing');
+                    page.removeEventListener('animationend', handler);
+                }, { once: true });
+            } else {
+                page.classList.remove('active');
+            }
             document.body.style.overflow = '';
             currentMessageIndex = -1;
             currentConversationIndex = -1;
@@ -10148,16 +10214,18 @@
             link.style.display = 'none';
             threadLunarStep = 1;
             threadLunarGenerated = null;
-            
+
             // Load today's prompts
             const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
             const ps = PROMPT_SETS[dayOfYear % PROMPT_SETS.length];
-            
+
             for (let i = 0; i < 3; i++) {
                 document.getElementById('threadLabel' + (i+1)).textContent = ps.prompts[i].label;
                 document.getElementById('threadLunarInput' + (i+1)).placeholder = ps.prompts[i].placeholder;
                 document.getElementById('threadLunarInput' + (i+1)).value = '';
                 document.getElementById('threadStep' + (i+1)).style.display = i === 0 ? 'block' : 'none';
+                const nextBtn = document.getElementById('threadNext' + (i+1));
+                if (nextBtn) nextBtn.disabled = true;
             }
             document.getElementById('threadLunarResult').style.display = 'none';
             document.getElementById('threadLunarSendBtn').disabled = true;
@@ -10167,40 +10235,43 @@
         function closeThreadLunar() {
             document.getElementById('threadLunarPanel').style.display = 'none';
             document.getElementById('addLunarLink').style.display = '';
+            threadLunarGenerated = null;
         }
 
-        function checkThreadLunarStep() {
+        function updateThreadLunarNextBtn(step) {
+            const val = document.getElementById('threadLunarInput' + step).value.trim();
+            const nextBtn = document.getElementById('threadNext' + step);
+            if (nextBtn) nextBtn.disabled = !val;
+        }
+
+        function advanceThreadStep(toStep) {
+            document.getElementById('threadStep' + toStep).style.display = 'block';
+            document.getElementById('threadLunarInput' + toStep).focus();
+            threadLunarStep = toStep;
+        }
+
+        function goBackThreadStep(toStep) {
+            document.getElementById('threadStep' + (toStep + 1)).style.display = 'none';
+            document.getElementById('threadLunarInput' + toStep).focus();
+            threadLunarStep = toStep;
+        }
+
+        function generateThreadLunarResult() {
             const v1 = document.getElementById('threadLunarInput1').value.trim();
             const v2 = document.getElementById('threadLunarInput2').value.trim();
             const v3 = document.getElementById('threadLunarInput3').value.trim();
-            
-            // Progressive reveal
-            if (v1 && threadLunarStep === 1) {
-                document.getElementById('threadStep2').style.display = 'block';
-                threadLunarStep = 2;
-                document.getElementById('threadLunarInput2').focus();
-            }
-            if (v2 && threadLunarStep === 2) {
-                document.getElementById('threadStep3').style.display = 'block';
-                threadLunarStep = 3;
-                document.getElementById('threadLunarInput3').focus();
-            }
-            if (v1 && v2 && v3) {
-                // Generate the note
-                const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-                const templateIdx = dayOfYear % lunarTemplates.length;
-                const result = lunarTemplates[templateIdx](v1, v2, v3);
-                threadLunarGenerated = result;
-                
-                const resultEl = document.getElementById('threadLunarResult');
-                resultEl.innerHTML = result.lines.replace(/\n/g, '<br>') + 
-                    '<div class="lunar-closing">' + result.closing + '</div>';
-                resultEl.style.display = 'block';
-                document.getElementById('threadLunarSendBtn').disabled = false;
-            } else {
-                document.getElementById('threadLunarResult').style.display = 'none';
-                document.getElementById('threadLunarSendBtn').disabled = true;
-            }
+            if (!v1 || !v2 || !v3) return;
+
+            const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+            const templateIdx = dayOfYear % lunarTemplates.length;
+            const result = lunarTemplates[templateIdx](v1, v2, v3);
+            threadLunarGenerated = result;
+
+            const resultEl = document.getElementById('threadLunarResult');
+            resultEl.innerHTML = result.lines.replace(/\n/g, '<br>') +
+                '<div class="lunar-closing">' + result.closing + '</div>';
+            resultEl.style.display = 'block';
+            document.getElementById('threadLunarSendBtn').disabled = false;
         }
 
         async function sendThreadLunarNote() {
@@ -10451,8 +10522,8 @@
         // ========================
         // REACTIONS
         // ========================
-        const MOON_REACTIONS = ['🌑', '🌓', '🌕'];
-        const EMOJI_REACTIONS = ['❤️', '😊', '🙏', '✨', '🔥'];
+        const MOON_REACTIONS = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
+        const EMOJI_REACTIONS = [];
         
         function renderReactionsBar(msgIndex, part) {
             const msg = messages[msgIndex];
@@ -10470,11 +10541,8 @@
                     ${chips}
                     <button class="add-reaction-btn" onclick="event.stopPropagation(); toggleReactionPicker(this, ${msgIndex})">+</button>
                     <div class="reaction-picker" id="picker-${msgIndex}-${part}">
-                        <span class="reaction-picker-label">Moon</span>
+                        <span class="reaction-picker-label">Moon Phases</span>
                         ${MOON_REACTIONS.map(e => `<button class="reaction-option" onclick="event.stopPropagation(); addReaction(${msgIndex}, '${e}', this)">${e}</button>`).join('')}
-                        <div class="reaction-picker-divider"></div>
-                        <span class="reaction-picker-label">Emoji</span>
-                        ${EMOJI_REACTIONS.map(e => `<button class="reaction-option" onclick="event.stopPropagation(); addReaction(${msgIndex}, '${e}', this)">${e}</button>`).join('')}
                     </div>
                 </div>
             `;
