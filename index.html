@@ -4491,8 +4491,8 @@
 
         .split-layout {
             display: flex;
-            /* viewport minus header+hero — fills remaining space */
-            height: calc(100vh - 140px);
+            /* viewport minus header */
+            height: calc(100vh - 100px);
             overflow: hidden;           /* no page scroll */
         }
 
@@ -4532,6 +4532,19 @@
             overflow: hidden;
             gap: 8px;
             padding: 8px;
+        }
+
+        .ring-title {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 20px;
+            font-weight: 700;
+            text-align: left;
+            align-self: flex-start;
+            padding: 0 clamp(16px, 3vw, 32px);
+            margin: 0;
+            line-height: 1.4;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
         }
 
         .split-right .main-content {
@@ -5235,7 +5248,7 @@
                 radial-gradient(0.8px 0.8px at 93% 56%, rgba(255,255,255,0.05), transparent),
                 radial-gradient(0.8px 0.8px at 97% 38%, rgba(255,255,255,0.07), transparent),
                 radial-gradient(0.8px 0.8px at 99% 74%, rgba(255,255,255,0.06), transparent);
-            background-size: 350px 350px;
+            background-size: 200px 200px;
         }
 
         /* Twinkling stars overlay */
@@ -6454,11 +6467,6 @@
     <!-- Notification Toast -->
     <div class="notification-toast" id="notificationToast"></div>
 
-    <!-- Hero Title (above split) -->
-    <section class="hero above-split">
-        <h1 id="heroTitle">MESSAGES RELEASED BY THE MOON</h1>
-    </section>
-
     <!-- Split-screen layout: Inbox left, Moon right -->
     <div class="split-layout">
 
@@ -6497,6 +6505,7 @@
 
         <!-- RIGHT PANEL: Moon orbit (fixed, no scroll) -->
         <div class="split-right">
+            <h1 class="ring-title" id="heroTitle">MESSAGES RELEASED BY THE MOON</h1>
             <main class="main-content">
                 <div class="orbit-container">
                     <div class="orbit-ring"></div>
