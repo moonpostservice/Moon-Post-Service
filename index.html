@@ -3626,7 +3626,7 @@
             color: #4fc3f7;
             transform: scale(1.1);
         }
-        /* On mobile/touch, always show trigger */
+        /* On mobile/touch, always show trigger inline */
         @media (hover: none) {
             .msg-react-trigger {
                 opacity: 0.6;
@@ -3637,12 +3637,46 @@
                 display: inline-flex;
             }
         }
-        /* Hover reaction picker — positioned from trigger */
-        .msg-react-trigger .reaction-picker {
-            position: absolute;
-            top: calc(100% + 6px);
-            right: 0;
-            left: auto;
+        /* Reaction picker — uses position:fixed to escape scroll container clipping */
+        .reaction-picker-fixed {
+            position: fixed;
+            z-index: 99999;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            width: 300px;
+            padding: 8px;
+            border-radius: 12px;
+            background: rgba(18, 35, 58, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+        }
+        .reaction-picker-fixed .reaction-picker-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: rgba(79, 195, 247, 0.5);
+            padding: 4px 6px 2px;
+            width: 100%;
+        }
+        .reaction-picker-fixed .reaction-option {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: none;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+        }
+        .reaction-picker-fixed .reaction-option:hover {
+            background: rgba(79, 195, 247, 0.15);
+            transform: scale(1.15);
         }
 
         .reactions-bar {
@@ -11730,6 +11764,7 @@
 
             sortedMsgs.forEach((msg, mi) => {
                 const msgIndex = messages.indexOf(msg);
+                if (msgIndex < 0) console.warn('[Reactions] renderThread: msgIndex=-1 for msg dbId:', msg.dbId, 'type:', msg.type);
 
                 // Received in-transit message: show "arriving" notification instead of content
                 if (msg.type === 'received' && msg.status === 'Arriving') {
@@ -12459,9 +12494,10 @@
         // ========================
         const MOON_REACTIONS = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
         const EMOJI_REACTIONS = [];
-        
+
         function renderReactionsBar(msgIndex, part) {
             const msg = messages[msgIndex];
+            if (!msg) { console.warn('renderReactionsBar: no msg at index', msgIndex); return ''; }
             const reactions = msg.reactions || [];
 
             let chips = reactions.map((r, ri) => `
@@ -12471,16 +12507,10 @@
                 </span>
             `).join('');
 
-            // Hover trigger icon (shows on bubble hover, positioned at top-right)
-            // IMPORTANT: Use <div> not <button> — nesting <button> inside <button> is invalid HTML
-            // and browsers break the DOM structure, preventing reactions from working
+            // Hover trigger icon — opens a fixed-position picker (escapes scroll overflow clipping)
             const hoverTrigger = `
-                <div class="msg-react-trigger" onclick="event.stopPropagation(); toggleReactionPicker(this, ${msgIndex})" title="React" role="button" tabindex="0">
+                <div class="msg-react-trigger" data-msg-index="${msgIndex}" onclick="event.stopPropagation(); openReactionPicker(this, ${msgIndex})" title="React" role="button" tabindex="0">
                     🌙
-                    <div class="reaction-picker" id="picker-${msgIndex}-${part}">
-                        <span class="reaction-picker-label">Moon Phases</span>
-                        ${MOON_REACTIONS.map(e => `<span class="reaction-option" role="button" tabindex="0" onclick="event.stopPropagation(); addReaction(${msgIndex}, '${e}', this)">${e}</span>`).join('')}
-                    </div>
                 </div>
             `;
 
@@ -12493,18 +12523,71 @@
 
             return hoverTrigger + chipsBar;
         }
-        
-        function toggleReactionPicker(btn, msgIndex) {
-            const picker = btn.querySelector('.reaction-picker') || btn.nextElementSibling;
-            const wasActive = picker.classList.contains('active');
-            document.querySelectorAll('.reaction-picker').forEach(p => p.classList.remove('active'));
-            if (!wasActive) picker.classList.add('active');
+
+        // Fixed-position reaction picker (appended to document.body to escape all overflow clipping)
+        let _activeReactionPicker = null;
+
+        function openReactionPicker(triggerEl, msgIndex) {
+            console.log('[Reactions] openReactionPicker called, msgIndex:', msgIndex);
+            // Close any existing picker
+            closeReactionPicker();
+
+            const rect = triggerEl.getBoundingClientRect();
+            console.log('[Reactions] trigger rect:', JSON.stringify({top: rect.top, left: rect.left, right: rect.right, bottom: rect.bottom}));
+
+            // Create fixed picker
+            const picker = document.createElement('div');
+            picker.className = 'reaction-picker-fixed';
+            picker.innerHTML = `
+                <span class="reaction-picker-label">Moon Phases</span>
+                ${MOON_REACTIONS.map(e => `<span class="reaction-option" role="button" tabindex="0" data-emoji="${e}">${e}</span>`).join('')}
+            `;
+
+            // Position below or above trigger depending on screen space
+            const pickerHeight = 60; // approximate
+            const spaceBelow = window.innerHeight - rect.bottom;
+            if (spaceBelow >= pickerHeight + 10) {
+                picker.style.top = (rect.bottom + 6) + 'px';
+            } else {
+                picker.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+            }
+            // Align right edge with trigger right edge, but keep on screen
+            const rightPos = window.innerWidth - rect.right;
+            picker.style.right = Math.max(8, rightPos) + 'px';
+
+            // Handle emoji clicks
+            picker.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const option = e.target.closest('.reaction-option');
+                if (option) {
+                    const emoji = option.dataset.emoji;
+                    console.log('[Reactions] picked emoji:', emoji, 'for msgIndex:', msgIndex);
+                    await addReaction(msgIndex, emoji);
+                    closeReactionPicker();
+                }
+            });
+
+            document.body.appendChild(picker);
+            _activeReactionPicker = picker;
+            console.log('[Reactions] picker opened and appended to body');
         }
-        
-        async function addReaction(msgIndex, emoji, btn) {
+
+        function closeReactionPicker() {
+            if (_activeReactionPicker) {
+                _activeReactionPicker.remove();
+                _activeReactionPicker = null;
+            }
+        }
+
+        // Close picker when clicking anywhere else
+        document.addEventListener('click', () => { closeReactionPicker(); });
+
+        async function addReaction(msgIndex, emoji) {
+            console.log('[Reactions] addReaction called, msgIndex:', msgIndex, 'emoji:', emoji);
             const msg = messages[msgIndex];
-            if (!msg) { console.error('addReaction: invalid msgIndex', msgIndex); return; }
+            if (!msg) { console.error('[Reactions] addReaction: invalid msgIndex', msgIndex, 'messages.length:', messages.length); return; }
             if (!msg.reactions) msg.reactions = [];
+            console.log('[Reactions] msg.dbId:', msg.dbId, 'currentAuthUser:', currentAuthUser?.id);
 
             const existing = msg.reactions.find(r => r.emoji === emoji);
             if (existing) {
@@ -12512,20 +12595,19 @@
                     existing.count--;
                     existing.mine = false;
                     if (existing.count <= 0) msg.reactions = msg.reactions.filter(r => r !== existing);
-                    // Remove from Supabase
                     if (currentAuthUser && msg.dbId) {
                         try {
                             const { error } = await sb.from('reactions').delete()
                                 .eq('message_id', msg.dbId)
                                 .eq('user_id', currentAuthUser.id)
                                 .eq('emoji', emoji);
-                            if (error) console.error('Remove reaction failed:', error);
-                        } catch (e) { console.error('Remove reaction exception:', e); }
+                            if (error) console.error('[Reactions] Remove failed:', error);
+                            else console.log('[Reactions] Removed from DB successfully');
+                        } catch (e) { console.error('[Reactions] Remove exception:', e); }
                     }
                 } else {
                     existing.count++;
                     existing.mine = true;
-                    // Add to Supabase
                     if (currentAuthUser && msg.dbId) {
                         try {
                             const { error } = await sb.from('reactions').insert({
@@ -12533,13 +12615,14 @@
                                 user_id: currentAuthUser.id,
                                 emoji: emoji
                             });
-                            if (error) console.error('Add reaction failed:', error);
-                        } catch (e) { console.error('Add reaction exception:', e); }
+                            if (error) console.error('[Reactions] Add (existing) failed:', error);
+                            else console.log('[Reactions] Added to DB successfully');
+                        } catch (e) { console.error('[Reactions] Add exception:', e); }
                     }
                 }
             } else {
                 msg.reactions.push({ emoji, count: 1, mine: true });
-                // Add to Supabase
+                console.log('[Reactions] New reaction added locally, msg.reactions now:', JSON.stringify(msg.reactions));
                 if (currentAuthUser && msg.dbId) {
                     try {
                         const { error } = await sb.from('reactions').insert({
@@ -12547,12 +12630,14 @@
                             user_id: currentAuthUser.id,
                             emoji: emoji
                         });
-                        if (error) console.error('Add reaction failed:', error);
-                    } catch (e) { console.error('Add reaction exception:', e); }
+                        if (error) console.error('[Reactions] Insert failed:', error);
+                        else console.log('[Reactions] Inserted to DB successfully');
+                    } catch (e) { console.error('[Reactions] Insert exception:', e); }
+                } else {
+                    console.warn('[Reactions] Cannot save to DB: currentAuthUser:', !!currentAuthUser, 'msg.dbId:', msg.dbId);
                 }
             }
 
-            document.querySelectorAll('.reaction-picker').forEach(p => p.classList.remove('active'));
             if (currentConversation) renderConversationThread();
         }
         
@@ -12594,10 +12679,6 @@
             if (currentConversation) renderConversationThread();
         }
         
-        document.addEventListener('click', () => {
-            document.querySelectorAll('.reaction-picker').forEach(p => p.classList.remove('active'));
-        });
-
         // ========================
         // YOUTUBE EMBED
         // ========================
