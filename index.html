@@ -12472,14 +12472,16 @@
             `).join('');
 
             // Hover trigger icon (shows on bubble hover, positioned at top-right)
+            // IMPORTANT: Use <div> not <button> — nesting <button> inside <button> is invalid HTML
+            // and browsers break the DOM structure, preventing reactions from working
             const hoverTrigger = `
-                <button class="msg-react-trigger" onclick="event.stopPropagation(); toggleReactionPicker(this, ${msgIndex})" title="React">
+                <div class="msg-react-trigger" onclick="event.stopPropagation(); toggleReactionPicker(this, ${msgIndex})" title="React" role="button" tabindex="0">
                     🌙
                     <div class="reaction-picker" id="picker-${msgIndex}-${part}">
                         <span class="reaction-picker-label">Moon Phases</span>
-                        ${MOON_REACTIONS.map(e => `<button class="reaction-option" onclick="event.stopPropagation(); addReaction(${msgIndex}, '${e}', this)">${e}</button>`).join('')}
+                        ${MOON_REACTIONS.map(e => `<span class="reaction-option" role="button" tabindex="0" onclick="event.stopPropagation(); addReaction(${msgIndex}, '${e}', this)">${e}</span>`).join('')}
                     </div>
-                </button>
+                </div>
             `;
 
             // Chips bar (only shows if there are existing reactions)
@@ -12501,8 +12503,9 @@
         
         async function addReaction(msgIndex, emoji, btn) {
             const msg = messages[msgIndex];
+            if (!msg) { console.error('addReaction: invalid msgIndex', msgIndex); return; }
             if (!msg.reactions) msg.reactions = [];
-            
+
             const existing = msg.reactions.find(r => r.emoji === emoji);
             if (existing) {
                 if (existing.mine) {
@@ -12511,43 +12514,52 @@
                     if (existing.count <= 0) msg.reactions = msg.reactions.filter(r => r !== existing);
                     // Remove from Supabase
                     if (currentAuthUser && msg.dbId) {
-                        sb.from('reactions').delete()
-                            .eq('message_id', msg.dbId)
-                            .eq('user_id', currentAuthUser.id)
-                            .eq('emoji', emoji);
+                        try {
+                            const { error } = await sb.from('reactions').delete()
+                                .eq('message_id', msg.dbId)
+                                .eq('user_id', currentAuthUser.id)
+                                .eq('emoji', emoji);
+                            if (error) console.error('Remove reaction failed:', error);
+                        } catch (e) { console.error('Remove reaction exception:', e); }
                     }
                 } else {
                     existing.count++;
                     existing.mine = true;
                     // Add to Supabase
                     if (currentAuthUser && msg.dbId) {
-                        sb.from('reactions').insert({
-                            message_id: msg.dbId,
-                            user_id: currentAuthUser.id,
-                            emoji: emoji
-                        });
+                        try {
+                            const { error } = await sb.from('reactions').insert({
+                                message_id: msg.dbId,
+                                user_id: currentAuthUser.id,
+                                emoji: emoji
+                            });
+                            if (error) console.error('Add reaction failed:', error);
+                        } catch (e) { console.error('Add reaction exception:', e); }
                     }
                 }
             } else {
                 msg.reactions.push({ emoji, count: 1, mine: true });
                 // Add to Supabase
                 if (currentAuthUser && msg.dbId) {
-                    sb.from('reactions').insert({
-                        message_id: msg.dbId,
-                        user_id: currentAuthUser.id,
-                        emoji: emoji
-                    });
+                    try {
+                        const { error } = await sb.from('reactions').insert({
+                            message_id: msg.dbId,
+                            user_id: currentAuthUser.id,
+                            emoji: emoji
+                        });
+                        if (error) console.error('Add reaction failed:', error);
+                    } catch (e) { console.error('Add reaction exception:', e); }
                 }
             }
-            
+
             document.querySelectorAll('.reaction-picker').forEach(p => p.classList.remove('active'));
-            if (currentMessageIndex >= 0) renderDetailContent(currentMessageIndex);
+            if (currentConversation) renderConversationThread();
         }
         
         async function toggleReaction(msgIndex, reactionIndex) {
             const msg = messages[msgIndex];
-            if (!msg.reactions || !msg.reactions[reactionIndex]) return;
-            
+            if (!msg || !msg.reactions || !msg.reactions[reactionIndex]) return;
+
             const r = msg.reactions[reactionIndex];
             if (r.mine) {
                 r.count--;
@@ -12555,25 +12567,31 @@
                 if (r.count <= 0) msg.reactions.splice(reactionIndex, 1);
                 // Remove from Supabase
                 if (currentAuthUser && msg.dbId) {
-                    sb.from('reactions').delete()
-                        .eq('message_id', msg.dbId)
-                        .eq('user_id', currentAuthUser.id)
-                        .eq('emoji', r.emoji);
+                    try {
+                        const { error } = await sb.from('reactions').delete()
+                            .eq('message_id', msg.dbId)
+                            .eq('user_id', currentAuthUser.id)
+                            .eq('emoji', r.emoji);
+                        if (error) console.error('Toggle reaction remove failed:', error);
+                    } catch (e) { console.error('Toggle reaction exception:', e); }
                 }
             } else {
                 r.count++;
                 r.mine = true;
                 // Add to Supabase
                 if (currentAuthUser && msg.dbId) {
-                    sb.from('reactions').insert({
-                        message_id: msg.dbId,
-                        user_id: currentAuthUser.id,
-                        emoji: r.emoji
-                    });
+                    try {
+                        const { error } = await sb.from('reactions').insert({
+                            message_id: msg.dbId,
+                            user_id: currentAuthUser.id,
+                            emoji: r.emoji
+                        });
+                        if (error) console.error('Toggle reaction add failed:', error);
+                    } catch (e) { console.error('Toggle reaction exception:', e); }
                 }
             }
-            
-            if (currentMessageIndex >= 0) renderDetailContent(currentMessageIndex);
+
+            if (currentConversation) renderConversationThread();
         }
         
         document.addEventListener('click', () => {
