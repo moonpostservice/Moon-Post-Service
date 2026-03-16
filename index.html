@@ -3607,6 +3607,14 @@
         .bubble-lunar-note {
             position: relative;
         }
+        /* Reactions + reply action row */
+        .msg-actions-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
         .msg-react-trigger {
             position: relative;
             display: inline-flex;
@@ -3615,14 +3623,13 @@
             width: 30px;
             height: 30px;
             border-radius: 50%;
-            border: 1px solid rgba(79, 195, 247, 0.2);
+            border: 1px solid rgba(79, 195, 247, 0.25);
             background: rgba(8, 18, 35, 0.85);
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.7);
             font-size: 15px;
             cursor: pointer;
-            opacity: 0.5;
+            opacity: 0.75;
             transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease;
-            margin-top: 6px;
             box-shadow: 0 1px 6px rgba(0,0,0,0.25);
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
@@ -3648,10 +3655,10 @@
             50% { transform: scale(1.3); }
             100% { transform: scale(1); }
         }
-        /* On mobile/touch, always show trigger */
+        /* On mobile/touch, always show trigger clearly */
         @media (hover: none) {
             .msg-react-trigger {
-                opacity: 0.7;
+                opacity: 0.85;
             }
         }
         /* Reaction picker — uses position:fixed to escape scroll container clipping */
@@ -3867,9 +3874,9 @@
         }
 
         .thread-lunar-intro {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 10px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.55);
+            margin-bottom: 12px;
             font-style: italic;
         }
 
@@ -3878,21 +3885,21 @@
         }
 
         .thread-lunar-label {
-            font-size: 11px;
+            font-size: 15px;
             font-weight: 600;
             color: #4fc3f7;
             text-transform: lowercase;
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .thread-lunar-input {
             width: 100%;
-            padding: 10px 14px;
+            padding: 12px 14px;
             border: 1.5px solid rgba(79, 195, 247, 0.2);
             border-radius: 10px;
             font-family: 'Satoshi', sans-serif;
-            font-size: 13px;
+            font-size: 16px;
             background: rgba(5, 12, 28, 0.8);
             color: rgba(255, 255, 255, 0.9);
             box-sizing: border-box;
@@ -3900,7 +3907,8 @@
         }
 
         .thread-lunar-input::placeholder {
-            color: rgba(255, 255, 255, 0.25);
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
         }
 
         .thread-lunar-input:focus {
@@ -3911,9 +3919,9 @@
         .thread-lunar-result {
             background: rgba(5, 14, 30, 0.8);
             border-radius: 10px;
-            padding: 12px;
+            padding: 14px;
             margin: 10px 0;
-            font-size: 13px;
+            font-size: 15px;
             line-height: 1.6;
             color: rgba(255, 255, 255, 0.85);
             white-space: pre-line;
@@ -3921,10 +3929,18 @@
         }
 
         .thread-lunar-result .lunar-closing {
-            font-size: 12px;
+            font-size: 14px;
             color: rgba(79, 195, 247, 0.6);
             margin-top: 6px;
             font-style: italic;
+        }
+
+        .thread-lunar-next-btn {
+            font-size: 14px !important;
+        }
+
+        .thread-lunar-step .lunar-step-back {
+            font-size: 13px !important;
         }
 
         .thread-lunar-send {
@@ -5812,13 +5828,33 @@
             align-items: center;
             gap: 14px;
         }
+        .header-brand .logo-wrap {
+            display: flex;
+            align-items: center;
+            height: 88px;
+        }
+        .header-brand .logo-wrap svg,
         .header-brand .logo {
             height: 88px;
             width: auto;
             filter: none !important;
+            display: block;
         }
+        .header.scrolled .header-brand .logo-wrap {
+            height: 60px;
+        }
+        .header.scrolled .header-brand .logo-wrap svg,
         .header.scrolled .header-brand .logo {
             height: 60px;
+        }
+        .logo-fallback {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            font-size: 22px;
+            font-weight: 900;
+            color: #4fc3f7;
+            letter-spacing: -0.5px;
         }
         .header-tagline {
             font-size: 11px;
@@ -6781,7 +6817,8 @@
     <!-- Header -->
     <header class="header">
         <div class="header-brand">
-            <img class="logo" src="assests/logo2.svg?v=2" alt="MoonPop">
+            <div class="logo-wrap" id="logoWrap"><img class="logo" id="logoImg" src="assests/logo2.svg?v=3" alt="MoonPop" onerror="this.style.display='none';document.getElementById('logoFallback').style.display='flex';"></div>
+            <span id="logoFallback" class="logo-fallback" style="display:none;">🌙 MoonPop</span>
             <span class="header-tagline">The World's First Moon Postal Service</span>
         </div>
         <!-- Mini moon phase (visible when scrolled) -->
@@ -7679,7 +7716,7 @@
                             <label class="thread-lunar-label" id="threadLabel2">a different emotion</label>
                             <input type="text" class="thread-lunar-input" id="threadLunarInput2" placeholder="something else" oninput="updateThreadLunarNextBtn(2)">
                             <div style="display:flex;gap:8px;margin-top:6px;">
-                                <button class="lunar-step-back" onclick="goBackThreadStep(1)" style="font-size:12px;background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;">← Back</button>
+                                <button class="lunar-step-back" onclick="goBackThreadStep(1)" style="background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;font-size:13px;">← Back</button>
                                 <button class="lunar-step-next thread-lunar-next-btn" id="threadNext2" onclick="advanceThreadStep(3)" disabled>Next →</button>
                             </div>
                         </div>
@@ -7687,7 +7724,7 @@
                             <label class="thread-lunar-label" id="threadLabel3">something you pretend not to care about</label>
                             <input type="text" class="thread-lunar-input" id="threadLunarInput3" placeholder="you know" oninput="updateThreadLunarNextBtn(3)">
                             <div style="display:flex;gap:8px;margin-top:6px;">
-                                <button class="lunar-step-back" onclick="goBackThreadStep(2)" style="font-size:12px;background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;">← Back</button>
+                                <button class="lunar-step-back" onclick="goBackThreadStep(2)" style="background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;font-size:13px;">← Back</button>
                                 <button class="lunar-step-next thread-lunar-next-btn" id="threadNext3" onclick="generateThreadLunarResult()" disabled>Reveal 🌙</button>
                             </div>
                         </div>
@@ -7710,6 +7747,7 @@
     </div>
 
     <script>
+        console.log('%c[MoonPop] v54 loaded — reactions + logo + lunar wizard fix', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -10817,6 +10855,41 @@
         document.addEventListener('DOMContentLoaded', async () => {
             _domReady = true;
 
+            // ---- Logo: fetch SVG and inject inline (bypasses all caching/img issues) ----
+            (function inlineLogo() {
+                const wrap = document.getElementById('logoWrap');
+                if (!wrap) return;
+                fetch('assests/logo2.svg?v=' + Date.now())
+                    .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+                    .then(svgText => {
+                        // Parse the SVG and inject it inline
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(svgText, 'image/svg+xml');
+                        const svgEl = doc.querySelector('svg');
+                        if (svgEl) {
+                            svgEl.removeAttribute('id');
+                            svgEl.classList.add('logo');
+                            svgEl.style.height = '88px';
+                            svgEl.style.width = 'auto';
+                            svgEl.style.display = 'block';
+                            // Ensure fill is correct
+                            const style = svgEl.querySelector('style');
+                            if (style) {
+                                style.textContent = style.textContent.replace(/#ff5659/gi, '#4fc3f7');
+                            }
+                            wrap.innerHTML = '';
+                            wrap.appendChild(svgEl);
+                            console.log('[Logo] SVG inlined successfully');
+                        }
+                    })
+                    .catch(err => {
+                        console.warn('[Logo] SVG inline failed:', err);
+                        // Fallback: show text logo
+                        const fb = document.getElementById('logoFallback');
+                        if (fb) fb.style.display = 'flex';
+                    });
+            })();
+
             // Generate twinkling stars with color variety
             (function() {
                 const container = document.getElementById('starfieldTwinkle');
@@ -11912,6 +11985,16 @@
             // Sort timeline chronologically
             timeline.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
+            // Debug: count messages with/without dbId
+            const withDbId = timeline.filter(t => t.msgDbId).length;
+            const withoutDbId = timeline.filter(t => t.isMessage && !t.msgDbId).length;
+            console.log(`[Reactions] Timeline: ${timeline.length} items, ${withDbId} with dbId, ${withoutDbId} messages WITHOUT dbId`);
+            if (withoutDbId > 0) {
+                timeline.filter(t => t.isMessage && !t.msgDbId).forEach(t => {
+                    console.warn('[Reactions] Message without dbId:', t.type, t.text?.substring(0, 30));
+                });
+            }
+
             // Render timeline
             let html = '';
             let lastDate = '';
@@ -11925,12 +12008,17 @@
                     lastDate = dateStr;
                 }
 
+                // Build actions row (reactions + reply) for any message with a dbId
+                const actionsHtml = (dbId) => {
+                    if (!dbId) return '';
+                    return renderReactionsBar(dbId);
+                };
+
                 if (item.type === 'lunar-note') {
                     const lunarReceipt = item.sent ? (() => {
                         const st = getReadReceiptStatus(item.createdAt, conv);
                         return `<span class="read-receipt ${st}">✓✓</span>`;
                     })() : '';
-                    const lunarReactionsHtml = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
                     const lunarPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
                     html += `
                         <div class="bubble-lunar-note ${item.sent ? 'sent-lunar' : ''}" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
@@ -11938,8 +12026,10 @@
                             <div class="bubble-lunar-text">${item.text}</div>
                             ${item.closing ? `<div class="bubble-lunar-closing">${item.closing}</div>` : ''}
                             <div class="message-bubble-time">${item.time || 'Recently'} ${lunarReceipt}</div>
-                            ${lunarReactionsHtml}
-                            <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('🌙 ${lunarPreview}')">↩ Reply</button>
+                            <div class="msg-actions-row">
+                                ${actionsHtml(item.msgDbId)}
+                                <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('🌙 ${lunarPreview}')">↩ Reply</button>
+                            </div>
                         </div>
                     `;
                 } else if (item.type === 'text') {
@@ -11947,15 +12037,16 @@
                         const st = getReadReceiptStatus(item.createdAt, conv);
                         return `<span class="read-receipt ${st}">✓✓</span>`;
                     })() : '';
-                    const reactionsHtml = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
                     const textPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
                     html += `
                         <div class="message-bubble ${item.sent ? 'sent' : ''}">
                             ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
                             ${item.text ? `<p>${item.text}</p>` : ''}
                             <div class="message-bubble-time">${item.time || 'Recently'} ${textReceipt}</div>
-                            ${reactionsHtml}
-                            <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('${textPreview.replace(/'/g, "\\'")}')">↩ Reply</button>
+                            <div class="msg-actions-row">
+                                ${actionsHtml(item.msgDbId)}
+                                <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('${textPreview.replace(/'/g, "\\'")}')">↩ Reply</button>
+                            </div>
                         </div>
                     `;
                     if (item.status === 'In Transit') {
@@ -11980,36 +12071,39 @@
                         const timeStr = rd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                         arrivalNote = `A moon message is traveling toward you. It will arrive at moonrise (${timeStr}).`;
                     }
-                    const arrivingReactions = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
                     html += `
                         <div class="chat-transit-msg" style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(18,35,58,0.5);border:1px dashed rgba(79,195,247,0.25);margin-bottom:8px;">
                             <div style="font-size:13px;color:rgba(79,195,247,0.7);font-style:italic;">${arrivalNote}</div>
                             <div class="message-bubble-time">${item.time}</div>
-                            ${arrivingReactions}
+                            <div class="msg-actions-row">
+                                ${actionsHtml(item.msgDbId)}
+                            </div>
                         </div>
                     `;
                 } else if (item.type === 'lunar-reply') {
-                    const lunarReplyReactions = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
                     const lunarReplyPreview = ((item.text || '').replace('🌙 ', '')).substring(0, 40);
                     html += `
                         <div class="bubble-lunar-note" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
                             <div class="bubble-lunar-label">${iconSvg('lunar-note', 'sm')} Lunar Note</div>
                             <div class="bubble-lunar-text">${(item.text || '').replace('🌙 ', '')}</div>
                             <div class="message-bubble-time" style="text-align:right;">${item.time}</div>
-                            ${lunarReplyReactions}
-                            <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('🌙 ${lunarReplyPreview}')">↩ Reply</button>
+                            <div class="msg-actions-row">
+                                ${actionsHtml(item.msgDbId)}
+                                <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('🌙 ${lunarReplyPreview}')">↩ Reply</button>
+                            </div>
                         </div>
                     `;
                 } else if (item.type === 'reply') {
-                    const replyReactions = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
                     const replyPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
                     html += `
                         <div class="message-bubble ${item.sent ? 'sent' : ''}">
                             ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
                             ${item.text ? `<p>${item.text}</p>` : ''}
                             <div class="message-bubble-time">${item.time}</div>
-                            ${replyReactions}
-                            <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('${replyPreview.replace(/'/g, "\\'")}')">↩ Reply</button>
+                            <div class="msg-actions-row">
+                                ${actionsHtml(item.msgDbId)}
+                                <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('${replyPreview.replace(/'/g, "\\'")}')">↩ Reply</button>
+                            </div>
                         </div>
                     `;
                 }
@@ -12331,15 +12425,27 @@
         }
 
         function advanceThreadStep(toStep) {
-            document.getElementById('threadStep' + toStep).style.display = 'block';
-            document.getElementById('threadLunarInput' + toStep).focus();
+            // Show ONLY the target step (hide all others, like compose page does)
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('threadStep' + i).style.display = (i === toStep) ? 'block' : 'none';
+            }
             threadLunarStep = toStep;
+            setTimeout(() => {
+                const input = document.getElementById('threadLunarInput' + toStep);
+                if (input) input.focus();
+            }, 50);
         }
 
         function goBackThreadStep(toStep) {
-            document.getElementById('threadStep' + (toStep + 1)).style.display = 'none';
-            document.getElementById('threadLunarInput' + toStep).focus();
+            // Show ONLY the target step (hide all others)
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('threadStep' + i).style.display = (i === toStep) ? 'block' : 'none';
+            }
             threadLunarStep = toStep;
+            setTimeout(() => {
+                const input = document.getElementById('threadLunarInput' + toStep);
+                if (input) input.focus();
+            }, 50);
         }
 
         function generateThreadLunarResult() {
@@ -12352,6 +12458,11 @@
             const templateIdx = dayOfYear % lunarTemplates.length;
             const result = lunarTemplates[templateIdx](v1, v2, v3);
             threadLunarGenerated = result;
+
+            // Hide all steps and show result
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('threadStep' + i).style.display = 'none';
+            }
 
             const resultEl = document.getElementById('threadLunarResult');
             resultEl.innerHTML = result.lines.replace(/\n/g, '<br>') +
@@ -12632,10 +12743,30 @@
         }
 
         // Render reactions HTML for a message (returns static HTML with data attributes)
+        // ALWAYS returns a trigger button if msgDbId is provided, even if message not found
         function renderReactionsBar(msgDbId) {
-            if (!msgDbId) return '';
+            if (!msgDbId) {
+                console.warn('[Reactions] renderReactionsBar called with empty msgDbId');
+                return '';
+            }
+
+            // Trigger button — ALWAYS shown for any message with a dbId
+            const trigger = `
+                <div class="msg-react-trigger"
+                     data-action="open-reaction-picker"
+                     data-msg-dbid="${msgDbId}"
+                     title="React with moon phase"
+                     role="button"
+                     tabindex="0">🌙</div>
+            `;
+
+            // Look up message for existing reaction chips
             const msg = findMsgByDbId(msgDbId);
-            if (!msg) return '';
+            if (!msg) {
+                console.warn('[Reactions] Message not found for dbId:', msgDbId, '— trigger still shown');
+                return trigger;
+            }
+
             const reactions = msg.reactions || [];
 
             // Reaction chips (existing reactions)
@@ -12648,16 +12779,6 @@
                     <span class="reaction-count">${r.count}</span>
                 </span>
             `).join('');
-
-            // Trigger button (moon icon to open picker)
-            const trigger = `
-                <div class="msg-react-trigger"
-                     data-action="open-reaction-picker"
-                     data-msg-dbid="${msgDbId}"
-                     title="React with moon phase"
-                     role="button"
-                     tabindex="0">🌙</div>
-            `;
 
             const chipsBar = chips
                 ? `<div class="reactions-bar">${chips}</div>`
@@ -12727,8 +12848,18 @@
 
         // ---- Core reaction logic: add/remove reaction ----
         async function handleReaction(msgDbId, emoji) {
-            const msg = findMsgByDbId(msgDbId);
-            if (!msg) { console.error('[Reactions] No msg for dbId:', msgDbId); return; }
+            console.log('[Reactions] handleReaction called:', msgDbId, emoji);
+            let msg = findMsgByDbId(msgDbId);
+            // Fallback: search all conversations if not found
+            if (!msg) {
+                for (const conv of conversations) {
+                    if (conv.messages) {
+                        msg = conv.messages.find(m => m.dbId === msgDbId);
+                        if (msg) break;
+                    }
+                }
+            }
+            if (!msg) { console.error('[Reactions] No msg for dbId:', msgDbId, 'searched all conversations'); return; }
             if (!msg.reactions) msg.reactions = [];
 
             const existing = msg.reactions.find(r => r.emoji === emoji);
