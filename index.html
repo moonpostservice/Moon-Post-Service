@@ -5828,33 +5828,13 @@
             align-items: center;
             gap: 14px;
         }
-        .header-brand .logo-wrap {
-            display: flex;
-            align-items: center;
-            height: 88px;
-        }
-        .header-brand .logo-wrap svg,
         .header-brand .logo {
             height: 88px;
             width: auto;
-            filter: none !important;
             display: block;
         }
-        .header.scrolled .header-brand .logo-wrap {
-            height: 60px;
-        }
-        .header.scrolled .header-brand .logo-wrap svg,
         .header.scrolled .header-brand .logo {
             height: 60px;
-        }
-        .logo-fallback {
-            display: none;
-            align-items: center;
-            gap: 4px;
-            font-size: 22px;
-            font-weight: 900;
-            color: #4fc3f7;
-            letter-spacing: -0.5px;
         }
         .header-tagline {
             font-size: 11px;
@@ -6817,8 +6797,7 @@
     <!-- Header -->
     <header class="header">
         <div class="header-brand">
-            <div class="logo-wrap" id="logoWrap"><img class="logo" id="logoImg" src="assests/logo2.svg?v=3" alt="MoonPop" onerror="this.style.display='none';document.getElementById('logoFallback').style.display='flex';"></div>
-            <span id="logoFallback" class="logo-fallback" style="display:none;">🌙 MoonPop</span>
+            <img class="logo" src="assests/logo2.png" alt="MoonPop">
             <span class="header-tagline">The World's First Moon Postal Service</span>
         </div>
         <!-- Mini moon phase (visible when scrolled) -->
@@ -10854,41 +10833,6 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             _domReady = true;
-
-            // ---- Logo: fetch SVG and inject inline (bypasses all caching/img issues) ----
-            (function inlineLogo() {
-                const wrap = document.getElementById('logoWrap');
-                if (!wrap) return;
-                fetch('assests/logo2.svg?v=' + Date.now())
-                    .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
-                    .then(svgText => {
-                        // Parse the SVG and inject it inline
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(svgText, 'image/svg+xml');
-                        const svgEl = doc.querySelector('svg');
-                        if (svgEl) {
-                            svgEl.removeAttribute('id');
-                            svgEl.classList.add('logo');
-                            svgEl.style.height = '88px';
-                            svgEl.style.width = 'auto';
-                            svgEl.style.display = 'block';
-                            // Ensure fill is correct
-                            const style = svgEl.querySelector('style');
-                            if (style) {
-                                style.textContent = style.textContent.replace(/#ff5659/gi, '#4fc3f7');
-                            }
-                            wrap.innerHTML = '';
-                            wrap.appendChild(svgEl);
-                            console.log('[Logo] SVG inlined successfully');
-                        }
-                    })
-                    .catch(err => {
-                        console.warn('[Logo] SVG inline failed:', err);
-                        // Fallback: show text logo
-                        const fb = document.getElementById('logoFallback');
-                        if (fb) fb.style.display = 'flex';
-                    });
-            })();
 
             // Generate twinkling stars with color variety
             (function() {
