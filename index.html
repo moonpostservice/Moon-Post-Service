@@ -3596,24 +3596,22 @@
             position: relative;
         }
         .msg-react-trigger {
-            position: absolute;
-            top: 6px;
-            right: -14px;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             width: 28px;
             height: 28px;
             border-radius: 50%;
-            border: 1px solid rgba(79, 195, 247, 0.2);
-            background: rgba(8, 18, 35, 0.9);
-            color: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(79, 195, 247, 0.15);
+            background: rgba(8, 18, 35, 0.7);
+            color: rgba(255, 255, 255, 0.45);
             font-size: 14px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             opacity: 0;
             transition: opacity 0.15s, transform 0.15s;
-            z-index: 5;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            margin-top: 4px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
         }
         .message-bubble:hover .msg-react-trigger,
         .bubble-lunar-note:hover .msg-react-trigger {
@@ -3626,15 +3624,10 @@
             color: #4fc3f7;
             transform: scale(1.1);
         }
-        /* On mobile/touch, always show trigger inline */
+        /* On mobile/touch, always show trigger */
         @media (hover: none) {
             .msg-react-trigger {
                 opacity: 0.6;
-                position: relative;
-                top: auto;
-                right: auto;
-                margin-top: 6px;
-                display: inline-flex;
             }
         }
         /* Reaction picker — uses position:fixed to escape scroll container clipping */
@@ -11763,7 +11756,10 @@
             const sortedMsgs = [...conv.messages].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
             sortedMsgs.forEach((msg, mi) => {
-                const msgIndex = messages.indexOf(msg);
+                // Use dbId-based lookup instead of indexOf (object identity breaks after reloads)
+                const msgIndex = msg.dbId
+                    ? messages.findIndex(m => m.dbId === msg.dbId)
+                    : messages.indexOf(msg);
                 if (msgIndex < 0) console.warn('[Reactions] renderThread: msgIndex=-1 for msg dbId:', msg.dbId, 'type:', msg.type);
 
                 // Received in-transit message: show "arriving" notification instead of content
@@ -11775,6 +11771,7 @@
                         sent: false,
                         releaseAt: msg.releaseAt,
                         msgIndex,
+                        msgDbId: msg.dbId,
                         isMessage: true
                     });
                     return; // Skip content rendering for this message
@@ -11790,6 +11787,7 @@
                         createdAt: msg.createdAt,
                         sent: msg.type === 'sent',
                         msgIndex,
+                        msgDbId: msg.dbId,
                         isMessage: true
                     });
                 }
@@ -11802,6 +11800,7 @@
                         createdAt: msg.createdAt,
                         sent: msg.type === 'sent',
                         msgIndex,
+                        msgDbId: msg.dbId,
                         isMessage: true,
                         status: msg.status
                     });
@@ -11814,6 +11813,7 @@
                         sent: true,
                         location: msg.location,
                         msgIndex,
+                        msgDbId: msg.dbId,
                         isMessage: true
                     });
                 }
@@ -11855,7 +11855,7 @@
                         const st = getReadReceiptStatus(item.createdAt, conv);
                         return `<span class="read-receipt ${st}">✓✓</span>`;
                     })() : '';
-                    const lunarReactionsHtml = (item.isMessage && item.msgIndex >= 0) ? renderReactionsBar(item.msgIndex, 'lunar') : '';
+                    const lunarReactionsHtml = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId, 'lunar') : '';
                     const lunarPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
                     html += `
                         <div class="bubble-lunar-note ${item.sent ? 'sent-lunar' : ''}" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
@@ -11872,7 +11872,7 @@
                         const st = getReadReceiptStatus(item.createdAt, conv);
                         return `<span class="read-receipt ${st}">✓✓</span>`;
                     })() : '';
-                    const reactionsHtml = (item.isMessage && item.msgIndex >= 0) ? renderReactionsBar(item.msgIndex, 'thread') : '';
+                    const reactionsHtml = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId, 'thread') : '';
                     const textPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
                     html += `
                         <div class="message-bubble ${item.sent ? 'sent' : ''}">
@@ -12495,30 +12495,39 @@
         const MOON_REACTIONS = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
         const EMOJI_REACTIONS = [];
 
-        function renderReactionsBar(msgIndex, part) {
-            const msg = messages[msgIndex];
-            if (!msg) { console.warn('renderReactionsBar: no msg at index', msgIndex); return ''; }
+        // Helper: find message by dbId across both global messages and current conversation
+        function findMsgByDbId(dbId) {
+            if (!dbId) return null;
+            // Check currentConversation first (most reliable after loadFullConversationThread)
+            if (currentConversation) {
+                const m = currentConversation.messages.find(m => m.dbId === dbId);
+                if (m) return m;
+            }
+            // Fallback to global array
+            return messages.find(m => m.dbId === dbId);
+        }
+
+        function renderReactionsBar(msgDbId, part) {
+            const msg = findMsgByDbId(msgDbId);
+            if (!msg) { console.warn('[Reactions] renderReactionsBar: no msg for dbId', msgDbId); return ''; }
             const reactions = msg.reactions || [];
 
             let chips = reactions.map((r, ri) => `
-                <span class="reaction-chip ${r.mine ? 'active' : ''}" onclick="event.stopPropagation(); toggleReaction(${msgIndex}, ${ri})">
+                <span class="reaction-chip ${r.mine ? 'active' : ''}" onclick="event.stopPropagation(); toggleReaction('${msgDbId}', ${ri})">
                     <span>${r.emoji}</span>
                     <span class="reaction-count">${r.count > 1 ? r.count : ''}</span>
                 </span>
             `).join('');
 
-            // Hover trigger icon — opens a fixed-position picker (escapes scroll overflow clipping)
+            // Trigger icon — appears on hover (desktop) or always visible (mobile)
             const hoverTrigger = `
-                <div class="msg-react-trigger" data-msg-index="${msgIndex}" onclick="event.stopPropagation(); openReactionPicker(this, ${msgIndex})" title="React" role="button" tabindex="0">
+                <div class="msg-react-trigger" data-msg-dbid="${msgDbId}" onclick="event.stopPropagation(); openReactionPicker(this, '${msgDbId}')" title="React" role="button" tabindex="0">
                     🌙
                 </div>
             `;
 
-            // Chips bar (only shows if there are existing reactions)
             const chipsBar = chips ? `
-                <div class="reactions-bar" style="position:relative;">
-                    ${chips}
-                </div>
+                <div class="reactions-bar" style="position:relative;">${chips}</div>
             ` : '';
 
             return hoverTrigger + chipsBar;
@@ -12527,15 +12536,12 @@
         // Fixed-position reaction picker (appended to document.body to escape all overflow clipping)
         let _activeReactionPicker = null;
 
-        function openReactionPicker(triggerEl, msgIndex) {
-            console.log('[Reactions] openReactionPicker called, msgIndex:', msgIndex);
-            // Close any existing picker
+        function openReactionPicker(triggerEl, msgDbId) {
+            console.log('[Reactions] openReactionPicker, dbId:', msgDbId);
             closeReactionPicker();
 
             const rect = triggerEl.getBoundingClientRect();
-            console.log('[Reactions] trigger rect:', JSON.stringify({top: rect.top, left: rect.left, right: rect.right, bottom: rect.bottom}));
 
-            // Create fixed picker
             const picker = document.createElement('div');
             picker.className = 'reaction-picker-fixed';
             picker.innerHTML = `
@@ -12543,33 +12549,30 @@
                 ${MOON_REACTIONS.map(e => `<span class="reaction-option" role="button" tabindex="0" data-emoji="${e}">${e}</span>`).join('')}
             `;
 
-            // Position below or above trigger depending on screen space
-            const pickerHeight = 60; // approximate
+            // Position below or above trigger
             const spaceBelow = window.innerHeight - rect.bottom;
-            if (spaceBelow >= pickerHeight + 10) {
+            if (spaceBelow >= 70) {
                 picker.style.top = (rect.bottom + 6) + 'px';
             } else {
                 picker.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
             }
-            // Align right edge with trigger right edge, but keep on screen
+            // Keep on screen horizontally
             const rightPos = window.innerWidth - rect.right;
             picker.style.right = Math.max(8, rightPos) + 'px';
 
-            // Handle emoji clicks
             picker.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const option = e.target.closest('.reaction-option');
                 if (option) {
                     const emoji = option.dataset.emoji;
-                    console.log('[Reactions] picked emoji:', emoji, 'for msgIndex:', msgIndex);
-                    await addReaction(msgIndex, emoji);
+                    console.log('[Reactions] picked emoji:', emoji, 'for dbId:', msgDbId);
+                    await addReaction(msgDbId, emoji);
                     closeReactionPicker();
                 }
             });
 
             document.body.appendChild(picker);
             _activeReactionPicker = picker;
-            console.log('[Reactions] picker opened and appended to body');
         }
 
         function closeReactionPicker() {
@@ -12579,15 +12582,13 @@
             }
         }
 
-        // Close picker when clicking anywhere else
         document.addEventListener('click', () => { closeReactionPicker(); });
 
-        async function addReaction(msgIndex, emoji) {
-            console.log('[Reactions] addReaction called, msgIndex:', msgIndex, 'emoji:', emoji);
-            const msg = messages[msgIndex];
-            if (!msg) { console.error('[Reactions] addReaction: invalid msgIndex', msgIndex, 'messages.length:', messages.length); return; }
+        async function addReaction(msgDbId, emoji) {
+            console.log('[Reactions] addReaction, dbId:', msgDbId, 'emoji:', emoji);
+            const msg = findMsgByDbId(msgDbId);
+            if (!msg) { console.error('[Reactions] addReaction: no msg for dbId', msgDbId); return; }
             if (!msg.reactions) msg.reactions = [];
-            console.log('[Reactions] msg.dbId:', msg.dbId, 'currentAuthUser:', currentAuthUser?.id);
 
             const existing = msg.reactions.find(r => r.emoji === emoji);
             if (existing) {
@@ -12602,7 +12603,6 @@
                                 .eq('user_id', currentAuthUser.id)
                                 .eq('emoji', emoji);
                             if (error) console.error('[Reactions] Remove failed:', error);
-                            else console.log('[Reactions] Removed from DB successfully');
                         } catch (e) { console.error('[Reactions] Remove exception:', e); }
                     }
                 } else {
@@ -12615,14 +12615,12 @@
                                 user_id: currentAuthUser.id,
                                 emoji: emoji
                             });
-                            if (error) console.error('[Reactions] Add (existing) failed:', error);
-                            else console.log('[Reactions] Added to DB successfully');
+                            if (error) console.error('[Reactions] Add failed:', error);
                         } catch (e) { console.error('[Reactions] Add exception:', e); }
                     }
                 }
             } else {
                 msg.reactions.push({ emoji, count: 1, mine: true });
-                console.log('[Reactions] New reaction added locally, msg.reactions now:', JSON.stringify(msg.reactions));
                 if (currentAuthUser && msg.dbId) {
                     try {
                         const { error } = await sb.from('reactions').insert({
@@ -12631,18 +12629,16 @@
                             emoji: emoji
                         });
                         if (error) console.error('[Reactions] Insert failed:', error);
-                        else console.log('[Reactions] Inserted to DB successfully');
+                        else console.log('[Reactions] Saved to DB ✓');
                     } catch (e) { console.error('[Reactions] Insert exception:', e); }
-                } else {
-                    console.warn('[Reactions] Cannot save to DB: currentAuthUser:', !!currentAuthUser, 'msg.dbId:', msg.dbId);
                 }
             }
 
             if (currentConversation) renderConversationThread();
         }
-        
-        async function toggleReaction(msgIndex, reactionIndex) {
-            const msg = messages[msgIndex];
+
+        async function toggleReaction(msgDbId, reactionIndex) {
+            const msg = findMsgByDbId(msgDbId);
             if (!msg || !msg.reactions || !msg.reactions[reactionIndex]) return;
 
             const r = msg.reactions[reactionIndex];
