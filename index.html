@@ -3555,6 +3555,11 @@
         .read-receipt.read {
             color: #4fc3f7;
         }
+        .read-receipt.seen-label {
+            font-size: 10px;
+            letter-spacing: 0;
+            font-weight: 500;
+        }
         /* For non-sent bubbles (shouldn't appear, but safety) */
         .message-bubble:not(.sent) .read-receipt.delivered {
             color: var(--text-muted);
@@ -7726,7 +7731,7 @@
     </div>
 
     <script>
-        console.log('%c[MoonPop] v56 loaded — ring dot clamping + transit badge fix', 'color: #4fc3f7; font-weight: bold;');
+        console.log('%c[MoonPop] v57 loaded — ring dot fix, seen label, sound boost, transit ETA', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -8669,20 +8674,27 @@
         }
         
         // Map a delivery time (absolute Date) to ring degrees.
-        // Returns null only if the time is before the ring window or > 24h past ringStart.
-        // Delivery times past ringEnd but within 24h are clamped near moonrise (269°).
+        // Returns null only if the time is before the ring or way past it (>6h past ringEnd).
+        // Times past ringEnd but close are clamped near moonrise (269°).
         function deliveryTimeToRingDegrees(date) {
             if (!date) return null;
+
+            // Guard: if ring boundaries aren't initialized yet, show dot at bottom as placeholder
+            if (!moonData._ringStart || !moonData._ringMid || !moonData._ringEnd) {
+                console.log('Dots: ring not initialized, placing dot at 180°');
+                return 180;
+            }
+
             const t = date.getTime();
-            const startT = moonData._ringStart ? moonData._ringStart.getTime() : 0;
-            const midT   = moonData._ringMid   ? moonData._ringMid.getTime()   : 0;
-            const endT   = moonData._ringEnd   ? moonData._ringEnd.getTime()   : 0;
+            const startT = moonData._ringStart.getTime();
+            const midT   = moonData._ringMid.getTime();
+            const endT   = moonData._ringEnd.getTime();
 
             // Before the ring starts → skip
             if (t < startT) return null;
 
-            // More than 24h past ring start → skip (guaranteed released)
-            if (t > startT + 24 * 3600000) return null;
+            // Way past ring end (>6h buffer) → skip (guaranteed released)
+            if (t > endT + 6 * 3600000) return null;
 
             // Upper half: ringStart (moonrise) → ringMid (moonset)
             const upDuration = midT - startT;
@@ -8698,10 +8710,8 @@
                 return 90 + frac * 180;
             }
 
-            // Past ringEnd but within 24h → clamp to just before moonrise (end of lower half)
-            if (t > endT) {
-                return 269;
-            }
+            // Past ringEnd but within buffer → clamp near moonrise (end of lower half)
+            if (t > endT) return 269;
 
             // Fallback: place at bottom of ring
             return 180;
@@ -10879,6 +10889,12 @@
         document.addEventListener('DOMContentLoaded', async () => {
             _domReady = true;
 
+            // Warm up AudioContext on first user interaction (browser autoplay policy)
+            document.addEventListener('click', function _warmAudio() {
+                try { const ctx = getAudioCtx(); if (ctx.state === 'suspended') ctx.resume(); } catch(e) {}
+                document.removeEventListener('click', _warmAudio);
+            }, { once: true });
+
             // Generate twinkling stars with color variety
             (function() {
                 const container = document.getElementById('starfieldTwinkle');
@@ -11940,7 +11956,9 @@
                         msgIndex,
                         msgDbId: msg.dbId,
                         isMessage: true,
-                        status: msg.status
+                        status: msg.status,
+                        releaseAt: msg.releaseAt,
+                        location: msg.location
                     });
                 }
                 if (msg.status === 'In Transit' && !msg.messageText && !msg.lunarNote && !msg.photoUrl) {
@@ -11950,6 +11968,7 @@
                         createdAt: msg.createdAt,
                         sent: true,
                         location: msg.location,
+                        releaseAt: msg.releaseAt,
                         msgIndex,
                         msgDbId: msg.dbId,
                         isMessage: true
@@ -11987,17 +12006,51 @@
                 });
             }
 
+            // Find the LAST sent message that was read by the other person
+            let lastReadSentIndex = -1;
+            if (conv.otherReadAt) {
+                const otherRead = new Date(conv.otherReadAt);
+                for (let i = timeline.length - 1; i >= 0; i--) {
+                    if (timeline[i].sent && timeline[i].isMessage && timeline[i].createdAt
+                        && new Date(timeline[i].createdAt) <= otherRead) {
+                        lastReadSentIndex = i;
+                        break;
+                    }
+                }
+            }
+
             // Render timeline
             let html = '';
             let lastDate = '';
+            let transitBannerShown = false;
 
-            timeline.forEach(item => {
+            timeline.forEach((item, itemIndex) => {
                 // Date separator
                 const itemDate = new Date(item.createdAt);
                 const dateStr = itemDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 if (dateStr !== lastDate && item.createdAt) {
                     html += `<div style="text-align:center;padding:12px 0 8px;"><span class="chat-date-sep" style="font-size:11px;color:rgba(255,255,255,0.35);background:rgba(18,35,58,0.7);padding:4px 12px;border-radius:12px;">${dateStr}</span></div>`;
                     lastDate = dateStr;
+                }
+
+                // Transit banner: show once, above the first in-transit sent message
+                if (!transitBannerShown && item.sent && (item.status === 'In Transit' || item.type === 'transit')) {
+                    transitBannerShown = true;
+                    let bannerText = 'Messages below are on their way';
+                    if (item.releaseAt) {
+                        const rd = new Date(item.releaseAt);
+                        const ts = rd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        bannerText = `Messages below will arrive at moonrise (${ts})`;
+                    }
+                    html += `
+                        <div style="display:flex;align-items:center;gap:8px;padding:12px 0;margin:8px 0;">
+                            <div style="flex:1;height:1px;background:rgba(79,195,247,0.15);"></div>
+                            <span style="font-size:11px;color:rgba(79,195,247,0.6);white-space:nowrap;font-style:italic;">
+                                🌙 ${bannerText}
+                            </span>
+                            <div style="flex:1;height:1px;background:rgba(79,195,247,0.15);"></div>
+                        </div>
+                    `;
                 }
 
                 // Build actions row (reactions + reply) for any message with a dbId
@@ -12009,6 +12062,9 @@
                 if (item.type === 'lunar-note') {
                     const lunarReceipt = item.sent ? (() => {
                         const st = getReadReceiptStatus(item.createdAt, conv);
+                        if (itemIndex === lastReadSentIndex && st === 'read') {
+                            return `<span class="read-receipt read seen-label">Seen</span>`;
+                        }
                         return `<span class="read-receipt ${st}">✓✓</span>`;
                     })() : '';
                     const lunarPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
@@ -12027,6 +12083,9 @@
                 } else if (item.type === 'text') {
                     const textReceipt = item.sent ? (() => {
                         const st = getReadReceiptStatus(item.createdAt, conv);
+                        if (itemIndex === lastReadSentIndex && st === 'read') {
+                            return `<span class="read-receipt read seen-label">Seen</span>`;
+                        }
                         return `<span class="read-receipt ${st}">✓✓</span>`;
                     })() : '';
                     const textPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
@@ -12042,17 +12101,27 @@
                         </div>
                     `;
                     if (item.status === 'In Transit') {
+                        let etaStr = '';
+                        if (item.releaseAt) {
+                            const rd = new Date(item.releaseAt);
+                            etaStr = ' (' + rd.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) + ')';
+                        }
                         html += `
                             <div style="text-align:center;padding:8px;color:rgba(79,195,247,0.5);font-size:11px;font-style:italic;">
-                                Traveling toward moonrise...
+                                Traveling toward ${item.location ? item.location + "'s " : ''}moonrise${etaStr}...
                             </div>
                         `;
                     }
                 } else if (item.type === 'transit') {
+                    let transitEta = '';
+                    if (item.releaseAt) {
+                        const rd = new Date(item.releaseAt);
+                        transitEta = ' (' + rd.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) + ')';
+                    }
                     html += `
                         <div style="text-align:center;padding:20px;color:rgba(79,195,247,0.5);font-size:13px;font-style:italic;">
                             Message traveling toward ${item.location}<br>
-                            It will arrive at moonrise
+                            It will arrive at moonrise${transitEta}
                         </div>
                     `;
                 } else if (item.type === 'arriving') {
@@ -14519,9 +14588,9 @@
                 osc2.frequency.setValueAtTime(659.25, now + 0.15); // E5
 
                 gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.15, now + 0.05);
-                gain.gain.linearRampToValueAtTime(0.12, now + 0.15);
-                gain.gain.linearRampToValueAtTime(0.15, now + 0.2);
+                gain.gain.linearRampToValueAtTime(0.25, now + 0.05);
+                gain.gain.linearRampToValueAtTime(0.20, now + 0.15);
+                gain.gain.linearRampToValueAtTime(0.25, now + 0.2);
                 gain.gain.linearRampToValueAtTime(0, now + 0.6);
 
                 osc1.connect(gain);
