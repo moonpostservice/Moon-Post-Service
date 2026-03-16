@@ -7726,7 +7726,7 @@
     </div>
 
     <script>
-        console.log('%c[MoonPop] v55 loaded — orbital ring fix', 'color: #4fc3f7; font-weight: bold;');
+        console.log('%c[MoonPop] v56 loaded — ring dot clamping + transit badge fix', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -8669,14 +8669,20 @@
         }
         
         // Map a delivery time (absolute Date) to ring degrees.
-        // Returns null if the time falls outside the current 24h ring window
-        // (signals the caller to skip this dot).
+        // Returns null only if the time is before the ring window or > 24h past ringStart.
+        // Delivery times past ringEnd but within 24h are clamped near moonrise (269°).
         function deliveryTimeToRingDegrees(date) {
             if (!date) return null;
             const t = date.getTime();
             const startT = moonData._ringStart ? moonData._ringStart.getTime() : 0;
             const midT   = moonData._ringMid   ? moonData._ringMid.getTime()   : 0;
             const endT   = moonData._ringEnd   ? moonData._ringEnd.getTime()   : 0;
+
+            // Before the ring starts → skip
+            if (t < startT) return null;
+
+            // More than 24h past ring start → skip (guaranteed released)
+            if (t > startT + 24 * 3600000) return null;
 
             // Upper half: ringStart (moonrise) → ringMid (moonset)
             const upDuration = midT - startT;
@@ -8692,8 +8698,13 @@
                 return 90 + frac * 180;
             }
 
-            // Outside the 24h ring window → skip this dot
-            return null;
+            // Past ringEnd but within 24h → clamp to just before moonrise (end of lower half)
+            if (t > endT) {
+                return 269;
+            }
+
+            // Fallback: place at bottom of ring
+            return 180;
         }
         
         // Position a marker element at a given degree and set its time
