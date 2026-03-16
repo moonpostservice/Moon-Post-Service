@@ -3628,7 +3628,8 @@
             touch-action: manipulation;
         }
         .message-bubble:hover .msg-react-trigger,
-        .bubble-lunar-note:hover .msg-react-trigger {
+        .bubble-lunar-note:hover .msg-react-trigger,
+        .chat-transit-msg:hover .msg-react-trigger {
             opacity: 1;
         }
         .msg-react-trigger:hover,
@@ -5814,6 +5815,7 @@
         .header-brand .logo {
             height: 88px;
             width: auto;
+            filter: none !important;
         }
         .header.scrolled .header-brand .logo {
             height: 60px;
@@ -6779,7 +6781,7 @@
     <!-- Header -->
     <header class="header">
         <div class="header-brand">
-            <img class="logo" src="assests/logo2.svg" alt="MoonPop">
+            <img class="logo" src="assests/logo2.svg?v=2" alt="MoonPop">
             <span class="header-tagline">The World's First Moon Postal Service</span>
         </div>
         <!-- Mini moon phase (visible when scrolled) -->
@@ -11889,7 +11891,7 @@
                     });
                 }
 
-                // Add replies for this message
+                // Add replies for this message (include msgDbId so reactions work on replies too)
                 if (msg.replies) {
                     msg.replies.forEach(r => {
                         timeline.push({
@@ -11899,7 +11901,9 @@
                             time: r.time,
                             createdAt: r.createdAt || msg.createdAt,
                             sent: r.sent,
-                            msgIndex
+                            msgIndex,
+                            msgDbId: msg.dbId,
+                            isMessage: true
                         });
                     });
                 }
@@ -11976,26 +11980,36 @@
                         const timeStr = rd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                         arrivalNote = `A moon message is traveling toward you. It will arrive at moonrise (${timeStr}).`;
                     }
+                    const arrivingReactions = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
                     html += `
                         <div class="chat-transit-msg" style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(18,35,58,0.5);border:1px dashed rgba(79,195,247,0.25);margin-bottom:8px;">
                             <div style="font-size:13px;color:rgba(79,195,247,0.7);font-style:italic;">${arrivalNote}</div>
                             <div class="message-bubble-time">${item.time}</div>
+                            ${arrivingReactions}
                         </div>
                     `;
                 } else if (item.type === 'lunar-reply') {
+                    const lunarReplyReactions = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
+                    const lunarReplyPreview = ((item.text || '').replace('🌙 ', '')).substring(0, 40);
                     html += `
                         <div class="bubble-lunar-note" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
                             <div class="bubble-lunar-label">${iconSvg('lunar-note', 'sm')} Lunar Note</div>
                             <div class="bubble-lunar-text">${(item.text || '').replace('🌙 ', '')}</div>
                             <div class="message-bubble-time" style="text-align:right;">${item.time}</div>
+                            ${lunarReplyReactions}
+                            <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('🌙 ${lunarReplyPreview}')">↩ Reply</button>
                         </div>
                     `;
                 } else if (item.type === 'reply') {
+                    const replyReactions = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
+                    const replyPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
                     html += `
                         <div class="message-bubble ${item.sent ? 'sent' : ''}">
                             ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
                             ${item.text ? `<p>${item.text}</p>` : ''}
                             <div class="message-bubble-time">${item.time}</div>
+                            ${replyReactions}
+                            <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('${replyPreview.replace(/'/g, "\\'")}')">↩ Reply</button>
                         </div>
                     `;
                 }
