@@ -3607,6 +3607,14 @@
         .bubble-lunar-note {
             position: relative;
         }
+        /* Reactions + reply action row */
+        .msg-actions-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
         .msg-react-trigger {
             position: relative;
             display: inline-flex;
@@ -3615,14 +3623,13 @@
             width: 30px;
             height: 30px;
             border-radius: 50%;
-            border: 1px solid rgba(79, 195, 247, 0.2);
+            border: 1px solid rgba(79, 195, 247, 0.25);
             background: rgba(8, 18, 35, 0.85);
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.7);
             font-size: 15px;
             cursor: pointer;
-            opacity: 0.5;
+            opacity: 0.75;
             transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease;
-            margin-top: 6px;
             box-shadow: 0 1px 6px rgba(0,0,0,0.25);
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
@@ -3648,10 +3655,10 @@
             50% { transform: scale(1.3); }
             100% { transform: scale(1); }
         }
-        /* On mobile/touch, always show trigger */
+        /* On mobile/touch, always show trigger clearly */
         @media (hover: none) {
             .msg-react-trigger {
-                opacity: 0.7;
+                opacity: 0.85;
             }
         }
         /* Reaction picker — uses position:fixed to escape scroll container clipping */
@@ -3867,9 +3874,9 @@
         }
 
         .thread-lunar-intro {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 10px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.55);
+            margin-bottom: 12px;
             font-style: italic;
         }
 
@@ -3878,21 +3885,21 @@
         }
 
         .thread-lunar-label {
-            font-size: 11px;
+            font-size: 15px;
             font-weight: 600;
             color: #4fc3f7;
             text-transform: lowercase;
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .thread-lunar-input {
             width: 100%;
-            padding: 10px 14px;
+            padding: 12px 14px;
             border: 1.5px solid rgba(79, 195, 247, 0.2);
             border-radius: 10px;
             font-family: 'Satoshi', sans-serif;
-            font-size: 13px;
+            font-size: 16px;
             background: rgba(5, 12, 28, 0.8);
             color: rgba(255, 255, 255, 0.9);
             box-sizing: border-box;
@@ -3900,7 +3907,8 @@
         }
 
         .thread-lunar-input::placeholder {
-            color: rgba(255, 255, 255, 0.25);
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
         }
 
         .thread-lunar-input:focus {
@@ -3911,9 +3919,9 @@
         .thread-lunar-result {
             background: rgba(5, 14, 30, 0.8);
             border-radius: 10px;
-            padding: 12px;
+            padding: 14px;
             margin: 10px 0;
-            font-size: 13px;
+            font-size: 15px;
             line-height: 1.6;
             color: rgba(255, 255, 255, 0.85);
             white-space: pre-line;
@@ -3921,10 +3929,18 @@
         }
 
         .thread-lunar-result .lunar-closing {
-            font-size: 12px;
+            font-size: 14px;
             color: rgba(79, 195, 247, 0.6);
             margin-top: 6px;
             font-style: italic;
+        }
+
+        .thread-lunar-next-btn {
+            font-size: 14px !important;
+        }
+
+        .thread-lunar-step .lunar-step-back {
+            font-size: 13px !important;
         }
 
         .thread-lunar-send {
@@ -5815,7 +5831,7 @@
         .header-brand .logo {
             height: 88px;
             width: auto;
-            filter: none !important;
+            display: block;
         }
         .header.scrolled .header-brand .logo {
             height: 60px;
@@ -6781,7 +6797,7 @@
     <!-- Header -->
     <header class="header">
         <div class="header-brand">
-            <img class="logo" src="assests/logo2.svg?v=2" alt="MoonPop">
+            <img class="logo" src="assests/logo2.png" alt="MoonPop">
             <span class="header-tagline">The World's First Moon Postal Service</span>
         </div>
         <!-- Mini moon phase (visible when scrolled) -->
@@ -7679,7 +7695,7 @@
                             <label class="thread-lunar-label" id="threadLabel2">a different emotion</label>
                             <input type="text" class="thread-lunar-input" id="threadLunarInput2" placeholder="something else" oninput="updateThreadLunarNextBtn(2)">
                             <div style="display:flex;gap:8px;margin-top:6px;">
-                                <button class="lunar-step-back" onclick="goBackThreadStep(1)" style="font-size:12px;background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;">← Back</button>
+                                <button class="lunar-step-back" onclick="goBackThreadStep(1)" style="background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;font-size:13px;">← Back</button>
                                 <button class="lunar-step-next thread-lunar-next-btn" id="threadNext2" onclick="advanceThreadStep(3)" disabled>Next →</button>
                             </div>
                         </div>
@@ -7687,7 +7703,7 @@
                             <label class="thread-lunar-label" id="threadLabel3">something you pretend not to care about</label>
                             <input type="text" class="thread-lunar-input" id="threadLunarInput3" placeholder="you know" oninput="updateThreadLunarNextBtn(3)">
                             <div style="display:flex;gap:8px;margin-top:6px;">
-                                <button class="lunar-step-back" onclick="goBackThreadStep(2)" style="font-size:12px;background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;">← Back</button>
+                                <button class="lunar-step-back" onclick="goBackThreadStep(2)" style="background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;font-size:13px;">← Back</button>
                                 <button class="lunar-step-next thread-lunar-next-btn" id="threadNext3" onclick="generateThreadLunarResult()" disabled>Reveal 🌙</button>
                             </div>
                         </div>
@@ -7710,6 +7726,7 @@
     </div>
 
     <script>
+        console.log('%c[MoonPop] v55 loaded — orbital ring fix', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -8551,6 +8568,23 @@
             moonData._cycleRise = cycleRise;
             moonData._cycleSet = cycleSet;
             moonData._nextRise = visible ? nextRise : cycleRise;
+
+            // ── Normalized ring boundaries (always monotonically increasing) ──
+            // _ringStart = moonrise that BEGINS this 24h cycle (past or now)
+            // _ringMid   = moonset that DIVIDES upper / lower halves
+            // _ringEnd   = next moonrise that CLOSES the cycle (future or now)
+            if (visible) {
+                moonData._ringStart = cycleRise;
+                moonData._ringMid   = cycleSet;
+                moonData._ringEnd   = nextRise || new Date(cycleRise.getTime() + 24 * 3600000);
+            } else {
+                moonData._ringStart = moonData._prevRise
+                    || (cycleSet ? new Date(cycleSet.getTime() - 12 * 3600000) : new Date(now.getTime() - 12 * 3600000));
+                moonData._ringMid   = cycleSet || new Date(now.getTime());
+                moonData._ringEnd   = cycleRise
+                    || (cycleSet ? new Date(cycleSet.getTime() + 12 * 3600000) : new Date(now.getTime() + 12 * 3600000));
+            }
+            console.log('[ring] boundaries:', moonData._ringStart, '→', moonData._ringMid, '→', moonData._ringEnd);
             
             // For display: show today's rise/set times
             // Find the rise and set most relevant to "today"
@@ -8604,94 +8638,62 @@
         // period it falls in and how far through that period it is.
         // =============================================
         
-        // Map an absolute Date to ring degrees using the split model.
-        // Uses moonData._cycleRise, _cycleSet, _nextRise, _prevRise
+        // Map an absolute Date to ring degrees using normalized boundaries.
+        // Upper half (270° → 0° → 90°) = moonrise → moonset  (moon-up)
+        // Lower half (90° → 180° → 270°) = moonset → next moonrise (moon-down)
         function timeToRingDegrees(date) {
-            if (!date) return 180;
+            if (!date) return 270; // default to moonrise position
             const t = date.getTime();
-            
-            if (moonData.isVisible) {
-                // Moon is UP right now
-                const riseT = moonData._cycleRise ? moonData._cycleRise.getTime() : t;
-                const setT = moonData._cycleSet ? moonData._cycleSet.getTime() : t + 1;
-                const upDuration = setT - riseT;
-                
-                if (upDuration > 0 && t >= riseT && t <= setT) {
-                    // We're in the up period → upper half (270° → 360°/0° → 90°)
-                    const frac = (t - riseT) / upDuration;
-                    return (270 + frac * 180) % 360;
-                }
+            const startT = moonData._ringStart ? moonData._ringStart.getTime() : t;
+            const midT   = moonData._ringMid   ? moonData._ringMid.getTime()   : t;
+            const endT   = moonData._ringEnd   ? moonData._ringEnd.getTime()   : t;
+
+            // Upper half: ringStart (moonrise) → ringMid (moonset)
+            const upDuration = midT - startT;
+            if (upDuration > 0 && t >= startT && t <= midT) {
+                const frac = (t - startT) / upDuration;
+                return (270 + frac * 180) % 360;
             }
-            
-            // Moon is DOWN, or time is outside current up period
-            // Map onto lower half (90° → 180° → 270°)
-            
-            // Find the relevant down period boundaries
-            let downStart, downEnd;
-            
-            if (moonData.isVisible) {
-                // Time is outside the up window (shouldn't normally happen for "now")
-                downStart = moonData._cycleSet ? moonData._cycleSet.getTime() : t;
-                downEnd = moonData._nextRise ? moonData._nextRise.getTime() : downStart + 1;
-            } else {
-                // Moon is down: down period = last set → next rise
-                const lastSet = moonData._cycleSet ? moonData._cycleSet.getTime() : t;
-                const nextRise = moonData._nextRise ? moonData._nextRise.getTime() : lastSet + 1;
-                downStart = lastSet;
-                downEnd = nextRise;
-            }
-            
-            const downDuration = downEnd - downStart;
-            if (downDuration > 0 && t >= downStart && t <= downEnd) {
-                const frac = (t - downStart) / downDuration;
+
+            // Lower half: ringMid (moonset) → ringEnd (next moonrise)
+            const downDuration = endT - midT;
+            if (downDuration > 0 && t >= midT && t <= endT) {
+                const frac = (t - midT) / downDuration;
                 return 90 + frac * 180;
             }
-            
-            // Fallback: bottom
-            return 180;
+
+            // Before ringStart → clamp to moonrise (270°)
+            if (t < startT) return 270;
+            // After ringEnd → clamp to moonrise (270°)
+            return 270;
         }
         
-        // Map a recipient's delivery time (absolute Date) to ring degrees
+        // Map a delivery time (absolute Date) to ring degrees.
+        // Returns null if the time falls outside the current 24h ring window
+        // (signals the caller to skip this dot).
         function deliveryTimeToRingDegrees(date) {
-            if (!date) return 180;
+            if (!date) return null;
             const t = date.getTime();
-            
-            // We need to figure out if this delivery time falls within
-            // the user's current up or down period
-            const riseT = moonData._cycleRise ? moonData._cycleRise.getTime() : 0;
-            const setT = moonData._cycleSet ? moonData._cycleSet.getTime() : 0;
-            const nextRiseT = moonData._nextRise ? moonData._nextRise.getTime() : 0;
-            
-            // Check if it falls in the up period
-            if (moonData.isVisible) {
-                const upStart = riseT;
-                const upEnd = setT;
-                if (upEnd > upStart && t >= upStart && t <= upEnd) {
-                    const frac = (t - upStart) / (upEnd - upStart);
-                    return (270 + frac * 180) % 360;
-                }
-                // Check down period (set → next rise)
-                if (nextRiseT > setT && t >= setT && t <= nextRiseT) {
-                    const frac = (t - setT) / (nextRiseT - setT);
-                    return 90 + frac * 180;
-                }
-            } else {
-                // Moon is down
-                const prevRiseT = moonData._prevRise ? moonData._prevRise.getTime() : 0;
-                // Up period was prevRise → lastSet
-                if (setT > prevRiseT && t >= prevRiseT && t <= setT) {
-                    const frac = (t - prevRiseT) / (setT - prevRiseT);
-                    return (270 + frac * 180) % 360;
-                }
-                // Down period is lastSet → nextRise
-                if (nextRiseT > setT && t >= setT && t <= nextRiseT) {
-                    const frac = (t - setT) / (nextRiseT - setT);
-                    return 90 + frac * 180;
-                }
+            const startT = moonData._ringStart ? moonData._ringStart.getTime() : 0;
+            const midT   = moonData._ringMid   ? moonData._ringMid.getTime()   : 0;
+            const endT   = moonData._ringEnd   ? moonData._ringEnd.getTime()   : 0;
+
+            // Upper half: ringStart (moonrise) → ringMid (moonset)
+            const upDuration = midT - startT;
+            if (upDuration > 0 && t >= startT && t <= midT) {
+                const frac = (t - startT) / upDuration;
+                return (270 + frac * 180) % 360;
             }
-            
-            // If outside known window, place proportionally in lower half
-            return 180;
+
+            // Lower half: ringMid (moonset) → ringEnd (next moonrise)
+            const downDuration = endT - midT;
+            if (downDuration > 0 && t >= midT && t <= endT) {
+                const frac = (t - midT) / downDuration;
+                return 90 + frac * 180;
+            }
+
+            // Outside the 24h ring window → skip this dot
+            return null;
         }
         
         // Position a marker element at a given degree and set its time
@@ -8786,14 +8788,27 @@
             const container = document.getElementById('messageDots');
             if (!container) return;
             container.innerHTML = '';
-            
+
             const now = new Date();
-            
+            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 3600000);
+
             // Get messages in transit (sent but not yet delivered)
             const inTransitMessages = messages.filter(m => m.type === 'sent' && m.status === 'In Transit');
             if (inTransitMessages.length > 0) console.log('Dots: in-transit messages:', inTransitMessages.length);
-            
+
             inTransitMessages.forEach((msg) => {
+                // Skip messages that are definitely released:
+                // 1. releaseAt has passed → already delivered
+                if (msg.releaseAt && new Date(msg.releaseAt) <= now) {
+                    console.log('Dots: skipping released message to', msg.location, '(releaseAt passed)');
+                    return;
+                }
+                // 2. Older than 24h → guaranteed released by moon within one full cycle
+                if (msg.createdAt && new Date(msg.createdAt) < twentyFourHoursAgo) {
+                    console.log('Dots: skipping old message to', msg.location, '(>24h)');
+                    return;
+                }
+
                 const info = getRecipientMoonrise(msg.location);
                 if (!info) {
                     console.log('Dots: no moonrise info for "' + msg.location + '" - city not found in list');
@@ -8801,8 +8816,14 @@
                 }
 
                 const deg = deliveryTimeToRingDegrees(info.date);
+                // Null-degree guard: skip dots outside the 24h ring window
+                if (deg === null) {
+                    console.log('Dots: delivery for', msg.location, 'outside ring window — skipping');
+                    return;
+                }
+
                 const isReleasing = info.hoursUntil < 2;
-                console.log('Dots: placing dot for', msg.location, 'at', deg, 'degrees, releasing:', isReleasing);
+                console.log('Dots: placing dot for', msg.location, 'at', deg.toFixed(1), '°, releasing:', isReleasing);
 
                 const orbit = document.createElement('div');
                 orbit.className = 'dot-orbit';
@@ -8819,20 +8840,35 @@
                 container.appendChild(orbit);
             });
 
-            // Incoming messages in transit (received, not yet revealed at moonrise)
-            const incomingMessages = messages.filter(m => m.type === 'received' && m.status === 'Arriving' && m.releaseAt);
+            // Incoming messages genuinely in transit (not just "moon is down" — use stillInTransit flag)
+            const incomingMessages = messages.filter(m => m.type === 'received' && m.stillInTransit && m.releaseAt);
             if (incomingMessages.length > 0) console.log('Dots: incoming messages:', incomingMessages.length);
 
             incomingMessages.forEach((msg) => {
-                // Position at the delivery time (our moonrise) on the ring
+                // Skip if releaseAt has passed (already revealed)
                 const releaseDate = new Date(msg.releaseAt);
+                if (releaseDate <= now) {
+                    console.log('Dots: skipping revealed incoming from', msg.sender, '(releaseAt passed)');
+                    return;
+                }
+                // 24-hour age filter
+                if (msg.createdAt && new Date(msg.createdAt) < twentyFourHoursAgo) {
+                    console.log('Dots: skipping old incoming from', msg.sender, '(>24h)');
+                    return;
+                }
                 const deg = deliveryTimeToRingDegrees(releaseDate);
+                // Null-degree guard
+                if (deg === null) {
+                    console.log('Dots: incoming from', msg.sender, 'outside ring window — skipping');
+                    return;
+                }
+
                 const hoursUntil = Math.max(0, (releaseDate - now) / 3600000);
                 const isNear = hoursUntil < 2;
 
                 const riseTimeStr = moonData.moonrise || '--:--';
 
-                console.log('Dots: incoming dot from', msg.sender, 'at', deg, 'degrees, hours until:', hoursUntil.toFixed(1));
+                console.log('Dots: incoming dot from', msg.sender, 'at', deg.toFixed(1), '°, hours until:', hoursUntil.toFixed(1));
 
                 const orbit = document.createElement('div');
                 orbit.className = 'dot-orbit';
@@ -8851,7 +8887,7 @@
 
             // Update stats display
             updateMessageStats();
-            
+
             attachDotTooltips();
         }
         
@@ -9402,7 +9438,7 @@
                 // Preview = the most recent message in the conversation (from either party)
                 // "You:" prefix for sent messages
                 const youPrefix = latest.type === 'sent' ? 'You: ' : '';
-                if (latest.status === 'Arriving') {
+                if (latest.stillInTransit && latest.type === 'received') {
                     conv.latestPreview = '🌙 Message on its way...';
                 } else if (latest.status === 'In Transit') {
                     conv.latestPreview = '🔴 Message orbiting...';
@@ -9435,14 +9471,25 @@
                     if (m.type !== 'sent' || m.status !== 'In Transit') return false;
                     // If release_at has passed, this message should have been released
                     if (m.releaseAt && new Date(m.releaseAt) <= now) return false;
+                    // 24h hard cutoff: messages are guaranteed released within one full cycle
+                    if (m.createdAt && new Date(m.createdAt) < new Date(now.getTime() - 24 * 3600000)) return false;
                     return true;
                 });
                 conv.hasInTransit = !!transitMsg;
                 conv.transitCreatedAt = transitMsg?.createdAt || null;
                 conv.transitReleaseAt = transitMsg?.releaseAt || null;
 
-                // Also detect incoming messages in transit (received, not yet revealed)
-                const incomingTransitMsg = conv.messages.find(m => m.type === 'received' && m.status === 'Arriving');
+                // Also detect incoming messages genuinely in transit (not just "moon is down")
+                const incomingTransitMsg = conv.messages.find(m => {
+                    if (m.type !== 'received') return false;
+                    // Use the stillInTransit flag (true only if release_at is future AND < 24h old)
+                    if (m.stillInTransit) return true;
+                    // Fallback: check status + time guards
+                    if (m.status !== 'Arriving') return false;
+                    if (m.releaseAt && new Date(m.releaseAt) <= now) return false;
+                    if (m.createdAt && new Date(m.createdAt) < new Date(now.getTime() - 24 * 3600000)) return false;
+                    return true;
+                });
                 conv.hasIncomingTransit = !!incomingTransitMsg;
                 conv.incomingTransitCreatedAt = incomingTransitMsg?.createdAt || null;
                 conv.incomingTransitReleaseAt = incomingTransitMsg?.releaseAt || null;
@@ -9792,7 +9839,10 @@
                     // Rule: Moon MUST be in your sky AND message must be released.
                     // If release_at is in the future, message is still in transit — hide content.
                     const stillInTransit = m.release_at && new Date(m.release_at) > new Date();
-                    const contentVisible = !!moonData.isVisible && !stillInTransit;
+                    // 24h hard cutoff: any message older than 24h is guaranteed released
+                    const tooOld = m.created_at && new Date(m.created_at) < new Date(Date.now() - 24 * 3600000);
+                    const actuallyInTransit = stillInTransit && !tooOld;
+                    const contentVisible = !!moonData.isVisible && !actuallyInTransit;
 
                     allMessages.push({
                         dbId: m.id,
@@ -9803,6 +9853,7 @@
                         recipientEmail: m.recipient_email,
                         preview: contentVisible ? (m.message_text || '') : '',
                         status: contentVisible ? '' : 'Arriving',
+                        stillInTransit: actuallyInTransit,
                         type: 'received',
                         location: senderCity,
                         time: timeAgo(m.created_at),
@@ -11551,7 +11602,9 @@
 
                     // Sent messages always visible; received: moon MUST be in sky AND message released
                     const stillInTransit = !isSent && m.release_at && new Date(m.release_at) > new Date();
-                    const contentVisible = isSent || (!!moonData.isVisible && !stillInTransit);
+                    const tooOld = m.created_at && new Date(m.created_at) < new Date(Date.now() - 24 * 3600000);
+                    const actuallyInTransit = stillInTransit && !tooOld;
+                    const contentVisible = isSent || (!!moonData.isVisible && !actuallyInTransit);
 
                     // For sender name: use profile, then recipient_name ONLY for sent messages
                     // (for received messages, recipient_name = current user, NOT the sender)
@@ -11568,6 +11621,7 @@
                         recipientEmail: m.recipient_email,
                         preview: contentVisible ? (m.message_text || '') : '',
                         status: isSent ? (m.status === 'in_transit' ? 'In Transit' : 'Released') : (contentVisible ? '' : 'Arriving'),
+                        stillInTransit: !isSent ? actuallyInTransit : (m.status === 'in_transit'),
                         type: isSent ? 'sent' : 'received',
                         location: otherProfile?.city || m.recipient_city || 'Unknown',
                         time: timeAgo(m.created_at),
@@ -11912,6 +11966,16 @@
             // Sort timeline chronologically
             timeline.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
+            // Debug: count messages with/without dbId
+            const withDbId = timeline.filter(t => t.msgDbId).length;
+            const withoutDbId = timeline.filter(t => t.isMessage && !t.msgDbId).length;
+            console.log(`[Reactions] Timeline: ${timeline.length} items, ${withDbId} with dbId, ${withoutDbId} messages WITHOUT dbId`);
+            if (withoutDbId > 0) {
+                timeline.filter(t => t.isMessage && !t.msgDbId).forEach(t => {
+                    console.warn('[Reactions] Message without dbId:', t.type, t.text?.substring(0, 30));
+                });
+            }
+
             // Render timeline
             let html = '';
             let lastDate = '';
@@ -11925,12 +11989,17 @@
                     lastDate = dateStr;
                 }
 
+                // Build actions row (reactions + reply) for any message with a dbId
+                const actionsHtml = (dbId) => {
+                    if (!dbId) return '';
+                    return renderReactionsBar(dbId);
+                };
+
                 if (item.type === 'lunar-note') {
                     const lunarReceipt = item.sent ? (() => {
                         const st = getReadReceiptStatus(item.createdAt, conv);
                         return `<span class="read-receipt ${st}">✓✓</span>`;
                     })() : '';
-                    const lunarReactionsHtml = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
                     const lunarPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
                     html += `
                         <div class="bubble-lunar-note ${item.sent ? 'sent-lunar' : ''}" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
@@ -11938,8 +12007,10 @@
                             <div class="bubble-lunar-text">${item.text}</div>
                             ${item.closing ? `<div class="bubble-lunar-closing">${item.closing}</div>` : ''}
                             <div class="message-bubble-time">${item.time || 'Recently'} ${lunarReceipt}</div>
-                            ${lunarReactionsHtml}
-                            <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('🌙 ${lunarPreview}')">↩ Reply</button>
+                            <div class="msg-actions-row">
+                                ${actionsHtml(item.msgDbId)}
+                                <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('🌙 ${lunarPreview}')">↩ Reply</button>
+                            </div>
                         </div>
                     `;
                 } else if (item.type === 'text') {
@@ -11947,15 +12018,16 @@
                         const st = getReadReceiptStatus(item.createdAt, conv);
                         return `<span class="read-receipt ${st}">✓✓</span>`;
                     })() : '';
-                    const reactionsHtml = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
                     const textPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
                     html += `
                         <div class="message-bubble ${item.sent ? 'sent' : ''}">
                             ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
                             ${item.text ? `<p>${item.text}</p>` : ''}
                             <div class="message-bubble-time">${item.time || 'Recently'} ${textReceipt}</div>
-                            ${reactionsHtml}
-                            <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('${textPreview.replace(/'/g, "\\'")}')">↩ Reply</button>
+                            <div class="msg-actions-row">
+                                ${actionsHtml(item.msgDbId)}
+                                <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('${textPreview.replace(/'/g, "\\'")}')">↩ Reply</button>
+                            </div>
                         </div>
                     `;
                     if (item.status === 'In Transit') {
@@ -11980,36 +12052,39 @@
                         const timeStr = rd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                         arrivalNote = `A moon message is traveling toward you. It will arrive at moonrise (${timeStr}).`;
                     }
-                    const arrivingReactions = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
                     html += `
                         <div class="chat-transit-msg" style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(18,35,58,0.5);border:1px dashed rgba(79,195,247,0.25);margin-bottom:8px;">
                             <div style="font-size:13px;color:rgba(79,195,247,0.7);font-style:italic;">${arrivalNote}</div>
                             <div class="message-bubble-time">${item.time}</div>
-                            ${arrivingReactions}
+                            <div class="msg-actions-row">
+                                ${actionsHtml(item.msgDbId)}
+                            </div>
                         </div>
                     `;
                 } else if (item.type === 'lunar-reply') {
-                    const lunarReplyReactions = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
                     const lunarReplyPreview = ((item.text || '').replace('🌙 ', '')).substring(0, 40);
                     html += `
                         <div class="bubble-lunar-note" style="${item.sent ? 'margin-left:auto;' : ''}max-width:85%;">
                             <div class="bubble-lunar-label">${iconSvg('lunar-note', 'sm')} Lunar Note</div>
                             <div class="bubble-lunar-text">${(item.text || '').replace('🌙 ', '')}</div>
                             <div class="message-bubble-time" style="text-align:right;">${item.time}</div>
-                            ${lunarReplyReactions}
-                            <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('🌙 ${lunarReplyPreview}')">↩ Reply</button>
+                            <div class="msg-actions-row">
+                                ${actionsHtml(item.msgDbId)}
+                                <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('🌙 ${lunarReplyPreview}')">↩ Reply</button>
+                            </div>
                         </div>
                     `;
                 } else if (item.type === 'reply') {
-                    const replyReactions = (item.isMessage && item.msgDbId) ? renderReactionsBar(item.msgDbId) : '';
                     const replyPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
                     html += `
                         <div class="message-bubble ${item.sent ? 'sent' : ''}">
                             ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
                             ${item.text ? `<p>${item.text}</p>` : ''}
                             <div class="message-bubble-time">${item.time}</div>
-                            ${replyReactions}
-                            <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('${replyPreview.replace(/'/g, "\\'")}')">↩ Reply</button>
+                            <div class="msg-actions-row">
+                                ${actionsHtml(item.msgDbId)}
+                                <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('${replyPreview.replace(/'/g, "\\'")}')">↩ Reply</button>
+                            </div>
                         </div>
                     `;
                 }
@@ -12331,15 +12406,27 @@
         }
 
         function advanceThreadStep(toStep) {
-            document.getElementById('threadStep' + toStep).style.display = 'block';
-            document.getElementById('threadLunarInput' + toStep).focus();
+            // Show ONLY the target step (hide all others, like compose page does)
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('threadStep' + i).style.display = (i === toStep) ? 'block' : 'none';
+            }
             threadLunarStep = toStep;
+            setTimeout(() => {
+                const input = document.getElementById('threadLunarInput' + toStep);
+                if (input) input.focus();
+            }, 50);
         }
 
         function goBackThreadStep(toStep) {
-            document.getElementById('threadStep' + (toStep + 1)).style.display = 'none';
-            document.getElementById('threadLunarInput' + toStep).focus();
+            // Show ONLY the target step (hide all others)
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('threadStep' + i).style.display = (i === toStep) ? 'block' : 'none';
+            }
             threadLunarStep = toStep;
+            setTimeout(() => {
+                const input = document.getElementById('threadLunarInput' + toStep);
+                if (input) input.focus();
+            }, 50);
         }
 
         function generateThreadLunarResult() {
@@ -12352,6 +12439,11 @@
             const templateIdx = dayOfYear % lunarTemplates.length;
             const result = lunarTemplates[templateIdx](v1, v2, v3);
             threadLunarGenerated = result;
+
+            // Hide all steps and show result
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('threadStep' + i).style.display = 'none';
+            }
 
             const resultEl = document.getElementById('threadLunarResult');
             resultEl.innerHTML = result.lines.replace(/\n/g, '<br>') +
@@ -12632,10 +12724,30 @@
         }
 
         // Render reactions HTML for a message (returns static HTML with data attributes)
+        // ALWAYS returns a trigger button if msgDbId is provided, even if message not found
         function renderReactionsBar(msgDbId) {
-            if (!msgDbId) return '';
+            if (!msgDbId) {
+                console.warn('[Reactions] renderReactionsBar called with empty msgDbId');
+                return '';
+            }
+
+            // Trigger button — ALWAYS shown for any message with a dbId
+            const trigger = `
+                <div class="msg-react-trigger"
+                     data-action="open-reaction-picker"
+                     data-msg-dbid="${msgDbId}"
+                     title="React with moon phase"
+                     role="button"
+                     tabindex="0">🌙</div>
+            `;
+
+            // Look up message for existing reaction chips
             const msg = findMsgByDbId(msgDbId);
-            if (!msg) return '';
+            if (!msg) {
+                console.warn('[Reactions] Message not found for dbId:', msgDbId, '— trigger still shown');
+                return trigger;
+            }
+
             const reactions = msg.reactions || [];
 
             // Reaction chips (existing reactions)
@@ -12648,16 +12760,6 @@
                     <span class="reaction-count">${r.count}</span>
                 </span>
             `).join('');
-
-            // Trigger button (moon icon to open picker)
-            const trigger = `
-                <div class="msg-react-trigger"
-                     data-action="open-reaction-picker"
-                     data-msg-dbid="${msgDbId}"
-                     title="React with moon phase"
-                     role="button"
-                     tabindex="0">🌙</div>
-            `;
 
             const chipsBar = chips
                 ? `<div class="reactions-bar">${chips}</div>`
@@ -12727,8 +12829,18 @@
 
         // ---- Core reaction logic: add/remove reaction ----
         async function handleReaction(msgDbId, emoji) {
-            const msg = findMsgByDbId(msgDbId);
-            if (!msg) { console.error('[Reactions] No msg for dbId:', msgDbId); return; }
+            console.log('[Reactions] handleReaction called:', msgDbId, emoji);
+            let msg = findMsgByDbId(msgDbId);
+            // Fallback: search all conversations if not found
+            if (!msg) {
+                for (const conv of conversations) {
+                    if (conv.messages) {
+                        msg = conv.messages.find(m => m.dbId === msgDbId);
+                        if (msg) break;
+                    }
+                }
+            }
+            if (!msg) { console.error('[Reactions] No msg for dbId:', msgDbId, 'searched all conversations'); return; }
             if (!msg.reactions) msg.reactions = [];
 
             const existing = msg.reactions.find(r => r.emoji === emoji);
