@@ -3100,31 +3100,43 @@
         }
 
         /* Note type toggle bar */
+        /* Single pill toggle: Open Note ↔ Lunar Note */
         .note-toggle-bar {
             display: flex;
-            gap: 8px;
-            padding: 8px 0 4px;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 0 4px;
         }
-        .note-toggle {
-            padding: 6px 14px;
+        .note-mode-toggle {
+            display: flex;
+            align-items: center;
+            background: rgba(10, 22, 40, 0.6);
+            border: 1px solid rgba(79, 195, 247, 0.15);
             border-radius: 20px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+            padding: 2px;
             cursor: pointer;
-            border: 1px solid rgba(79, 195, 247, 0.2);
-            background: transparent;
-            color: rgba(255, 255, 255, 0.4);
-            transition: all 0.2s;
+            gap: 0;
             font-family: var(--font);
         }
-        .note-toggle:hover {
-            background: rgba(79, 195, 247, 0.06);
-            color: rgba(255, 255, 255, 0.6);
+        .note-mode-toggle .toggle-option {
+            padding: 5px 14px;
+            border-radius: 18px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            color: rgba(255, 255, 255, 0.35);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--font);
+            white-space: nowrap;
         }
-        .note-toggle.active {
-            background: rgba(79, 195, 247, 0.15);
-            border-color: #4fc3f7;
+        .note-mode-toggle .toggle-option:hover {
+            color: rgba(255, 255, 255, 0.55);
+        }
+        .note-mode-toggle .toggle-option.active {
+            background: rgba(79, 195, 247, 0.18);
             color: #4fc3f7;
         }
 
@@ -3685,7 +3697,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-top: 8px;
+            margin-top: 6px;
             flex-wrap: wrap;
         }
 
@@ -3693,34 +3705,36 @@
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            padding: 4px 8px;
-            background: rgba(53, 125, 197, 0.06);
-            border: 1.5px solid rgba(53, 125, 197, 0.12);
-            border-radius: 14px;
-            font-size: 13px;
+            padding: 4px 10px;
+            background: rgba(18, 32, 55, 0.85);
+            border: 1px solid rgba(79, 195, 247, 0.12);
+            border-radius: 16px;
+            font-size: 14px;
             cursor: pointer;
             transition: all 0.15s;
             user-select: none;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
         }
 
         .reaction-chip:hover {
-            background: rgba(53, 125, 197, 0.12);
-            border-color: rgba(53, 125, 197, 0.25);
+            background: rgba(24, 42, 68, 0.9);
+            border-color: rgba(79, 195, 247, 0.3);
         }
 
         .reaction-chip.active {
-            background: rgba(53, 125, 197, 0.12);
-            border-color: var(--blue);
+            background: rgba(24, 42, 68, 0.9);
+            border-color: rgba(79, 195, 247, 0.4);
         }
 
         .reaction-chip .reaction-count {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
-            color: var(--text-muted);
+            color: rgba(255, 255, 255, 0.55);
+            margin-left: 1px;
         }
 
         .reaction-chip.active .reaction-count {
-            color: var(--blue);
+            color: rgba(255, 255, 255, 0.75);
         }
 
         .add-reaction-btn {
@@ -4857,8 +4871,8 @@
             }
             /* Chat footer — dark glass bg */
             body.chat-open #messagePageView .message-page-footer {
-                background: rgba(8, 18, 35, 0.95);
-                border-top: 1px solid rgba(79, 195, 247, 0.18);
+                background: rgba(14, 28, 50, 0.97);
+                border-top: 1px solid rgba(79, 195, 247, 0.22);
                 backdrop-filter: blur(16px);
             }
             /* Close animation */
@@ -6199,31 +6213,22 @@
 
         /* Reactions — dark theme */
         #messagePageView .reaction-chip {
-            background: rgba(79, 195, 247, 0.08);
-            border-color: rgba(79, 195, 247, 0.2);
+            background: rgba(18, 32, 55, 0.85);
+            border-color: rgba(79, 195, 247, 0.12);
         }
         #messagePageView .reaction-chip:hover {
-            background: rgba(79, 195, 247, 0.15);
-            border-color: rgba(79, 195, 247, 0.35);
+            background: rgba(24, 42, 68, 0.9);
+            border-color: rgba(79, 195, 247, 0.3);
         }
         #messagePageView .reaction-chip.active {
-            background: rgba(79, 195, 247, 0.15);
-            border-color: #4fc3f7;
+            background: rgba(24, 42, 68, 0.9);
+            border-color: rgba(79, 195, 247, 0.4);
         }
         #messagePageView .reaction-chip .reaction-count {
-            color: rgba(255,255,255,0.5);
+            color: rgba(255,255,255,0.55);
         }
         #messagePageView .reaction-chip.active .reaction-count {
-            color: #4fc3f7;
-        }
-        #messagePageView .add-reaction-btn {
-            border-color: rgba(79, 195, 247, 0.2);
-            color: rgba(255,255,255,0.35);
-        }
-        #messagePageView .add-reaction-btn:hover {
-            border-color: #4fc3f7;
-            color: #4fc3f7;
-            background: rgba(79, 195, 247, 0.08);
+            color: rgba(255,255,255,0.75);
         }
 
         /* Reaction picker popup — dark glass */
@@ -6245,8 +6250,8 @@
 
         /* Chat footer — dark glass */
         #messagePageView .message-page-footer {
-            border-top: 1px solid rgba(79, 195, 247, 0.12);
-            background: rgba(5, 10, 20, 0.85);
+            border-top: 1px solid rgba(79, 195, 247, 0.18);
+            background: rgba(14, 28, 50, 0.95);
             backdrop-filter: blur(12px);
         }
 
@@ -7580,10 +7585,12 @@
                         <button onclick="clearReplyPhoto()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:12px;cursor:pointer;">&times;</button>
                     </div>
                 </div>
-                <!-- Note type toggle -->
+                <!-- Note type toggle — single pill switch -->
                 <div class="note-toggle-bar">
-                    <button class="note-toggle active" id="openNoteToggle" onclick="setNoteMode('open')">✏ OPEN NOTE</button>
-                    <button class="note-toggle" id="lunarNoteToggle" onclick="setNoteMode('lunar')">🌙 LUNAR NOTE</button>
+                    <div class="note-mode-toggle" onclick="toggleNoteMode()">
+                        <span class="toggle-option active" id="openNoteToggle">✏ Open</span>
+                        <span class="toggle-option" id="lunarNoteToggle">🌙 Lunar</span>
+                    </div>
                 </div>
                 <!-- Open Note: regular reply input -->
                 <div id="openNotePanel">
@@ -12155,7 +12162,12 @@
         }
 
         // Note mode toggle (Open Note / Lunar Note)
+        let _currentNoteMode = 'open';
+        function toggleNoteMode() {
+            setNoteMode(_currentNoteMode === 'open' ? 'lunar' : 'open');
+        }
         function setNoteMode(mode) {
+            _currentNoteMode = mode;
             const openBtn = document.getElementById('openNoteToggle');
             const lunarBtn = document.getElementById('lunarNoteToggle');
             const openPanel = document.getElementById('openNotePanel');
@@ -12503,7 +12515,7 @@
             let chips = reactions.map((r, ri) => `
                 <span class="reaction-chip ${r.mine ? 'active' : ''}" onclick="event.stopPropagation(); toggleReaction(${msgIndex}, ${ri})">
                     <span>${r.emoji}</span>
-                    <span class="reaction-count">${r.count > 1 ? r.count : ''}</span>
+                    <span class="reaction-count">${r.count}</span>
                 </span>
             `).join('');
 
