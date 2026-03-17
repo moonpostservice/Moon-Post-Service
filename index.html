@@ -7851,7 +7851,7 @@
     </div>
 
     <script>
-        console.log('%c[MoonPop] v63 loaded — ring dots use msg.releaseAt directly instead of re-deriving from city', 'color: #4fc3f7; font-weight: bold;');
+        console.log('%c[MoonPop] v64 loaded — release_at is source of truth for transit status', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -9954,13 +9954,20 @@
                         if (seenIds.has(m.id)) return;
                         seenIds.add(m.id);
 
-                        // Bug fix #3: Client-side status correction — if release_at has passed
-                        // but server hasn't updated yet, treat as released locally
+                        // Status logic: use release_at as the source of truth
+                        // If release_at is in the future, the message is still in transit
+                        // regardless of what the DB status field says
                         let statusDisplay = '';
                         const releasePast = m.release_at && new Date(m.release_at) <= new Date();
-                        if (m.status === 'in_transit' && !releasePast) statusDisplay = 'In Transit';
-                        else if (m.status === 'released' || releasePast) statusDisplay = 'Released';
-                        console.log('[load] sent msg to', m.recipient_name, '| db_status:', m.status, '| release_at:', m.release_at, '| releasePast:', releasePast, '| display:', statusDisplay, '| city:', m.recipient_city);
+                        if (m.release_at && !releasePast) {
+                            // release_at is in the future → still in transit
+                            statusDisplay = 'In Transit';
+                        } else if (m.status === 'in_transit' && !releasePast) {
+                            statusDisplay = 'In Transit';
+                        } else {
+                            statusDisplay = 'Released';
+                        }
+                        console.log('[load] sent to', m.recipient_name, '| db_status:', m.status, '| release_at:', m.release_at, '| releasePast:', releasePast, '| → display:', statusDisplay);
 
                         const rp = m.recipient_id ? profileMap[m.recipient_id] : null;
 
