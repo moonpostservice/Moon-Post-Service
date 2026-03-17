@@ -7851,7 +7851,7 @@
     </div>
 
     <script>
-        console.log('%c[MoonPop] v65 loaded — DEBUG: forced green test dot + reload tracing', 'color: #4fc3f7; font-weight: bold;');
+        console.log('%c[MoonPop] v66 loaded — ring dots: releaseAt-based filtering + reload preservation', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -8936,9 +8936,17 @@
             const now = new Date();
             const twentyFourHoursAgo = new Date(now.getTime() - 24 * 3600000);
 
-            // Get messages in transit (sent but not yet delivered)
-            const inTransitMessages = messages.filter(m => m.type === 'sent' && m.status === 'In Transit');
-            if (inTransitMessages.length > 0) console.log('[dots] in-transit sent messages:', inTransitMessages.length, inTransitMessages.map(m => ({to: m.sender, loc: m.location, release: m.releaseAt})));
+            // Get messages in transit: use releaseAt as source of truth (not status field)
+            // This survives DB reloads where the Edge Function may alter the status field
+            const inTransitMessages = messages.filter(m => {
+                if (m.type !== 'sent') return false;
+                // Primary: releaseAt in the future = still in transit
+                if (m.releaseAt && new Date(m.releaseAt) > now) return true;
+                // Fallback: status field says In Transit and no releaseAt to contradict
+                if (m.status === 'In Transit' && !m.releaseAt) return true;
+                return false;
+            });
+            if (inTransitMessages.length > 0) console.log('[dots] in-transit sent:', inTransitMessages.length, inTransitMessages.map(m => ({to: m.sender, loc: m.location, release: m.releaseAt, status: m.status})));
 
             inTransitMessages.forEach((msg) => {
                 // Skip messages that are definitely released:
@@ -10541,26 +10549,29 @@
         async function debouncedReloadMessages() {
             if (isReloadingMessages) return;
             isReloadingMessages = true;
-            console.log('%c[RELOAD] debouncedReloadMessages triggered', 'color: orange; font-weight: bold', new Error().stack?.split('\n')[2]);
+            console.log('[reload] debouncedReloadMessages triggered');
             try {
                 const prevKey = currentConversation?.otherKey;
 
-                // CRITICAL: Save existing replies + reactions before reload
+                // CRITICAL: Save existing replies, reactions, AND releaseAt before reload
                 // loadMessages() creates new message objects WITHOUT replies/reactions.
                 // Without preserving them, inbox previews show stale text and
                 // open conversations lose their thread history.
+                // releaseAt may be set client-side but missing in DB (Edge Function may not preserve it)
                 const prevReplies = {};
                 const prevReactions = {};
+                const prevReleaseAt = {};
                 messages.forEach(m => {
                     if (m.dbId) {
                         if (m.replies && m.replies.length > 0) prevReplies[m.dbId] = m.replies;
                         if (m.reactions && m.reactions.length > 0) prevReactions[m.dbId] = m.reactions;
+                        if (m.releaseAt) prevReleaseAt[m.dbId] = m.releaseAt;
                     }
                 });
 
                 await loadMessages();
 
-                // Restore replies and reactions to the new message objects
+                // Restore replies, reactions, and releaseAt to the new message objects
                 messages.forEach(m => {
                     if (m.dbId) {
                         if (prevReplies[m.dbId] && (!m.replies || m.replies.length === 0)) {
@@ -10568,6 +10579,11 @@
                         }
                         if (prevReactions[m.dbId] && (!m.reactions || m.reactions.length === 0)) {
                             m.reactions = prevReactions[m.dbId];
+                        }
+                        // Restore releaseAt if DB didn't have it (Edge Function may strip it)
+                        if (!m.releaseAt && prevReleaseAt[m.dbId]) {
+                            m.releaseAt = prevReleaseAt[m.dbId];
+                            console.log('[reload] Restored releaseAt for', m.dbId, '→', m.releaseAt);
                         }
                     }
                 });
@@ -11602,7 +11618,9 @@
                 if (inboxCta) inboxCta.style.display = '';
 
                 // Combined status: unread + in-transit in one sentence
-                const inTransit = messages.filter(m => m.type === 'sent' && m.status === 'In Transit').length;
+                // Use releaseAt as source of truth (consistent with renderMessageDots)
+                const now = new Date();
+                const inTransit = messages.filter(m => m.type === 'sent' && ((m.releaseAt && new Date(m.releaseAt) > now) || (m.status === 'In Transit' && !m.releaseAt))).length;
                 const unreadCount = messages.filter(m => m.type === 'received' && !m.read).length;
                 let statusLine = '';
                 if (unreadCount > 0 && inTransit > 0) {
@@ -11646,11 +11664,12 @@
             updateReplyRowMoonGate();
             updateInboxTransmitBtn();
 
-            // Refresh inbox every 30s to keep progress bars & badges current
+            // Refresh inbox + dots every 30s to keep progress bars, badges & ring dots current
             if (!window._lastInboxRefresh || Date.now() - window._lastInboxRefresh > 30000) {
                 window._lastInboxRefresh = Date.now();
                 buildConversations();
                 renderMessages();
+                renderMessageDots();
             }
 
             // Live-update chat transit countdowns
@@ -12620,6 +12639,7 @@
                 const attachMenu = document.getElementById('attachMenu');
                 if (attachMenu) attachMenu.style.display = 'none';
                 renderMessages();
+                renderMessageDots(); // Re-render dots now that ring is visible again
             }
 
             // Animate out (slide down), then close
@@ -16269,32 +16289,6 @@
             }
 
             renderMessageDots(); // Update orbit dots
-
-            // DEBUG: Force a test dot + log to verify the rendering pipeline
-            const _dotContainer = document.getElementById('messageDots');
-            const _inTransit = messages.filter(m => m.type === 'sent' && m.status === 'In Transit');
-            console.log('%c[SEND-DEBUG] After renderMessageDots:', 'color: red; font-weight: bold',
-                'container exists:', !!_dotContainer,
-                'container children:', _dotContainer?.children.length,
-                'moonVisible:', moonData.isVisible,
-                'inTransit count:', _inTransit.length,
-                'messages with releaseAt:', _inTransit.map(m => ({ to: m.sender, status: m.status, loc: m.location, release: m.releaseAt }))
-            );
-            // Force a visible test dot at 180° (bottom of ring) so we know rendering works
-            if (_dotContainer && _inTransit.length > 0) {
-                const _testOrbit = document.createElement('div');
-                _testOrbit.className = 'dot-orbit';
-                _testOrbit.style.transform = 'rotate(180deg)';
-                const _testDot = document.createElement('div');
-                _testDot.className = 'message-dot';
-                _testDot.style.background = 'lime';
-                _testDot.style.width = '18px';
-                _testDot.style.height = '18px';
-                _testDot.style.boxShadow = '0 0 15px lime';
-                _testOrbit.appendChild(_testDot);
-                _dotContainer.appendChild(_testOrbit);
-                console.log('%c[SEND-DEBUG] FORCED GREEN DOT at 180°', 'color: lime; font-weight: bold');
-            }
 
             closeModal();
             
