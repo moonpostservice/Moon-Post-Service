@@ -7851,7 +7851,7 @@
     </div>
 
     <script>
-        console.log('%c[MoonPop] v62 loaded — fix instant delivery bug: messages now go through transit when city unknown', 'color: #4fc3f7; font-weight: bold;');
+        console.log('%c[MoonPop] v63 loaded — ring dots use msg.releaseAt directly instead of re-deriving from city', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -8942,32 +8942,46 @@
 
             inTransitMessages.forEach((msg) => {
                 // Skip messages that are definitely released:
-                // 1. releaseAt has passed → already delivered
                 if (msg.releaseAt && new Date(msg.releaseAt) <= now) {
-                    console.log('Dots: skipping released message to', msg.location, '(releaseAt passed)');
+                    console.log('[dots] skip (released):', msg.location);
                     return;
                 }
-                // 2. Older than 24h → guaranteed released by moon within one full cycle
                 if (msg.createdAt && new Date(msg.createdAt) < twentyFourHoursAgo) {
-                    console.log('Dots: skipping old message to', msg.location, '(>24h)');
+                    console.log('[dots] skip (>24h):', msg.location);
                     return;
                 }
 
-                const info = getRecipientMoonrise(msg.location);
-                if (!info) {
-                    console.log('Dots: no moonrise info for "' + msg.location + '" - city not found in list');
+                // USE msg.releaseAt FIRST — it's already computed at send time
+                // Only fall back to getRecipientMoonrise() if releaseAt is missing
+                let deliveryDate = msg.releaseAt ? new Date(msg.releaseAt) : null;
+                let hoursUntil = deliveryDate ? Math.max(0, (deliveryDate - now) / 3600000) : null;
+                let timeStr = '';
+
+                if (!deliveryDate) {
+                    // Fallback: compute from city name
+                    const info = getRecipientMoonrise(msg.location);
+                    if (info) {
+                        deliveryDate = info.date;
+                        hoursUntil = info.hoursUntil;
+                        timeStr = info.timeStr;
+                    }
+                } else {
+                    timeStr = deliveryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+
+                if (!deliveryDate) {
+                    console.log('[dots] skip (no delivery date):', msg.location, 'releaseAt:', msg.releaseAt);
                     return;
                 }
 
-                const deg = deliveryTimeToRingDegrees(info.date);
-                // Null-degree guard: skip dots outside the 24h ring window
+                const deg = deliveryTimeToRingDegrees(deliveryDate);
                 if (deg === null) {
-                    console.log('Dots: delivery for', msg.location, 'outside ring window — skipping');
+                    console.log('[dots] skip (outside ring):', msg.location, 'deg:', deg);
                     return;
                 }
 
-                const isReleasing = info.hoursUntil < 2;
-                console.log('Dots: placing dot for', msg.location, 'at', deg.toFixed(1), '°, releasing:', isReleasing);
+                const isReleasing = hoursUntil !== null && hoursUntil < 2;
+                console.log('[dots] PLACING dot for', msg.location, 'at', deg.toFixed(1), '° | release:', timeStr, '| hours:', hoursUntil?.toFixed(1));
 
                 const orbit = document.createElement('div');
                 orbit.className = 'dot-orbit';
@@ -8975,10 +8989,10 @@
 
                 const dot = document.createElement('div');
                 dot.className = 'message-dot' + (isReleasing ? ' releasing' : '');
-                dot.dataset.to = msg.sender; // "sender" is actually recipient name in sent messages
+                dot.dataset.to = msg.sender;
                 dot.dataset.location = msg.location;
-                dot.dataset.release = info.timeStr;
-                dot.dataset.hours = info.hoursUntil.toFixed(1);
+                dot.dataset.release = timeStr;
+                dot.dataset.hours = (hoursUntil || 0).toFixed(1);
 
                 orbit.appendChild(dot);
                 container.appendChild(orbit);
