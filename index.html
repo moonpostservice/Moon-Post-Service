@@ -7851,7 +7851,7 @@
     </div>
 
     <script>
-        console.log('%c[MoonPop] v66 loaded — ring dots: releaseAt-based filtering + reload preservation', 'color: #4fc3f7; font-weight: bold;');
+        console.log('%c[MoonPop] v67 loaded — DIAGNOSTIC BUILD: visible dot state panel + dual rendering', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -8927,46 +8927,60 @@
             const container = document.getElementById('messageDots');
             if (!container) return;
             container.innerHTML = '';
+            // Clean up direct-positioned failsafe dots from previous render
+            document.querySelectorAll('.direct-dot-failsafe').forEach(el => el.remove());
 
-            // Moon down = ring shows only countdown, no dots
-            if (!moonData.isVisible) return;
-
-            console.log('[dots] renderMessageDots called, moonVisible:', moonData.isVisible, 'total messages:', messages.length);
+            // DIAGNOSTIC PANEL — visible on-screen state display
+            let diagEl = document.getElementById('dotDiag');
+            if (!diagEl) {
+                diagEl = document.createElement('div');
+                diagEl.id = 'dotDiag';
+                diagEl.style.cssText = 'position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:11px;padding:8px 12px;z-index:99999;border-radius:6px;max-width:350px;line-height:1.4;pointer-events:none;';
+                document.body.appendChild(diagEl);
+            }
 
             const now = new Date();
             const twentyFourHoursAgo = new Date(now.getTime() - 24 * 3600000);
 
+            // Count ALL sent messages for diagnostics
+            const allSent = messages.filter(m => m.type === 'sent');
+            const sentWithRelease = allSent.filter(m => m.releaseAt);
+            const sentWithFutureRelease = allSent.filter(m => m.releaseAt && new Date(m.releaseAt) > now);
+            const sentInTransitStatus = allSent.filter(m => m.status === 'In Transit');
+
             // Get messages in transit: use releaseAt as source of truth (not status field)
-            // This survives DB reloads where the Edge Function may alter the status field
             const inTransitMessages = messages.filter(m => {
                 if (m.type !== 'sent') return false;
-                // Primary: releaseAt in the future = still in transit
                 if (m.releaseAt && new Date(m.releaseAt) > now) return true;
-                // Fallback: status field says In Transit and no releaseAt to contradict
                 if (m.status === 'In Transit' && !m.releaseAt) return true;
                 return false;
             });
-            if (inTransitMessages.length > 0) console.log('[dots] in-transit sent:', inTransitMessages.length, inTransitMessages.map(m => ({to: m.sender, loc: m.location, release: m.releaseAt, status: m.status})));
 
+            // Update diagnostic display
+            diagEl.innerHTML = `<b>🔵 DOT DIAG</b><br>` +
+                `moon: ${moonData.isVisible ? '🟢 UP' : '🔴 DOWN'}<br>` +
+                `msgs: ${messages.length} | sent: ${allSent.length}<br>` +
+                `w/releaseAt: ${sentWithRelease.length} | future: ${sentWithFutureRelease.length}<br>` +
+                `status=InTransit: ${sentInTransitStatus.length}<br>` +
+                `<b>→ qualifying: ${inTransitMessages.length}</b><br>` +
+                (inTransitMessages.length > 0 ? inTransitMessages.map(m =>
+                    `  • ${m.sender} @ ${m.location}<br>    release: ${m.releaseAt || 'NULL'}<br>    status: ${m.status}`
+                ).join('<br>') : '<i>no in-transit messages</i>');
+
+            // NOTE: We no longer skip rendering when moon is down.
+            // CSS handles reduced opacity via body.moon-down .message-dot { opacity: 0.35 }
+            // This ensures dots are always rendered — the ONLY gate is message data.
+
+            let dotsRendered = 0;
             inTransitMessages.forEach((msg) => {
-                // Skip messages that are definitely released:
-                if (msg.releaseAt && new Date(msg.releaseAt) <= now) {
-                    console.log('[dots] skip (released):', msg.location);
-                    return;
-                }
-                if (msg.createdAt && new Date(msg.createdAt) < twentyFourHoursAgo) {
-                    console.log('[dots] skip (>24h):', msg.location);
-                    return;
-                }
+                if (msg.releaseAt && new Date(msg.releaseAt) <= now) return;
+                if (msg.createdAt && new Date(msg.createdAt) < twentyFourHoursAgo) return;
 
-                // USE msg.releaseAt FIRST — it's already computed at send time
-                // Only fall back to getRecipientMoonrise() if releaseAt is missing
                 let deliveryDate = msg.releaseAt ? new Date(msg.releaseAt) : null;
                 let hoursUntil = deliveryDate ? Math.max(0, (deliveryDate - now) / 3600000) : null;
                 let timeStr = '';
 
                 if (!deliveryDate) {
-                    // Fallback: compute from city name
                     const info = getRecipientMoonrise(msg.location);
                     if (info) {
                         deliveryDate = info.date;
@@ -8977,34 +8991,48 @@
                     timeStr = deliveryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 }
 
-                if (!deliveryDate) {
-                    console.log('[dots] skip (no delivery date):', msg.location, 'releaseAt:', msg.releaseAt);
-                    return;
-                }
+                if (!deliveryDate) return;
 
                 const deg = deliveryTimeToRingDegrees(deliveryDate);
-                if (deg === null) {
-                    console.log('[dots] skip (outside ring):', msg.location, 'deg:', deg);
-                    return;
-                }
+                if (deg === null) return;
 
                 const isReleasing = hoursUntil !== null && hoursUntil < 2;
-                console.log('[dots] PLACING dot for', msg.location, 'at', deg.toFixed(1), '° | release:', timeStr, '| hours:', hoursUntil?.toFixed(1));
 
+                // METHOD 1: Standard orbit rotation
                 const orbit = document.createElement('div');
                 orbit.className = 'dot-orbit';
                 orbit.style.transform = `rotate(${deg}deg)`;
-
                 const dot = document.createElement('div');
                 dot.className = 'message-dot' + (isReleasing ? ' releasing' : '');
                 dot.dataset.to = msg.sender;
                 dot.dataset.location = msg.location;
                 dot.dataset.release = timeStr;
                 dot.dataset.hours = (hoursUntil || 0).toFixed(1);
-
                 orbit.appendChild(dot);
                 container.appendChild(orbit);
+
+                // METHOD 2: Direct (x,y) positioning as failsafe
+                // If the rotation method doesn't work visually, this WILL show
+                const orbitContainer = document.querySelector('.orbit-container');
+                if (orbitContainer) {
+                    const r = orbitContainer.offsetWidth / 2;
+                    const rad = (deg - 90) * Math.PI / 180; // CSS 0°=top, math 0°=right
+                    const x = r + r * Math.cos(rad);
+                    const y = r + r * Math.sin(rad);
+                    const directDot = document.createElement('div');
+                    directDot.style.cssText = `position:absolute;width:18px;height:18px;background:#ff5558;border-radius:50%;z-index:100;box-shadow:0 0 12px rgba(255,85,88,0.7);pointer-events:none;transform:translate(-50%,-50%);`;
+                    directDot.style.left = x + 'px';
+                    directDot.style.top = y + 'px';
+                    orbitContainer.appendChild(directDot);
+                    // Mark for cleanup
+                    directDot.classList.add('direct-dot-failsafe');
+                }
+
+                dotsRendered++;
             });
+
+            // Update diagnostic with render count
+            diagEl.innerHTML += `<br><b>rendered: ${dotsRendered} dots</b>`;
 
             // Incoming messages genuinely in transit (not just "moon is down" — use stillInTransit flag)
             // Don't require releaseAt — we can calculate the dot position from our own moonrise
@@ -10580,10 +10608,16 @@
                         if (prevReactions[m.dbId] && (!m.reactions || m.reactions.length === 0)) {
                             m.reactions = prevReactions[m.dbId];
                         }
-                        // Restore releaseAt if DB didn't have it (Edge Function may strip it)
-                        if (!m.releaseAt && prevReleaseAt[m.dbId]) {
-                            m.releaseAt = prevReleaseAt[m.dbId];
-                            console.log('[reload] Restored releaseAt for', m.dbId, '→', m.releaseAt);
+                        // Restore releaseAt if DB lost it or returned a past value
+                        // while our client had a future value (Edge Function may alter release_at)
+                        if (prevReleaseAt[m.dbId]) {
+                            const dbRelease = m.releaseAt ? new Date(m.releaseAt) : null;
+                            const prevRelease = new Date(prevReleaseAt[m.dbId]);
+                            const nowR = new Date();
+                            if (!dbRelease || (prevRelease > dbRelease && prevRelease > nowR)) {
+                                console.log('[reload] Restored releaseAt for', m.dbId, '| DB had:', m.releaseAt, '→ using:', prevReleaseAt[m.dbId]);
+                                m.releaseAt = prevReleaseAt[m.dbId];
+                            }
                         }
                     }
                 });
@@ -16140,7 +16174,10 @@
                         }
                         dbMessage = msgData;
                     } else if (fnData && fnData.message) {
-                        console.log('Message saved via Edge Function, id:', fnData.message.id);
+                        console.log('Message saved via Edge Function, id:', fnData.message.id,
+                            '| DB release_at:', fnData.message.release_at,
+                            '| DB status:', fnData.message.status,
+                            '| client sent release_at:', insertData.release_at);
                         dbMessage = fnData.message;
                     } else if (fnData && fnData.error) {
                         // Server-side validation error
