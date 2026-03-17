@@ -7851,7 +7851,7 @@
     </div>
 
     <script>
-        console.log('%c[MoonPop] v67 loaded — DIAGNOSTIC BUILD: visible dot state panel + dual rendering', 'color: #4fc3f7; font-weight: bold;');
+        console.log('%c[MoonPop] v68 loaded — DIAGNOSTIC: full sent message data + recipient moon status', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -8956,16 +8956,29 @@
                 return false;
             });
 
-            // Update diagnostic display
+            // Update diagnostic display — show ALL sent messages for debugging
+            const lastSend = window._lastSendDiag || null;
+            let sentDetail = allSent.map(m => {
+                const moonStatus = getContactMoonStatus(m.location);
+                const moonStr = moonStatus ? (moonStatus.isUp ? '🟢moon UP' : `🔴moon DOWN (${moonStatus.hoursUntilRise?.toFixed(1)}h)`) : '⚪no city data';
+                return `  <b>${m.sender}</b> @ ${m.location}<br>` +
+                    `    releaseAt: ${m.releaseAt || 'NULL'}<br>` +
+                    `    status: ${m.status} | ${moonStr}`;
+            }).join('<br>');
+            if (allSent.length === 0) sentDetail = '<i>no sent messages</i>';
+
             diagEl.innerHTML = `<b>🔵 DOT DIAG</b><br>` +
                 `moon: ${moonData.isVisible ? '🟢 UP' : '🔴 DOWN'}<br>` +
                 `msgs: ${messages.length} | sent: ${allSent.length}<br>` +
-                `w/releaseAt: ${sentWithRelease.length} | future: ${sentWithFutureRelease.length}<br>` +
-                `status=InTransit: ${sentInTransitStatus.length}<br>` +
-                `<b>→ qualifying: ${inTransitMessages.length}</b><br>` +
-                (inTransitMessages.length > 0 ? inTransitMessages.map(m =>
-                    `  • ${m.sender} @ ${m.location}<br>    release: ${m.releaseAt || 'NULL'}<br>    status: ${m.status}`
-                ).join('<br>') : '<i>no in-transit messages</i>');
+                `qualifying: ${inTransitMessages.length} | future releaseAt: ${sentWithFutureRelease.length}<br>` +
+                `<b>ALL SENT:</b><br>${sentDetail}` +
+                (lastSend ? `<br><b>LAST SEND:</b><br>` +
+                    `  to: ${lastSend.location}<br>` +
+                    `  moonUp: ${lastSend.recipientMoonUp}<br>` +
+                    `  instant: ${lastSend.instantDeliver}<br>` +
+                    `  clientRelease: ${lastSend.releaseAt}<br>` +
+                    `  dbRelease: ${lastSend.dbReleaseAt}<br>` +
+                    `  status: ${lastSend.messageStatus}` : '');
 
             // NOTE: We no longer skip rendering when moon is down.
             // CSS handles reduced opacity via body.moon-down .message-dot { opacity: 0.35 }
@@ -16117,6 +16130,17 @@
             const messageStatus = instantDeliver ? 'released' : 'in_transit';
             console.log('[send] instantDeliver:', instantDeliver, 'messageStatus:', messageStatus);
 
+            // Store send diagnostics for visible panel
+            window._lastSendDiag = {
+                location: pendingMessage.location,
+                recipientMoonUp,
+                instantDeliver,
+                releaseAt,
+                messageStatus,
+                dbReleaseAt: '(pending)',
+                sentAt: new Date().toISOString()
+            };
+
             // Safety: if somehow still in_transit but no release_at, set a 24h fallback
             if (messageStatus === 'in_transit' && !releaseAt) {
                 releaseAt = new Date(Date.now() + 24 * 3600000).toISOString();
@@ -16179,6 +16203,7 @@
                             '| DB status:', fnData.message.status,
                             '| client sent release_at:', insertData.release_at);
                         dbMessage = fnData.message;
+                        if (window._lastSendDiag) window._lastSendDiag.dbReleaseAt = fnData.message.release_at || 'NULL';
                     } else if (fnData && fnData.error) {
                         // Server-side validation error
                         console.error('Validation error:', fnData.error, fnData.details);
