@@ -7731,7 +7731,7 @@
     </div>
 
     <script>
-        console.log('%c[MoonPop] v57 loaded — ring dot fix, seen label, sound boost, transit ETA', 'color: #4fc3f7; font-weight: bold;');
+        console.log('%c[MoonPop] v58 loaded — per-message reactions, ring dot clamping, transit defense', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -8674,8 +8674,8 @@
         }
         
         // Map a delivery time (absolute Date) to ring degrees.
-        // Returns null only if the time is before the ring or way past it (>6h past ringEnd).
-        // Times past ringEnd but close are clamped near moonrise (269°).
+        // Returns null only if date is missing or ring is uninitialized.
+        // Times outside the ring window are clamped to 269° (near moonrise marker).
         function deliveryTimeToRingDegrees(date) {
             if (!date) return null;
 
@@ -8690,11 +8690,12 @@
             const midT   = moonData._ringMid.getTime();
             const endT   = moonData._ringEnd.getTime();
 
-            // Before the ring starts → skip
-            if (t < startT) return null;
+            // Before the ring starts → clamp near moonrise (message is very far future)
+            if (t < startT) return 269;
 
-            // Way past ring end (>6h buffer) → skip (guaranteed released)
-            if (t > endT + 6 * 3600000) return null;
+            // Past ring end → clamp near moonrise (delivery is after the cycle shown on ring)
+            // No hard cutoff — the caller's 24h filter handles truly stale dots
+            if (t > endT) return 269;
 
             // Upper half: ringStart (moonrise) → ringMid (moonset)
             const upDuration = midT - startT;
@@ -8709,9 +8710,6 @@
                 const frac = (t - midT) / downDuration;
                 return 90 + frac * 180;
             }
-
-            // Past ringEnd but within buffer → clamp near moonrise (end of lower half)
-            if (t > endT) return 269;
 
             // Fallback: place at bottom of ring
             return 180;
@@ -8862,13 +8860,14 @@
             });
 
             // Incoming messages genuinely in transit (not just "moon is down" — use stillInTransit flag)
-            const incomingMessages = messages.filter(m => m.type === 'received' && m.stillInTransit && m.releaseAt);
+            // Don't require releaseAt — we can calculate the dot position from our own moonrise
+            const incomingMessages = messages.filter(m => m.type === 'received' && m.stillInTransit);
             if (incomingMessages.length > 0) console.log('Dots: incoming messages:', incomingMessages.length);
 
             incomingMessages.forEach((msg) => {
                 // Skip if releaseAt has passed (already revealed)
-                const releaseDate = new Date(msg.releaseAt);
-                if (releaseDate <= now) {
+                const releaseDate = msg.releaseAt ? new Date(msg.releaseAt) : null;
+                if (releaseDate && releaseDate <= now) {
                     console.log('Dots: skipping revealed incoming from', msg.sender, '(releaseAt passed)');
                     return;
                 }
@@ -8877,14 +8876,16 @@
                     console.log('Dots: skipping old incoming from', msg.sender, '(>24h)');
                     return;
                 }
-                const deg = deliveryTimeToRingDegrees(releaseDate);
+                // Use releaseDate for position if available, otherwise use our own moonrise
+                const dotDate = releaseDate || (moonData._ringEnd ? moonData._ringEnd : null);
+                const deg = dotDate ? deliveryTimeToRingDegrees(dotDate) : 269;
                 // Null-degree guard
                 if (deg === null) {
                     console.log('Dots: incoming from', msg.sender, 'outside ring window — skipping');
                     return;
                 }
 
-                const hoursUntil = Math.max(0, (releaseDate - now) / 3600000);
+                const hoursUntil = releaseDate ? Math.max(0, (releaseDate - now) / 3600000) : 12;
                 const isNear = hoursUntil < 2;
 
                 const riseTimeStr = moonData.moonrise || '--:--';
@@ -9858,8 +9859,10 @@
 
                     // Determine if message content should be revealed
                     // Rule: Moon MUST be in your sky AND message must be released.
-                    // If release_at is in the future, message is still in transit — hide content.
-                    const stillInTransit = m.release_at && new Date(m.release_at) > new Date();
+                    // Defense-in-depth: treat message as in-transit if EITHER:
+                    //   - release_at is in the future, OR
+                    //   - DB status is still 'in_transit' (covers edge function timing issues)
+                    const stillInTransit = (m.release_at && new Date(m.release_at) > new Date()) || m.status === 'in_transit';
                     // 24h hard cutoff: any message older than 24h is guaranteed released
                     const tooOld = m.created_at && new Date(m.created_at) < new Date(Date.now() - 24 * 3600000);
                     const actuallyInTransit = stillInTransit && !tooOld;
@@ -10445,13 +10448,16 @@
                             freshReplies.forEach(r => {
                                 if (!replyMap[r.message_id]) replyMap[r.message_id] = [];
                                 replyMap[r.message_id].push({
+                                    id: r.id,
+                                    dbId: r.id,
                                     text: r.text,
                                     time: timeAgo(r.created_at),
                                     createdAt: r.created_at,
                                     sent: r.sender_id === currentAuthUser.id,
                                     senderId: r.sender_id,
                                     isLunarNote: r.is_lunar_note || false,
-                                    photoUrl: r.photo_url || null
+                                    photoUrl: r.photo_url || null,
+                                    reactions: []
                                 });
                             });
                             currentConversation.messages.forEach(msg => {
@@ -10461,10 +10467,15 @@
                             });
                         }
 
-                        // Also load reactions for all messages
+                        // Also load reactions for all messages AND replies
+                        // Collect all reply IDs so we can query reactions for them too
+                        const allReactionIds = [...msgIds];
+                        currentConversation.messages.forEach(msg => {
+                            if (msg.replies) msg.replies.forEach(r => { if (r.dbId) allReactionIds.push(r.dbId); });
+                        });
                         const { data: freshReactions } = await sb.from('reactions')
                             .select('*')
-                            .in('message_id', msgIds);
+                            .in('message_id', allReactionIds);
                         if (freshReactions) {
                             const rxnMap = {};
                             freshReactions.forEach(r => {
@@ -10473,9 +10484,18 @@
                                 rxnMap[r.message_id][r.emoji].count++;
                                 if (r.user_id === currentAuthUser.id) rxnMap[r.message_id][r.emoji].mine = true;
                             });
+                            // Assign reactions to top-level messages
                             currentConversation.messages.forEach(msg => {
                                 if (msg.dbId && rxnMap[msg.dbId]) {
                                     msg.reactions = Object.values(rxnMap[msg.dbId]);
+                                }
+                                // Assign reactions to individual replies
+                                if (msg.replies) {
+                                    msg.replies.forEach(r => {
+                                        if (r.dbId && rxnMap[r.dbId]) {
+                                            r.reactions = Object.values(rxnMap[r.dbId]);
+                                        }
+                                    });
                                 }
                             });
                         }
@@ -10632,13 +10652,16 @@
                     if (alreadyExists) return;
 
                     targetMsg.replies.push({
+                        id: reply.id,
+                        dbId: reply.id,
                         text: reply.text || reply.reply_text,
                         time: 'Just now',
                         createdAt: reply.created_at || new Date().toISOString(),
                         sent: false,
                         senderId: reply.sender_id,
                         isLunarNote: reply.is_lunar_note || false,
-                        photoUrl: reply.photo_url || null
+                        photoUrl: reply.photo_url || null,
+                        reactions: []
                     });
 
                     // If we're viewing the conversation that contains this message, re-render live
@@ -11628,7 +11651,8 @@
                     const otherProfile = isSent ? rp : sp;
 
                     // Sent messages always visible; received: moon MUST be in sky AND message released
-                    const stillInTransit = !isSent && m.release_at && new Date(m.release_at) > new Date();
+                    // Defense-in-depth: also check DB status for received messages
+                    const stillInTransit = !isSent && ((m.release_at && new Date(m.release_at) > new Date()) || m.status === 'in_transit');
                     const tooOld = m.created_at && new Date(m.created_at) < new Date(Date.now() - 24 * 3600000);
                     const actuallyInTransit = stillInTransit && !tooOld;
                     const contentVisible = isSent || (!!moonData.isVisible && !actuallyInTransit);
@@ -11732,13 +11756,16 @@
                         allReplies.forEach(r => {
                             if (!replyMap[r.message_id]) replyMap[r.message_id] = [];
                             replyMap[r.message_id].push({
+                                id: r.id,
+                                dbId: r.id,
                                 text: r.text,
                                 time: timeAgo(r.created_at),
                                 createdAt: r.created_at,
                                 sent: r.sender_id === currentAuthUser.id,
                                 senderId: r.sender_id,
                                 isLunarNote: r.is_lunar_note || false,
-                                photoUrl: r.photo_url || null
+                                photoUrl: r.photo_url || null,
+                                reactions: []
                             });
                         });
                         conv.messages.forEach(msg => {
@@ -11748,10 +11775,14 @@
                         });
                     }
 
-                    // Load reactions for all messages
+                    // Load reactions for all messages AND replies
+                    const allReactionIds = [...msgIds];
+                    conv.messages.forEach(msg => {
+                        if (msg.replies) msg.replies.forEach(r => { if (r.dbId) allReactionIds.push(r.dbId); });
+                    });
                     const { data: allReactions } = await sb.from('reactions')
                         .select('*')
-                        .in('message_id', msgIds);
+                        .in('message_id', allReactionIds);
 
                     if (allReactions) {
                         const rxnMap = {};
@@ -11764,6 +11795,14 @@
                         conv.messages.forEach(msg => {
                             if (msg.dbId && rxnMap[msg.dbId]) {
                                 msg.reactions = Object.values(rxnMap[msg.dbId]);
+                            }
+                            // Assign reactions to individual replies
+                            if (msg.replies) {
+                                msg.replies.forEach(r => {
+                                    if (r.dbId && rxnMap[r.dbId]) {
+                                        r.reactions = Object.values(rxnMap[r.dbId]);
+                                    }
+                                });
                             }
                         });
                     }
@@ -11975,7 +12014,7 @@
                     });
                 }
 
-                // Add replies for this message (include msgDbId so reactions work on replies too)
+                // Add replies for this message — each reply uses its OWN dbId for reactions
                 if (msg.replies) {
                     msg.replies.forEach(r => {
                         timeline.push({
@@ -11986,7 +12025,9 @@
                             createdAt: r.createdAt || msg.createdAt,
                             sent: r.sent,
                             msgIndex,
-                            msgDbId: msg.dbId,
+                            msgDbId: r.dbId || msg.dbId,
+                            parentMsgDbId: msg.dbId,
+                            isReply: !!r.dbId,
                             isMessage: true
                         });
                     });
@@ -12546,25 +12587,29 @@
             // Add as a reply-type lunar note
             if (!msg.replies) msg.replies = [];
             const now = new Date().toISOString();
-            msg.replies.push({
+            const lunarReply = {
+                id: null, dbId: null,
                 text: '🌙 ' + threadLunarGenerated.lines + '\n' + threadLunarGenerated.closing,
                 time: 'Just now',
                 createdAt: now,
                 sent: true,
-                isLunarNote: true
-            });
+                isLunarNote: true,
+                reactions: []
+            };
+            msg.replies.push(lunarReply);
 
             // Save to Supabase
             if (currentAuthUser && msg.dbId) {
-                const { error } = await sb.from('replies').insert({
+                const { data: lunarData, error } = await sb.from('replies').insert({
                     message_id: msg.dbId,
                     sender_id: currentAuthUser.id,
                     text: '🌙 ' + threadLunarGenerated.lines + '\n' + threadLunarGenerated.closing,
                     is_lunar_note: true,
                     lunar_note_text: threadLunarGenerated.lines,
                     lunar_note_closing: threadLunarGenerated.closing
-                });
+                }).select().single();
                 if (error) console.error('Lunar note reply save failed:', error);
+                if (lunarData) { lunarReply.id = lunarData.id; lunarReply.dbId = lunarData.id; }
             }
 
             closeThreadLunar();
@@ -12716,8 +12761,8 @@
                 clearReplyContext();
             }
 
-            // Optimistic reply
-            const optimisticReply = { text: replyText, time: 'Just now', createdAt: now, sent: true, senderId: currentAuthUser?.id, photoUrl: pendingReplyPhoto || null };
+            // Optimistic reply (id/dbId will be set after DB insert confirms)
+            const optimisticReply = { id: null, dbId: null, text: replyText, time: 'Just now', createdAt: now, sent: true, senderId: currentAuthUser?.id, photoUrl: pendingReplyPhoto || null, reactions: [] };
             targetMsg.replies.push(optimisticReply);
 
             // Clear input immediately for snappy feel
@@ -12761,9 +12806,13 @@
                         renderConversationThread();
                         return;
                     }
-                    // Update optimistic reply with real timestamp
+                    // Update optimistic reply with real timestamp and DB id
                     const lastReply = targetMsg.replies.find(r => r.createdAt === now && r.text === replyText);
-                    if (lastReply && replyData) lastReply.createdAt = replyData.created_at;
+                    if (lastReply && replyData) {
+                        lastReply.createdAt = replyData.created_at;
+                        lastReply.id = replyData.id;
+                        lastReply.dbId = replyData.id;
+                    }
                 }
             } finally {
                 // Unblock realtime reloads after a cooldown
@@ -12793,14 +12842,32 @@
         // ========================
         const MOON_REACTIONS = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
 
-        // Helper: find message by dbId — searches conversation first, then global
+        // Helper: find message OR reply by dbId — searches conversation messages + their replies, then global
         function findMsgByDbId(dbId) {
             if (!dbId) return null;
             if (currentConversation && currentConversation.messages) {
+                // Check top-level messages first
                 const m = currentConversation.messages.find(m => m.dbId === dbId);
                 if (m) return m;
+                // Then check replies within each message (each reply has its own dbId)
+                for (const msg of currentConversation.messages) {
+                    if (msg.replies) {
+                        const r = msg.replies.find(r => r.dbId === dbId);
+                        if (r) return r;
+                    }
+                }
             }
-            return messages.find(m => m.dbId === dbId);
+            // Global messages
+            const g = messages.find(m => m.dbId === dbId);
+            if (g) return g;
+            // Global message replies
+            for (const msg of messages) {
+                if (msg.replies) {
+                    const r = msg.replies.find(r => r.dbId === dbId);
+                    if (r) return r;
+                }
+            }
+            return null;
         }
 
         // Render reactions HTML for a message (returns static HTML with data attributes)
@@ -12911,11 +12978,19 @@
         async function handleReaction(msgDbId, emoji) {
             console.log('[Reactions] handleReaction called:', msgDbId, emoji);
             let msg = findMsgByDbId(msgDbId);
-            // Fallback: search all conversations if not found
+            // Fallback: search all conversations (messages + their replies) if not found
             if (!msg) {
                 for (const conv of conversations) {
                     if (conv.messages) {
                         msg = conv.messages.find(m => m.dbId === msgDbId);
+                        if (msg) break;
+                        // Also search replies within each message
+                        for (const m of conv.messages) {
+                            if (m.replies) {
+                                msg = m.replies.find(r => r.dbId === msgDbId);
+                                if (msg) break;
+                            }
+                        }
                         if (msg) break;
                     }
                 }
