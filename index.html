@@ -776,23 +776,7 @@
             box-shadow: none;
         }
 
-        /* Moon-down: completely hide reply input and show gate message */
-        body.moon-down .reply-row {
-            display: none !important;
-        }
-        body.moon-down .add-lunar-link {
-            display: none !important;
-        }
-        body.moon-down #replyPhotoPreview {
-            display: none !important;
-        }
-        body.moon-down #replyMoonGate {
-            display: block !important;
-        }
-        /* When moon is up, hide the gate message */
-        body:not(.moon-down) #replyMoonGate {
-            display: none !important;
-        }
+        /* Reply gating is now handled by JS in updateReplyRowMoonGate() */
 
         /* Standby center content */
         .standby-content {
@@ -7858,7 +7842,7 @@
                 <div style="text-align:center;padding:2px 0;">
                     <span style="color:rgba(255,255,255,0.12);font-size:8px;font-family:monospace;text-transform:uppercase;letter-spacing:2px;">🔒 END-TO-END QUANTUM ENCRYPTION ACTIVE</span>
                 </div>
-                <div id="replyMoonGate" style="text-align:center;padding:12px 16px;font-size:13px;">
+                <div id="replyMoonGate" style="display:none;text-align:center;padding:12px 16px;font-size:13px;">
                     <div style="margin-bottom:4px;"><svg class="app-icon sm" style="color:#4fc3f7"><use href="#icon-lunar-note"/></svg> The moon is below your horizon</div>
                     <div id="replyMoonGateTime" style="font-size:11px;opacity:0.7;"></div>
                 </div>
@@ -7867,7 +7851,7 @@
     </div>
 
     <script>
-        console.log('%c[MoonPop] v59 loaded — thread lunar note matches compose flow', 'color: #4fc3f7; font-weight: bold;');
+        console.log('%c[MoonPop] v60 loaded — moon visibility state comprehensive UI fix', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -8944,6 +8928,9 @@
             if (!container) return;
             container.innerHTML = '';
 
+            // Moon down = ring shows only countdown, no dots
+            if (!moonData.isVisible) return;
+
             const now = new Date();
             const twentyFourHoursAgo = new Date(now.getTime() - 24 * 3600000);
 
@@ -9597,9 +9584,9 @@
                 // "You:" prefix for sent messages
                 const youPrefix = latest.type === 'sent' ? 'You: ' : '';
                 if (latest.stillInTransit && latest.type === 'received') {
-                    conv.latestPreview = '🌙 Message on its way...';
+                    conv.latestPreview = '';  // badge carries the transit info
                 } else if (latest.status === 'In Transit') {
-                    conv.latestPreview = '🔴 Message orbiting...';
+                    conv.latestPreview = '';  // badge carries the transit info
                 } else if (latest.messageText) {
                     conv.latestPreview = youPrefix + latest.messageText;
                 } else if (latest.lunarNote) {
@@ -11570,9 +11557,17 @@
             }
 
             if (moonData.isVisible) {
-                // Moon is up — clean, minimal center
+                // Moon is up — personalized greeting + moonset time
                 document.body.classList.remove('moon-down');
-                if (heroTitle) heroTitle.textContent = 'MESSAGES RELEASED BY THE MOON';
+                if (heroTitle) {
+                    const greeting = userName ? `Hello ${userName}.` : 'Hello.';
+                    const moonsetStr = moonData.moonset && moonData.moonset !== '--:--' ? moonData.moonset : '';
+                    if (moonsetStr) {
+                        heroTitle.textContent = `${greeting} Moon Post Service is open \u2014 closing at moonset, ${moonsetStr}.`;
+                    } else {
+                        heroTitle.textContent = `${greeting} Moon Post Service is open.`;
+                    }
+                }
                 if (inboxCta) inboxCta.style.display = '';
 
                 // In-transit message count
@@ -11581,11 +11576,18 @@
                     ? `<p class="moon-carrying-indicator"><span class="moon-carrying-count">${inTransit}</span> ${inTransit === 1 ? 'message' : 'messages'} in orbit</p>`
                     : '';
 
+                // Unread count
+                const unreadCount = messages.filter(m => m.type === 'received' && !m.read).length;
+                const unreadLine = unreadCount > 0
+                    ? `<p class="moon-carrying-indicator"><span class="moon-carrying-count">${unreadCount}</span> unread</p>`
+                    : '';
+
                 centerEl.innerHTML = `
                     <div class="standby-countdown live-timer">${timerStr}</div>
                     <p class="standby-label">until moonset</p>
                     <div class="moon-live-indicator"><span class="moon-live-dot"></span> Moon is live</div>
                     ${inTransitLine}
+                    ${unreadLine}
                 `;
             } else {
                 // Moon is down — compose locked
@@ -11594,12 +11596,11 @@
 
                 // Update hero title based on pending messages
                 if (heroTitle) {
-                    const greeting = userName ? `Hello ${userName}` : 'Hello';
                     if (totalWaiting > 0) {
-                        const msgWord = totalWaiting === 1 ? 'message is' : 'messages are';
-                        heroTitle.textContent = `${greeting}, ${totalWaiting} ${msgWord} waiting to be released by the moon`;
+                        const msgWord = totalWaiting === 1 ? 'message' : 'messages';
+                        heroTitle.textContent = `The moon carries ${totalWaiting} ${msgWord} \u2014 they'll arrive at moonrise.`;
                     } else {
-                        heroTitle.textContent = `${greeting}, the moon is below your horizon`;
+                        heroTitle.textContent = 'The Moon Post Service opens at moonrise.';
                     }
                 }
 
@@ -11622,6 +11623,17 @@
             // Update reply row gating if conversation detail is open
             updateReplyRowMoonGate();
             updateInboxTransmitBtn();
+        }
+
+        // Format relative ETA for inbox badges
+        function formatRelativeEta(releaseAt) {
+            if (!releaseAt) return '';
+            const diff = new Date(releaseAt).getTime() - Date.now();
+            if (diff <= 0) return '';
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            if (h > 0) return ` \u00b7 arrives in ${h}h ${m}m`;
+            return ` \u00b7 arrives in ${m}m`;
         }
 
         // Render all messages chronologically (IM-style)
@@ -11648,7 +11660,8 @@
                 let badge = '';
                 let progressBar = '';
                 if (conv.hasInTransit) {
-                    badge = `<span class="message-status-badge orbiting">${iconSvg('orbiting', 'sm')} Orbiting</span>`;
+                    const eta = formatRelativeEta(conv.transitReleaseAt);
+                    badge = `<span class="message-status-badge orbiting">${iconSvg('orbiting', 'sm')} Orbiting${eta}</span>`;
                     // Progress bar: how far along from sent → moonrise
                     if (conv.transitCreatedAt && conv.transitReleaseAt) {
                         const sent = new Date(conv.transitCreatedAt).getTime();
@@ -11660,7 +11673,8 @@
                         progressBar = `<div class="transit-progress"><div class="transit-progress-bar" style="width:${pct.toFixed(1)}%"></div></div>`;
                     }
                 } else if (conv.hasIncomingTransit) {
-                    badge = `<span class="message-status-badge arriving">${iconSvg('on-its-way', 'sm')} On Its Way</span>`;
+                    const eta = formatRelativeEta(conv.incomingTransitReleaseAt);
+                    badge = `<span class="message-status-badge arriving">${iconSvg('on-its-way', 'sm')} On Its Way${eta}</span>`;
                     // Progress bar: how far along from sent → your moonrise
                     if (conv.incomingTransitCreatedAt && conv.incomingTransitReleaseAt) {
                         const sent = new Date(conv.incomingTransitCreatedAt).getTime();
@@ -12042,20 +12056,33 @@
             return new Date(conv.otherReadAt) >= new Date(messageCreatedAt) ? 'read' : 'delivered';
         }
 
-        // Update reply row visibility based on moon state
-        // CSS handles the show/hide via body.moon-down class (bulletproof)
-        // This function updates the moonrise time text in the gate message
+        // Update reply row visibility based on moon state — JS-driven (no CSS !important)
         function updateReplyRowMoonGate() {
-            const timeEl = document.getElementById('replyMoonGateTime');
-            if (!timeEl) return;
+            const replyRow = document.querySelector('.reply-row');
+            const lunarLink = document.querySelector('.add-lunar-link');
+            const photoPreview = document.getElementById('replyPhotoPreview');
+            const moonGate = document.getElementById('replyMoonGate');
+            const gateTime = document.getElementById('replyMoonGateTime');
+            const lunarPanel = document.getElementById('threadLunarPanel');
 
             if (!moonData.isVisible) {
-                const riseTime = moonData.moonrise !== '--:--' ? moonData.moonrise : '';
-                if (riseTime) {
-                    timeEl.textContent = `Messaging opens at moonrise (${riseTime})`;
-                } else {
-                    timeEl.textContent = 'Messaging opens when the moon rises';
+                // Moon is DOWN — hide compose, show gate
+                if (replyRow) replyRow.style.display = 'none';
+                if (lunarLink) lunarLink.style.display = 'none';
+                if (photoPreview) photoPreview.style.display = 'none';
+                if (lunarPanel) lunarPanel.style.display = 'none';
+                if (moonGate) moonGate.style.display = 'block';
+                if (gateTime) {
+                    const riseTime = moonData.moonrise !== '--:--' ? moonData.moonrise : '';
+                    gateTime.textContent = riseTime
+                        ? `Messaging opens at moonrise (${riseTime})`
+                        : 'Messaging opens when the moon rises';
                 }
+            } else {
+                // Moon is UP — show compose, hide gate
+                if (replyRow) replyRow.style.display = '';
+                if (lunarLink) lunarLink.style.display = '';
+                if (moonGate) moonGate.style.display = 'none';
             }
         }
 
@@ -12280,34 +12307,49 @@
                     if (item.status === 'In Transit') {
                         let etaStr = '';
                         if (item.releaseAt) {
-                            const rd = new Date(item.releaseAt);
-                            etaStr = ' (' + rd.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) + ')';
+                            const diff = new Date(item.releaseAt).getTime() - Date.now();
+                            if (diff > 0) {
+                                const h = Math.floor(diff / 3600000);
+                                const m = Math.floor((diff % 3600000) / 60000);
+                                etaStr = h > 0 ? ` \u2014 arriving in ${h}h ${m}m` : ` \u2014 arriving in ${m}m`;
+                            }
                         }
+                        const loc = item.location ? item.location + "'s " : '';
                         html += `
                             <div style="text-align:center;padding:8px;color:rgba(79,195,247,0.5);font-size:11px;font-style:italic;">
-                                Traveling toward ${item.location ? item.location + "'s " : ''}moonrise${etaStr}...
+                                Traveling toward ${loc}moonrise${etaStr}...
                             </div>
                         `;
                     }
                 } else if (item.type === 'transit') {
                     let transitEta = '';
                     if (item.releaseAt) {
-                        const rd = new Date(item.releaseAt);
-                        transitEta = ' (' + rd.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) + ')';
+                        const diff = new Date(item.releaseAt).getTime() - Date.now();
+                        if (diff > 0) {
+                            const h = Math.floor(diff / 3600000);
+                            const m = Math.floor((diff % 3600000) / 60000);
+                            transitEta = h > 0 ? ` \u2014 arriving in ${h}h ${m}m` : ` \u2014 arriving in ${m}m`;
+                        }
                     }
                     html += `
                         <div style="text-align:center;padding:20px;color:rgba(79,195,247,0.5);font-size:13px;font-style:italic;">
-                            Message traveling toward ${item.location}<br>
-                            It will arrive at moonrise${transitEta}
+                            Message traveling toward ${item.location}${transitEta}<br>
+                            ${transitEta ? '' : 'It will arrive at moonrise'}
                         </div>
                     `;
                 } else if (item.type === 'arriving') {
                     // Received in-transit message: shown as notification
                     let arrivalNote = 'A moon message is on its way to you...';
                     if (item.releaseAt) {
-                        const rd = new Date(item.releaseAt);
-                        const timeStr = rd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        arrivalNote = `A moon message is traveling toward you. It will arrive at moonrise (${timeStr}).`;
+                        const diff = new Date(item.releaseAt).getTime() - Date.now();
+                        if (diff > 0) {
+                            const h = Math.floor(diff / 3600000);
+                            const m = Math.floor((diff % 3600000) / 60000);
+                            const eta = h > 0 ? `${h}h ${m}m` : `${m}m`;
+                            arrivalNote = `A moon message is on its way \u2014 arriving in ${eta}.`;
+                        } else {
+                            arrivalNote = 'A moon message has arrived.';
+                        }
                     }
                     html += `
                         <div class="chat-transit-msg" style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(18,35,58,0.5);border:1px dashed rgba(79,195,247,0.25);margin-bottom:8px;">
