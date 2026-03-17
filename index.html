@@ -7851,7 +7851,7 @@
     </div>
 
     <script>
-        console.log('%c[MoonPop] v61 loaded — UI spec alignment: titles, ring center, toggle gating, diagnostics', 'color: #4fc3f7; font-weight: bold;');
+        console.log('%c[MoonPop] v62 loaded — fix instant delivery bug: messages now go through transit when city unknown', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -9946,6 +9946,7 @@
                         const releasePast = m.release_at && new Date(m.release_at) <= new Date();
                         if (m.status === 'in_transit' && !releasePast) statusDisplay = 'In Transit';
                         else if (m.status === 'released' || releasePast) statusDisplay = 'Released';
+                        console.log('[load] sent msg to', m.recipient_name, '| db_status:', m.status, '| release_at:', m.release_at, '| releasePast:', releasePast, '| display:', statusDisplay, '| city:', m.recipient_city);
 
                         const rp = m.recipient_id ? profileMap[m.recipient_id] : null;
 
@@ -16019,18 +16020,26 @@
             }
 
             // Calculate when the message should be released (recipient's next moonrise)
+            console.log('[send] location:', pendingMessage.location);
             const recipientMoonrise = getRecipientMoonrise(pendingMessage.location);
             let releaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
+            console.log('[send] recipientMoonrise:', recipientMoonrise, 'releaseAt:', releaseAt);
 
             // Check if recipient's moon is currently in their sky
             const recipientMoonStatus = getContactMoonStatus(pendingMessage.location);
             const recipientMoonUp = recipientMoonStatus && recipientMoonStatus.isUp;
+            console.log('[send] recipientMoonStatus:', recipientMoonStatus, 'recipientMoonUp:', recipientMoonUp);
 
-            // Instant deliver only if:
-            // - Recipient's moon is currently up (they can read it now), OR
-            // - Can't calculate moonrise (no city data — don't leave it stuck)
-            const instantDeliver = recipientMoonUp || !releaseAt;
+            // Instant deliver only if recipient's moon is currently up (they can read it now)
+            // If we can't calculate moonrise, use a 12h fallback instead of instant delivery
+            if (!releaseAt && !recipientMoonUp) {
+                // No city data — use 12h fallback so message still goes through transit
+                releaseAt = new Date(Date.now() + 12 * 3600000).toISOString();
+                console.warn('[send] No moonrise data for', pendingMessage.location, '— using 12h fallback releaseAt');
+            }
+            const instantDeliver = recipientMoonUp === true;
             const messageStatus = instantDeliver ? 'released' : 'in_transit';
+            console.log('[send] instantDeliver:', instantDeliver, 'messageStatus:', messageStatus);
 
             // Safety: if somehow still in_transit but no release_at, set a 24h fallback
             if (messageStatus === 'in_transit' && !releaseAt) {
