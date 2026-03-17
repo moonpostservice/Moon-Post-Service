@@ -4005,14 +4005,123 @@
         .thread-lunar-panel .lunar-step-back:hover {
             color: #4fc3f7 !important;
         }
-        /* Cancel button in thread lunar panel */
-        .thread-lunar-panel .thread-lunar-cancel {
-            border-color: rgba(79, 195, 247, 0.2) !important;
-            color: rgba(255, 255, 255, 0.5) !important;
+        /* Header row: title + cancel link */
+        .thread-lunar-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
         }
-        .thread-lunar-panel .thread-lunar-cancel:hover {
-            border-color: rgba(79, 195, 247, 0.4) !important;
-            color: rgba(255, 255, 255, 0.8) !important;
+        .thread-lunar-header-row .thread-lunar-intro {
+            margin-bottom: 0;
+            flex: 1;
+        }
+        .thread-lunar-cancel-link {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            font-family: 'Satoshi', sans-serif;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 2px 0;
+            margin-left: 12px;
+            white-space: nowrap;
+            transition: color 0.15s;
+        }
+        .thread-lunar-cancel-link:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        /* Progress dots */
+        .thread-lunar-dots {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .thread-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            transition: background 0.2s;
+        }
+        .thread-dot.active {
+            background: #4fc3f7;
+        }
+        .thread-dot.done {
+            background: rgba(79, 195, 247, 0.5);
+        }
+        /* Step nav row */
+        .thread-lunar-step-nav {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        /* Result card (matches compose result card style in dark theme) */
+        .thread-lunar-result-card {
+            position: relative;
+            background: rgba(5, 14, 30, 0.8);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 10px 0 0;
+            border: 1px solid rgba(79, 195, 247, 0.15);
+            animation: threadLunarCardIn 0.35s ease;
+            overflow: hidden;
+        }
+        .thread-lunar-result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #4fc3f7, rgba(255, 85, 88, 0.6), #4fc3f7);
+        }
+        @keyframes threadLunarCardIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .thread-lunar-result-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: rgba(79, 195, 247, 0.5);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        .thread-lunar-result-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.85);
+            white-space: pre-line;
+        }
+        .thread-lunar-result-closing {
+            font-size: 14px;
+            color: rgba(79, 195, 247, 0.6);
+            margin-top: 8px;
+            font-style: italic;
+        }
+        .thread-lunar-result-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            justify-content: center;
+        }
+        .thread-lunar-action-btn {
+            background: none;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-family: 'Satoshi', sans-serif;
+            font-size: 12px;
+            color: rgba(79, 195, 247, 0.7);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .thread-lunar-action-btn:hover {
+            border-color: #4fc3f7;
+            color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.08);
         }
 
 
@@ -7687,36 +7796,63 @@
                         <button class="attach-option" onclick="triggerYoutubeAttach()">🔗 YouTube Link</button>
                     </div>
                 </div>
-                <!-- Lunar Note: 3-step creative wizard -->
+                <!-- Lunar Note: 3-step creative wizard (matches compose flow) -->
                 <div class="thread-lunar-panel" id="threadLunarPanel" style="display:none;">
-                    <p class="thread-lunar-intro" id="threadLunarIntro">Give me three things.</p>
-                    <div class="thread-lunar-steps">
+                    <div class="thread-lunar-header-row">
+                        <p class="thread-lunar-intro" id="threadLunarIntro">Give me three things. The moon does the rest.</p>
+                        <button class="thread-lunar-cancel-link" onclick="closeThreadLunar()">Cancel</button>
+                    </div>
+                    <div class="thread-lunar-steps" id="threadLunarSteps">
                         <div class="thread-lunar-step" id="threadStep1">
+                            <div class="thread-lunar-dots">
+                                <span class="thread-dot active"></span>
+                                <span class="thread-dot"></span>
+                                <span class="thread-dot"></span>
+                            </div>
                             <label class="thread-lunar-label" id="threadLabel1">an emotion</label>
-                            <input type="text" class="thread-lunar-input" id="threadLunarInput1" placeholder="anything" oninput="updateThreadLunarNextBtn(1)">
+                            <input type="text" class="thread-lunar-input" id="threadLunarInput1" placeholder="anything that comes to mind" oninput="updateThreadLunarNextBtn(1)">
                             <button class="lunar-step-next thread-lunar-next-btn" id="threadNext1" onclick="advanceThreadStep(2)" disabled>Next →</button>
                         </div>
                         <div class="thread-lunar-step" id="threadStep2" style="display:none;">
+                            <div class="thread-lunar-dots">
+                                <span class="thread-dot done"></span>
+                                <span class="thread-dot active"></span>
+                                <span class="thread-dot"></span>
+                            </div>
                             <label class="thread-lunar-label" id="threadLabel2">a different emotion</label>
-                            <input type="text" class="thread-lunar-input" id="threadLunarInput2" placeholder="something else" oninput="updateThreadLunarNextBtn(2)">
-                            <div style="display:flex;gap:8px;margin-top:6px;">
-                                <button class="lunar-step-back" onclick="goBackThreadStep(1)" style="background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;font-size:13px;">← Back</button>
+                            <input type="text" class="thread-lunar-input" id="threadLunarInput2" placeholder="something else entirely" oninput="updateThreadLunarNextBtn(2)">
+                            <div class="thread-lunar-step-nav">
+                                <button class="lunar-step-back" onclick="goBackThreadStep(1)">← Back</button>
                                 <button class="lunar-step-next thread-lunar-next-btn" id="threadNext2" onclick="advanceThreadStep(3)" disabled>Next →</button>
                             </div>
                         </div>
                         <div class="thread-lunar-step" id="threadStep3" style="display:none;">
+                            <div class="thread-lunar-dots">
+                                <span class="thread-dot done"></span>
+                                <span class="thread-dot done"></span>
+                                <span class="thread-dot active"></span>
+                            </div>
                             <label class="thread-lunar-label" id="threadLabel3">something you pretend not to care about</label>
-                            <input type="text" class="thread-lunar-input" id="threadLunarInput3" placeholder="you know" oninput="updateThreadLunarNextBtn(3)">
-                            <div style="display:flex;gap:8px;margin-top:6px;">
-                                <button class="lunar-step-back" onclick="goBackThreadStep(2)" style="background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;font-size:13px;">← Back</button>
+                            <input type="text" class="thread-lunar-input" id="threadLunarInput3" placeholder="you know the one" oninput="updateThreadLunarNextBtn(3)">
+                            <div class="thread-lunar-step-nav">
+                                <button class="lunar-step-back" onclick="goBackThreadStep(2)">← Back</button>
                                 <button class="lunar-step-next thread-lunar-next-btn" id="threadNext3" onclick="generateThreadLunarResult()" disabled>Reveal 🌙</button>
                             </div>
                         </div>
                     </div>
-                    <div class="thread-lunar-result" id="threadLunarResult" style="display:none;"></div>
-                    <div style="display:flex;gap:8px;margin-top:10px;">
-                        <button class="thread-lunar-cancel" onclick="closeThreadLunar()" style="flex:1;padding:9px;border:1.5px solid rgba(79,195,247,0.2);border-radius:8px;background:none;color:rgba(255,255,255,0.5);font-family:'Satoshi',sans-serif;font-size:13px;cursor:pointer;">Cancel</button>
-                        <button class="thread-lunar-send" id="threadLunarSendBtn" onclick="sendThreadLunarNote()" disabled style="flex:1;">Send Lunar Note</button>
+                    <!-- Result card (hidden until reveal) -->
+                    <div class="thread-lunar-result-card" id="threadLunarResultCard" style="display:none;">
+                        <div class="thread-lunar-result-label">Lunar Note</div>
+                        <div class="thread-lunar-result-text" id="threadLunarResultText"></div>
+                        <div class="thread-lunar-result-closing" id="threadLunarResultClosing"></div>
+                        <div class="thread-lunar-result-actions">
+                            <button class="thread-lunar-action-btn" onclick="regenerateThreadLunar()">↻ try another version</button>
+                            <button class="thread-lunar-action-btn" onclick="editThreadInputs()">✎ change answers</button>
+                        </div>
+                    </div>
+                    <!-- Send button (only visible after reveal) -->
+                    <div id="threadLunarSendRow" style="display:none;margin-top:10px;">
+                        <button class="thread-lunar-send" id="threadLunarSendBtn" onclick="sendThreadLunarNote()">Send Lunar Note</button>
                     </div>
                 </div>
                 <div style="text-align:center;padding:2px 0;">
@@ -7731,7 +7867,7 @@
     </div>
 
     <script>
-        console.log('%c[MoonPop] v58 loaded — per-message reactions, ring dot clamping, transit defense', 'color: #4fc3f7; font-weight: bold;');
+        console.log('%c[MoonPop] v59 loaded — thread lunar note matches compose flow', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -12405,11 +12541,14 @@
         let threadLunarStep = 1;
         let threadLunarGenerated = null;
 
+        let _threadLunarTemplateIdx = -1; // track current template for "try another version"
+
         function openThreadLunar() {
             const panel = document.getElementById('threadLunarPanel');
             panel.style.display = 'block';
             threadLunarStep = 1;
             threadLunarGenerated = null;
+            _threadLunarTemplateIdx = -1;
 
             // Load today's prompts
             const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
@@ -12423,8 +12562,10 @@
                 const nextBtn = document.getElementById('threadNext' + (i+1));
                 if (nextBtn) nextBtn.disabled = true;
             }
-            document.getElementById('threadLunarResult').style.display = 'none';
-            document.getElementById('threadLunarSendBtn').disabled = true;
+            // Show steps, hide result card and send row
+            document.getElementById('threadLunarSteps').style.display = 'block';
+            document.getElementById('threadLunarResultCard').style.display = 'none';
+            document.getElementById('threadLunarSendRow').style.display = 'none';
             document.getElementById('threadLunarInput1').focus();
         }
 
@@ -12466,9 +12607,9 @@
                     lunarPanel.style.overflow = 'hidden';
                     lunarPanel.style.transition = 'opacity 0.25s ease 0.1s, max-height 0.35s ease';
                     requestAnimationFrame(() => {
-                        lunarPanel.style.maxHeight = '400px';
+                        lunarPanel.style.maxHeight = '500px';
                         lunarPanel.style.opacity = '1';
-                        setTimeout(() => { lunarPanel.style.overflow = ''; }, 350);
+                        setTimeout(() => { lunarPanel.style.overflow = ''; lunarPanel.style.maxHeight = ''; }, 350);
                     });
                 }
             } else {
@@ -12526,6 +12667,24 @@
             if (nextBtn) nextBtn.disabled = !val;
         }
 
+        // Enter key advances steps in thread lunar wizard
+        (function() {
+            document.addEventListener('DOMContentLoaded', () => {
+                for (let i = 1; i <= 3; i++) {
+                    const input = document.getElementById('threadLunarInput' + i);
+                    if (input) {
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter' && input.value.trim()) {
+                                e.preventDefault();
+                                if (i < 3) advanceThreadStep(i + 1);
+                                else generateThreadLunarResult();
+                            }
+                        });
+                    }
+                }
+            });
+        })();
+
         function advanceThreadStep(toStep) {
             // Show ONLY the target step (hide all others, like compose page does)
             for (let i = 1; i <= 3; i++) {
@@ -12556,21 +12715,67 @@
             const v3 = document.getElementById('threadLunarInput3').value.trim();
             if (!v1 || !v2 || !v3) return;
 
-            const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-            const templateIdx = dayOfYear % lunarTemplates.length;
-            const result = lunarTemplates[templateIdx](v1, v2, v3);
+            // Pick template (random first time, tracked for "try another version")
+            if (_threadLunarTemplateIdx < 0) {
+                _threadLunarTemplateIdx = Math.floor(Math.random() * lunarTemplates.length);
+            }
+            const result = generateLunarNote(v1, v2, v3, _threadLunarTemplateIdx);
+            threadLunarGenerated = result;
+            _threadLunarTemplateIdx = result.templateIdx;
+
+            // Hide steps, show result card + send button
+            document.getElementById('threadLunarSteps').style.display = 'none';
+            document.getElementById('threadLunarResultText').textContent = result.lines;
+            document.getElementById('threadLunarResultClosing').textContent = result.closing;
+            const card = document.getElementById('threadLunarResultCard');
+            card.style.display = 'block';
+            card.style.animation = 'none';
+            card.offsetHeight;
+            card.style.animation = 'threadLunarCardIn 0.35s ease';
+            document.getElementById('threadLunarSendRow').style.display = 'block';
+        }
+
+        function editThreadInputs() {
+            // Go back to step 1 to edit (preserve input values)
+            document.getElementById('threadLunarResultCard').style.display = 'none';
+            document.getElementById('threadLunarSendRow').style.display = 'none';
+            document.getElementById('threadLunarSteps').style.display = 'block';
+            // Show step 1
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('threadStep' + i).style.display = i === 1 ? 'block' : 'none';
+            }
+            threadLunarStep = 1;
+            threadLunarGenerated = null;
+            setTimeout(() => {
+                const input = document.getElementById('threadLunarInput1');
+                if (input) input.focus();
+            }, 50);
+        }
+
+        function regenerateThreadLunar() {
+            const v1 = document.getElementById('threadLunarInput1').value.trim();
+            const v2 = document.getElementById('threadLunarInput2').value.trim();
+            const v3 = document.getElementById('threadLunarInput3').value.trim();
+            if (!v1 || !v2 || !v3) return;
+
+            // Pick a DIFFERENT template
+            let newIdx;
+            do {
+                newIdx = Math.floor(Math.random() * lunarTemplates.length);
+            } while (newIdx === _threadLunarTemplateIdx && lunarTemplates.length > 1);
+
+            _threadLunarTemplateIdx = newIdx;
+            const result = generateLunarNote(v1, v2, v3, newIdx);
             threadLunarGenerated = result;
 
-            // Hide all steps and show result
-            for (let i = 1; i <= 3; i++) {
-                document.getElementById('threadStep' + i).style.display = 'none';
-            }
+            document.getElementById('threadLunarResultText').textContent = result.lines;
+            document.getElementById('threadLunarResultClosing').textContent = result.closing;
 
-            const resultEl = document.getElementById('threadLunarResult');
-            resultEl.innerHTML = result.lines.replace(/\n/g, '<br>') +
-                '<div class="lunar-closing">' + result.closing + '</div>';
-            resultEl.style.display = 'block';
-            document.getElementById('threadLunarSendBtn').disabled = false;
+            // Replay animation
+            const card = document.getElementById('threadLunarResultCard');
+            card.style.animation = 'none';
+            card.offsetHeight;
+            card.style.animation = 'threadLunarCardIn 0.35s ease';
         }
 
         async function sendThreadLunarNote() {
