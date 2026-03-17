@@ -1,5 +1,5 @@
-// MoonPop Service Worker v26
-const CACHE_NAME = 'moonpop-v26';
+// MoonPop Service Worker v27
+const CACHE_NAME = 'moonpop-v27';
 const STATIC_ASSETS = [
   // Only precache CDN assets (immutable, safe to cache-first)
   // App shell (index.html) is NOT precached — it uses network-first strategy

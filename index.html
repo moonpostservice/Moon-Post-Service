@@ -7851,7 +7851,7 @@
     </div>
 
     <script>
-        console.log('%c[MoonPop] v64 loaded — release_at is source of truth for transit status', 'color: #4fc3f7; font-weight: bold;');
+        console.log('%c[MoonPop] v65 loaded — DEBUG: forced green test dot + reload tracing', 'color: #4fc3f7; font-weight: bold;');
         // ============================================
         // STATE - Must be declared first
         // ============================================
@@ -10541,6 +10541,7 @@
         async function debouncedReloadMessages() {
             if (isReloadingMessages) return;
             isReloadingMessages = true;
+            console.log('%c[RELOAD] debouncedReloadMessages triggered', 'color: orange; font-weight: bold', new Error().stack?.split('\n')[2]);
             try {
                 const prevKey = currentConversation?.otherKey;
 
@@ -16268,6 +16269,33 @@
             }
 
             renderMessageDots(); // Update orbit dots
+
+            // DEBUG: Force a test dot + log to verify the rendering pipeline
+            const _dotContainer = document.getElementById('messageDots');
+            const _inTransit = messages.filter(m => m.type === 'sent' && m.status === 'In Transit');
+            console.log('%c[SEND-DEBUG] After renderMessageDots:', 'color: red; font-weight: bold',
+                'container exists:', !!_dotContainer,
+                'container children:', _dotContainer?.children.length,
+                'moonVisible:', moonData.isVisible,
+                'inTransit count:', _inTransit.length,
+                'messages with releaseAt:', _inTransit.map(m => ({ to: m.sender, status: m.status, loc: m.location, release: m.releaseAt }))
+            );
+            // Force a visible test dot at 180° (bottom of ring) so we know rendering works
+            if (_dotContainer && _inTransit.length > 0) {
+                const _testOrbit = document.createElement('div');
+                _testOrbit.className = 'dot-orbit';
+                _testOrbit.style.transform = 'rotate(180deg)';
+                const _testDot = document.createElement('div');
+                _testDot.className = 'message-dot';
+                _testDot.style.background = 'lime';
+                _testDot.style.width = '18px';
+                _testDot.style.height = '18px';
+                _testDot.style.boxShadow = '0 0 15px lime';
+                _testOrbit.appendChild(_testDot);
+                _dotContainer.appendChild(_testOrbit);
+                console.log('%c[SEND-DEBUG] FORCED GREEN DOT at 180°', 'color: lime; font-weight: bold');
+            }
+
             closeModal();
             
             // Store location for toast
