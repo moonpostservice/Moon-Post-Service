@@ -8925,51 +8925,18 @@
             return { isUp: false, hoursUntilRise, hoursUntilSet: 0, progress };
         }
 
-        // Auto-release in_transit messages/replies when the local user's moon rises.
-        // This is the recipient-side counterpart to the sender always setting in_transit.
+        // Auto-release: when the local user's moon rises, mark received messages
+        // as viewable client-side. No DB updates needed — the contentVisible logic
+        // in loadMessages() already checks moonData.isVisible + release_at timing.
+        // The sender's release_at ensures messages aren't visible before moonrise.
         async function autoReleaseInTransitMessages() {
             if (!currentAuthUser) return;
-            const now = new Date().toISOString();
-            console.log('[autoRelease] Moon just rose — releasing in_transit messages for', currentAuthUser.id);
-
-            try {
-                // Release messages where I am the recipient
-                const { data: releasedMsgs, error: e1 } = await sb.from('messages')
-                    .update({ status: 'released', released_at: now })
-                    .eq('recipient_id', currentAuthUser.id)
-                    .eq('status', 'in_transit')
-                    .select('id');
-                if (e1) console.error('[autoRelease] messages error:', e1);
-                else if (releasedMsgs?.length) console.log('[autoRelease] Released', releasedMsgs.length, 'messages');
-
-                // Also release messages matched by email
-                if (currentAuthUser.email) {
-                    const { data: releasedByEmail, error: e2 } = await sb.from('messages')
-                        .update({ status: 'released', released_at: now })
-                        .eq('recipient_email', currentAuthUser.email)
-                        .eq('status', 'in_transit')
-                        .select('id');
-                    if (e2) console.error('[autoRelease] email messages error:', e2);
-                    else if (releasedByEmail?.length) console.log('[autoRelease] Released', releasedByEmail.length, 'messages by email');
-                }
-
-                // Release in_transit replies on messages where I am the recipient
-                // (replies from others that are waiting for my moon to rise)
-                const { data: myMessages } = await sb.from('messages')
-                    .select('id')
-                    .or(`recipient_id.eq.${currentAuthUser.id}${currentAuthUser.email ? `,recipient_email.eq.${currentAuthUser.email}` : ''}`);
-                if (myMessages?.length) {
-                    const msgIds = myMessages.map(m => m.id);
-                    const { data: releasedReplies, error: e3 } = await sb.from('replies')
-                        .update({ status: 'released', release_at: now })
-                        .in('message_id', msgIds)
-                        .eq('status', 'in_transit')
-                        .select('id');
-                    if (e3) console.error('[autoRelease] replies error:', e3);
-                    else if (releasedReplies?.length) console.log('[autoRelease] Released', releasedReplies.length, 'replies');
-                }
-            } catch (err) {
-                console.error('[autoRelease] Failed:', err);
+            console.log('[autoRelease] Moon is up — reloading messages (contentVisible will handle display)');
+            // Just reload messages — the existing contentVisible logic handles everything
+            if (typeof loadMessages === 'function') {
+                await loadMessages();
+                renderMessages();
+                renderMessageDots();
             }
         }
 
