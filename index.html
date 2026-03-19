@@ -13227,11 +13227,11 @@
                     const recipientCity = currentConversation?.location || targetMsg.location || 'Unknown';
                     const recipientMoonrise = getRecipientMoonrise(recipientCity);
                     let replyReleaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
+                    const replyHoursUntilRise = recipientMoonrise ? recipientMoonrise.hoursUntil : null;
 
-                    // Simple moon-up check: raw SunCalc altitude > 0
-                    const _replyCity = cities.find(c => c.name.toLowerCase() === recipientCity.toLowerCase());
-                    const _replyMoonPos = _replyCity ? SunCalc.getMoonPosition(new Date(), _replyCity.lat, _replyCity.lon) : null;
-                    const replyMoonUp = _replyMoonPos ? _replyMoonPos.altitude > 0 : false;
+                    // Heuristic: if next moonrise is within 13h, moon is currently DOWN
+                    // (avoids unreliable SunCalc altitude check across browsers)
+                    const replyMoonUp = replyHoursUntilRise !== null ? replyHoursUntilRise > 13 : false;
 
                     // If no moonrise data and moon not up, use 12h fallback
                     if (!replyReleaseAt && !replyMoonUp) {
@@ -13241,7 +13241,7 @@
                     const replyInstantDeliver = replyMoonUp === true;
                     const replyStatus = replyInstantDeliver ? 'released' : 'in_transit';
                     const finalReleaseAt = replyInstantDeliver ? new Date().toISOString() : replyReleaseAt;
-                    console.log('[sendReply] city:', recipientCity, 'moonUp:', replyMoonUp, 'altitude:', _replyMoonPos?.altitude?.toFixed(4), 'instant:', replyInstantDeliver);
+                    console.log('[sendReply] city:', recipientCity, 'hoursUntilRise:', replyHoursUntilRise?.toFixed(2), 'moonUp:', replyMoonUp, 'instant:', replyInstantDeliver);
 
                     const insertData = {
                         message_id: targetMsg.dbId,
@@ -13291,7 +13291,7 @@
                         window._lastSendDiag = {
                             location: recipientCity,
                             recipientMoonUp: replyMoonUp,
-                            altitude: _replyMoonPos?.altitude?.toFixed(4) || 'N/A',
+                            hoursUntilRise: replyHoursUntilRise?.toFixed(2) || 'N/A',
                             instantDeliver: replyInstantDeliver,
                             releaseAt: finalReleaseAt,
                             messageStatus: replyStatus,
@@ -16231,17 +16231,20 @@
             }
 
             // Calculate when the message should be released (recipient's next moonrise)
-            // Use raw SunCalc altitude check (simpler & more reliable than isMoonVisible
-            // which had parallax correction bugs for remote cities)
+            // IMPORTANT: SunCalc.getMoonPosition().altitude is unreliable across browsers
+            // for remote coordinates. Instead, use moonrise TIMING as a heuristic:
+            //   - If next moonrise is ≤13h away → moon is DOWN → in_transit
+            //   - If next moonrise is >13h away → moon is UP → instant delivery
+            // This works because: moon down = next rise is soon (0-13h),
+            //                     moon up = next rise is far (14-25h, after set + down period)
             console.log('[send] location:', pendingMessage.location);
             const recipientMoonrise = getRecipientMoonrise(pendingMessage.location);
             let releaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
+            const hoursUntilRise = recipientMoonrise ? recipientMoonrise.hoursUntil : null;
 
-            // Simple moon-up check: use raw SunCalc altitude (bypass buggy parallax correction)
-            const _sendCity = cities.find(c => c.name.toLowerCase() === (pendingMessage.location || '').toLowerCase());
-            const _sendMoonPos = _sendCity ? SunCalc.getMoonPosition(new Date(), _sendCity.lat, _sendCity.lon) : null;
-            const recipientMoonUp = _sendMoonPos ? _sendMoonPos.altitude > 0 : false;
-            console.log('[send] recipientMoonrise:', recipientMoonrise, 'altitude:', _sendMoonPos?.altitude, 'moonUp:', recipientMoonUp);
+            // Heuristic: if next moonrise is within 13h, moon is currently DOWN
+            const recipientMoonUp = hoursUntilRise !== null ? hoursUntilRise > 13 : false;
+            console.log('[send] hoursUntilRise:', hoursUntilRise?.toFixed(2), 'moonUp:', recipientMoonUp, 'releaseAt:', releaseAt);
 
             // If no moonrise data and moon not up, use 12h fallback
             if (!releaseAt && !recipientMoonUp) {
@@ -16250,13 +16253,13 @@
             }
             const instantDeliver = recipientMoonUp === true;
             const messageStatus = instantDeliver ? 'released' : 'in_transit';
-            console.log('[send] instantDeliver:', instantDeliver, 'status:', messageStatus, 'releaseAt:', releaseAt);
+            console.log('[send] instantDeliver:', instantDeliver, 'status:', messageStatus);
 
             // Store send diagnostics for visible panel
             window._lastSendDiag = {
                 location: pendingMessage.location,
                 recipientMoonUp,
-                altitude: _sendMoonPos?.altitude?.toFixed(4) || 'N/A',
+                hoursUntilRise: hoursUntilRise?.toFixed(2) || 'N/A',
                 instantDeliver,
                 releaseAt,
                 messageStatus,
