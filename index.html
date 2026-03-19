@@ -12322,13 +12322,18 @@
                 detailImg.style.display = 'none';
                 document.getElementById('detailAvatarInitial').style.display = '';
             }
-            document.getElementById('detailSender').textContent = conv.otherName;
+            // Show username as title, real name + location as subtitle
+            const displayUsername = conv.otherUsername || conv.otherName;
+            const realName = conv.otherUsername && conv.otherUsername !== conv.otherName
+                ? conv.otherName : null;
+            document.getElementById('detailSender').textContent = displayUsername;
 
-            // Show location and online status
+            // Show location and online status (with real name if different from username)
             const online = isContactOnline(contact);
+            const namePrefix = realName ? `${realName} · ` : '';
             document.getElementById('detailLocation').textContent = online
-                ? `${conv.location || 'Unknown'} · Online under the same sky`
-                : `${conv.location || 'Unknown'} · ${conv.messages.length} transmission${conv.messages.length > 1 ? 's' : ''}`;
+                ? `${namePrefix}${conv.location || 'Unknown'} · Online under the same sky`
+                : `${namePrefix}${conv.location || 'Unknown'} · ${conv.messages.length} transmission${conv.messages.length > 1 ? 's' : ''}`;
 
             // Load replies for ALL messages in this conversation
             if (currentAuthUser) {
