@@ -11974,7 +11974,9 @@
                         const pct = total > 0 ? Math.min(100, Math.max(2, (elapsed / total) * 100)) : 50;
                         progressBar = `<div class="transit-progress"><div class="transit-progress-bar" style="width:${pct.toFixed(1)}%"></div></div>`;
                     }
-                } else if (conv.hasIncomingTransit) {
+                } else if (conv.hasIncomingTransit && !moonData.isVisible) {
+                    // Only show "On Its Way" when YOUR moon is down. If your moon is up,
+                    // the message should already be released/readable — don't show transit bar.
                     const eta = formatRelativeEta(conv.incomingTransitReleaseAt);
                     badge = `<span class="message-status-badge arriving">${iconSvg('on-its-way', 'sm')} On Its Way${eta}</span>`;
                     // Progress bar: how far along from sent → your moonrise
