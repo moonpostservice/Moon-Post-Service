@@ -10153,6 +10153,25 @@
                 // Update message stats
                 moonData.messagesInTransit = messages.filter(m => m.type === 'sent' && m.status === 'In Transit').length;
 
+                // Count in-transit replies headed TO me (for receiver display)
+                try {
+                    const myMsgIds = received.map(m => m.id).filter(Boolean);
+                    if (myMsgIds.length > 0) {
+                        const { count: transitReplyCount } = await sb.from('replies')
+                            .select('id', { count: 'exact', head: true })
+                            .in('message_id', myMsgIds)
+                            .eq('status', 'in_transit')
+                            .neq('sender_id', currentAuthUser.id);
+                        window._incomingTransitReplies = transitReplyCount || 0;
+                        if (transitReplyCount > 0) console.log('[loadMessages] Incoming in-transit replies:', transitReplyCount);
+                    } else {
+                        window._incomingTransitReplies = 0;
+                    }
+                } catch (e) {
+                    console.error('[loadMessages] Failed to count incoming transit replies:', e);
+                    window._incomingTransitReplies = 0;
+                }
+
                 console.log('loadMessages: SUCCESS -', messages.length, 'messages (sent:', (sent||[]).length, ', received:', received.length, '), conversations:', conversations.length);
 
                 // If zero messages and this is first attempt, retry with fresh session
@@ -11669,6 +11688,10 @@
             // Uses conversation unread counts which are based on read receipts
             const totalWaiting = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
 
+            // Count incoming in-transit items (messages + replies headed to me)
+            const incomingInTransit = messages.filter(m => m.type === 'received' && m.stillInTransit).length
+                + (window._incomingTransitReplies || 0);
+
             // If no location set yet, show a prompt
             if (!moonData.userLat) {
                 document.body.classList.remove('moon-down');
@@ -11714,7 +11737,8 @@
                 // Combined status: unread + in-transit in one sentence
                 // Use releaseAt as source of truth (consistent with renderMessageDots)
                 const now = new Date();
-                const inTransit = messages.filter(m => m.type === 'sent' && ((m.releaseAt && new Date(m.releaseAt) > now) || (m.status === 'In Transit' && !m.releaseAt))).length;
+                const outgoingInTransit = messages.filter(m => m.type === 'sent' && ((m.releaseAt && new Date(m.releaseAt) > now) || (m.status === 'In Transit' && !m.releaseAt))).length;
+                const inTransit = outgoingInTransit + incomingInTransit;
                 const unreadCount = messages.filter(m => m.type === 'received' && !m.read).length;
                 let statusLine = '';
                 if (unreadCount > 0 && inTransit > 0) {
@@ -11737,20 +11761,25 @@
                 if (inboxCta) inboxCta.style.display = 'none';
 
                 // Title with personal greeting + message count
+                const totalCarrying = totalWaiting + incomingInTransit;
                 if (heroTitle) {
                     const greeting = userName ? `Hello ${userName}, ` : '';
-                    if (totalWaiting > 0) {
-                        const msgWord = totalWaiting === 1 ? 'message' : 'messages';
-                        heroTitle.textContent = `${greeting}the moon carries ${totalWaiting} ${msgWord} for you. You'll receive them when the moon reaches your sky.`;
+                    if (totalCarrying > 0) {
+                        const msgWord = totalCarrying === 1 ? 'message' : 'messages';
+                        heroTitle.textContent = `${greeting}the moon carries ${totalCarrying} ${msgWord} for you. You'll receive them when the moon reaches your sky.`;
                     } else {
                         heroTitle.textContent = `${greeting}the Moon Post Service opens when the moon rises.`;
                     }
                 }
 
-                // Ring center: ONLY countdown + "until moonrise" — nothing else
+                // Ring center: countdown + carrying info
+                const carryingLine = totalCarrying > 0
+                    ? `<p class="moon-carrying-indicator" style="margin-top:8px;opacity:0.7;">🌙 Carrying <span class="moon-carrying-count">${totalCarrying}</span> ${totalCarrying === 1 ? 'message' : 'messages'}</p>`
+                    : '';
                 centerEl.innerHTML = `
                     <div class="standby-countdown live-timer" style="opacity:0.6;">${timerStr}</div>
                     <p class="standby-label">until moonrise</p>
+                    ${carryingLine}
                 `;
             }
 
