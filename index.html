@@ -5021,7 +5021,8 @@
                 background: rgba(79, 195, 247, 0.25);
             }
             /* Reposition chat overlay into right panel with margin */
-            body.chat-open #messagePageView.active {
+            body.chat-open #messagePageView.active,
+            body.chat-open #sharedSkyPage.active {
                 position: fixed;
                 z-index: 100;
                 animation: msgPageInDesktop 0.2s ease;
@@ -5031,25 +5032,29 @@
                 margin-right: 24px;
                 box-shadow: 0 0 20px rgba(79, 195, 247, 0.06);
             }
-            body.chat-open #messagePageView .message-page-inner {
+            body.chat-open #messagePageView .message-page-inner,
+            body.chat-open #sharedSkyPage .message-page-inner {
                 max-width: none;
                 margin: 0;
                 height: 100%;
             }
             /* Chat header — subtle bg like active inbox item */
-            body.chat-open #messagePageView .message-page-header {
+            body.chat-open #messagePageView .message-page-header,
+            body.chat-open #sharedSkyPage .message-page-header {
                 background: rgba(8, 18, 35, 0.95);
                 border-bottom: 1px solid rgba(79, 195, 247, 0.18);
                 backdrop-filter: blur(16px);
             }
             /* Chat footer — dark glass bg */
-            body.chat-open #messagePageView .message-page-footer {
+            body.chat-open #messagePageView .message-page-footer,
+            body.chat-open #sharedSkyPage .message-page-footer {
                 background: rgba(14, 28, 50, 0.97);
                 border-top: 1px solid rgba(79, 195, 247, 0.22);
                 backdrop-filter: blur(16px);
             }
             /* Close animation */
-            body.chat-open #messagePageView.closing {
+            body.chat-open #messagePageView.closing,
+            body.chat-open #sharedSkyPage.closing {
                 animation: msgPageOutDesktop 0.2s ease forwards;
             }
             /* Elevate header above chat so settings dropdown renders on top */
@@ -7253,9 +7258,14 @@
     <div class="message-page" id="sharedSkyPage">
         <div class="message-page-inner">
             <div class="message-page-header" style="justify-content:space-between;">
-                <button class="message-page-back" onclick="closeSharedSkyModal()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
-                <span style="font-weight:700;color:var(--blue);font-size:15px;">🌍 Shared Sky</span>
-                <span style="width:34px;"></span>
+                <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                    <div class="message-page-avatar" style="background:linear-gradient(135deg, #1a237e, #4fc3f7);"><span>🌍</span></div>
+                    <div class="message-page-info" style="min-width:0;">
+                        <h3>Shared Sky</h3>
+                        <p id="sharedSkySubtitle">San Francisco · Live transmissions</p>
+                    </div>
+                </div>
+                <button class="message-page-close" onclick="closeSharedSkyModal()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="message-page-body shared-sky-feed" id="sharedSkySignals">
                 <!-- Populated by JS -->
@@ -12388,6 +12398,9 @@
                 }
             }
 
+            // Close Shared Sky if it's open
+            document.getElementById('sharedSkyPage').classList.remove('active', 'closing');
+
             renderConversationThread();
             page.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -14295,9 +14308,27 @@
         }
 
         function openSharedSkyModal() {
+            // Close any open chat first
+            if (document.getElementById('messagePageView').classList.contains('active')) {
+                _closeMessageDetailUI();
+            }
+            // Update subtitle with user's city
+            const subtitle = document.getElementById('sharedSkySubtitle');
+            if (subtitle) {
+                const savedLoc = localStorage.getItem('moonpop_location');
+                const cityName = savedLoc ? (JSON.parse(savedLoc).name || 'Your sky') : 'Your sky';
+                subtitle.textContent = `${cityName} · Live transmissions`;
+            }
             renderSharedSkySignals();
-            document.getElementById('sharedSkyPage').classList.add('active');
-            document.body.style.overflow = 'hidden';
+            const page = document.getElementById('sharedSkyPage');
+            page.classList.remove('closing');
+            page.classList.add('active');
+            // Use inline panel on desktop (same as chat)
+            if (window.innerWidth >= 901) {
+                document.body.classList.add('chat-open');
+            } else {
+                document.body.style.overflow = 'hidden';
+            }
             // Shared Sky is ALWAYS writable — ensure input is enabled regardless of moon state
             const ssInput = document.getElementById('sharedSkyInput');
             if (ssInput) { ssInput.disabled = false; ssInput.placeholder = 'Share something with the sky...'; }
@@ -14307,11 +14338,23 @@
             localStorage.setItem('moonpop_shared_sky_seen', new Date().toISOString());
             const badgeEl = document.getElementById('sharedSkyBadge');
             if (badgeEl) { badgeEl.textContent = ''; badgeEl.style.display = 'none'; }
+            // Scroll to bottom
+            const feed = document.getElementById('sharedSkySignals');
+            if (feed) setTimeout(() => { feed.scrollTop = feed.scrollHeight; }, 100);
         }
 
         function closeSharedSkyModal() {
-            document.getElementById('sharedSkyPage').classList.remove('active');
-            document.body.style.overflow = '';
+            const page = document.getElementById('sharedSkyPage');
+            if (window.innerWidth >= 901) {
+                page.classList.add('closing');
+                setTimeout(() => {
+                    page.classList.remove('active', 'closing');
+                    document.body.classList.remove('chat-open');
+                }, 200);
+            } else {
+                page.classList.remove('active');
+                document.body.style.overflow = '';
+            }
         }
 
         function updateSharedSkyBadge() {
