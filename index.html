@@ -9714,10 +9714,35 @@
                 const lastSent = conv.messages.find(m => m.type === 'sent');
                 conv._lastSentAt = lastSent ? lastSent.createdAt : null;
 
-                // Preview = the most recent message in the conversation (from either party)
-                // "You:" prefix for sent messages
-                const youPrefix = latest.type === 'sent' ? 'You: ' : '';
-                if (latest.stillInTransit && latest.type === 'received') {
+                // Find the most recent reply across all messages in this conversation
+                let latestReply = null;
+                let latestReplyMsg = null;
+                conv.messages.forEach(m => {
+                    if (m.replies && m.replies.length > 0) {
+                        m.replies.forEach(r => {
+                            if (r.createdAt && (!latestReply || new Date(r.createdAt) > new Date(latestReply.createdAt))) {
+                                latestReply = r;
+                                latestReplyMsg = m;
+                            }
+                        });
+                    }
+                });
+
+                // Determine if the latest activity is a reply or a top-level message
+                const replyIsNewer = latestReply && new Date(latestReply.createdAt) > new Date(latest.createdAt);
+                const effectiveLatest = replyIsNewer ? latestReply : latest;
+                const isSentReply = replyIsNewer && latestReply.senderId === currentAuthUser?.id;
+                const isSentMsg = !replyIsNewer && latest.type === 'sent';
+
+                // Preview = the most recent activity in the conversation
+                const youPrefix = (isSentReply || isSentMsg) ? 'You: ' : '';
+                if (replyIsNewer && isSentReply && latestReply.text) {
+                    // Latest is a reply WE sent — show preview of our reply text
+                    conv.latestPreview = youPrefix + latestReply.text;
+                } else if (replyIsNewer && !isSentReply) {
+                    // Latest is an incoming reply — show preview or transit info
+                    conv.latestPreview = latestReply.text || 'Moon message';
+                } else if (latest.stillInTransit && latest.type === 'received') {
                     conv.latestPreview = '';  // badge carries the transit info
                 } else if (latest.status === 'In Transit') {
                     conv.latestPreview = '';  // badge carries the transit info
@@ -9754,9 +9779,27 @@
                     if (m.createdAt && new Date(m.createdAt) < new Date(now.getTime() - 24 * 3600000)) return false;
                     return true;
                 });
-                conv.hasInTransit = !!transitMsg;
-                conv.transitCreatedAt = transitMsg?.createdAt || null;
-                conv.transitReleaseAt = transitMsg?.releaseAt || null;
+                // Also check for in-transit reply dots (synthetic entries from sendReply)
+                if (!transitMsg) {
+                    const replyDot = messages.find(m =>
+                        m.isReplyDot && m.status === 'In Transit' &&
+                        m.sender === conv.otherName &&
+                        m.releaseAt && new Date(m.releaseAt) > now
+                    );
+                    if (replyDot) {
+                        conv.hasInTransit = true;
+                        conv.transitCreatedAt = replyDot.createdAt;
+                        conv.transitReleaseAt = replyDot.releaseAt;
+                    } else {
+                        conv.hasInTransit = false;
+                        conv.transitCreatedAt = null;
+                        conv.transitReleaseAt = null;
+                    }
+                } else {
+                    conv.hasInTransit = true;
+                    conv.transitCreatedAt = transitMsg.createdAt;
+                    conv.transitReleaseAt = transitMsg.releaseAt;
+                }
                 if (conv.hasInTransit) {
                     console.log('[inbox] transit to', conv.otherName, 'created:', conv.transitCreatedAt, 'release:', conv.transitReleaseAt);
                 }
