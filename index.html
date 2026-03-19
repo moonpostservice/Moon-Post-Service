@@ -8427,6 +8427,8 @@
                 if (city) {
                     updateLocationDisplay(city.name, city.country);
                     onLocationObtained(city.lat, city.lon, city.tz);
+                    // Persist to localStorage so saveSettings() picks it up for DB save
+                    localStorage.setItem('moonpop_location', JSON.stringify({ name: city.name, country: city.country }));
                 } else {
                     updateLocationDisplay(manualLoc, '');
                 }
