@@ -9781,9 +9781,13 @@
                 });
                 // Also check for in-transit reply dots (synthetic entries from sendReply)
                 if (!transitMsg) {
+                    const otherNameLC = (conv.otherName || '').toLowerCase();
+                    const otherKeyLC = (conv.otherKey || '').toLowerCase();
                     const replyDot = messages.find(m =>
                         m.isReplyDot && m.status === 'In Transit' &&
-                        m.sender === conv.otherName &&
+                        (m.sender?.toLowerCase() === otherNameLC ||
+                         m.sender?.toLowerCase() === otherKeyLC ||
+                         m.location?.toLowerCase() === (conv.location || '').toLowerCase()) &&
                         m.releaseAt && new Date(m.releaseAt) > now
                     );
                     if (replyDot) {
