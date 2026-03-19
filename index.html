@@ -10954,7 +10954,8 @@
                         }
 
                         // Also load reactions for all messages AND replies
-                        // Collect all reply IDs so we can query reactions for them too
+                        // Skip if a reaction was just added (cooldown prevents overwriting fresh data)
+                        if (!_reactionCooldown) {
                         const allReactionIds = [...msgIds];
                         currentConversation.messages.forEach(msg => {
                             if (msg.replies) msg.replies.forEach(r => { if (r.dbId) allReactionIds.push(r.dbId); });
@@ -10986,6 +10987,7 @@
                             });
                         }
                     }
+                    } else { console.log('[reload] Skipping reaction reload — cooldown active'); }
                     renderConversationThread();
                 }
             } finally {
@@ -13730,8 +13732,13 @@
         }
 
         // ---- Core reaction logic: add/remove reaction ----
+        let _reactionCooldown = false; // Prevents reload from overwriting fresh reactions
         async function handleReaction(msgDbId, emoji) {
             console.log('[Reactions] handleReaction called:', msgDbId, emoji);
+            // Block reaction overwrites for 3 seconds to prevent race condition
+            // with debouncedReloadMessages() fetching stale data from DB
+            _reactionCooldown = true;
+            setTimeout(() => { _reactionCooldown = false; }, 3000);
             let msg = findMsgByDbId(msgDbId);
             // Fallback: search all conversations (messages + their replies) if not found
             if (!msg) {
