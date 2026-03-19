@@ -12550,7 +12550,9 @@
         }
 
         // Render the full conversation thread (all messages + replies chronologically)
+        let _blockThreadRender = false;
         function renderConversationThread() {
+            if (_blockThreadRender) { console.log('[render] BLOCKED — reaction in progress'); return; }
             if (!currentConversation) return;
             const conv = currentConversation;
             const content = document.getElementById('detailContent');
@@ -13736,10 +13738,14 @@
         async function handleReaction(msgDbId, emoji) {
             console.log('[Reactions] handleReaction called:', msgDbId, emoji);
             _reactionCooldown = true;
+            // Block ALL thread re-renders during the reaction DB operation
+            // This prevents any concurrent reload from overwriting the optimistic update
+            _blockThreadRender = true;
             setTimeout(() => { _reactionCooldown = false; }, 3000);
             // Prevent double-fire from event bubbling
             if (handleReaction._lastCall && Date.now() - handleReaction._lastCall < 500) {
                 console.log('[Reactions] BLOCKED — double-fire detected');
+                _blockThreadRender = false;
                 return;
             }
             handleReaction._lastCall = Date.now();
@@ -13773,8 +13779,10 @@
                 if (existing.count <= 0) {
                     msg.reactions = msg.reactions.filter(r => r !== existing);
                 }
-                // Optimistic UI update first
+                // Optimistic UI update (temporarily unblock for our own render)
+                _blockThreadRender = false;
                 if (currentConversation) renderConversationThread();
+                _blockThreadRender = true;
                 // Then persist to DB
                 if (currentAuthUser && msg.dbId) {
                     try {
@@ -13796,7 +13804,9 @@
                 // Reaction exists from others, user adds theirs
                 existing.count++;
                 existing.mine = true;
+                _blockThreadRender = false;
                 if (currentConversation) renderConversationThread();
+                _blockThreadRender = true;
                 if (currentAuthUser && msg.dbId) {
                     try {
                         // Use upsert to handle duplicate gracefully (unique constraint on message_id, user_id, emoji)
@@ -13817,7 +13827,9 @@
             } else {
                 // Brand new reaction
                 msg.reactions.push({ emoji, count: 1, mine: true });
+                _blockThreadRender = false;
                 if (currentConversation) renderConversationThread();
+                _blockThreadRender = true;
                 if (currentAuthUser && msg.dbId) {
                     try {
                         // Use upsert to handle duplicate gracefully
@@ -13835,6 +13847,8 @@
                     } catch (e) { console.error('[Reactions] DB insert exception:', e); }
                 }
             }
+            // Unblock thread renders now that DB operation is complete
+            _blockThreadRender = false;
         }
 
         // ---- EVENT DELEGATION: single document-level handler for ALL reaction interactions ----
