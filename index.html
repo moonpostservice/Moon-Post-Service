@@ -10962,9 +10962,19 @@
                     }
 
                     // Update inbox preview inline (DON'T rebuild — preserves full thread)
-                    const replyConv = currentConversation || conversations.find(c =>
+                    let replyConv = currentConversation || conversations.find(c =>
                         c.messages.some(m => m.dbId === reply.message_id)
                     );
+                    // Fallback: find conversation by sender's profile ID
+                    if (!replyConv) {
+                        replyConv = conversations.find(c => c.otherProfileId === reply.sender_id);
+                        if (replyConv) console.log('[Realtime] Found conv by sender fallback:', replyConv.otherName);
+                    }
+                    if (!replyConv) {
+                        console.warn('[Realtime] Could not find conversation for reply', reply.id, 'message_id:', reply.message_id, 'sender:', reply.sender_id);
+                        // Force full reload to pick up the new data
+                        await debouncedReloadMessages();
+                    }
                     if (replyConv) {
                         const replyTime = reply.created_at || new Date().toISOString();
                         replyConv.latestCreatedAt = replyTime;
