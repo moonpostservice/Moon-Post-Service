@@ -10917,7 +10917,13 @@
                     // Skip replies from ourselves (we already added them optimistically)
                     if (reply.sender_id === currentAuthUser.id) return;
 
-                    console.log('Realtime: new reply on message', reply.message_id);
+                    console.log('Realtime: new reply on message', reply.message_id, 'status:', reply.status);
+
+                    // Update incoming in-transit count if this reply is still orbiting
+                    if (reply.status === 'in_transit') {
+                        window._incomingTransitReplies = (window._incomingTransitReplies || 0) + 1;
+                        console.log('[Realtime] In-transit reply incoming, count now:', window._incomingTransitReplies);
+                    }
 
                     // Find the message this reply belongs to
                     const targetMsg = messages.find(m => m.dbId === reply.message_id);
