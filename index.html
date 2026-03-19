@@ -10970,15 +10970,23 @@
                         replyConv.latestCreatedAt = replyTime;
                         replyConv.latestTime = 'Just now';
                         const isMyReply = reply.sender_id === currentAuthUser?.id;
-                        const prefix = isMyReply ? 'You: ' : '';
-                        if (reply.is_lunar_note && reply.lunar_note_text) {
-                            const snippet = reply.lunar_note_text.replace(/\n/g, ' ').substring(0, 40);
-                            replyConv.latestPreview = prefix + '🌙 ' + snippet;
+                        const isInTransit = reply.status === 'in_transit';
+
+                        if (isInTransit && !isMyReply) {
+                            // In-transit reply from someone else — don't reveal content
+                            replyConv.latestPreview = '🌙 Orbiting · arrives at moonrise';
+                            replyConv.hasInTransit = true;
                         } else {
-                            replyConv.latestPreview = prefix + (reply.text || reply.reply_text || '🌕');
-                        }
-                        if (replyConv.latestPreview.length > 50) {
-                            replyConv.latestPreview = replyConv.latestPreview.substring(0, 50) + '...';
+                            const prefix = isMyReply ? 'You: ' : '';
+                            if (reply.is_lunar_note && reply.lunar_note_text) {
+                                const snippet = reply.lunar_note_text.replace(/\n/g, ' ').substring(0, 40);
+                                replyConv.latestPreview = prefix + '🌙 ' + snippet;
+                            } else {
+                                replyConv.latestPreview = prefix + (reply.text || reply.reply_text || '🌕');
+                            }
+                            if (replyConv.latestPreview.length > 50) {
+                                replyConv.latestPreview = replyConv.latestPreview.substring(0, 50) + '...';
+                            }
                         }
                         if (isMyReply) replyConv.unreadCount = 0;
                         conversations.sort((a, b) => new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt));
