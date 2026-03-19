@@ -11615,10 +11615,10 @@
             dropdown.classList.add('active');
         }
 
-        function selectSettingsCity(cityName) {
+        async function selectSettingsCity(cityName) {
             document.getElementById('manualLocation').value = cityName;
             hideCityDropdown();
-            
+
             // Immediately update location and moon data
             const city = cities.find(c => c.name === cityName);
             if (city) {
@@ -11626,6 +11626,17 @@
                 onLocationObtained(city.lat, city.lon, city.tz);
                 // Save to localStorage
                 localStorage.setItem('moonpop_location', JSON.stringify({ name: city.name, country: city.country }));
+                // Save to Supabase profile so it persists across refreshes
+                if (currentAuthUser) {
+                    const { error } = await sb.from('profiles').update({
+                        city: city.name,
+                        latitude: city.lat,
+                        longitude: city.lon,
+                        timezone: city.tz
+                    }).eq('id', currentAuthUser.id);
+                    if (error) console.error('[selectSettingsCity] Profile save failed:', error);
+                    else console.log('[selectSettingsCity] Saved location to DB:', city.name);
+                }
             }
         }
 
