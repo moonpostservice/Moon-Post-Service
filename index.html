@@ -11834,13 +11834,16 @@
                 document.body.classList.add('moon-down');
                 if (inboxCta) inboxCta.style.display = 'none';
 
-                // Title with personal greeting + message count
-                const totalCarrying = totalWaiting + incomingInTransit;
+                // "Carrying" = only in-transit messages (not unread — those are already delivered)
+                const totalCarrying = incomingInTransit;
                 if (heroTitle) {
                     const greeting = userName ? `Hello ${userName}, ` : '';
-                    if (totalCarrying > 0) {
-                        const msgWord = totalCarrying === 1 ? 'message' : 'messages';
-                        heroTitle.textContent = `${greeting}the moon carries ${totalCarrying} ${msgWord} for you. You'll receive them when the moon reaches your sky.`;
+                    if (totalCarrying > 0 && totalWaiting > 0) {
+                        heroTitle.textContent = `${greeting}the moon carries ${totalCarrying} ${totalCarrying === 1 ? 'message' : 'messages'} for you. You also have ${totalWaiting} unread ${totalWaiting === 1 ? 'message' : 'messages'} waiting.`;
+                    } else if (totalCarrying > 0) {
+                        heroTitle.textContent = `${greeting}the moon carries ${totalCarrying} ${totalCarrying === 1 ? 'message' : 'messages'} for you. You'll receive them when the moon reaches your sky.`;
+                    } else if (totalWaiting > 0) {
+                        heroTitle.textContent = `${greeting}you have ${totalWaiting} unread ${totalWaiting === 1 ? 'message' : 'messages'}. The Moon Post Service opens when the moon rises.`;
                     } else {
                         heroTitle.textContent = `${greeting}the Moon Post Service opens when the moon rises.`;
                     }
