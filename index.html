@@ -10158,7 +10158,7 @@
                             .limit(50);
                         if (incomingTransitReplies && incomingTransitReplies.length > 0) {
                             console.log('[loadMessages] Found', incomingTransitReplies.length, 'incoming in-transit replies');
-                            window._incomingTransitReplies = incomingTransitReplies.length;
+                            // No need to set _incomingTransitReplies — synthetic entries handle counting
                             // Add as synthetic received entries so buildConversations picks them up
                             for (const r of incomingTransitReplies) {
                                 const parentMsg = allMessages.find(m => m.dbId === r.message_id);
@@ -11762,8 +11762,9 @@
             const totalWaiting = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
 
             // Count incoming in-transit items (messages + replies headed to me)
-            const incomingInTransit = messages.filter(m => m.type === 'received' && m.stillInTransit).length
-                + (window._incomingTransitReplies || 0);
+            // Synthetic entries from loadMessages already have stillInTransit=true,
+            // so no need to add _incomingTransitReplies (that would double-count)
+            const incomingInTransit = messages.filter(m => m.type === 'received' && m.stillInTransit).length;
 
             // If no location set yet, show a prompt
             if (!moonData.userLat) {
