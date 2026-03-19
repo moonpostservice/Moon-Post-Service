@@ -10234,6 +10234,7 @@
                             allMessages.push({
                                 dbId: r.id,
                                 senderId: currentAuthUser.id,
+                                recipientProfileId: (parentMsg?.type === 'sent' ? parentMsg?.recipientId : parentMsg?.senderId) || null,
                                 sender: otherName,
                                 type: 'sent',
                                 location: city,
