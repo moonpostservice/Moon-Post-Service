@@ -9599,6 +9599,9 @@
             const myEmail = (currentAuthUser?.email || '').toLowerCase();
 
             messages.forEach(msg => {
+                // Skip synthetic dot entries — they're only for ring rendering, not conversations
+                if (msg.isReplyDot) return;
+
                 // Determine the "other person" key (use ID when available, fallback to email/name)
                 let otherKey, otherName, otherAvatar, otherProfileId, otherEmail;
                 if (msg.type === 'sent') {
@@ -13253,24 +13256,25 @@
                 // Save to Supabase — with moon-based release_at for dot rendering
                 if (currentAuthUser && targetMsg.dbId) {
                     // Get recipient city and compute next moonrise
-                    // IMPORTANT: We ALWAYS set as in_transit here. The recipient's
-                    // client will auto-release when their moon rises (their local
-                    // moonData.isVisible is the authoritative source of truth).
-                    // This avoids bugs where sender-side isMoonVisible() returns
-                    // wrong values for the recipient's coordinates.
+                    // Use raw SunCalc altitude (simpler & more reliable than isMoonVisible)
                     const recipientCity = currentConversation?.location || targetMsg.location || 'Unknown';
                     const recipientMoonrise = getRecipientMoonrise(recipientCity);
                     let replyReleaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
 
-                    // If no moonrise data, use 12h fallback so message still goes through transit
-                    if (!replyReleaseAt) {
+                    // Simple moon-up check: raw SunCalc altitude > 0
+                    const _replyCity = cities.find(c => c.name.toLowerCase() === recipientCity.toLowerCase());
+                    const _replyMoonPos = _replyCity ? SunCalc.getMoonPosition(new Date(), _replyCity.lat, _replyCity.lon) : null;
+                    const replyMoonUp = _replyMoonPos ? _replyMoonPos.altitude > 0 : false;
+
+                    // If no moonrise data and moon not up, use 12h fallback
+                    if (!replyReleaseAt && !replyMoonUp) {
                         replyReleaseAt = new Date(Date.now() + 12 * 3600000).toISOString();
                         console.warn('[sendReply] No moonrise data for', recipientCity, '— using 12h fallback');
                     }
-                    // Always in_transit — the recipient's client handles release
-                    const replyStatus = 'in_transit';
-                    const finalReleaseAt = replyReleaseAt;
-                    console.log('[sendReply] city:', recipientCity, 'nextMoonrise:', replyReleaseAt, 'status: always in_transit');
+                    const replyInstantDeliver = replyMoonUp === true;
+                    const replyStatus = replyInstantDeliver ? 'released' : 'in_transit';
+                    const finalReleaseAt = replyInstantDeliver ? new Date().toISOString() : replyReleaseAt;
+                    console.log('[sendReply] city:', recipientCity, 'moonUp:', replyMoonUp, 'altitude:', _replyMoonPos?.altitude?.toFixed(4), 'instant:', replyInstantDeliver);
 
                     const insertData = {
                         message_id: targetMsg.dbId,
@@ -13319,13 +13323,14 @@
                         // Store send diagnostics
                         window._lastSendDiag = {
                             location: recipientCity,
-                            recipientMoonUp: 'N/A (always in_transit)',
-                            instantDeliver: false,
+                            recipientMoonUp: replyMoonUp,
+                            altitude: _replyMoonPos?.altitude?.toFixed(4) || 'N/A',
+                            instantDeliver: replyInstantDeliver,
                             releaseAt: finalReleaseAt,
                             messageStatus: replyStatus,
                             dbReleaseAt: replyData?.release_at || finalReleaseAt,
                             sentAt: new Date().toISOString(),
-                            source: 'sendReply (always in_transit)'
+                            source: 'sendReply'
                         };
                         renderMessageDots();
                     }
@@ -16259,28 +16264,32 @@
             }
 
             // Calculate when the message should be released (recipient's next moonrise)
-            // IMPORTANT: We ALWAYS set as in_transit. The recipient's client will
-            // auto-release when their moon rises. This avoids bugs where sender-side
-            // isMoonVisible() returns wrong values for the recipient's coordinates.
+            // Use raw SunCalc altitude check (simpler & more reliable than isMoonVisible
+            // which had parallax correction bugs for remote cities)
             console.log('[send] location:', pendingMessage.location);
             const recipientMoonrise = getRecipientMoonrise(pendingMessage.location);
             let releaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
-            console.log('[send] recipientMoonrise:', recipientMoonrise, 'releaseAt:', releaseAt);
 
-            // If no moonrise data, use 12h fallback so message still goes through transit
-            if (!releaseAt) {
+            // Simple moon-up check: use raw SunCalc altitude (bypass buggy parallax correction)
+            const _sendCity = cities.find(c => c.name.toLowerCase() === (pendingMessage.location || '').toLowerCase());
+            const _sendMoonPos = _sendCity ? SunCalc.getMoonPosition(new Date(), _sendCity.lat, _sendCity.lon) : null;
+            const recipientMoonUp = _sendMoonPos ? _sendMoonPos.altitude > 0 : false;
+            console.log('[send] recipientMoonrise:', recipientMoonrise, 'altitude:', _sendMoonPos?.altitude, 'moonUp:', recipientMoonUp);
+
+            // If no moonrise data and moon not up, use 12h fallback
+            if (!releaseAt && !recipientMoonUp) {
                 releaseAt = new Date(Date.now() + 12 * 3600000).toISOString();
                 console.warn('[send] No moonrise data for', pendingMessage.location, '— using 12h fallback releaseAt');
             }
-            // Always in_transit — recipient's client handles release when their moon is up
-            const instantDeliver = false;
-            const messageStatus = 'in_transit';
-            console.log('[send] ALWAYS in_transit, releaseAt:', releaseAt);
+            const instantDeliver = recipientMoonUp === true;
+            const messageStatus = instantDeliver ? 'released' : 'in_transit';
+            console.log('[send] instantDeliver:', instantDeliver, 'status:', messageStatus, 'releaseAt:', releaseAt);
 
             // Store send diagnostics for visible panel
             window._lastSendDiag = {
                 location: pendingMessage.location,
-                recipientMoonUp: 'N/A (always in_transit)',
+                recipientMoonUp,
+                altitude: _sendMoonPos?.altitude?.toFixed(4) || 'N/A',
                 instantDeliver,
                 releaseAt,
                 messageStatus,
@@ -16316,8 +16325,8 @@
                     moon_phase: phaseName,
                     moon_illumination: moonData.illumination || null,
                     status: messageStatus,
-                    release_at: releaseAt,
-                    released_at: null,
+                    release_at: instantDeliver ? new Date().toISOString() : releaseAt,
+                    released_at: instantDeliver ? new Date().toISOString() : null,
                     photo_url: messagePhotoUrl || null
                 };
 
