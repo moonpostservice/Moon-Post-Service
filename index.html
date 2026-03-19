@@ -13747,14 +13747,30 @@
         }
 
         // ---- Core reaction logic: add/remove reaction ----
+        // Visible reaction debug log
+        function rxLog(text) {
+            let el = document.getElementById('rxDebug');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'rxDebug';
+                el.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.9);color:#ff0;font-family:monospace;font-size:11px;padding:8px 12px;z-index:999999;border-radius:6px;max-width:400px;max-height:300px;overflow-y:auto;line-height:1.4;pointer-events:none;';
+                document.body.appendChild(el);
+            }
+            const time = new Date().toLocaleTimeString();
+            el.innerHTML = `<b>🔬 RX LOG</b><br>` + `[${time}] ${text}<br>` + (el.innerHTML.replace(/^<b>.*?<\/b><br>/, ''));
+            // Keep only last 15 lines
+            const lines = el.innerHTML.split('<br>');
+            if (lines.length > 16) el.innerHTML = lines.slice(0, 16).join('<br>');
+        }
+
         let _reactionCooldown = false;
         async function handleReaction(msgDbId, emoji) {
-            console.log('[Reactions] handleReaction called:', msgDbId, emoji);
+            rxLog(`CLICK: ${emoji} on ${msgDbId.substring(0,8)}...`);
             _reactionCooldown = true;
             setTimeout(() => { _reactionCooldown = false; }, 3000);
             // Prevent double-fire from event bubbling
             if (handleReaction._lastCall && Date.now() - handleReaction._lastCall < 500) {
-                console.log('[Reactions] BLOCKED — double-fire detected');
+                rxLog(`BLOCKED: double-fire <500ms`);
                 return;
             }
             handleReaction._lastCall = Date.now();
@@ -13765,7 +13781,6 @@
                     if (conv.messages) {
                         msg = conv.messages.find(m => m.dbId === msgDbId);
                         if (msg) break;
-                        // Also search replies within each message
                         for (const m of conv.messages) {
                             if (m.replies) {
                                 msg = m.replies.find(r => r.dbId === msgDbId);
@@ -13776,42 +13791,43 @@
                     }
                 }
             }
-            if (!msg) { console.error('[Reactions] No msg for dbId:', msgDbId, 'searched all conversations'); return; }
+            if (!msg) { rxLog(`ERROR: msg not found for ${msgDbId.substring(0,8)}`); return; }
             if (!msg.reactions) msg.reactions = [];
 
             const existing = msg.reactions.find(r => r.emoji === emoji);
+            rxLog(`reactions: [${msg.reactions.map(r => r.emoji + (r.mine?'✓':'') + r.count).join(', ')}]`);
+            rxLog(`existing: ${existing ? emoji + ' mine=' + existing.mine + ' count=' + existing.count : 'NONE'}`);
 
             if (existing && existing.mine) {
-                // User already reacted with this emoji → remove their reaction
+                rxLog(`PATH: REMOVE (mine=true)`);
                 existing.count--;
                 existing.mine = false;
                 if (existing.count <= 0) {
                     msg.reactions = msg.reactions.filter(r => r !== existing);
                 }
-                // Cache + render
-                _reactionCache[msgDbId] = [...msg.reactions];
+                _reactionCache[msgDbId] = JSON.parse(JSON.stringify(msg.reactions));
                 if (currentConversation) renderConversationThread();
-                // Persist to DB
                 if (currentAuthUser && msg.dbId) {
                     try {
                         const { error } = await sb.from('reactions').delete()
                             .eq('message_id', msg.dbId)
                             .eq('user_id', currentAuthUser.id)
                             .eq('emoji', emoji);
+                        rxLog(`DB DELETE: ${error ? 'FAILED ' + error.message : 'OK'}`);
                         if (error) {
-                            console.error('[Reactions] DB delete failed:', error);
                             const ex2 = msg.reactions.find(r => r.emoji === emoji);
                             if (ex2) { ex2.count++; ex2.mine = true; }
                             else { msg.reactions.push({ emoji, count: 1, mine: true }); }
-                            _reactionCache[msgDbId] = [...msg.reactions];
+                            _reactionCache[msgDbId] = JSON.parse(JSON.stringify(msg.reactions));
                             if (currentConversation) renderConversationThread();
                         }
-                    } catch (e) { console.error('[Reactions] DB delete exception:', e); }
+                    } catch (e) { rxLog(`DB DELETE EXCEPTION: ${e.message}`); }
                 }
             } else if (existing && !existing.mine) {
+                rxLog(`PATH: ADD (existing, mine=false)`);
                 existing.count++;
                 existing.mine = true;
-                _reactionCache[msgDbId] = [...msg.reactions];
+                _reactionCache[msgDbId] = JSON.parse(JSON.stringify(msg.reactions));
                 if (currentConversation) renderConversationThread();
                 if (currentAuthUser && msg.dbId) {
                     try {
@@ -13820,19 +13836,20 @@
                             user_id: currentAuthUser.id,
                             emoji: emoji
                         }, { onConflict: 'message_id,user_id,emoji', ignoreDuplicates: true });
+                        rxLog(`DB UPSERT: ${error ? 'FAILED ' + error.message : 'OK'}`);
                         if (error) {
-                            console.error('[Reactions] DB upsert failed:', error);
                             existing.count--;
                             existing.mine = false;
                             if (existing.count <= 0) msg.reactions = msg.reactions.filter(r => r !== existing);
-                            _reactionCache[msgDbId] = [...msg.reactions];
+                            _reactionCache[msgDbId] = JSON.parse(JSON.stringify(msg.reactions));
                             if (currentConversation) renderConversationThread();
                         }
-                    } catch (e) { console.error('[Reactions] DB upsert exception:', e); }
+                    } catch (e) { rxLog(`DB UPSERT EXCEPTION: ${e.message}`); }
                 }
             } else {
+                rxLog(`PATH: NEW reaction`);
                 msg.reactions.push({ emoji, count: 1, mine: true });
-                _reactionCache[msgDbId] = [...msg.reactions];
+                _reactionCache[msgDbId] = JSON.parse(JSON.stringify(msg.reactions));
                 if (currentConversation) renderConversationThread();
                 if (currentAuthUser && msg.dbId) {
                     try {
@@ -13842,14 +13859,17 @@
                             emoji: emoji
                         }, { onConflict: 'message_id,user_id,emoji', ignoreDuplicates: true });
                         if (error) {
-                            console.error('[Reactions] DB upsert failed:', error);
+                            rxLog(`DB UPSERT NEW: FAILED ${error.message}`);
                             msg.reactions = msg.reactions.filter(r => !(r.emoji === emoji && r.count === 1 && r.mine));
-                            _reactionCache[msgDbId] = [...msg.reactions];
+                            _reactionCache[msgDbId] = JSON.parse(JSON.stringify(msg.reactions));
                             if (currentConversation) renderConversationThread();
+                        } else {
+                            rxLog(`DB UPSERT NEW: OK`);
                         }
-                    } catch (e) { console.error('[Reactions] DB insert exception:', e); }
+                    } catch (e) { rxLog(`DB NEW EXCEPTION: ${e.message}`); }
                 }
             }
+            rxLog(`DONE. cache keys: ${Object.keys(_reactionCache).length}`);
         }
 
         // ---- EVENT DELEGATION: single document-level handler for ALL reaction interactions ----
