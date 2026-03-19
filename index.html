@@ -9740,8 +9740,9 @@
                     // Latest is a reply WE sent — show preview of our reply text
                     conv.latestPreview = youPrefix + latestReply.text;
                 } else if (replyIsNewer && !isSentReply) {
-                    // Latest is an incoming reply — show preview or transit info
-                    conv.latestPreview = latestReply.text || 'Moon message';
+                    // Latest is an incoming reply — only show text if moon is up
+                    // When moon is down, message content must stay hidden
+                    conv.latestPreview = moonData.isVisible ? (latestReply.text || 'Moon message') : '';
                 } else if (latest.stillInTransit && latest.type === 'received') {
                     conv.latestPreview = '';  // badge carries the transit info
                 } else if (latest.status === 'In Transit') {
