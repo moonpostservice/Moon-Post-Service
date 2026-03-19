@@ -13795,19 +13795,20 @@
                 if (currentConversation) renderConversationThread();
                 if (currentAuthUser && msg.dbId) {
                     try {
-                        const { error } = await sb.from('reactions').insert({
+                        // Use upsert to handle duplicate gracefully (unique constraint on message_id, user_id, emoji)
+                        const { error } = await sb.from('reactions').upsert({
                             message_id: msg.dbId,
                             user_id: currentAuthUser.id,
                             emoji: emoji
-                        });
+                        }, { onConflict: 'message_id,user_id,emoji', ignoreDuplicates: true });
                         if (error) {
-                            console.error('[Reactions] DB insert failed:', error);
+                            console.error('[Reactions] DB upsert failed:', error);
                             existing.count--;
                             existing.mine = false;
                             if (existing.count <= 0) msg.reactions = msg.reactions.filter(r => r !== existing);
                             if (currentConversation) renderConversationThread();
                         }
-                    } catch (e) { console.error('[Reactions] DB insert exception:', e); }
+                    } catch (e) { console.error('[Reactions] DB upsert exception:', e); }
                 }
             } else {
                 // Brand new reaction
@@ -13815,13 +13816,14 @@
                 if (currentConversation) renderConversationThread();
                 if (currentAuthUser && msg.dbId) {
                     try {
-                        const { error } = await sb.from('reactions').insert({
+                        // Use upsert to handle duplicate gracefully
+                        const { error } = await sb.from('reactions').upsert({
                             message_id: msg.dbId,
                             user_id: currentAuthUser.id,
                             emoji: emoji
-                        });
+                        }, { onConflict: 'message_id,user_id,emoji', ignoreDuplicates: true });
                         if (error) {
-                            console.error('[Reactions] DB insert failed:', error);
+                            console.error('[Reactions] DB upsert failed:', error);
                             // Rollback
                             msg.reactions = msg.reactions.filter(r => !(r.emoji === emoji && r.count === 1 && r.mine));
                             if (currentConversation) renderConversationThread();
