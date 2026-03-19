@@ -9654,6 +9654,23 @@
                 conv.latestCreatedAt = latest.createdAt;
                 conv.latestTime = latest.time;
 
+                // Check if any reply is more recent than the latest top-level message
+                // This ensures conversations with recent replies sort to the top
+                let latestReplyTime = null;
+                conv.messages.forEach(m => {
+                    if (m.replies && m.replies.length > 0) {
+                        m.replies.forEach(r => {
+                            if (r.createdAt && (!latestReplyTime || new Date(r.createdAt) > new Date(latestReplyTime))) {
+                                latestReplyTime = r.createdAt;
+                            }
+                        });
+                    }
+                });
+                if (latestReplyTime && new Date(latestReplyTime) > new Date(conv.latestCreatedAt)) {
+                    conv.latestCreatedAt = latestReplyTime;
+                    conv.latestTime = timeAgo(latestReplyTime);
+                }
+
                 // Store the timestamp of the last sent message (used for implicit read receipt)
                 const lastSent = conv.messages.find(m => m.type === 'sent');
                 conv._lastSentAt = lastSent ? lastSent.createdAt : null;
