@@ -10207,9 +10207,10 @@
                 // Also fetch INCOMING in-transit replies (from others, on messages where I'm the recipient)
                 // These show as "On Its Way" in the inbox with a progress bar
                 try {
-                    // Get IDs of messages where I am the recipient
+                    // Get IDs of ALL my messages (both sent and received) because
+                    // replies on sent messages are also incoming TO me
                     const myReceivedMsgIds = allMessages
-                        .filter(m => m.type === 'received')
+                        .filter(m => m.dbId && !m.isReplyDot && !m.isIncomingReplyTransit)
                         .map(m => m.dbId)
                         .filter(Boolean);
                     if (myReceivedMsgIds.length > 0) {
@@ -10266,7 +10267,9 @@
 
                 // Count in-transit replies headed TO me (for receiver display)
                 try {
-                    const myMsgIds = received.map(m => m.id).filter(Boolean);
+                    // Include ALL message IDs (sent + received) because replies on
+                    // sent messages are also incoming to me
+                    const myMsgIds = [...(sent || []), ...received].map(m => m.id).filter(Boolean);
                     if (myMsgIds.length > 0) {
                         const { count: transitReplyCount } = await sb.from('replies')
                             .select('id', { count: 'exact', head: true })
