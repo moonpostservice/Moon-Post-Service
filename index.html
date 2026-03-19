@@ -11888,7 +11888,9 @@
                 const now = new Date();
                 const outgoingInTransit = messages.filter(m => m.type === 'sent' && ((m.releaseAt && new Date(m.releaseAt) > now) || (m.status === 'In Transit' && !m.releaseAt))).length;
                 const inTransit = outgoingInTransit + incomingInTransit;
-                const unreadCount = messages.filter(m => m.type === 'received' && !m.read).length;
+                // Use conversation-level unread counts (based on read receipts) instead of
+                // the never-set m.read field which counted ALL received messages as unread
+                const unreadCount = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
                 let statusLine = '';
                 if (unreadCount > 0 && inTransit > 0) {
                     statusLine = `<p class="moon-carrying-indicator">You have <span class="moon-carrying-count">${unreadCount}</span> unread ${unreadCount === 1 ? 'message' : 'messages'} and <span class="moon-carrying-count">${inTransit}</span> ${inTransit === 1 ? 'message' : 'messages'} being delivered</p>`;
