@@ -8948,8 +8948,6 @@
             const container = document.getElementById('messageDots');
             if (!container) return;
             container.innerHTML = '';
-            // Clean up direct-positioned failsafe dots from previous render
-            document.querySelectorAll('.direct-dot-failsafe').forEach(el => el.remove());
 
             // DIAGNOSTIC PANEL — visible on-screen state display
             let diagEl = document.getElementById('dotDiag');
@@ -9044,23 +9042,6 @@
                 dot.dataset.hours = (hoursUntil || 0).toFixed(1);
                 orbit.appendChild(dot);
                 container.appendChild(orbit);
-
-                // METHOD 2: Direct (x,y) positioning as failsafe
-                // If the rotation method doesn't work visually, this WILL show
-                const orbitContainer = document.querySelector('.orbit-container');
-                if (orbitContainer) {
-                    const r = orbitContainer.offsetWidth / 2;
-                    const rad = (deg - 90) * Math.PI / 180; // CSS 0°=top, math 0°=right
-                    const x = r + r * Math.cos(rad);
-                    const y = r + r * Math.sin(rad);
-                    const directDot = document.createElement('div');
-                    directDot.style.cssText = `position:absolute;width:18px;height:18px;background:#ff5558;border-radius:50%;z-index:100;box-shadow:0 0 12px rgba(255,85,88,0.7);pointer-events:none;transform:translate(-50%,-50%);`;
-                    directDot.style.left = x + 'px';
-                    directDot.style.top = y + 'px';
-                    orbitContainer.appendChild(directDot);
-                    // Mark for cleanup
-                    directDot.classList.add('direct-dot-failsafe');
-                }
 
                 dotsRendered++;
             });
