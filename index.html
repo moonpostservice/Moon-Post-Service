@@ -8985,14 +8985,9 @@
             if (!container) return;
             container.innerHTML = '';
 
-            // DIAGNOSTIC PANEL — visible on-screen state display
-            let diagEl = document.getElementById('dotDiag');
-            if (!diagEl) {
-                diagEl = document.createElement('div');
-                diagEl.id = 'dotDiag';
-                diagEl.style.cssText = 'position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:11px;padding:8px 12px;z-index:99999;border-radius:6px;max-width:350px;line-height:1.4;pointer-events:none;';
-                document.body.appendChild(diagEl);
-            }
+            // Remove old diagnostic panel if it exists
+            const oldDiag = document.getElementById('dotDiag');
+            if (oldDiag) oldDiag.remove();
 
             const now = new Date();
             const twentyFourHoursAgo = new Date(now.getTime() - 24 * 3600000);
@@ -9022,18 +9017,8 @@
             }).join('<br>');
             if (allSent.length === 0) sentDetail = '<i>no sent messages</i>';
 
-            diagEl.innerHTML = `<b>🔵 DOT DIAG</b><br>` +
-                `moon: ${moonData.isVisible ? '🟢 UP' : '🔴 DOWN'}<br>` +
-                `msgs: ${messages.length} | sent: ${allSent.length}<br>` +
-                `qualifying: ${inTransitMessages.length} | future releaseAt: ${sentWithFutureRelease.length}<br>` +
-                `<b>ALL SENT:</b><br>${sentDetail}` +
-                (lastSend ? `<br><b>LAST SEND:</b><br>` +
-                    `  to: ${lastSend.location}<br>` +
-                    `  moonUp: ${lastSend.recipientMoonUp}<br>` +
-                    `  instant: ${lastSend.instantDeliver}<br>` +
-                    `  clientRelease: ${lastSend.releaseAt}<br>` +
-                    `  dbRelease: ${lastSend.dbReleaseAt}<br>` +
-                    `  status: ${lastSend.messageStatus}` : '');
+            // Diagnostic info logged to console only (no visible panel)
+            console.log('[dots] moon:', moonData.isVisible ? 'UP' : 'DOWN', '| msgs:', messages.length, '| sent:', allSent.length, '| qualifying:', inTransitMessages.length);
 
             // NOTE: We no longer skip rendering when moon is down.
             // CSS handles reduced opacity via body.moon-down .message-dot { opacity: 0.35 }
@@ -9083,7 +9068,7 @@
             });
 
             // Update diagnostic with render count
-            diagEl.innerHTML += `<br><b>rendered: ${dotsRendered} dots</b>`;
+            console.log('[dots] rendered:', dotsRendered, 'dots');
 
             // Incoming messages genuinely in transit (not just "moon is down" — use stillInTransit flag)
             // Don't require releaseAt — we can calculate the dot position from our own moonrise
@@ -13747,21 +13732,10 @@
         }
 
         // ---- Core reaction logic: add/remove reaction ----
-        // Visible reaction debug log
-        function rxLog(text) {
-            let el = document.getElementById('rxDebug');
-            if (!el) {
-                el = document.createElement('div');
-                el.id = 'rxDebug';
-                el.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.9);color:#ff0;font-family:monospace;font-size:11px;padding:8px 12px;z-index:999999;border-radius:6px;max-width:400px;max-height:300px;overflow-y:auto;line-height:1.4;pointer-events:none;';
-                document.body.appendChild(el);
-            }
-            const time = new Date().toLocaleTimeString();
-            el.innerHTML = `<b>🔬 RX LOG</b><br>` + `[${time}] ${text}<br>` + (el.innerHTML.replace(/^<b>.*?<\/b><br>/, ''));
-            // Keep only last 15 lines
-            const lines = el.innerHTML.split('<br>');
-            if (lines.length > 16) el.innerHTML = lines.slice(0, 16).join('<br>');
-        }
+        // Reaction debug logging (console only)
+        function rxLog(text) { console.log('[Reactions]', text); }
+        // Remove old debug panel if it exists
+        { const old = document.getElementById('rxDebug'); if (old) old.remove(); }
 
         let _reactionCooldown = false;
         async function handleReaction(msgDbId, emoji) {
