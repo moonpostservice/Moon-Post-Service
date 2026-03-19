@@ -9786,8 +9786,7 @@
                     const replyDot = messages.find(m =>
                         m.isReplyDot && m.status === 'In Transit' &&
                         (m.sender?.toLowerCase() === otherNameLC ||
-                         m.sender?.toLowerCase() === otherKeyLC ||
-                         m.location?.toLowerCase() === (conv.location || '').toLowerCase()) &&
+                         m.sender?.toLowerCase() === otherKeyLC) &&
                         m.releaseAt && new Date(m.releaseAt) > now
                     );
                     if (replyDot) {
