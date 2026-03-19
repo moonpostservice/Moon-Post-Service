@@ -13732,13 +13732,17 @@
         }
 
         // ---- Core reaction logic: add/remove reaction ----
-        let _reactionCooldown = false; // Prevents reload from overwriting fresh reactions
+        let _reactionCooldown = false;
         async function handleReaction(msgDbId, emoji) {
             console.log('[Reactions] handleReaction called:', msgDbId, emoji);
-            // Block reaction overwrites for 3 seconds to prevent race condition
-            // with debouncedReloadMessages() fetching stale data from DB
             _reactionCooldown = true;
             setTimeout(() => { _reactionCooldown = false; }, 3000);
+            // Prevent double-fire from event bubbling
+            if (handleReaction._lastCall && Date.now() - handleReaction._lastCall < 500) {
+                console.log('[Reactions] BLOCKED — double-fire detected');
+                return;
+            }
+            handleReaction._lastCall = Date.now();
             let msg = findMsgByDbId(msgDbId);
             // Fallback: search all conversations (messages + their replies) if not found
             if (!msg) {
