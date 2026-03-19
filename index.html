@@ -9785,7 +9785,8 @@
                     const otherKeyLC = (conv.otherKey || '').toLowerCase();
                     const replyDot = messages.find(m =>
                         m.isReplyDot && m.status === 'In Transit' &&
-                        (m.sender?.toLowerCase() === otherNameLC ||
+                        ((m.recipientProfileId && m.recipientProfileId === conv.otherProfileId) ||
+                         m.sender?.toLowerCase() === otherNameLC ||
                          m.sender?.toLowerCase() === otherKeyLC) &&
                         m.releaseAt && new Date(m.releaseAt) > now
                     );
@@ -10296,6 +10297,49 @@
                     }
                 } catch (e) {
                     console.error('[loadMessages] Failed to fetch incoming in-transit replies:', e);
+                }
+
+                // Fetch latest reply timestamp per message for correct conversation sorting
+                // Without this, conversations revert to top-level message order on reload
+                try {
+                    const msgIds = allMessages.filter(m => m.dbId && !m.isReplyDot && !m.isIncomingReplyTransit).map(m => m.dbId);
+                    if (msgIds.length > 0) {
+                        const { data: latestReplies } = await sb.from('replies')
+                            .select('message_id, created_at, sender_id, text')
+                            .in('message_id', msgIds)
+                            .order('created_at', { ascending: false })
+                            .limit(200);
+                        if (latestReplies) {
+                            // Group by message_id and get the latest
+                            const latestByMsg = {};
+                            latestReplies.forEach(r => {
+                                if (!latestByMsg[r.message_id] || new Date(r.created_at) > new Date(latestByMsg[r.message_id].created_at)) {
+                                    latestByMsg[r.message_id] = r;
+                                }
+                            });
+                            // Attach to message objects so buildConversations can use them
+                            allMessages.forEach(m => {
+                                const lr = latestByMsg[m.dbId];
+                                if (lr) {
+                                    m._latestReplyAt = lr.created_at;
+                                    m._latestReplyText = lr.text;
+                                    m._latestReplySenderId = lr.sender_id;
+                                    // Add as synthetic reply so buildConversations finds it
+                                    if (!m.replies) m.replies = [];
+                                    if (!m.replies.some(r => r.createdAt === lr.created_at)) {
+                                        m.replies.push({
+                                            createdAt: lr.created_at,
+                                            text: lr.text,
+                                            senderId: lr.sender_id,
+                                            sent: lr.sender_id === currentAuthUser?.id
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error('[loadMessages] Failed to fetch latest reply timestamps:', e);
                 }
 
                 // Sort by created_at descending
@@ -13493,6 +13537,7 @@
                         messages.push({
                             dbId: replyData?.id || 'reply-' + Date.now(),
                             senderId: currentAuthUser.id,
+                            recipientProfileId: currentConversation?.otherProfileId || null,
                             sender: otherName,
                             type: 'sent',
                             location: recipientCity,
@@ -13500,7 +13545,7 @@
                             releaseAt: finalReleaseAt,
                             createdAt: now,
                             time: 'Just now',
-                            isReplyDot: true, // marker to identify synthetic reply dots
+                            isReplyDot: true,
                             preview: '',
                             replies: []
                         });
