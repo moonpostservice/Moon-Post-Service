@@ -7069,7 +7069,7 @@
                     </div>
                 </div>
                 <button class="onboarding-primary" id="authSendBtn" onclick="sendMoonKey()">
-                    Send Moon Key <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>
+                    Send Moon Code <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>
                 </button>
                 <p class="auth-note">No password needed. We'll send a 6-digit code to your inbox.</p>
             </div>
@@ -7077,8 +7077,8 @@
             <!-- Step 2: Enter code -->
             <div class="auth-step" id="authStepCode">
                 <div class="auth-check-inbox">
-                    <div class="inbox-icon">🔑</div>
-                    <h2>Enter your Moon Key</h2>
+                    <div class="inbox-icon">🌙</div>
+                    <h2>Enter your Moon Code</h2>
                     <p>We sent a 6-digit code to</p>
                     <p class="auth-email-highlight" id="authEmailSent"></p>
                     <div style="display:flex;justify-content:center;gap:8px;margin:20px 0;">
@@ -10264,7 +10264,7 @@
         let _appDataLoaded = false;  // Tracks whether initAuth has successfully loaded data
         let _domReady = false;       // Tracks whether DOMContentLoaded has fired
 
-        // Send magic link
+        // Send OTP code to email
         let pendingAuthEmail = '';
 
         async function sendMoonKey() {
@@ -10292,7 +10292,7 @@
             if (error) {
                 errorEl.textContent = error.message || 'Something went wrong. Please try again.';
                 errorEl.style.display = 'block';
-                btn.innerHTML = 'Send Moon Key <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
+                btn.innerHTML = 'Send Moon Code <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
                 btn.disabled = false;
                 return;
             }
@@ -10390,7 +10390,7 @@
         function changeEmail() {
             document.getElementById('authStepCode').classList.remove('active');
             document.getElementById('authStepEmail').classList.add('active');
-            document.getElementById('authSendBtn').innerHTML = 'Send Moon Key <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
+            document.getElementById('authSendBtn').innerHTML = 'Send Moon Code <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
             document.getElementById('authSendBtn').disabled = false;
             document.getElementById('authEmail').focus();
         }
