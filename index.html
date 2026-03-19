@@ -9275,12 +9275,20 @@
             moonData.userLon = lon;
             if (tz) moonData.userTz = tz;
             calculateMoonTimes(lat, lon);
-            
+
             // Recalculate every 60 seconds
             if (moonData._refreshInterval) clearInterval(moonData._refreshInterval);
             moonData._refreshInterval = setInterval(() => {
                 calculateMoonTimes(lat, lon);
             }, 60000);
+
+            // When location changes and moon is visible, release in-transit messages
+            // and reload to recompute transit counts for the new location
+            if (moonData.isVisible && _appDataLoaded) {
+                console.log('[location] Moon is visible at new location — releasing in-transit messages');
+                autoReleaseInTransitMessages();
+                debouncedReloadMessages();
+            }
         }
 
         // Initialize countdown based on moonset time (when visible)
