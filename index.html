@@ -10140,6 +10140,53 @@
                     console.error('[loadMessages] Failed to fetch in-transit replies:', e);
                 }
 
+                // Also fetch INCOMING in-transit replies (from others, on messages where I'm the recipient)
+                // These show as "On Its Way" in the inbox with a progress bar
+                try {
+                    // Get IDs of messages where I am the recipient
+                    const myReceivedMsgIds = allMessages
+                        .filter(m => m.type === 'received')
+                        .map(m => m.dbId)
+                        .filter(Boolean);
+                    if (myReceivedMsgIds.length > 0) {
+                        const { data: incomingTransitReplies } = await sb.from('replies')
+                            .select('id, sender_id, release_at, recipient_city, created_at, message_id, status')
+                            .in('message_id', myReceivedMsgIds)
+                            .neq('sender_id', currentAuthUser.id)
+                            .eq('status', 'in_transit')
+                            .order('created_at', { ascending: false })
+                            .limit(50);
+                        if (incomingTransitReplies && incomingTransitReplies.length > 0) {
+                            console.log('[loadMessages] Found', incomingTransitReplies.length, 'incoming in-transit replies');
+                            window._incomingTransitReplies = incomingTransitReplies.length;
+                            // Add as synthetic received entries so buildConversations picks them up
+                            for (const r of incomingTransitReplies) {
+                                const parentMsg = allMessages.find(m => m.dbId === r.message_id);
+                                const senderName = parentMsg?.sender || 'Unknown';
+                                allMessages.push({
+                                    dbId: 'incoming-reply-' + r.id,
+                                    senderId: r.sender_id,
+                                    sender: senderName,
+                                    type: 'received',
+                                    location: parentMsg?.location || r.recipient_city || 'Unknown',
+                                    status: 'Arriving',
+                                    stillInTransit: true,
+                                    releaseAt: r.release_at,
+                                    createdAt: r.created_at,
+                                    time: timeAgo(r.created_at),
+                                    messageText: '',
+                                    contentVisible: false,
+                                    isIncomingReplyTransit: true,
+                                    preview: '',
+                                    replies: []
+                                });
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('[loadMessages] Failed to fetch incoming in-transit replies:', e);
+                }
+
                 // Sort by created_at descending
                 allMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 messages = allMessages;
@@ -10985,7 +11032,9 @@
                         if (isInTransit && !isMyReply) {
                             // In-transit reply from someone else — don't reveal content
                             replyConv.latestPreview = '🌙 Orbiting · arrives at moonrise';
-                            replyConv.hasInTransit = true;
+                            replyConv.hasIncomingTransit = true;
+                            replyConv.incomingTransitCreatedAt = reply.created_at;
+                            replyConv.incomingTransitReleaseAt = reply.release_at;
                         } else {
                             const prefix = isMyReply ? 'You: ' : '';
                             if (reply.is_lunar_note && reply.lunar_note_text) {
