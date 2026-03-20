@@ -10019,15 +10019,33 @@
                         }
                     }
 
-                    // Count unread = received messages newer than effectiveReadTime
+                    // Count unread = received messages + received replies newer than effectiveReadTime
+                    let unreadMsgCount = 0;
+                    let unreadReplyCount = 0;
                     if (effectiveReadTime) {
-                        conv.unreadCount = conv.messages.filter(m =>
+                        unreadMsgCount = conv.messages.filter(m =>
                             m.type === 'received' && new Date(m.createdAt) > effectiveReadTime
                         ).length;
+                        // Also count unread replies from other users
+                        if (recentReplies) {
+                            unreadReplyCount = recentReplies.filter(r => {
+                                const rConv = msgToConv[r.message_id];
+                                return rConv === conv &&
+                                       r.sender_id !== currentAuthUser.id &&
+                                       new Date(r.created_at) > effectiveReadTime;
+                            }).length;
+                        }
                     } else {
-                        // Never sent or read anything = all received messages are unread
-                        conv.unreadCount = conv.messages.filter(m => m.type === 'received').length;
+                        // Never sent or read anything = all received are unread
+                        unreadMsgCount = conv.messages.filter(m => m.type === 'received').length;
+                        if (recentReplies) {
+                            unreadReplyCount = recentReplies.filter(r => {
+                                const rConv = msgToConv[r.message_id];
+                                return rConv === conv && r.sender_id !== currentAuthUser.id;
+                            }).length;
+                        }
                     }
+                    conv.unreadCount = unreadMsgCount + unreadReplyCount;
                 });
 
                 // Re-sort conversations since reply timestamps may have changed ordering
