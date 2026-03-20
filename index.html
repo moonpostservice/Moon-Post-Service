@@ -12247,7 +12247,10 @@
                         const total = release - sent;
                         const elapsed = now - sent;
                         const pct = total > 0 ? Math.min(100, Math.max(2, (elapsed / total) * 100)) : 50;
-                        progressBar = `<div class="transit-progress"><div class="transit-progress-bar" style="width:${pct.toFixed(1)}%"></div></div>`;
+                        // Don't show progress bar if release time has passed (message delivered)
+                        if (now < release) {
+                            progressBar = `<div class="transit-progress"><div class="transit-progress-bar" style="width:${pct.toFixed(1)}%"></div></div>`;
+                        }
                     }
                 } else if (conv.hasIncomingTransit && !moonData.isVisible) {
                     // Only show "On Its Way" when YOUR moon is down. If your moon is up,
@@ -12262,7 +12265,10 @@
                         const total = release - sent;
                         const elapsed = now - sent;
                         const pct = total > 0 ? Math.min(100, Math.max(2, (elapsed / total) * 100)) : 50;
-                        progressBar = `<div class="transit-progress"><div class="transit-progress-bar incoming" style="width:${pct.toFixed(1)}%"></div></div>`;
+                        // Don't show progress bar if release time has passed (message delivered)
+                        if (now < release) {
+                            progressBar = `<div class="transit-progress"><div class="transit-progress-bar incoming" style="width:${pct.toFixed(1)}%"></div></div>`;
+                        }
                     }
                 }
 
@@ -12270,8 +12276,10 @@
                 const isUnread = conv.unreadCount > 0;
 
                 // Moon transit bar — only show when there's active transit AND no progressBar already
-                // Fixes: duplicate bars (Bug 2) + bars persisting after delivery (Bug 3)
-                const hasActiveTransit = conv.hasInTransit || conv.hasIncomingTransit;
+                // Don't show if release time has passed (message already delivered)
+                const releaseTime = conv.transitReleaseAt || conv.incomingTransitReleaseAt;
+                const transitExpired = releaseTime && new Date(releaseTime) <= new Date();
+                const hasActiveTransit = (conv.hasInTransit || conv.hasIncomingTransit) && !transitExpired;
                 const moonStatus = (hasActiveTransit && !progressBar) ? getContactMoonStatus(conv.location) : null;
                 let transitBar = '';
                 if (moonStatus) {
