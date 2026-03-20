@@ -13527,15 +13527,24 @@
                     // Get recipient city and compute next moonrise
                     // Use raw SunCalc altitude (simpler & more reliable than isMoonVisible)
                     const recipientCity = currentConversation?.location || targetMsg.location || 'Unknown';
+                    // Determine if recipient's moon is up using multiple methods
                     const recipientMoonrise = getRecipientMoonrise(recipientCity);
                     let replyReleaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
-                    const replyHoursUntilRise = recipientMoonrise ? recipientMoonrise.hoursUntil : null;
+                    let replyMoonUp = false;
 
-                    // Heuristic: if next moonrise is within 13h, moon is currently DOWN
-                    // (avoids unreliable SunCalc altitude check across browsers)
-                    const replyMoonUp = replyHoursUntilRise !== null ? replyHoursUntilRise > 13 : false;
+                    // Method 1: Direct SunCalc altitude check (most reliable)
+                    const rcCity = cities.find(c => c.name.toLowerCase() === recipientCity.toLowerCase());
+                    if (rcCity) {
+                        const pos = SunCalc.getMoonPosition(new Date(), rcCity.lat, rcCity.lon);
+                        replyMoonUp = pos.altitude > 0;
+                        console.log('[sendReply] altitude check:', recipientCity, 'alt:', pos.altitude.toFixed(4), 'moonUp:', replyMoonUp);
+                    } else {
+                        // Method 2: No city data — if sender's moon is up, assume same sky
+                        replyMoonUp = !!moonData.isVisible;
+                        console.log('[sendReply] no city data for', recipientCity, '— using sender moon:', replyMoonUp);
+                    }
 
-                    // If no moonrise data and moon not up, use 12h fallback
+                    // If moon is down and no moonrise data, use 12h fallback
                     if (!replyReleaseAt && !replyMoonUp) {
                         replyReleaseAt = new Date(Date.now() + 12 * 3600000).toISOString();
                         console.warn('[sendReply] No moonrise data for', recipientCity, '— using 12h fallback');
@@ -13543,7 +13552,7 @@
                     const replyInstantDeliver = replyMoonUp === true;
                     const replyStatus = replyInstantDeliver ? 'released' : 'in_transit';
                     const finalReleaseAt = replyInstantDeliver ? new Date().toISOString() : replyReleaseAt;
-                    console.log('[sendReply] city:', recipientCity, 'hoursUntilRise:', replyHoursUntilRise?.toFixed(2), 'moonUp:', replyMoonUp, 'instant:', replyInstantDeliver);
+                    console.log('[sendReply] city:', recipientCity, 'moonUp:', replyMoonUp, 'instant:', replyInstantDeliver);
 
                     const insertData = {
                         message_id: targetMsg.dbId,
@@ -16597,23 +16606,25 @@
                 }
             }
 
-            // Calculate when the message should be released (recipient's next moonrise)
-            // IMPORTANT: SunCalc.getMoonPosition().altitude is unreliable across browsers
-            // for remote coordinates. Instead, use moonrise TIMING as a heuristic:
-            //   - If next moonrise is ≤13h away → moon is DOWN → in_transit
-            //   - If next moonrise is >13h away → moon is UP → instant delivery
-            // This works because: moon down = next rise is soon (0-13h),
-            //                     moon up = next rise is far (14-25h, after set + down period)
+            // Determine if recipient's moon is up using multiple methods
             console.log('[send] location:', pendingMessage.location);
             const recipientMoonrise = getRecipientMoonrise(pendingMessage.location);
             let releaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
-            const hoursUntilRise = recipientMoonrise ? recipientMoonrise.hoursUntil : null;
+            let recipientMoonUp = false;
 
-            // Heuristic: if next moonrise is within 13h, moon is currently DOWN
-            const recipientMoonUp = hoursUntilRise !== null ? hoursUntilRise > 13 : false;
-            console.log('[send] hoursUntilRise:', hoursUntilRise?.toFixed(2), 'moonUp:', recipientMoonUp, 'releaseAt:', releaseAt);
+            // Method 1: Direct SunCalc altitude check (most reliable)
+            const sendCity = cities.find(c => c.name.toLowerCase() === (pendingMessage.location || '').toLowerCase());
+            if (sendCity) {
+                const pos = SunCalc.getMoonPosition(new Date(), sendCity.lat, sendCity.lon);
+                recipientMoonUp = pos.altitude > 0;
+                console.log('[send] altitude check:', pendingMessage.location, 'alt:', pos.altitude.toFixed(4), 'moonUp:', recipientMoonUp);
+            } else {
+                // Method 2: No city data — if sender's moon is up, assume same sky
+                recipientMoonUp = !!moonData.isVisible;
+                console.log('[send] no city data for', pendingMessage.location, '— using sender moon:', recipientMoonUp);
+            }
 
-            // If no moonrise data and moon not up, use 12h fallback
+            // If moon is down and no moonrise data, use 12h fallback
             if (!releaseAt && !recipientMoonUp) {
                 releaseAt = new Date(Date.now() + 12 * 3600000).toISOString();
                 console.warn('[send] No moonrise data for', pendingMessage.location, '— using 12h fallback releaseAt');
