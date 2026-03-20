@@ -7125,6 +7125,37 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Step 3: Location confirmation (mandatory) -->
+            <div class="auth-step" id="authStepLocation">
+                <div class="auth-check-inbox" style="text-align:center;">
+                    <div style="font-size:48px;margin-bottom:8px;">📍</div>
+                    <h2 style="margin-bottom:4px;">Where are you watching the moon tonight?</h2>
+                    <p id="locationDetectStatus" style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Detecting your sky...</p>
+
+                    <!-- Detected city display -->
+                    <div id="detectedCityCard" style="display:none;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:12px;padding:16px;margin-bottom:16px;">
+                        <p style="color:var(--text-muted);font-size:13px;margin-bottom:4px;">It looks like you're in</p>
+                        <h2 id="detectedCityName" style="color:var(--blue);font-size:24px;font-weight:700;margin:0;">Tel Aviv</h2>
+                    </div>
+
+                    <button class="onboarding-primary" id="confirmLocationBtn" onclick="confirmDetectedLocation()" style="display:none;">
+                        That's my sky 🌙
+                    </button>
+
+                    <p style="margin-top:12px;">
+                        <a href="#" id="showManualCityLink" onclick="event.preventDefault();document.getElementById('manualCityPicker').style.display='block';this.style.display='none';" style="color:var(--blue);font-size:13px;text-decoration:none;">I'm somewhere else</a>
+                    </p>
+
+                    <!-- Manual city picker (hidden by default) -->
+                    <div id="manualCityPicker" style="display:none;margin-top:12px;">
+                        <div style="position:relative;">
+                            <input type="text" id="onboardingCityInput" placeholder="Search for your city..." autocomplete="off" oninput="filterOnboardingCities(this.value)" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:white;font-size:14px;box-sizing:border-box;">
+                            <div id="onboardingCityDropdown" class="city-dropdown" style="max-height:180px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -10559,8 +10590,109 @@
                 return;
             }
 
-            // Auth successful — initAuth will handle the rest via onAuthStateChange
+            // Auth successful — set flag so initAuth knows to check location
             btn.textContent = 'Welcome!';
+            window._needsLocationCheck = true;
+        }
+
+        // ========================
+        // LOCATION ONBOARDING STEP
+        // ========================
+        let _detectedOnboardingCity = null;
+
+        function showLocationStep() {
+            // Hide other auth steps, show location step
+            document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+            document.getElementById('authStepLocation').classList.add('active');
+
+            // Show the onboarding overlay if not visible
+            const overlay = document.getElementById('onboardingOverlay');
+            if (overlay.classList.contains('hidden')) overlay.classList.remove('hidden');
+
+            // Auto-detect city from browser timezone
+            const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const detected = cities.find(c => c.tz === browserTz) ||
+                             cities.find(c => c.tz && c.tz.split('/')[0] === browserTz.split('/')[0]);
+
+            if (detected) {
+                _detectedOnboardingCity = detected;
+                document.getElementById('detectedCityName').textContent = detected.name;
+                document.getElementById('detectedCityCard').style.display = 'block';
+                document.getElementById('confirmLocationBtn').style.display = '';
+                document.getElementById('locationDetectStatus').textContent = 'We detected your location from your timezone';
+                document.getElementById('showManualCityLink').style.display = '';
+            } else {
+                // Can't detect — go straight to manual picker
+                document.getElementById('locationDetectStatus').textContent = 'Tell us where you are';
+                document.getElementById('detectedCityCard').style.display = 'none';
+                document.getElementById('confirmLocationBtn').style.display = 'none';
+                document.getElementById('manualCityPicker').style.display = 'block';
+                document.getElementById('showManualCityLink').style.display = 'none';
+            }
+        }
+
+        async function confirmDetectedLocation() {
+            if (!_detectedOnboardingCity) return;
+            await saveOnboardingCity(_detectedOnboardingCity);
+        }
+
+        async function selectOnboardingCity(cityName) {
+            const city = cities.find(c => c.name === cityName);
+            if (!city) return;
+            _detectedOnboardingCity = city;
+            document.getElementById('onboardingCityInput').value = cityName;
+            document.getElementById('onboardingCityDropdown').innerHTML = '';
+            document.getElementById('onboardingCityDropdown').style.display = 'none';
+            // Update the card to show selected city
+            document.getElementById('detectedCityName').textContent = city.name;
+            document.getElementById('detectedCityCard').style.display = 'block';
+            document.getElementById('confirmLocationBtn').style.display = '';
+            document.getElementById('confirmLocationBtn').textContent = "That's my sky 🌙";
+            document.getElementById('locationDetectStatus').textContent = '';
+            await saveOnboardingCity(city);
+        }
+
+        async function saveOnboardingCity(city) {
+            const btn = document.getElementById('confirmLocationBtn');
+            if (btn) { btn.textContent = 'Setting your sky...'; btn.disabled = true; }
+
+            // Save to localStorage
+            localStorage.setItem('moonpop_location', JSON.stringify({ name: city.name, country: city.country }));
+            // Save to Supabase profile
+            if (currentAuthUser) {
+                await sb.from('profiles').update({
+                    city: city.name,
+                    latitude: city.lat,
+                    longitude: city.lon,
+                    timezone: city.tz
+                }).eq('id', currentAuthUser.id);
+                console.log('[location] Saved to DB:', city.name);
+            }
+            // Initialize moon calculations
+            updateLocationDisplay(city.name, city.country);
+            onLocationObtained(city.lat, city.lon, city.tz);
+
+            // Now proceed to load the app
+            localStorage.setItem('moonpop_seen', 'true');
+            hideOnboarding();
+            // Trigger full app initialization
+            if (!_appDataLoaded) {
+                await initAuth();
+            }
+        }
+
+        function filterOnboardingCities(query) {
+            const dropdown = document.getElementById('onboardingCityDropdown');
+            if (!query || query.length < 2) { dropdown.innerHTML = ''; dropdown.style.display = 'none'; return; }
+            const q = query.toLowerCase();
+            const matches = cities.filter(c => c.name.toLowerCase().includes(q)).slice(0, 8);
+            if (matches.length === 0) { dropdown.innerHTML = '<div style="padding:8px 12px;color:var(--text-muted);font-size:13px;">No cities found</div>'; dropdown.style.display = 'block'; return; }
+            dropdown.innerHTML = matches.map(c =>
+                `<div class="city-option" onclick="selectOnboardingCity('${c.name}')" style="padding:8px 12px;cursor:pointer;font-size:14px;color:white;">
+                    <b>${c.name}</b> <span style="color:var(--text-muted);font-size:12px;">${c.country}</span>
+                </div>`
+            ).join('');
+            dropdown.style.display = 'block';
         }
 
         async function resendMoonKey() {
@@ -10680,27 +10812,19 @@
                                 localStorage.setItem('moonpop_location', JSON.stringify({ name: city.name, country: city.country }));
                             }
                         } else {
-                            // No city saved yet — auto-detect from timezone and save
-                            autoDetectFromTimezone();
-                            const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                            const detectedCity = cities.find(c => c.tz === browserTz) || 
-                                                  cities.find(c => c.tz && c.tz.split('/')[0] === browserTz.split('/')[0]);
-                            if (detectedCity) {
-                                sb.from('profiles').update({
-                                    city: detectedCity.name,
-                                    latitude: detectedCity.lat,
-                                    longitude: detectedCity.lon,
-                                    timezone: detectedCity.tz
-                                }).eq('id', session.user.id);
-                            }
+                            // No city saved — show mandatory location step
+                            console.log('[initAuth] No city — showing location step');
+                            showLocationStep();
+                            return; // Don't proceed to app until location is set
                         }
                     }
                 } catch (e) {
                     console.error('Profile check failed:', e);
-                    autoDetectFromTimezone();
+                    showLocationStep();
+                    return;
                 }
 
-                // Always go straight to the app
+                // City is set — go straight to the app
                 localStorage.setItem('moonpop_seen', 'true');
                 hideOnboarding();
 
