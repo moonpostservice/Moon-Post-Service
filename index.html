@@ -14347,6 +14347,16 @@
             // Use inline panel on desktop (same as chat)
             if (window.innerWidth >= 901) {
                 document.body.classList.add('chat-open');
+                // Position panel in the right side, same as openConversation
+                const leftPanel = document.querySelector('.split-left');
+                const splitLayout = document.querySelector('.split-layout');
+                if (leftPanel && splitLayout) {
+                    const slRect = splitLayout.getBoundingClientRect();
+                    page.style.left = (leftPanel.getBoundingClientRect().right + 24) + 'px';
+                    page.style.top = slRect.top + 'px';
+                    page.style.bottom = (window.innerHeight - slRect.bottom) + 'px';
+                    page.style.height = 'auto';
+                }
             } else {
                 document.body.style.overflow = 'hidden';
             }
@@ -14370,6 +14380,10 @@
                 page.classList.add('closing');
                 setTimeout(() => {
                     page.classList.remove('active', 'closing');
+                    page.style.left = '';
+                    page.style.top = '';
+                    page.style.bottom = '';
+                    page.style.height = '';
                     document.body.classList.remove('chat-open');
                 }, 200);
             } else {
