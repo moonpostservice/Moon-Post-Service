@@ -10048,6 +10048,9 @@
                         }
                     }
                     conv.unreadCount = unreadMsgCount + unreadReplyCount;
+                    if (unreadMsgCount + unreadReplyCount > 0) {
+                        console.log('[unread]', conv.otherName, '| msgs:', unreadMsgCount, 'replies:', unreadReplyCount, '| effectiveRead:', effectiveReadTime?.toISOString(), '| allReplies:', allRecentReplies.length);
+                    }
                 });
 
                 // Re-sort conversations since reply timestamps may have changed ordering
