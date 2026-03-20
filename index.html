@@ -6268,7 +6268,8 @@
         /* ============================== */
 
         /* Dark starfield background */
-        #messagePageView.active {
+        #messagePageView.active,
+        #sharedSkyPage.active {
             background: #050a14;
             background-image:
                 radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.12), transparent),
@@ -6279,69 +6280,83 @@
                 radial-gradient(1px 1px at 160px 120px, rgba(255,255,255,0.08), transparent);
             background-size: 200px 200px;
         }
-        #messagePageView .message-page-inner {
+        #messagePageView .message-page-inner,
+        #sharedSkyPage .message-page-inner {
             background: transparent;
             box-shadow: none;
         }
 
         /* Chat header — dark theme */
-        #messagePageView .message-page-header {
+        #messagePageView .message-page-header,
+        #sharedSkyPage .message-page-header {
             border-bottom: 1px solid rgba(79, 195, 247, 0.12);
             background: rgba(5, 10, 20, 0.85);
             backdrop-filter: blur(12px);
         }
-        #messagePageView .message-page-back {
+        #messagePageView .message-page-back,
+        #sharedSkyPage .message-page-back {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
             color: white;
         }
-        #messagePageView .message-page-back:hover {
+        #messagePageView .message-page-back:hover,
+        #sharedSkyPage .message-page-back:hover {
             background: rgba(255,255,255,0.1);
         }
-        #messagePageView .message-page-avatar {
+        #messagePageView .message-page-avatar,
+        #sharedSkyPage .message-page-avatar {
             border: 2px solid #ffd54f;
             padding: 2px;
             background: #357dc5;
         }
-        #messagePageView .message-page-info h3 {
+        #messagePageView .message-page-info h3,
+        #sharedSkyPage .message-page-info h3 {
             color: white;
         }
-        #messagePageView .message-page-info p {
+        #messagePageView .message-page-info p,
+        #sharedSkyPage .message-page-info p {
             color: rgba(79, 195, 247, 0.6);
         }
 
         /* Chat body */
-        #messagePageView .message-page-body {
+        #messagePageView .message-page-body,
+        #sharedSkyPage .message-page-body {
             padding: 20px;
             padding-bottom: 20px;
         }
 
         /* Date separators in chat */
-        #messagePageView .message-page-body .chat-date-sep {
+        #messagePageView .message-page-body .chat-date-sep,
+        #sharedSkyPage .message-page-body .chat-date-sep {
             color: rgba(255,255,255,0.35);
             background: rgba(18, 35, 58, 0.7);
         }
 
         /* Message bubbles — dark theme */
-        #messagePageView .message-bubble {
+        #messagePageView .message-bubble,
+        #sharedSkyPage .message-bubble {
             background: rgba(18, 35, 58, 0.7);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(79, 195, 247, 0.15);
             max-width: 80%;
         }
-        #messagePageView .message-bubble p {
+        #messagePageView .message-bubble p,
+        #sharedSkyPage .message-bubble p {
             color: rgba(255,255,255,0.9);
         }
-        #messagePageView .message-bubble-time {
+        #messagePageView .message-bubble-time,
+        #sharedSkyPage .message-bubble-time {
             color: rgba(255,255,255,0.35);
         }
 
         /* Sent bubbles — slightly brighter blue */
-        #messagePageView .message-bubble.sent {
+        #messagePageView .message-bubble.sent,
+        #sharedSkyPage .message-bubble.sent {
             background: rgba(53, 125, 197, 0.35);
             border: 1px solid rgba(79, 195, 247, 0.25);
         }
-        #messagePageView .message-bubble.sent p {
+        #messagePageView .message-bubble.sent p,
+        #sharedSkyPage .message-bubble.sent p {
             color: white;
         }
         #messagePageView .message-bubble.sent .message-bubble-time {
@@ -6427,32 +6442,38 @@
         }
 
         /* Chat footer — dark glass */
-        #messagePageView .message-page-footer {
+        #messagePageView .message-page-footer,
+        #sharedSkyPage .message-page-footer {
             border-top: 1px solid rgba(79, 195, 247, 0.18);
             background: rgba(14, 28, 50, 0.95);
             backdrop-filter: blur(12px);
         }
 
         /* Chat input — dark theme */
-        #messagePageView .message-page-input {
+        #messagePageView .message-page-input,
+        #sharedSkyPage .message-page-input {
             background: rgba(10, 22, 40, 0.6);
             border: 1.5px solid rgba(79, 195, 247, 0.2);
             color: white;
             font-size: 14px;
         }
-        #messagePageView .message-page-input::placeholder {
+        #messagePageView .message-page-input::placeholder,
+        #sharedSkyPage .message-page-input::placeholder {
             color: rgba(255,255,255,0.25);
         }
-        #messagePageView .message-page-input:focus {
+        #messagePageView .message-page-input:focus,
+        #sharedSkyPage .message-page-input:focus {
             border-color: rgba(79, 195, 247, 0.5);
         }
 
         /* Send button — coral glow */
-        #messagePageView .message-page-send {
+        #messagePageView .message-page-send,
+        #sharedSkyPage .message-page-send {
             background: #ff5558;
             box-shadow: 0 0 15px rgba(255, 85, 88, 0.3);
         }
-        #messagePageView .message-page-send:hover {
+        #messagePageView .message-page-send:hover,
+        #sharedSkyPage .message-page-send:hover {
             background: rgba(255, 85, 88, 0.9);
             box-shadow: 0 0 20px rgba(255, 85, 88, 0.4);
         }
@@ -14296,12 +14317,12 @@
             const container = document.getElementById('sharedSkySignals');
             if (!container) return;
             container.innerHTML = globalTransmissions.map(t => `
-                <div class="shared-sky-signal" style="padding:14px 20px;border-bottom:1px solid #e8e4dc;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                        <span style="font-size:12px;font-weight:700;color:var(--blue);">${t.location}</span>
-                        <span style="font-size:11px;color:var(--text-muted);">${t.time}</span>
+                <div class="shared-sky-signal" style="padding:14px 20px;border-bottom:1px solid rgba(79,195,247,0.1);margin:0 8px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <span style="font-size:12px;font-weight:700;color:#4fc3f7;">${t.location}</span>
+                        <span style="font-size:11px;color:rgba(255,255,255,0.35);">${t.time}</span>
                     </div>
-                    ${t.message ? `<p style="font-size:14px;color:var(--text-dark);line-height:1.5;margin:0;">${t.message}</p>` : ''}
+                    ${t.message ? `<p style="font-size:14px;color:rgba(255,255,255,0.85);line-height:1.5;margin:0;">${t.message}</p>` : ''}
                     ${t.photo ? `<img src="${t.photo}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:10px;margin-top:8px;object-fit:cover;">` : ''}
                 </div>
             `).join('');
