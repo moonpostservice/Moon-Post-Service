@@ -9955,12 +9955,14 @@
                 });
 
                 let latestReplyPerConv = {};
+                let allRecentReplies = [];
                 if (allMsgIds.length > 0) {
                     const { data: recentReplies } = await sb.from('replies')
                         .select('id, message_id, text, is_lunar_note, lunar_note_text, sender_id, created_at')
                         .in('message_id', allMsgIds)
                         .order('created_at', { ascending: false })
                         .limit(100);
+                    allRecentReplies = recentReplies || [];
 
                     if (recentReplies) {
                         recentReplies.forEach(r => {
@@ -10027,8 +10029,8 @@
                             m.type === 'received' && new Date(m.createdAt) > effectiveReadTime
                         ).length;
                         // Also count unread replies from other users
-                        if (recentReplies) {
-                            unreadReplyCount = recentReplies.filter(r => {
+                        if (allRecentReplies.length > 0) {
+                            unreadReplyCount = allRecentReplies.filter(r => {
                                 const rConv = msgToConv[r.message_id];
                                 return rConv === conv &&
                                        r.sender_id !== currentAuthUser.id &&
@@ -10038,8 +10040,8 @@
                     } else {
                         // Never sent or read anything = all received are unread
                         unreadMsgCount = conv.messages.filter(m => m.type === 'received').length;
-                        if (recentReplies) {
-                            unreadReplyCount = recentReplies.filter(r => {
+                        if (allRecentReplies.length > 0) {
+                            unreadReplyCount = allRecentReplies.filter(r => {
                                 const rConv = msgToConv[r.message_id];
                                 return rConv === conv && r.sender_id !== currentAuthUser.id;
                             }).length;
