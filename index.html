@@ -12255,7 +12255,8 @@
                 let avatarUrl = conv.otherAvatar || null;
                 const contact = contacts.find(c => c.name === conv.otherName || (c.email && c.email === conv.otherEmail));
                 if (!avatarUrl && contact?.avatar) avatarUrl = contact.avatar;
-                const online = isContactOnline(contact);
+                // Check online via profile ID first (most reliable), then contact fallback
+                const online = (conv.otherProfileId && onlineUsers[conv.otherProfileId]) || isContactOnline(contact);
                 const onlineDot = online ? '<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid #FCF0D9;z-index:1;"></span>' : '';
 
                 let avatar;
@@ -12508,7 +12509,7 @@
             document.getElementById('detailSender').textContent = displayUsername;
 
             // Show location and online status (with real name if different from username)
-            const online = isContactOnline(contact);
+            const online = (conv.otherProfileId && onlineUsers[conv.otherProfileId]) || isContactOnline(contact);
             const namePrefix = realName ? `${realName} · ` : '';
             document.getElementById('detailLocation').textContent = online
                 ? `${namePrefix}${conv.location || 'Unknown'} · Online under the same sky`
