@@ -11513,6 +11513,21 @@
                             location: locName,
                             online_at: new Date().toISOString()
                         });
+                        // Periodic re-sync: re-read presence state every 30s
+                        // to catch any missed join/leave events
+                        setInterval(() => {
+                            if (presenceChannel) {
+                                const state = presenceChannel.presenceState();
+                                onlineUsers = {};
+                                Object.keys(state).forEach(key => {
+                                    const presences = state[key];
+                                    if (presences.length > 0) {
+                                        onlineUsers[key] = presences[0];
+                                    }
+                                });
+                                updateOnlineIndicators();
+                            }
+                        }, 30000);
                     }
                 });
         }
