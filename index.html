@@ -11345,7 +11345,16 @@
                                 replyConv.latestPreview = replyConv.latestPreview.substring(0, 50) + '...';
                             }
                         }
-                        if (isMyReply) replyConv.unreadCount = 0;
+                        if (isMyReply) {
+                            replyConv.unreadCount = 0;
+                        } else {
+                            // New reply from someone else — increment unread count
+                            // (unless we're currently viewing this conversation)
+                            const isViewingThis = currentConversation && currentConversation === replyConv;
+                            if (!isViewingThis) {
+                                replyConv.unreadCount = (replyConv.unreadCount || 0) + 1;
+                            }
+                        }
                         conversations.sort((a, b) => new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt));
                     }
                     renderMessages();
