@@ -443,6 +443,27 @@
         }
 
         /* First-time Onboarding Overlay */
+        .drift-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 6000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            backdrop-filter: blur(4px);
+        }
+        .drift-modal-card {
+            max-width: 360px;
+            width: 100%;
+            background: var(--card-bg, #0d1b2a);
+            border: 1px solid rgba(0,212,255,0.15);
+            border-radius: 16px;
+            padding: 28px 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
         .onboarding-overlay {
             position: fixed;
             inset: 0;
@@ -6984,8 +7005,8 @@
                     </div>
                 </div>
 
-                <!-- Location Section -->
-                <div class="settings-section" id="settingsSectionLocation">
+                <!-- Location Section (hidden — location is now set via onboarding + drift detection) -->
+                <div class="settings-section" id="settingsSectionLocation" style="display:none;">
                     <div class="settings-section-header" onclick="toggleSettingsSection(this)">
                         <div class="section-summary">
                             <svg viewBox="0 0 78.91 105.29" xmlns="http://www.w3.org/2000/svg" style="width:14px;flex-shrink:0;"><path fill="#ff5558" d="M78.91,36.19v7.4c-.97,6.37-2.55,12.5-5.3,18.54-2.89,6.37-6.36,12.25-10.44,17.96-6.41,8.97-13.71,17.16-21.79,24.61-.43.4-1.03.2-1.32.59h-1.41c-.28-.38-.83-.3-1.25-.69C20.39,88.86-1.46,61.73.08,37.25c.67-10.75,5.65-20.69,13.76-27.7C26.22-1.16,43.98-3.04,58.27,4.82c11.84,6.52,19.05,18.13,20.64,31.37ZM38.22,17.59c-12.26.7-21.41,11.29-20.65,23.28s11.12,21.18,23.11,20.51,21.34-11.07,20.65-23.14-10.91-21.35-23.11-20.65Z"/></svg>
@@ -7156,6 +7177,27 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Location Drift Modal (timezone changed since last visit) -->
+    <div id="locationDriftModal" class="drift-modal-overlay" style="display:none;">
+        <div class="drift-modal-card">
+            <div style="font-size:36px;text-align:center;margin-bottom:8px;">🌍</div>
+            <h2 style="text-align:center;font-size:18px;margin-bottom:4px;color:white;" id="driftTitle">It looks like you moved</h2>
+            <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:16px;" id="driftSubtitle">Your moon times are based on a different sky</p>
+
+            <div style="background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:12px;padding:14px;margin-bottom:16px;text-align:center;">
+                <p style="color:var(--text-muted);font-size:12px;margin-bottom:2px;">We think you're now in</p>
+                <h3 id="driftNewCity" style="color:var(--blue);font-size:22px;font-weight:700;margin:0;">London</h3>
+            </div>
+
+            <button class="onboarding-primary" onclick="acceptDrift()" style="width:100%;margin-bottom:10px;">
+                Update my sky 🌙
+            </button>
+            <p style="text-align:center;">
+                <a href="#" onclick="event.preventDefault();dismissDrift();" id="driftDismissLink" style="color:var(--text-muted);font-size:13px;text-decoration:none;">No, I'm still in <span id="driftOldCity">Tel Aviv</span></a>
+            </p>
         </div>
     </div>
 
@@ -10659,6 +10701,59 @@
             await saveOnboardingCity(_detectedOnboardingCity);
         }
 
+        // ---- TIMEZONE DRIFT DETECTION ----
+        let _driftNewCity = null;
+
+        function checkLocationDrift(profileCity) {
+            // Don't nag if dismissed within last 24h
+            const dismissed = localStorage.getItem('moonpop_drift_dismissed');
+            if (dismissed) {
+                const dismissedAt = new Date(dismissed);
+                if (Date.now() - dismissedAt.getTime() < 24 * 3600000) return;
+            }
+
+            const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (!browserTz || !profileCity) return;
+
+            // Find the profile city's timezone
+            const currentCity = cities.find(c => c.name === profileCity);
+            if (!currentCity || !currentCity.tz) return;
+
+            // Compare timezones
+            if (browserTz === currentCity.tz) return; // Same timezone — no drift
+
+            // Different timezone detected — find the new city
+            const newCity = cities.find(c => c.tz === browserTz) ||
+                            cities.find(c => c.tz && c.tz.split('/')[0] === browserTz.split('/')[0]);
+            if (!newCity || newCity.name === profileCity) return; // Same city or can't detect
+
+            _driftNewCity = newCity;
+
+            // Populate and show the modal
+            document.getElementById('driftNewCity').textContent = newCity.name;
+            document.getElementById('driftOldCity').textContent = profileCity;
+            document.getElementById('driftTitle').textContent = `It looks like you're in ${newCity.name}`;
+            document.getElementById('driftSubtitle').textContent = `Your moon times are based on ${profileCity}`;
+            document.getElementById('locationDriftModal').style.display = 'flex';
+            console.log('[drift] Timezone changed:', currentCity.tz, '→', browserTz, '| Suggesting:', newCity.name);
+        }
+
+        async function acceptDrift() {
+            if (!_driftNewCity) return;
+            document.getElementById('locationDriftModal').style.display = 'none';
+            localStorage.removeItem('moonpop_drift_dismissed');
+            await saveOnboardingCity(_driftNewCity);
+            console.log('[drift] Updated location to:', _driftNewCity.name);
+            _driftNewCity = null;
+        }
+
+        function dismissDrift() {
+            document.getElementById('locationDriftModal').style.display = 'none';
+            localStorage.setItem('moonpop_drift_dismissed', new Date().toISOString());
+            console.log('[drift] Dismissed for 24h');
+            _driftNewCity = null;
+        }
+
         async function selectOnboardingCity(cityName) {
             const city = cities.find(c => c.name === cityName);
             if (!city) return;
@@ -10847,7 +10942,10 @@
                     return;
                 }
 
-                // City is set — go straight to the app
+                // City is set — check for timezone drift (user may have traveled)
+                checkLocationDrift(profile.city);
+
+                // Go straight to the app
                 localStorage.setItem('moonpop_seen', 'true');
                 hideOnboarding();
 
