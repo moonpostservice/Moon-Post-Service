@@ -7000,38 +7000,27 @@
                             <input type="text" id="userName" placeholder="How recipients see you" style="font-size:13px;padding:6px 8px;">
                         </div>
                         <div style="padding-top:4px;">
-                            <button class="send-button" onclick="saveSettings()" style="font-size:13px;padding:8px;">Save</button>
+                            <button class="send-button" id="settingsSaveBtn" onclick="saveSettings()" style="font-size:13px;padding:8px;">Save</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Location Section (hidden — location is now set via onboarding + drift detection) -->
-                <div class="settings-section" id="settingsSectionLocation" style="display:none;">
-                    <div class="settings-section-header" onclick="toggleSettingsSection(this)">
+                <!-- Location Section (read-only display) -->
+                <div class="settings-section" id="settingsSectionLocation">
+                    <div class="settings-section-header">
                         <div class="section-summary">
                             <svg viewBox="0 0 78.91 105.29" xmlns="http://www.w3.org/2000/svg" style="width:14px;flex-shrink:0;"><path fill="#ff5558" d="M78.91,36.19v7.4c-.97,6.37-2.55,12.5-5.3,18.54-2.89,6.37-6.36,12.25-10.44,17.96-6.41,8.97-13.71,17.16-21.79,24.61-.43.4-1.03.2-1.32.59h-1.41c-.28-.38-.83-.3-1.25-.69C20.39,88.86-1.46,61.73.08,37.25c.67-10.75,5.65-20.69,13.76-27.7C26.22-1.16,43.98-3.04,58.27,4.82c11.84,6.52,19.05,18.13,20.64,31.37ZM38.22,17.59c-12.26.7-21.41,11.29-20.65,23.28s11.12,21.18,23.11,20.51,21.34-11.07,20.65-23.14-10.91-21.35-23.11-20.65Z"/></svg>
-                            <span class="summary-text" id="sectionLocationSummary">Set your location</span>
+                            <span class="summary-text" id="sectionLocationSummary">Your location</span>
                         </div>
-                        <span class="section-chevron">▾</span>
                     </div>
-                    <div class="settings-section-body">
-                        <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Moonrise and release times depend on location.</p>
-                        <div class="settings-location-display" id="settingsLocationDisplay" style="margin-bottom:6px;">
+                    <div class="settings-section-body" style="display:block;">
+                        <div class="settings-location-display" id="settingsLocationDisplay" style="margin-bottom:4px;">
                             <svg class="settings-location-pin" viewBox="0 0 78.91 105.29" xmlns="http://www.w3.org/2000/svg" style="width:14px;">
                                 <path fill="#ff5558" d="M78.91,36.19v7.4c-.97,6.37-2.55,12.5-5.3,18.54-2.89,6.37-6.36,12.25-10.44,17.96-6.41,8.97-13.71,17.16-21.79,24.61-.43.4-1.03.2-1.32.59h-1.41c-.28-.38-.83-.3-1.25-.69C20.39,88.86-1.46,61.73.08,37.25c.67-10.75,5.65-20.69,13.76-27.7C26.22-1.16,43.98-3.04,58.27,4.82c11.84,6.52,19.05,18.13,20.64,31.37ZM38.22,17.59c-12.26.7-21.41,11.29-20.65,23.28s11.12,21.18,23.11,20.51,21.34-11.07,20.65-23.14-10.91-21.35-23.11-20.65Z"/>
                             </svg>
-                            <span class="settings-location-name" id="settingsLocationName" style="font-size:13px;">Set your location</span>
+                            <span class="settings-location-name" id="settingsLocationName" style="font-size:13px;">Your location</span>
                         </div>
-                        <div style="display:flex;gap:12px;">
-                            <a href="#" onclick="event.preventDefault();requestLocation();" style="font-size:12px;color:var(--blue);">Use current</a>
-                            <a href="#" onclick="event.preventDefault();showManualLocationInput();" style="font-size:12px;color:var(--blue);">Type location</a>
-                        </div>
-                        <div id="manualLocationWrapper" style="display:none;margin-top:6px;">
-                            <div class="location-input-wrapper">
-                                <input type="text" id="manualLocation" placeholder="City (e.g. Lisbon)" autocomplete="off" oninput="filterSettingsCities(this.value)" style="font-size:13px;padding:6px 8px;">
-                                <div class="city-dropdown" id="settingsCityDropdown"></div>
-                            </div>
-                        </div>
+                        <p style="font-size:11px;color:var(--text-muted);margin:0;">Location is detected automatically from your timezone.</p>
                     </div>
                 </div>
 
@@ -8515,6 +8504,9 @@
         }
 
         async function saveSettings() {
+            const saveBtn = document.getElementById('settingsSaveBtn');
+            if (saveBtn) { saveBtn.textContent = 'Saving...'; saveBtn.disabled = true; }
+
             // Get values
             const manualLoc = document.getElementById('manualLocation')?.value;
             const timeFormat = document.getElementById('timeFormat')?.value;
@@ -8570,15 +8562,30 @@
                 }
                 
                 const { error } = await sb.from('profiles').update(updateData).eq('id', currentAuthUser.id);
-                if (error) console.error('Profile save failed:', error);
+                if (error) {
+                    console.error('Profile save failed:', error);
+                    if (saveBtn) { saveBtn.textContent = 'Save failed'; saveBtn.style.borderColor = '#ff5558'; saveBtn.disabled = false; }
+                    setTimeout(() => { if (saveBtn) { saveBtn.textContent = 'Save'; saveBtn.style.borderColor = ''; } }, 2000);
+                    return;
+                }
             }
 
             // Sync avatar everywhere
             updateAvatarEverywhere(localStorage.getItem('moonpop_profilepic'));
 
+            // Show success feedback
+            if (saveBtn) { saveBtn.textContent = 'Saved!'; saveBtn.style.borderColor = '#4caf50'; saveBtn.style.color = '#4caf50'; }
+
             // Collapse open section and refresh summaries
             document.querySelectorAll('.settings-section.open').forEach(s => s.classList.remove('open'));
             updateSettingsSummaries();
+
+            // Refresh contacts + conversations so name changes propagate everywhere
+            await loadContacts();
+            await debouncedReloadMessages();
+
+            // Reset save button after delay
+            setTimeout(() => { if (saveBtn) { saveBtn.textContent = 'Save'; saveBtn.disabled = false; saveBtn.style.borderColor = ''; saveBtn.style.color = ''; } }, 2000);
         }
 
         // Close dropdowns when clicking outside
@@ -9621,8 +9628,16 @@
                     contacts[i].location = p.city || c.location;
                     contacts[i].isOnMoonpop = true;
                     // Use full name for display, keep username separate
+                    // If no full name, fall back to username so name stays current
                     const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ');
                     if (fullName) contacts[i].name = fullName;
+                    else if (p.username) contacts[i].name = p.username;
+
+                    // Persist updated name back to contacts DB (fire and forget)
+                    const resolvedName = fullName || p.username || c.name;
+                    if (resolvedName !== c.name) {
+                        sb.from('contacts').update({ name: resolvedName }).eq('id', c.id);
+                    }
                 }
             }
 
@@ -9646,12 +9661,14 @@
                         contacts[idx].isOnMoonpop = true;
                         contacts[idx].linkedProfileId = p.id;
                         if (fullName) contacts[idx].name = fullName;
+                        else if (p.username) contacts[idx].name = p.username;
 
                         // Update DB with resolved profile (fire and forget)
+                        const resolvedName = fullName || p.username || c.name;
                         sb.from('contacts').update({
                             linked_profile_id: p.id,
                             is_on_moonpop: true,
-                            name: fullName || c.name,
+                            name: resolvedName,
                             city: p.city || null
                         }).eq('id', c.id);
                     }
