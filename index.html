@@ -11586,9 +11586,29 @@
         let onlineUsers = {};
         let presenceChannel = null;
 
+        const PRESENCE_STALE_MS = 90000; // 90s — if no heartbeat in this window, consider offline
+
+        function isPresenceFresh(presence) {
+            if (!presence?.online_at) return false;
+            return (Date.now() - new Date(presence.online_at).getTime()) < PRESENCE_STALE_MS;
+        }
+
+        function rebuildOnlineUsers() {
+            if (!presenceChannel) return;
+            const state = presenceChannel.presenceState();
+            onlineUsers = {};
+            Object.keys(state).forEach(key => {
+                const presences = state[key];
+                if (presences.length > 0 && isPresenceFresh(presences[0])) {
+                    onlineUsers[key] = presences[0];
+                }
+            });
+            updateOnlineIndicators();
+        }
+
         function setupPresence() {
             if (!currentAuthUser) return;
-            
+
             const userName = localStorage.getItem('moonpop_username') || 'Anonymous';
             const userLoc = localStorage.getItem('moonpop_location');
             let locName = 'Unknown';
@@ -11600,18 +11620,10 @@
 
             presenceChannel
                 .on('presence', { event: 'sync' }, () => {
-                    const state = presenceChannel.presenceState();
-                    onlineUsers = {};
-                    Object.keys(state).forEach(key => {
-                        const presences = state[key];
-                        if (presences.length > 0) {
-                            onlineUsers[key] = presences[0];
-                        }
-                    });
-                    updateOnlineIndicators();
+                    rebuildOnlineUsers();
                 })
                 .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-                    if (newPresences.length > 0) {
+                    if (newPresences.length > 0 && isPresenceFresh(newPresences[0])) {
                         onlineUsers[key] = newPresences[0];
                     }
                     updateOnlineIndicators();
@@ -11622,25 +11634,28 @@
                 })
                 .subscribe(async (status) => {
                     if (status === 'SUBSCRIBED') {
+                        // Initial heartbeat
                         await presenceChannel.track({
                             user_id: currentAuthUser.id,
                             username: userName,
                             location: locName,
                             online_at: new Date().toISOString()
                         });
-                        // Periodic re-sync: re-read presence state every 30s
-                        // to catch any missed join/leave events
-                        setInterval(() => {
+
+                        // Heartbeat: re-track every 30s with fresh timestamp
+                        // so other clients can detect stale presence
+                        setInterval(async () => {
                             if (presenceChannel) {
-                                const state = presenceChannel.presenceState();
-                                onlineUsers = {};
-                                Object.keys(state).forEach(key => {
-                                    const presences = state[key];
-                                    if (presences.length > 0) {
-                                        onlineUsers[key] = presences[0];
-                                    }
-                                });
-                                updateOnlineIndicators();
+                                try {
+                                    await presenceChannel.track({
+                                        user_id: currentAuthUser.id,
+                                        username: localStorage.getItem('moonpop_username') || 'Anonymous',
+                                        location: locName,
+                                        online_at: new Date().toISOString()
+                                    });
+                                } catch(e) {}
+                                // Also prune stale entries from other users
+                                rebuildOnlineUsers();
                             }
                         }, 30000);
                     }
