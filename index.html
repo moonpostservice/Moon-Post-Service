@@ -7013,15 +7013,6 @@
                             <span class="summary-text" id="sectionLocationSummary">Your location</span>
                         </div>
                     </div>
-                    <div class="settings-section-body" style="display:block;">
-                        <div class="settings-location-display" id="settingsLocationDisplay" style="margin-bottom:4px;">
-                            <svg class="settings-location-pin" viewBox="0 0 78.91 105.29" xmlns="http://www.w3.org/2000/svg" style="width:14px;">
-                                <path fill="#ff5558" d="M78.91,36.19v7.4c-.97,6.37-2.55,12.5-5.3,18.54-2.89,6.37-6.36,12.25-10.44,17.96-6.41,8.97-13.71,17.16-21.79,24.61-.43.4-1.03.2-1.32.59h-1.41c-.28-.38-.83-.3-1.25-.69C20.39,88.86-1.46,61.73.08,37.25c.67-10.75,5.65-20.69,13.76-27.7C26.22-1.16,43.98-3.04,58.27,4.82c11.84,6.52,19.05,18.13,20.64,31.37ZM38.22,17.59c-12.26.7-21.41,11.29-20.65,23.28s11.12,21.18,23.11,20.51,21.34-11.07,20.65-23.14-10.91-21.35-23.11-20.65Z"/>
-                            </svg>
-                            <span class="settings-location-name" id="settingsLocationName" style="font-size:13px;">Your location</span>
-                        </div>
-                        <p style="font-size:11px;color:var(--text-muted);margin:0;">Location is detected automatically from your timezone.</p>
-                    </div>
                 </div>
 
                 <!-- Preferences Section -->
@@ -8268,10 +8259,19 @@
                 if (sectionImg) sectionImg.style.display = 'none';
             }
 
-            // Location summary
-            const locName = document.getElementById('settingsLocationName')?.textContent || 'Set your location';
+            // Location summary — read-only, pulled from stored location
             const locSummary = document.getElementById('sectionLocationSummary');
-            if (locSummary) locSummary.textContent = locName;
+            if (locSummary) {
+                const savedLoc = localStorage.getItem('moonpop_location');
+                if (savedLoc) {
+                    try {
+                        const loc = JSON.parse(savedLoc);
+                        locSummary.textContent = loc.country ? `${loc.name}, ${loc.country}` : loc.name;
+                    } catch(e) { locSummary.textContent = 'Your location'; }
+                } else {
+                    locSummary.textContent = 'Your location';
+                }
+            }
 
             // Preferences summary
             const tf = document.getElementById('timeFormat');
@@ -9394,11 +9394,11 @@
         // Update the location display in header and dropdown
         function updateLocationDisplay(cityName, countryName) {
             const headerEl = document.getElementById('userLocation');
-            const settingsEl = document.getElementById('settingsLocationName');
-            
+            const locSummary = document.getElementById('sectionLocationSummary');
+
             if (headerEl) headerEl.textContent = cityName;
-            if (settingsEl) {
-                settingsEl.textContent = countryName ? `${cityName}, ${countryName}` : cityName;
+            if (locSummary) {
+                locSummary.textContent = countryName ? `${cityName}, ${countryName}` : cityName;
             }
         }
 
