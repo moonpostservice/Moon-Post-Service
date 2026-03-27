@@ -310,7 +310,7 @@
             background: var(--white);
             border-radius: 14px;
             box-shadow: 0 12px 48px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
-            z-index: 10000;
+            z-index: 10002;
             padding-bottom: 4px;
         }
 
@@ -9660,6 +9660,12 @@
                 dd.classList.remove('active');
                 arrow.classList.remove('open');
             } else {
+                // Close any open chat/shared sky panels first
+                const msgPage = document.getElementById('messagePageView');
+                const ssPage = document.getElementById('sharedSkyPage');
+                if (msgPage && msgPage.classList.contains('active')) _closeMessageDetailUI();
+                if (ssPage && ssPage.classList.contains('active')) closeSharedSkyModal();
+
                 dd.classList.add('active');
                 arrow.classList.add('open');
 
