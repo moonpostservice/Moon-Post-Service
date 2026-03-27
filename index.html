@@ -16232,6 +16232,7 @@
 
             // Optimistic local entry
             const transmission = {
+                userId: currentAuthUser?.id || null,
                 senderName: userName,
                 location: locName,
                 time: 'Just now',
@@ -16275,8 +16276,8 @@
             const previewEl = document.getElementById('sharedSkyPreview');
             const previewName = userName || locName;
             if (previewEl) previewEl.textContent = previewName + ': ' + (hasLunar ? '🌙 Lunar Note' : text ? '"' + text + '"' : '🌕 Photo');
-            updateSharedSkyBadge();
             localStorage.setItem('moonpop_shared_sky_seen', new Date().toISOString());
+            updateSharedSkyBadge();
         }
 
         // Shared Sky note mode toggle (matches chat pattern)
