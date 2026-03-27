@@ -12080,6 +12080,7 @@
                     });
                     return {
                         dbId: s.id,
+                        userId: s.user_id,
                         senderName: senderName,
                         location: s.city || 'Unknown',
                         time: timeAgo(s.created_at),
@@ -13543,6 +13544,7 @@
                         }
                         globalTransmissions.unshift({
                             dbId: s.id,
+                            userId: s.user_id,
                             senderName: senderName,
                             location: s.city || 'Unknown',
                             time: 'Just now',
@@ -17437,15 +17439,19 @@
             const lastSeen = localStorage.getItem('moonpop_shared_sky_seen');
             const badgeEl = document.getElementById('sharedSkyBadge');
             if (!badgeEl) return;
-            
+
+            // Only count messages from OTHER users (not my own)
+            const myId = currentAuthUser?.id;
+            const othersOnly = globalTransmissions.filter(t => t.userId !== myId);
+
             if (!lastSeen) {
-                // Never seen — all are new
-                const count = globalTransmissions.length;
+                // Never seen — all from others are new
+                const count = othersOnly.length;
                 if (count > 0) { badgeEl.textContent = count; badgeEl.style.display = ''; }
                 else { badgeEl.style.display = 'none'; }
             } else {
                 const seenDate = new Date(lastSeen);
-                const newCount = globalTransmissions.filter(t => {
+                const newCount = othersOnly.filter(t => {
                     const tDate = t.createdAt ? new Date(t.createdAt) : null;
                     return tDate && tDate > seenDate;
                 }).length;
