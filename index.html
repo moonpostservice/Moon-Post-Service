@@ -5211,19 +5211,20 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
             gap: 8px;
             padding: 8px;
         }
 
         .ring-title {
             color: rgba(255, 255, 255, 0.85);
-            font-size: 20px;
+            font-size: clamp(14px, 2vw, 20px);
             font-weight: 700;
             text-align: center;
             align-self: center;
             padding: 0 clamp(16px, 3vw, 32px);
-            margin: 0 0 32px 0;
+            margin: 0 0 clamp(8px, 2vh, 32px) 0;
             line-height: 1.4;
             letter-spacing: 0.3px;
             flex-shrink: 0;
@@ -5317,13 +5318,17 @@
         }
 
         .split-right .moon-data-bar {
-            margin: 36px auto 0;
+            margin: clamp(8px, 2vh, 36px) auto 0;
+            flex-shrink: 0;
         }
 
-        /* Scale orbit ring for available space */
+        /* Scale orbit ring for available space — account for title, data bar, gaps */
         .split-right .orbit-container {
-            width: min(420px, calc(100vh - 260px));
-            height: min(420px, calc(100vh - 260px));
+            width: min(420px, calc(100vh - 320px));
+            height: min(420px, calc(100vh - 320px));
+            min-width: 220px;
+            min-height: 220px;
+            flex-shrink: 1;
         }
 
         /* ====================================== */
@@ -5415,8 +5420,11 @@
                 width: 62%;
             }
             .split-right .orbit-container {
-                width: min(340px, calc(100vh - 260px));
-                height: min(340px, calc(100vh - 260px));
+                width: min(340px, calc(100vh - 320px));
+                height: min(340px, calc(100vh - 320px));
+                min-width: 220px;
+                min-height: 220px;
+                flex-shrink: 1;
             }
         }
 
