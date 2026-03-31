@@ -1,0 +1,16 @@
+-- Migration: Enable Row Level Security on all 12 tables
+-- Requirements: 1.1, 1.2
+-- When RLS is enabled, all access is denied by default until explicit policies are created.
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE replies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shared_sky ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE read_receipts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE blocked_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE moon_circles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE circle_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE circle_nights ENABLE ROW LEVEL SECURITY;
+ALTER TABLE circle_contributions ENABLE ROW LEVEL SECURITY;

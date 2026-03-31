@@ -1,0 +1,188 @@
+// MoonPop Service Worker v31 — Vite modular build
+const CACHE_NAME = 'moonpop-v31';
+const CDN_ASSETS = [
+  'https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap',
+  'https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+];
+
+// ─── Install: cache CDN assets, skip waiting ───────────────────────────
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('[SW] Caching CDN assets');
+      return Promise.allSettled(
+        CDN_ASSETS.map(url =>
+          cache.add(url).catch(() => console.warn('[SW] Failed to cache:', url))
+        )
+      );
+    })
+  );
+  self.skipWaiting();
+});
+
+// ─── Activate: clean old caches, claim clients ─────────────────────────
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => {
+            console.log('[SW] Deleting old cache:', key);
+            return caches.delete(key);
+          })
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+// ─── Fetch strategies ──────────────────────────────────────────────────
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return;
+
+  // 1. Hashed Vite build assets (/assets/*-[hash].js|css) — cache-first (immutable)
+  if (url.origin === self.location.origin && url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // 2. Supabase Storage (public images) — cache-first (immutable uploads)
+  if (
+    (url.hostname.includes('supabase.co') || url.hostname.includes('supabase.in')) &&
+    url.pathname.includes('/storage/v1/object/public/')
+  ) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // 3. Supabase API / Edge Functions — network-only (never cache API data)
+  if (url.hostname.includes('supabase.co') || url.hostname.includes('supabase.in')) {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        new Response(JSON.stringify({ error: 'offline' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      )
+    );
+    return;
+  }
+
+  // 4. CDN assets (fonts, libraries) — cache-first
+  if (
+    url.hostname.includes('cdn.jsdelivr.net') ||
+    url.hostname.includes('cdnjs.cloudflare.com') ||
+    url.hostname.includes('fontshare.com')
+  ) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // 5. App shell + /chat/:id deep links — network-first, cache fallback
+  if (
+    url.origin === self.location.origin &&
+    (url.pathname === '/' || url.pathname === '/index.html' || url.pathname.startsWith('/chat/'))
+  ) {
+    const shellRequest = url.pathname.startsWith('/chat/')
+      ? new Request(url.origin + '/index.html')
+      : event.request;
+    const shellCacheKey = new Request(url.origin + '/index.html');
+
+    event.respondWith(
+      fetch(shellRequest)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(shellCacheKey, clone));
+          return response;
+        })
+        .catch(() => caches.match(shellCacheKey))
+    );
+    return;
+  }
+
+  // 6. Everything else — network-first with cache fallback
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
+  );
+});
+
+// ─── Push notification handler ─────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    const options = {
+      body: data.body || 'You have a new moon message',
+      icon: data.icon || '/manifest.json',
+      badge: '/manifest.json',
+      tag: data.tag || 'moonpop-message',
+      data: { url: data.url || '/' },
+      vibrate: [200, 100, 200],
+      actions: [{ action: 'open', title: 'Read Message' }]
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(data.title || 'MoonPop', options)
+    );
+  } catch (err) {
+    console.error('[SW] Push parse error:', err);
+  }
+});
+
+// ─── Notification click handler ────────────────────────────────────────
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const url = event.notification.data?.url || '/';
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clients) => {
+        for (const client of clients) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        return self.clients.openWindow(url);
+      })
+  );
+});
