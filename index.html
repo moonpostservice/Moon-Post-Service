@@ -7406,36 +7406,42 @@
             #messagePageView .bubble-lunar-note { max-width: 88%; }
         }
 
-        /* Landing header */
+        /* Landing header — dark glassmorphism */
         .landing-nav {
             position: sticky;
             top: 0;
             z-index: 100;
-            padding: 28px 48px;
+            padding: 20px 48px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: transparent;
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-            border-bottom: none;
+            background: rgba(5, 10, 20, 0.6);
+            backdrop-filter: blur(16px) saturate(1.2);
+            -webkit-backdrop-filter: blur(16px) saturate(1.2);
+            border-bottom: 1px solid rgba(79, 195, 247, 0.06);
             flex-shrink: 0;
+            transition: padding 0.3s ease, box-shadow 0.3s ease;
+        }
+        .landing-nav.scrolled {
+            padding: 14px 48px;
+            background: rgba(5, 10, 20, 0.85);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
         }
         .landing-nav-brand {
             display: flex;
             align-items: center;
-            gap: 18px;
+            gap: 16px;
         }
         .landing-nav-brand img {
-            width: 88px;
-            height: 88px;
+            width: 44px;
+            height: 44px;
         }
         .landing-nav-brand span {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             letter-spacing: 2px;
             text-transform: uppercase;
-            color: rgba(255,255,255,0.55);
+            color: rgba(255,255,255,0.45);
         }
         .landing-nav-actions {
             display: flex;
@@ -7444,27 +7450,34 @@
         }
         .landing-nav .btn-login {
             background: none;
-            border: 1.5px solid rgba(79,195,247,0.35);
-            border-radius: 28px;
-            padding: 12px 32px;
-            color: var(--cyan);
-            font-family: inherit;
-            font-size: 16px;
+            border: none;
+            padding: 10px 24px;
+            color: rgba(255,255,255,0.5);
+            font-family: 'Satoshi', sans-serif;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: color 0.2s;
+        }
+        .landing-nav .btn-login:hover {
+            color: #4fc3f7;
         }
         .landing-nav .btn-signup {
             background: var(--coral);
             border: none;
-            border-radius: 28px;
-            padding: 13px 32px;
+            border-radius: 24px;
+            padding: 11px 28px;
             color: #fff;
-            font-family: inherit;
-            font-size: 16px;
+            font-family: 'Satoshi', sans-serif;
+            font-size: 15px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
+            box-shadow: 0 0 20px rgba(255, 85, 88, 0.15);
+        }
+        .landing-nav .btn-signup:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 30px rgba(255, 85, 88, 0.25);
         }
         /* Mobile tagline above hero — hidden on desktop */
         .hero-mobile-tagline {
@@ -7472,25 +7485,28 @@
         }
         @media (max-width: 640px) {
             .landing-nav {
-                padding: 10px 16px;
+                padding: 12px 16px;
             }
             .landing-nav-brand img {
-                width: 36px;
-                height: 36px;
+                width: 32px;
+                height: 32px;
             }
             .landing-nav-brand span {
                 display: none;
             }
-            .landing-nav .btn-login,
+            .landing-nav .btn-login {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
             .landing-nav .btn-signup {
                 padding: 9px 20px;
                 font-size: 14px;
-                border-radius: 22px;
+                border-radius: 20px;
             }
             .hero-mobile-tagline {
                 display: block;
-                font-size: 11px;
-                font-weight: 600;
+                font-size: 10px;
+                font-weight: 700;
                 letter-spacing: 2.5px;
                 text-transform: uppercase;
                 color: rgba(79, 195, 247, 0.55);
@@ -7499,203 +7515,366 @@
         }
 
         /* ============================================ */
-        /* PARALLAX MOONRISE LANDING PAGE               */
+        /* EDITORIAL LANDING PAGE — DARK STARFIELD      */
         /* ============================================ */
+
+        /* Landing scroll container — regular page scroll */
         .moonrise-scroll {
             position: relative;
             flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            -webkit-overflow-scrolling: touch;
-        }
-        .moonrise-moon {
-            position: fixed;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%) translateY(100vh);
-            transform-origin: center top;
-            width: clamp(280px, 50vw, 500px);
-            height: clamp(280px, 50vw, 500px);
-            z-index: 2;
-            pointer-events: none;
-            will-change: transform;
-            transition: transform 0.08s linear;
-        }
-        .moonrise-moon img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            /* Soft circular mask — fades edges to eliminate black JPEG ring */
-            mask-image: radial-gradient(circle at center, white 48%, transparent 50%);
-            -webkit-mask-image: radial-gradient(circle at center, white 48%, transparent 50%);
-        }
-        .moonrise-glow {
-            position: absolute;
-            inset: -50%;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(200,220,255,0.25) 0%, rgba(150,200,240,0.12) 20%, rgba(79,195,247,0.05) 40%, transparent 65%);
-            opacity: 0;
-            pointer-events: none;
-            will-change: opacity;
-            z-index: -1;
         }
         .moonrise-content {
             position: relative;
             z-index: 2;
         }
+
+        /* ---- HERO SECTION ---- */
         .moonrise-section {
-            min-height: 80vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 60px 32px;
+            padding: 80px 32px;
             text-align: center;
             max-width: 900px;
             margin: 0 auto;
         }
-        .moonrise-hero { min-height: 90vh; padding-top: 100px; }
-        .moonrise-tagline {
-            font-size: clamp(10px, 1.8vw, 13px);
+        .moonrise-hero {
+            min-height: 92vh;
+            padding-top: 80px;
+            position: relative;
+        }
+        .hero-tagline {
+            font-size: clamp(10px, 1.6vw, 12px);
             font-weight: 700;
             letter-spacing: 3px;
             text-transform: uppercase;
-            color: rgba(79, 195, 247, 0.85);
-            margin-bottom: 24px;
+            color: rgba(79, 195, 247, 0.6);
+            margin-bottom: 28px;
+            position: relative;
+            z-index: 2;
         }
         .moonrise-title {
-            font-size: clamp(42px, 5.5vw, 68px);
+            font-size: clamp(36px, 5.5vw, 64px);
             font-weight: 300;
             color: #fff;
-            line-height: 1.1;
-            letter-spacing: -1px;
+            line-height: 1.12;
+            letter-spacing: -1.5px;
             margin: 0 0 32px;
         }
         .moonrise-accent { font-weight: 800; color: #4fc3f7; }
         .moonrise-subtitle {
-            font-size: clamp(18px, 3vw, 26px);
-            font-weight: 300;
+            font-size: clamp(16px, 2.2vw, 20px);
+            font-weight: 400;
             color: rgba(255,255,255,0.9);
-            line-height: 1.6;
-            max-width: 600px;
-            margin: 0;
+            line-height: 1.8;
+            max-width: 580px;
+            margin: 0 0 48px;
         }
-        .moonrise-text {
-            font-size: clamp(24px, 5vw, 42px);
-            color: rgba(255,255,255,0.7);
-            line-height: 1.6;
-            font-weight: 300;
-            max-width: 800px;
-            margin: 0;
-        }
-        .moonrise-quote { min-height: 60vh; }
-        .moonrise-quote p {
-            font-size: clamp(28px, 6vw, 52px);
-            color: #4fc3f7;
-            font-weight: 500;
-            font-style: italic;
-            line-height: 1.4;
-            max-width: 800px;
-            margin: 0;
-        }
-        .moonrise-cta {
-            min-height: 100vh;
-            position: relative;
-            z-index: 3;
-            padding-bottom: 60px;
-            padding-top: 0;
+
+        /* Hero CTA area — button above countdown */
+        .hero-cta-area {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            gap: 40px;
         }
-        .moonrise-cta-title {
-            font-size: clamp(42px, 8vw, 72px);
-            font-weight: 600;
-            color: #fff;
-            margin: 0 0 8px;
-            position: relative;
-            z-index: 5;
-        }
-        .moonrise-cta-countdown {
-            font-size: clamp(40px, 8vw, 68px);
-            font-weight: 800;
-            color: #4fc3f7;
-            margin: 0 0 8px;
-            letter-spacing: -0.5px;
-        }
-        .moonrise-cta-buttons {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin-top: 48px;
-            position: relative;
-            z-index: 5;
-        }
-        .moonrise-btn-login {
-            background: none;
-            border: 2px solid rgba(79,195,247,0.45);
-            border-radius: 32px;
-            padding: 16px 44px;
-            color: var(--cyan);
-            font-family: inherit;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .moonrise-btn-login:hover { border-color: #4fc3f7; background: rgba(79,195,247,0.1); }
-        .moonrise-btn-signup {
+        .hero-cta-btn {
+            display: inline-block;
             background: var(--coral);
+            color: #fff;
             border: none;
             border-radius: 32px;
-            padding: 17px 44px;
-            color: #fff;
-            font-family: inherit;
+            padding: 17px 48px;
+            font-family: 'Satoshi', sans-serif;
             font-size: 18px;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 0 0 0 rgba(79,195,247,0);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 30px rgba(255, 85, 88, 0.2);
         }
-        .moonrise-btn-signup.moonlit {
-            box-shadow: 0 0 30px rgba(79,195,247,0.3), 0 0 60px rgba(79,195,247,0.15);
+        .hero-cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 40px rgba(255, 85, 88, 0.35);
         }
-        .moonrise-light {
-            position: fixed;
-            inset: 0;
+        .hero-moon-up-label {
+            color: #4fc3f7;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        /* ---- RETRO FLIP COUNTER ---- */
+        .retro-counter {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .retro-counter-group {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .retro-digit {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 72px;
+            background: rgba(10, 22, 40, 0.85);
+            border: 1px solid rgba(79, 195, 247, 0.2);
+            border-radius: 8px;
+            font-family: 'Satoshi', monospace;
+            font-size: 36px;
+            font-weight: 800;
+            color: #4fc3f7;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(79,195,247,0.08);
+        }
+        .retro-digit::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(0,0,0,0.4);
             pointer-events: none;
-            z-index: 1;
-            opacity: 0;
-            will-change: opacity;
-            transition: background 0.3s;
         }
-        /* Shine burst on CTA buttons */
-        .moonrise-btn-signup.moonlit {
-            box-shadow: 0 0 40px rgba(200,220,255,0.4), 0 0 80px rgba(79,195,247,0.2), 0 0 120px rgba(79,195,247,0.1);
+        .retro-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(79, 195, 247, 0.35);
+            margin-top: 6px;
+            text-align: center;
         }
-        .moonrise-btn-login.moonlit {
-            border-color: rgba(200,220,255,0.6);
-            box-shadow: 0 0 20px rgba(200,220,255,0.15);
+        .retro-counter-unit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .retro-separator {
+            font-size: 32px;
+            font-weight: 800;
+            color: rgba(79, 195, 247, 0.3);
+            padding: 0 2px;
+            margin-bottom: 18px;
+        }
+        .retro-countdown-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .retro-rises-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.35);
+            margin: 0;
+            letter-spacing: 0.3px;
+        }
+
+        /* ---- HOW IT WORKS ---- */
+        .hiw-section {
+            padding: 60px 32px 0;
+            border-top: 1px solid rgba(79, 195, 247, 0.08);
+            border-bottom: 1px solid rgba(79, 195, 247, 0.08);
+        }
+        .hiw-inner {
+            max-width: 720px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .hiw-title {
+            font-size: clamp(28px, 4vw, 42px);
+            font-weight: 300;
+            letter-spacing: -0.5px;
+            color: #4fc3f7;
+            margin: 0 0 48px;
+        }
+        .hiw-text {
+            font-size: clamp(20px, 3.5vw, 32px);
+            font-weight: 300;
+            color: rgba(255,255,255,0.7);
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        /* ---- MOON TRANSIT ILLUSTRATION ---- */
+        .transit-illustration {
+            padding: 20px 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .transit-canvas-wrap {
+            position: relative;
+            width: min(90vw, 900px);
+            height: min(90vw, 900px);
+        }
+        .transit-canvas-wrap canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        @media (max-width: 480px) {
+            .transit-canvas-wrap {
+                width: 300px;
+                height: 300px;
+            }
+        }
+
+        /* ---- BENEFIT SECTIONS ---- */
+        .benefit-section {
+            padding: 40px 32px 120px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .benefit-block {
+            margin-bottom: 140px;
+        }
+        .benefit-block:last-child {
+            margin-bottom: 0;
+        }
+        .benefit-block {
+            text-align: center;
+        }
+        .benefit-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: rgba(79, 195, 247, 0.5);
+            margin-bottom: 16px;
+        }
+        .benefit-block h2 {
+            font-size: clamp(28px, 4.5vw, 48px);
+            font-weight: 300;
+            color: #4fc3f7;
+            line-height: 1.15;
+            letter-spacing: -1px;
+            margin: 0 0 20px;
+        }
+        .benefit-block p {
+            font-size: clamp(20px, 3.5vw, 32px);
+            color: rgba(255,255,255,0.45);
+            line-height: 1.7;
+            margin: 0 auto;
+            max-width: 700px;
+            font-weight: 300;
+        }
+        .benefit-divider {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 80px 0;
+            color: rgba(79, 195, 247, 0.3);
+            font-size: 24px;
+        }
+
+        /* ---- POSITIONING / MANIFESTO ---- */
+        .positioning-section {
+            padding: 120px 32px;
+            text-align: center;
+            max-width: 720px;
+            margin: 0 auto;
+            border-top: 1px solid rgba(79, 195, 247, 0.08);
+        }
+        .positioning-section h2 {
+            font-size: clamp(32px, 5vw, 52px);
+            font-weight: 300;
+            color: #4fc3f7;
+            line-height: 1.2;
+            letter-spacing: -1px;
+            margin: 0 0 24px;
+        }
+        .positioning-section p {
+            font-size: clamp(20px, 3.5vw, 32px);
+            color: rgba(255,255,255,0.45);
+            line-height: 1.7;
+            font-weight: 300;
+            margin: 0 auto;
+            max-width: 700px;
+        }
+
+        /* ---- BOTTOM CTA SECTION ---- */
+        .bottom-cta-section {
+            padding: 140px 32px 100px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .bottom-cta-title {
+            font-size: clamp(36px, 6vw, 60px);
+            font-weight: 300;
+            color: #4fc3f7;
+            letter-spacing: -1px;
+            margin: 0 0 24px;
+        }
+        .bottom-cta-sub {
+            font-size: clamp(16px, 2vw, 20px);
+            color: rgba(255,255,255,0.4);
+            margin: 0 0 40px;
+        }
+        .bottom-cta-countdown {
+            margin-top: 20px;
+            font-size: 15px;
+            color: rgba(255,255,255,0.35);
+        }
+        .bottom-cta-countdown .countdown-time {
+            font-weight: 800;
+            color: #4fc3f7;
+        }
+
+        /* ---- FOOTER ---- */
+        .landing-footer {
+            padding: 80px 32px 48px;
+            text-align: center;
+        }
+        .footer-signoff {
+            font-size: 15px;
+            font-style: italic;
+            color: rgba(255,255,255,0.35);
+            line-height: 1.7;
+        }
+        .footer-signoff strong {
+            font-weight: 700;
+            color: rgba(255,255,255,0.55);
+            font-style: normal;
+        }
+
+        /* No scroll animation — regular scroll */
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 768px) {
+            .benefit-block:nth-child(even),
+            .benefit-block:nth-child(odd) {
+                text-align: center;
+            }
+            .benefit-block:nth-child(even) p {
+                margin-left: auto;
+                margin-right: auto;
+            }
+            .benefit-block {
+                margin-bottom: 100px;
+            }
         }
         @media (max-width: 480px) {
             .moonrise-title {
-                font-size: clamp(24px, 6.2vw, 36px);
+                font-size: clamp(26px, 7vw, 36px);
             }
-            /* moonrise-cta uses flexbox centering */
-            .moonrise-cta-title {
-                font-size: clamp(28px, 6vw, 40px);
+            .moonrise-hero {
+                padding-top: 40px;
             }
-            .moonrise-cta-countdown {
-                font-size: clamp(32px, 7vw, 44px);
+            .bottom-cta-title {
+                font-size: clamp(26px, 7vw, 36px);
             }
-            .moonrise-btn-login,
-            .moonrise-btn-signup {
-                padding: 12px 32px;
-                font-size: 15px;
+            .hero-cta-btn {
+                padding: 14px 36px;
+                font-size: 16px;
             }
         }
     </style>
@@ -8112,7 +8291,6 @@
         <nav class="landing-nav">
             <div class="landing-nav-brand">
                 <img src="assests/logo2.png" alt="Moon Post Service">
-                <span>The World's Only Moon Postal Service</span>
             </div>
             <div class="landing-nav-actions">
                 <button class="btn-login" onclick="showAuthModal('login')">Log in</button>
@@ -8237,69 +8415,76 @@
             </div>
         </div>
 
-        <!-- Moonlight ambient overlay -->
-        <div class="moonrise-light" id="moonriseLight"></div>
-
-        <!-- Parallax Moonrise Landing Page -->
+        <!-- Landing Page — Dark Starfield -->
         <div class="moonrise-scroll" id="moonriseScroll">
-
-            <!-- Fixed moon (parallax — rises as user scrolls) -->
-            <div class="moonrise-moon" id="moonriseMoon">
-                <img src="assests/moon-realistic.jpg" alt="Moon" draggable="false">
-                <div class="moonrise-glow" id="moonriseGlow"></div>
-            </div>
-
-            <!-- Scrollable text content -->
             <div class="moonrise-content">
 
+                <!-- HERO -->
                 <section class="moonrise-section moonrise-hero">
-                    <p class="moonrise-tagline">The World's Only Moon Postal Service</p>
-                    <h1 class="moonrise-title"><span style="display:block">Not every message</span><span style="display:block">should arrive <span class="moonrise-accent">immediately.</span></span></h1>
-                    <p class="moonrise-subtitle">Some words deserve distance. Anticipation. A sky.</p>
-                </section>
-
-                <section class="moonrise-section">
-                    <p class="moonrise-text">Moon Post Service is the world's only moon-based messaging platform.<br>Here is how it works: a message can be sent only when the moon is above you.<br>It does not arrive instantly. It travels, and is delivered only when the moon rises for the person you sent it to.</p>
-                </section>
-
-                <section class="moonrise-section moonrise-quote">
-                    <p>That waiting is part of the feeling.</p>
-                </section>
-
-                <section class="moonrise-section">
-                    <p class="moonrise-text">Because some messages should not arrive like every other notification.<br>They should gather a little darkness around them.<br>A little time. A little longing.</p>
-                </section>
-
-                <section class="moonrise-section moonrise-quote">
-                    <p>◑</p>
-                </section>
-
-                <section class="moonrise-section">
-                    <p class="moonrise-text">There was a time when sending something meant letting it go.<br>A letter crossed distance before it arrived.<br>That distance gave it weight.<br>Instant messaging erased much of that space between us.</p>
-                </section>
-
-                <section class="moonrise-section">
-                    <p class="moonrise-text">Moon Post Service brings some of it back.<br>A small daily ritual.<br>A different way of staying close.</p>
-                </section>
-
-                <section class="moonrise-section">
-                    <p class="moonrise-text">Messages live for one lunar cycle. Like moonlight, they're not meant to be stored &mdash; they're meant to be felt.</p>
-                </section>
-
-                <section class="moonrise-section moonrise-quote">
-                    <p>◑</p>
-                </section>
-
-                <!-- Bottom CTA — moonlit -->
-                <section class="moonrise-section moonrise-cta" id="moonriseCta">
-                    <p class="moonrise-text" style="margin-bottom:24px;">Let the moon keep you close.</p>
-                    <h2 class="moonrise-cta-title" id="onboardingMoonTitle">Rising in</h2>
-                    <p id="onboardingCountdown" class="moonrise-cta-countdown"></p>
-                    <div class="moonrise-cta-buttons">
-                        <button onclick="showAuthModal('signup')" class="moonrise-btn-signup">Sign up &mdash; it's free &rarr;</button>
+                    <canvas id="landing-ring-canvas" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-48%);pointer-events:none;z-index:1;opacity:0.7;"></canvas>
+                    <p class="hero-tagline fade-in-up">The World's Only Moon Postal Service</p>
+                    <h1 class="moonrise-title fade-in-up" style="position:relative;z-index:2;"><span style="display:block">Your loved ones</span><span style="display:block">should not arrive</span><span style="display:block"><span class="moonrise-accent">like every other notification.</span></span></h1>
+                    <p class="moonrise-subtitle fade-in-up" style="position:relative;z-index:2;">Moon Post Service is the world's only moon-based postal service. No pings. No red dots. No noise. To see if you have mail from the people you love, just look at the sky.</p>
+                    <div class="hero-cta-area fade-in-up" id="heroCta" style="position:relative;z-index:2;">
+                        <!-- JS will populate based on moon state -->
                     </div>
-                    <p style="color:rgba(232,244,253,0.4);font-size:14px;font-style:italic;margin-top:40px;">Yours, under the same moon,<br><span style="color:rgba(232,244,253,0.6);font-weight:600;">Manko &amp; Yoash</span></p>
                 </section>
+
+                <!-- HOW IT WORKS -->
+                <div class="hiw-section">
+                    <div class="hiw-inner fade-in-up">
+                        <p class="hiw-title">How it works</p>
+                        <p class="hiw-text">Moon Post Service opens at moonrise and closes at moonset. During that time, you can send and receive messages. The messages you send travel with the moon and arrive when the moon rises for the person you sent them to.</p>
+                    </div>
+                </div>
+
+                <!-- MOON TRANSIT ILLUSTRATION -->
+                <div class="transit-illustration">
+                    <div class="transit-canvas-wrap">
+                        <canvas id="transitCanvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- BENEFITS -->
+                <div class="benefit-section">
+                    <div class="benefit-block fade-in-up">
+                        <h2>The moon becomes your daily ritual</h2>
+                        <p>When the moon appears, that is your moment to pause, look up, and check in on the people you love.</p>
+                    </div>
+
+                    <div class="benefit-divider" aria-hidden="true">&#9790;</div>
+
+                    <div class="benefit-block fade-in-up">
+                        <h2>Good things come slower</h2>
+                        <p>Moon messages do not arrive instantly. They travel with the moon, giving surprise, anticipation, and longing a little time to build.</p>
+                    </div>
+
+                    <div class="benefit-divider" aria-hidden="true">&#9711;</div>
+
+                    <div class="benefit-block fade-in-up">
+                        <h2>Some relationships deserve a different place</h2>
+                        <p>Some conversations do not belong in the stream of updates, logistics, and digital noise. Some relationships deserve a different light, a different rhythm, and a different place.</p>
+                    </div>
+                </div>
+
+                <!-- POSITIONING -->
+                <div class="positioning-section fade-in-up">
+                    <h2>The natural way to stay close</h2>
+                    <p>Moon Post Service makes room for a slower, more intentional way to stay close to the people you love, guided by one of the oldest rhythms humans have ever known.</p>
+                </div>
+
+                <!-- BOTTOM CTA -->
+                <div class="bottom-cta-section">
+                    <h2 class="bottom-cta-title fade-in-up">Let the moon keep you closer.</h2>
+                    <div class="fade-in-up" id="bottomCta">
+                        <!-- JS will populate based on moon state -->
+                    </div>
+                </div>
+
+                <!-- FOOTER -->
+                <footer class="landing-footer">
+                    <p class="footer-signoff">Yours, under the same moon,<br><strong>Manko &amp; Yoash</strong></p>
+                </footer>
 
             </div>
         </div>
@@ -13987,79 +14172,48 @@
         }
 
         function initMoonriseParallax() {
+            // Scroll-based fade-in animations for editorial landing page
             const scrollContainer = document.getElementById('moonriseScroll');
-            const moon = document.getElementById('moonriseMoon');
-            const glow = document.getElementById('moonriseGlow');
-            const light = document.getElementById('moonriseLight');
-            const signupBtn = document.querySelector('.moonrise-btn-signup');
-            const loginBtn = document.querySelector('.moonrise-btn-login');
-            const overlay = document.getElementById('onboardingOverlay');
-            if (!scrollContainer || !moon) return;
+            if (!scrollContainer) return;
 
-            let ticking = false;
-            scrollContainer.addEventListener('scroll', () => {
-                if (!ticking) {
-                    requestAnimationFrame(() => {
-                        const scrollTop = scrollContainer.scrollTop;
-                        const scrollHeight = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-                        const progress = Math.min(scrollTop / scrollHeight, 1); // 0 to 1
+            // IntersectionObserver for fade-in-up elements (uses viewport)
+            const fadeObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        fadeObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
 
-                        // Moon rises continuously — enters early, never stops, shrinks as it rises
-                        const vh = scrollContainer.clientHeight;
-                        // Slightly accelerated curve so moon enters sooner but never caps
-                        const moonProg = Math.pow(progress, 0.85);
-                        const moonStartY = vh * 1.05;    // starts just below viewport
-                        const moonEndY = vh * 0.08;      // ends near top
-                        const moonY = moonStartY - (moonStartY - moonEndY) * moonProg;
-                        // Moon shrinks continuously — starts at 1.6x, ends at 0.25x
-                        const moonScale = 1.6 - moonProg * 1.35;
-                        moon.style.transform = `translateX(-50%) translateY(${moonY}px) scale(${moonScale})`;
+            document.querySelectorAll('.fade-in-up').forEach(el => {
+                fadeObserver.observe(el);
+            });
 
-                        // Glow intensifies continuously
-                        if (glow) glow.style.opacity = Math.min(progress * 1.8, 1);
-
-                        // Sky brightening — subtle
-                        if (overlay) {
-                            const r = Math.round(5 + progress * 5);    // 5 → 10
-                            const g = Math.round(10 + progress * 9);   // 10 → 19
-                            const b = Math.round(20 + progress * 16);  // 20 → 36
-                            overlay.style.background = `rgb(${r},${g},${b})`;
-                        }
-
-                        // Ambient glow — radiates from bottom center (behind CTA buttons)
-                        if (light) {
-                            const glowIntensity = Math.pow(progress, 1.5);
-                            light.style.background = `radial-gradient(ellipse 80% 50% at 50% 85%, rgba(200,220,255,${0.06 * glowIntensity}) 0%, rgba(79,195,247,${0.03 * glowIntensity}) 35%, transparent 70%)`;
-                            light.style.opacity = 1;
-                        }
-
-                        // Moonlit shine on CTA buttons at bottom
-                        const isBottom = progress > 0.8;
-                        if (signupBtn) signupBtn.classList.toggle('moonlit', isBottom);
-                        if (loginBtn) loginBtn.classList.toggle('moonlit', isBottom);
-
-                        ticking = false;
-                    });
-                    ticking = true;
-                }
-            }, { passive: true });
+            // Glassmorphism header scroll state
+            const nav = document.querySelector('.landing-nav');
+            if (nav) {
+                window.addEventListener('scroll', () => {
+                    nav.classList.toggle('scrolled', window.scrollY > 40);
+                }, { passive: true });
+            }
         }
 
         function showOnboarding() {
             const overlay = document.getElementById('onboardingOverlay');
             if (!overlay) return;
             overlay.classList.remove('hidden');
-            // Initialize parallax moonrise + landing starfield
+            // Initialize scroll animations + landing starfield + orbital dots
             initMoonriseParallax();
             generateLandingStars();
+            setupRingCanvas('landing-ring-canvas');
+            initTransitIllustration();
 
-            // Start countdown for bottom CTA with seconds
-            const cdEl = document.getElementById('onboardingCountdown');
-            const cdTitle = document.getElementById('onboardingMoonTitle');
-            if (cdEl) {
-                // Try to get user's approximate location from browser timezone
+            // Dynamic CTA based on moon state
+            const heroCta = document.getElementById('heroCta');
+            const bottomCta = document.getElementById('bottomCta');
+            if (heroCta) {
                 const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-                // Simple timezone→coords mapping for common locations
                 const tzCoords = {
                     'Asia/Jerusalem': [32.08, 34.78], 'Asia/Tel_Aviv': [32.08, 34.78],
                     'America/New_York': [40.71, -74.01], 'America/Chicago': [41.88, -87.63],
@@ -14068,46 +14222,67 @@
                     'Europe/Berlin': [52.52, 13.41], 'Australia/Sydney': [-33.87, 151.21],
                     'Asia/Tokyo': [35.68, 139.69], 'Asia/Dubai': [25.20, 55.27],
                 };
-                const coords = tzCoords[tz] || [32.08, 34.78]; // fallback Tel Aviv
+                const coords = tzCoords[tz] || [32.08, 34.78];
 
-                function updateOnboardingCountdown() {
-                    try {
-                        const now = new Date();
-                        // Check if moon is currently up
-                        const moonPos = SunCalc.getMoonPosition(now, coords[0], coords[1]);
-                        const altDeg = moonPos.altitude * (180 / Math.PI);
-                        if (altDeg > -0.5) {
-                            // Moon is up
-                            if (cdTitle) cdTitle.textContent = 'The moon is rising now.';
-                            cdEl.textContent = '';
-                            return;
-                        }
-                        // Moon is down — find next moonrise
-                        if (cdTitle) cdTitle.textContent = 'The moon rises in';
-                        const moonTimes = SunCalc.getMoonTimes(now, coords[0], coords[1]);
-                        let target = moonTimes.rise;
-                        if (!target || target < now) {
-                            const tomorrow = new Date(now.getTime() + 86400000);
-                            const mt2 = SunCalc.getMoonTimes(tomorrow, coords[0], coords[1]);
-                            target = mt2.rise;
-                        }
-                        if (target && target > now) {
-                            const diff = target - now;
-                            const h = Math.floor(diff / 3600000);
-                            const m = Math.floor((diff % 3600000) / 60000);
-                            const s = Math.floor((diff % 60000) / 1000);
-                            cdEl.textContent = h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
-                        } else {
-                            cdEl.textContent = '';
-                            if (cdTitle) cdTitle.textContent = 'The moon rises tonight.';
-                        }
-                    } catch(e) {
-                        cdEl.textContent = '';
-                        if (cdTitle) cdTitle.textContent = 'The moon rises tonight.';
+                function buildRetroCounter(h, m, s, idPrefix) {
+                    const pad = (n) => String(n).padStart(2, '0');
+                    const hh = pad(h), mm = pad(m), ss = pad(s);
+                    return '<div class="retro-counter">' +
+                        '<div class="retro-counter-unit"><div class="retro-counter-group"><span class="retro-digit">' + hh[0] + '</span><span class="retro-digit">' + hh[1] + '</span></div><div class="retro-label">hrs</div></div>' +
+                        '<span class="retro-separator">:</span>' +
+                        '<div class="retro-counter-unit"><div class="retro-counter-group"><span class="retro-digit">' + mm[0] + '</span><span class="retro-digit">' + mm[1] + '</span></div><div class="retro-label">min</div></div>' +
+                        '<span class="retro-separator">:</span>' +
+                        '<div class="retro-counter-unit"><div class="retro-counter-group"><span class="retro-digit">' + ss[0] + '</span><span class="retro-digit">' + ss[1] + '</span></div><div class="retro-label">sec</div></div>' +
+                    '</div>';
+                }
+
+                function renderMoonCta(container, isMoonUp, h, m, s, isBottom) {
+                    if (isMoonUp) {
+                        container.innerHTML =
+                            '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Send a moon message</button>' +
+                            '<p class="hero-moon-up-label">The moon is above you now.</p>';
+                    } else {
+                        const sub = isBottom ? '<p class="bottom-cta-sub">Add someone you love.</p>' : '';
+                        container.innerHTML =
+                            '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Join free</button>' + sub +
+                            '<div class="retro-countdown-group"><p class="retro-rises-label">Your moon rises in</p>' +
+                            buildRetroCounter(h, m, s, isBottom ? 'bot' : 'hero') + '</div>';
                     }
                 }
-                updateOnboardingCountdown();
-                setInterval(updateOnboardingCountdown, 1000);
+
+                function updateLandingCta() {
+                    try {
+                        const now = new Date();
+                        const moonPos = SunCalc.getMoonPosition(now, coords[0], coords[1]);
+                        const altDeg = moonPos.altitude * (180 / Math.PI);
+                        const isMoonUp = altDeg > -0.5;
+
+                        let ch = 0, cm = 0, cs = 0;
+                        if (!isMoonUp) {
+                            const moonTimes = SunCalc.getMoonTimes(now, coords[0], coords[1]);
+                            let target = moonTimes.rise;
+                            if (!target || target < now) {
+                                const tomorrow = new Date(now.getTime() + 86400000);
+                                const mt2 = SunCalc.getMoonTimes(tomorrow, coords[0], coords[1]);
+                                target = mt2.rise;
+                            }
+                            if (target && target > now) {
+                                const diff = target - now;
+                                ch = Math.floor(diff / 3600000);
+                                cm = Math.floor((diff % 3600000) / 60000);
+                                cs = Math.floor((diff % 60000) / 1000);
+                            }
+                        }
+
+                        renderMoonCta(heroCta, isMoonUp, ch, cm, cs, false);
+                        if (bottomCta) renderMoonCta(bottomCta, isMoonUp, ch, cm, cs, true);
+                    } catch(e) {
+                        heroCta.innerHTML = '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Join free</button>';
+                        if (bottomCta) bottomCta.innerHTML = '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Join free</button>';
+                    }
+                }
+                updateLandingCta();
+                setInterval(updateLandingCta, 1000);
             }
 
             // Add Enter key handler for email input
@@ -17526,6 +17701,334 @@
             document.body.style.overflow = '';
             if (window.location.pathname === '/philosophy') history.replaceState(null, '', '/');
         }
+        // ---- MOON TRANSIT ILLUSTRATION (canvas) ----
+        function initTransitIllustration() {
+            const canvas = document.getElementById('transitCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const wrap = canvas.parentElement;
+
+            let W, H, cx, cy, earthR, orbitR, sc;
+            function resize() {
+                const dpr = window.devicePixelRatio || 1;
+                const ww = wrap.offsetWidth;
+                W = ww * dpr; H = ww * dpr;
+                canvas.width = W; canvas.height = H;
+                canvas.style.width = ww + 'px';
+                canvas.style.height = ww + 'px';
+                cx = W / 2; cy = H / 2;
+                sc = W / 840; // base scale (840 = 420*2dpr reference)
+                earthR = 115 * sc;
+                orbitR = 185 * sc;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            // Pin angles on orbit
+            const YOU_ANGLE = -55 * Math.PI / 180;
+            const THEM_ANGLE = 155 * Math.PI / 180;
+            // Pin positions on Earth surface
+            function youPos() { return { x: cx + Math.cos(YOU_ANGLE) * earthR * 0.65, y: cy + Math.sin(YOU_ANGLE) * earthR * 0.65 }; }
+            function themPos() { return { x: cx + Math.cos(THEM_ANGLE) * earthR * 0.65, y: cy + Math.sin(THEM_ANGLE) * earthR * 0.65 }; }
+            // Moon position on orbit
+            function moonPos(angle) { return { x: cx + Math.cos(angle) * orbitR, y: cy + Math.sin(angle) * orbitR }; }
+
+            /*
+             * FULL CYCLE (20s):
+             *  Phase 0: Letter rises from You → moon (1.5s)
+             *  Phase 1: Moon carries coral letter You→Them (5s)
+             *  Phase 2: Letter drops from moon → Them (1.5s)
+             *  Phase 3: Letter rises from Them → moon (1.5s)
+             *  Phase 4: Moon carries blue letter Them→You (5s)
+             *  Phase 5: Letter drops from moon → You (1.5s)
+             *  Pause gaps built into ease
+             */
+            const CYCLE = 18;
+            const PHASES = [
+                { name: 'send_you',    dur: 1.2 },
+                { name: 'travel_to_them', dur: 5.5 },
+                { name: 'drop_them',   dur: 1.2 },
+                { name: 'send_them',   dur: 1.2 },
+                { name: 'travel_to_you', dur: 5.5 },
+                { name: 'drop_you',    dur: 1.2 },
+            ];
+            const totalDur = PHASES.reduce((s, p) => s + p.dur, 0);
+            // Normalize durations
+            PHASES.forEach(p => p.frac = p.dur / totalDur);
+
+            function ease(t) { return t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2; }
+
+            function getPhase(t) {
+                let acc = 0;
+                for (let i = 0; i < PHASES.length; i++) {
+                    if (t < acc + PHASES[i].frac) {
+                        return { index: i, name: PHASES[i].name, progress: (t - acc) / PHASES[i].frac };
+                    }
+                    acc += PHASES[i].frac;
+                }
+                return { index: 5, name: 'drop_you', progress: 1 };
+            }
+
+            // Clockwise angle interpolation
+            function lerpAngleCW(from, to, t) {
+                let diff = to - from;
+                if (diff < 0) diff += Math.PI * 2;
+                return from + diff * t;
+            }
+
+            // Trail
+            const trail = [];
+            const TRAIL_LEN = 50;
+
+            // ---- DRAW FUNCTIONS ----
+
+            function drawOrbit() {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, orbitR, 0, Math.PI * 2);
+                ctx.setLineDash([10 * sc, 14 * sc]);
+                ctx.strokeStyle = 'rgba(79,195,247,0.14)';
+                ctx.lineWidth = 2 * sc;
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+
+            // Earth SVG embedded as data URL for reliable canvas rendering
+            const earthSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><clipPath id="g"><circle cx="200" cy="200" r="195"/></clipPath></defs><circle cx="200" cy="200" r="195" fill="%232E9BD6"/><g clip-path="url(%23g)" fill="%237EC850"><path d="M168 28Q178 22 192 24Q208 26 218 34Q224 42 220 52Q214 62 204 66Q192 68 182 62Q172 56 168 46Q164 36 168 28Z"/><path d="M52 72Q58 64 68 58Q82 52 96 48Q108 46 118 50Q128 48 138 44Q148 42 158 46Q166 50 170 58Q174 66 172 76Q168 86 160 92Q154 98 152 108Q150 118 146 126Q140 134 132 140Q124 148 118 152Q112 158 104 162Q96 168 88 172Q78 176 70 172Q62 168 56 160Q48 148 42 136Q36 124 34 112Q32 100 34 88Q38 78 46 74Z"/><path d="M88 172Q94 178 98 186Q102 194 108 200Q114 206 118 214Q120 220 116 226Q112 230 106 228Q100 224 96 218Q90 210 86 202Q82 192 80 184Q80 176 84 172Z"/><path d="M106 228Q114 224 122 226Q132 230 140 238Q148 248 152 260Q154 274 152 288Q148 302 142 316Q136 330 128 342Q120 352 112 358Q104 362 98 356Q92 348 88 336Q84 322 82 308Q80 294 82 280Q84 266 88 252Q92 240 98 234Z"/><path d="M222 52Q230 48 240 50Q250 48 258 52Q266 56 272 64Q276 72 274 82Q270 88 264 92Q256 96 248 98Q240 102 234 108Q228 102 222 96Q216 88 214 78Q214 68 218 60Z"/><path d="M210 62Q214 58 218 60Q222 64 220 70Q216 74 212 72Q208 68 210 62Z"/><path d="M204 68Q208 66 210 70Q208 74 204 72Z"/><path d="M252 32Q258 28 264 32Q268 38 266 46Q262 54 256 52Q250 48 250 40Z"/><path d="M234 108Q244 104 256 106Q268 110 278 118Q288 128 294 140Q298 154 298 168Q296 184 290 198Q284 212 276 226Q268 240 258 252Q248 262 238 268Q228 272 220 266Q214 258 210 246Q206 232 206 218Q208 202 212 188Q216 174 220 160Q224 146 228 132Q230 118 232 112Z"/><path d="M302 218Q306 214 310 218Q312 228 310 238Q306 244 302 240Q298 232 302 218Z"/><path d="M278 108Q286 104 294 108Q302 114 306 122Q308 132 304 138Q298 142 290 140Q284 136 280 128Q276 118 278 108Z"/><path d="M312 118Q320 114 326 120Q332 128 334 140Q334 152 330 162Q324 170 318 166Q312 160 310 148Q308 136 308 126Z"/><path d="M338 128Q344 124 350 128Q354 136 352 144Q346 150 340 146Q336 140 338 128Z"/><path d="M272 52Q284 46 298 48Q314 50 328 54Q342 58 354 64Q364 72 368 82Q370 92 366 100Q358 108 348 112Q338 114 328 110Q316 106 306 100Q296 94 288 86Q280 78 276 68Q272 60 272 52Z"/></g></svg>';
+            const earthImg = new Image();
+            let earthReady = false;
+            earthImg.onload = () => { earthReady = true; };
+            earthImg.src = 'data:image/svg+xml,' + earthSvg;
+
+            function drawEarth() {
+                ctx.save();
+                if (earthReady) {
+                    // SVG viewBox is 400x400, globe radius 195 in that space
+                    // Scale so SVG globe radius maps to our earthR
+                    const svgSize = earthR * (400 / 195);
+                    ctx.drawImage(earthImg, cx - svgSize/2, cy - svgSize/2, svgSize, svgSize);
+                } else {
+                    // Fallback while loading
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, earthR, 0, Math.PI * 2);
+                    ctx.fillStyle = '#2E9BD6';
+                    ctx.fill();
+                }
+                ctx.restore();
+
+                // Subtle specular highlight
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, earthR, 0, Math.PI * 2);
+                ctx.clip();
+                const shine = ctx.createRadialGradient(cx - earthR*0.3, cy - earthR*0.3, 0, cx, cy, earthR);
+                shine.addColorStop(0, 'rgba(255,255,255,0.1)');
+                shine.addColorStop(0.6, 'rgba(255,255,255,0)');
+                shine.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = shine;
+                ctx.fill();
+                ctx.restore();
+
+                // Atmosphere glow
+                ctx.beginPath();
+                ctx.arc(cx, cy, earthR + 4*sc, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(100,200,255,0.12)';
+                ctx.lineWidth = 2.5*sc;
+                ctx.stroke();
+            }
+
+            function drawMoon(x, y) {
+                const moonR = 28 * sc;
+                // Glow
+                const glow = ctx.createRadialGradient(x, y, 0, x, y, moonR * 2.5);
+                glow.addColorStop(0, 'rgba(255,255,255,0.2)');
+                glow.addColorStop(0.4, 'rgba(200,220,255,0.06)');
+                glow.addColorStop(1, 'rgba(200,220,255,0)');
+                ctx.beginPath(); ctx.arc(x, y, moonR * 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = glow; ctx.fill();
+                // Body
+                const grad = ctx.createRadialGradient(x - moonR*0.25, y - moonR*0.25, moonR*0.1, x, y, moonR);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.5, '#e8eef5');
+                grad.addColorStop(1, '#bccfdf');
+                ctx.beginPath(); ctx.arc(x, y, moonR, 0, Math.PI * 2);
+                ctx.fillStyle = grad; ctx.fill();
+                // Craters
+                ctx.fillStyle = 'rgba(160,178,195,0.35)';
+                ctx.beginPath(); ctx.arc(x + 7*sc, y - 5*sc, 5*sc, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'rgba(160,178,195,0.25)';
+                ctx.beginPath(); ctx.arc(x - 9*sc, y + 8*sc, 4*sc, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'rgba(160,178,195,0.2)';
+                ctx.beginPath(); ctx.arc(x + 3*sc, y + 11*sc, 3*sc, 0, Math.PI*2); ctx.fill();
+            }
+
+            // Preload pin SVGs
+            const pinYouImg = new Image();
+            const pinThemImg = new Image();
+            let pinYouReady = false, pinThemReady = false;
+            pinYouImg.onload = () => { pinYouReady = true; };
+            pinThemImg.onload = () => { pinThemReady = true; };
+            // Standard map pin SVGs — clean Google Maps style
+            pinYouImg.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 64"><defs><filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/></filter></defs><path d="M24 62 C24 62 4 36 4 22 A20 20 0 1 1 44 22 C44 36 24 62 24 62Z" fill="#ff5558" filter="url(#s)"/><circle cx="24" cy="22" r="9" fill="white"/></svg>');
+            pinThemImg.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 64"><defs><filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.5"/></filter></defs><path d="M24 62 C24 62 4 36 4 22 A20 20 0 1 1 44 22 C44 36 24 62 24 62Z" fill="#FFD54F" filter="url(#s)"/><circle cx="24" cy="22" r="9" fill="white"/></svg>');
+
+            function drawPin(px, py, color, label) {
+                const s = sc;
+                const pinH = 48*s;
+                const pinW = pinH * (48/64);
+                const img = color === '#ff5558' ? pinYouImg : pinThemImg;
+                const ready = color === '#ff5558' ? pinYouReady : pinThemReady;
+
+                ctx.save();
+                if (ready) {
+                    ctx.drawImage(img, px - pinW/2, py - pinH + 6*s, pinW, pinH);
+                } else {
+                    // Fallback simple circle
+                    ctx.beginPath(); ctx.arc(px, py - 14*s, 10*s, 0, Math.PI*2);
+                    ctx.fillStyle = color; ctx.fill();
+                }
+                // Label
+                ctx.font = '700 ' + (15*s) + 'px Satoshi, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = color;
+                ctx.fillText(label, px, py + 16*s);
+                ctx.restore();
+            }
+
+            function drawEnvelope(x, y, color, alpha) {
+                if (alpha <= 0) return;
+                const s = sc;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.translate(x, y);
+                // Glow
+                const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 22*s);
+                g.addColorStop(0, color === '#ff5558' ? 'rgba(255,85,88,0.3)' : 'rgba(79,195,247,0.3)');
+                g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.beginPath(); ctx.arc(0, 0, 22*s, 0, Math.PI*2);
+                ctx.fillStyle = g; ctx.fill();
+                // Envelope body
+                const ew = 22*s, eh = 16*s;
+                ctx.beginPath();
+                if (ctx.roundRect) ctx.roundRect(-ew/2, -eh/2, ew, eh, 3*s);
+                else { ctx.rect(-ew/2, -eh/2, ew, eh); }
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+                ctx.lineWidth = 1*s;
+                ctx.stroke();
+                // Flap
+                ctx.beginPath();
+                ctx.moveTo(-ew/2 + 2*s, -eh/2 + 1*s);
+                ctx.lineTo(0, 2*s);
+                ctx.lineTo(ew/2 - 2*s, -eh/2 + 1*s);
+                ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+                ctx.lineWidth = 1.2*s;
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function drawTrail(color) {
+                for (let i = 0; i < trail.length; i++) {
+                    const p = trail[i];
+                    const alpha = (1 - i / trail.length) * 0.35;
+                    const size = (1 - i / trail.length) * 4 * sc + 1;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+                    const c = color === '#ff5558' ? '255,85,88' : '79,195,247';
+                    ctx.fillStyle = 'rgba(' + c + ',' + alpha + ')';
+                    ctx.fill();
+                }
+            }
+
+            // Lerp between two positions
+            function lerp2(a, b, t) { return { x: a.x + (b.x - a.x)*t, y: a.y + (b.y - a.y)*t }; }
+
+            let startTime = null;
+            function draw(ts) {
+                if (!startTime) startTime = ts;
+                const elapsed = (ts - startTime) / 1000;
+                const t = (elapsed % CYCLE) / CYCLE;
+
+                const phase = getPhase(t);
+                const p = ease(phase.progress);
+
+                const you = youPos();
+                const them = themPos();
+
+                // Moon angle based on phase
+                let moonAngle;
+                if (phase.name === 'send_you' || phase.name === 'drop_you') moonAngle = YOU_ANGLE;
+                else if (phase.name === 'drop_them' || phase.name === 'send_them') moonAngle = THEM_ANGLE;
+                else if (phase.name === 'travel_to_them') moonAngle = lerpAngleCW(YOU_ANGLE, THEM_ANGLE, p);
+                else moonAngle = lerpAngleCW(THEM_ANGLE, YOU_ANGLE + Math.PI*2, p);
+
+                const moon = moonPos(moonAngle);
+
+                // Trail (only during travel)
+                if (phase.name === 'travel_to_them' || phase.name === 'travel_to_you') {
+                    trail.unshift({ x: moon.x, y: moon.y });
+                    if (trail.length > TRAIL_LEN) trail.length = TRAIL_LEN;
+                } else {
+                    // Fade out trail
+                    if (trail.length > 0) trail.splice(-1, 1);
+                }
+
+                // Envelope position + color
+                let envX, envY, envAlpha = 1, envColor;
+                const moonBottom = { x: moon.x, y: moon.y + 34*sc };
+
+                if (phase.name === 'send_you') {
+                    // Coral letter rises from You to moon
+                    envColor = '#ff5558';
+                    const pos = lerp2(you, moonBottom, p);
+                    envX = pos.x; envY = pos.y;
+                    envAlpha = 0.5 + p * 0.5;
+                } else if (phase.name === 'travel_to_them') {
+                    // Moon carries coral letter
+                    envColor = '#ff5558';
+                    envX = moonBottom.x; envY = moonBottom.y;
+                } else if (phase.name === 'drop_them') {
+                    // Coral letter drops to Them
+                    envColor = '#ff5558';
+                    const pos = lerp2(moonBottom, them, p);
+                    envX = pos.x; envY = pos.y;
+                    envAlpha = 1 - p * 0.5;
+                } else if (phase.name === 'send_them') {
+                    // Golden letter rises from Them to moon
+                    envColor = '#FFD54F';
+                    const pos = lerp2(them, moonBottom, p);
+                    envX = pos.x; envY = pos.y;
+                    envAlpha = 0.5 + p * 0.5;
+                } else if (phase.name === 'travel_to_you') {
+                    // Moon carries golden letter
+                    envColor = '#FFD54F';
+                    envX = moonBottom.x; envY = moonBottom.y;
+                } else {
+                    // Golden letter drops to You
+                    envColor = '#FFD54F';
+                    const pos = lerp2(moonBottom, you, p);
+                    envX = pos.x; envY = pos.y;
+                    envAlpha = 1 - p * 0.5;
+                }
+
+                // ---- RENDER ----
+                ctx.clearRect(0, 0, W, H);
+                drawOrbit();
+                drawEarth();
+                const trailColor = (phase.name.includes('you') && !phase.name.includes('to_you')) || phase.name === 'travel_to_them' ? '#ff5558' : '#FFD54F';
+                drawTrail(trailColor);
+                drawPin(you.x, you.y, '#ff5558', 'YOU');
+                drawPin(them.x, them.y, '#FFD54F', 'THEM');
+                drawEnvelope(envX, envY, envColor, envAlpha);
+                drawMoon(moon.x, moon.y);
+
+                requestAnimationFrame(draw);
+            }
+            requestAnimationFrame(draw);
+        }
+
         function setupRingCanvas(canvasId) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
