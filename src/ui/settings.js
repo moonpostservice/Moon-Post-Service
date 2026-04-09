@@ -13,7 +13,7 @@ export function renderSettings() {
   const profilePic = localStorage.getItem('moonpop_profilepic') || '';
   const locationData = JSON.parse(localStorage.getItem('moonpop_location') || '{}');
 
-  const usernameEl = document.getElementById('userName');
+  const usernameEl = document.getElementById('settingsUsername');
   const firstNameEl = document.getElementById('settingsFirstName');
   const lastNameEl = document.getElementById('settingsLastName');
   const locationEl = document.getElementById('manualLocation');
@@ -51,7 +51,7 @@ export function handleSettingsUpdate(data) {
 
   if (data.username !== undefined) {
     localStorage.setItem('moonpop_username', data.username);
-    const el = document.getElementById('userName');
+    const el = document.getElementById('settingsUsername');
     if (el) el.value = data.username;
   }
 

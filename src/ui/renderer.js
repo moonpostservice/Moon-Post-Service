@@ -5,11 +5,12 @@
  * Views are shown/hidden by toggling display.
  */
 const VIEW_MAP = {
-  home: 'splitLayout',
-  compose: 'messageModal',
-  conversation: 'messagePageView',
+  home: 'homePage',
+  inbox: 'inboxSection',
+  compose: 'composeModal',
+  conversation: 'messagePage',
   'shared-sky': 'sharedSkyPage',
-  circles: 'circleDetailPage',
+  circles: 'circlesPage',
   settings: 'settingsDropdown',
   philosophy: 'philosophyPage',
 };
@@ -83,10 +84,12 @@ export function showView(viewName) {
     }
   }
 
-  // Always show split layout elements when on home
+  // Always show home page elements when on home
   if (viewName === 'home') {
-    const splitLayout = document.getElementById('splitLayout');
-    if (splitLayout) splitLayout.style.display = '';
+    const homePage = document.getElementById('homePage');
+    if (homePage) homePage.style.display = '';
+    const inboxSection = document.getElementById('inboxSection');
+    if (inboxSection) inboxSection.style.display = '';
   }
 
   currentView = viewName;
