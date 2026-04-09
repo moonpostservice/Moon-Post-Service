@@ -20,7 +20,1557 @@
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="app"></div>
+    <!-- Twinkling stars -->
+    <div class="starfield-twinkle" id="starfieldTwinkle"></div>
+
+    <!-- ======================== -->
+    <!-- SVG ICON SPRITE SHEET   -->
+    <!-- ======================== -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+        <!-- MOON PHASE ICONS (viewBox 0 0 32 32) -->
+        <symbol id="icon-new-moon" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#1a2332" stroke="#357dc5" stroke-width="1" stroke-opacity="0.3"/>
+        </symbol>
+        <symbol id="icon-waxing-crescent" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#1a2332"/>
+            <path d="M16,2 A14,14 0 0,1 16,30 A8,14 0 0,0 16,2" fill="#FDF6E3"/>
+        </symbol>
+        <symbol id="icon-first-quarter" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#1a2332"/>
+            <path d="M16,2 A14,14 0 0,1 16,30 L16,2 Z" fill="#FDF6E3"/>
+        </symbol>
+        <symbol id="icon-waxing-gibbous" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#FDF6E3"/>
+            <path d="M16,2 A14,14 0 0,0 16,30 A8,14 0 0,1 16,2" fill="#1a2332"/>
+        </symbol>
+        <symbol id="icon-full-moon" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#FDF6E3"/>
+            <circle cx="16" cy="16" r="13.5" fill="none" stroke="#d4c9a8" stroke-width="0.5" opacity="0.5"/>
+            <circle cx="11" cy="12" r="2.5" fill="#e8dcc6" opacity="0.3"/>
+            <circle cx="19" cy="18" r="3" fill="#e8dcc6" opacity="0.25"/>
+            <circle cx="14" cy="21" r="1.5" fill="#e8dcc6" opacity="0.2"/>
+        </symbol>
+        <symbol id="icon-waning-gibbous" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#FDF6E3"/>
+            <path d="M16,2 A14,14 0 0,1 16,30 A8,14 0 0,0 16,2" fill="#1a2332"/>
+        </symbol>
+        <symbol id="icon-last-quarter" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#1a2332"/>
+            <path d="M16,2 A14,14 0 0,0 16,30 L16,2 Z" fill="#FDF6E3"/>
+        </symbol>
+        <symbol id="icon-waning-crescent" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="#1a2332"/>
+            <path d="M16,2 A14,14 0 0,0 16,30 A8,14 0 0,1 16,2" fill="#FDF6E3"/>
+        </symbol>
+
+        <!-- UI ICONS -->
+        <!-- Lunar Note (crescent + sparkle) -->
+        <symbol id="icon-lunar-note" viewBox="0 0 24 24">
+            <path d="M12,3 A8,8 0 1,0 12,21 A6,8 0 1,1 12,3" fill="currentColor" opacity="0.9"/>
+            <circle cx="18" cy="5" r="1" fill="currentColor"/>
+            <circle cx="20" cy="8" r="0.6" fill="currentColor" opacity="0.6"/>
+        </symbol>
+
+        <!-- Orbiting (ring with dot) -->
+        <symbol id="icon-orbiting" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/>
+            <circle cx="12" cy="4" r="2.5" fill="currentColor"/>
+        </symbol>
+
+        <!-- On Its Way (crescent with motion lines) -->
+        <symbol id="icon-on-its-way" viewBox="0 0 24 24">
+            <path d="M14,4 A8,8 0 1,0 14,20 A5.5,8 0 1,1 14,4" fill="currentColor" opacity="0.85"/>
+            <line x1="2" y1="10" x2="6" y2="10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
+            <line x1="1" y1="13" x2="5" y2="13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
+            <line x1="3" y1="16" x2="6" y2="16" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+        </symbol>
+
+        <!-- Contacts / People -->
+        <symbol id="icon-contacts" viewBox="0 0 24 24">
+            <circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M2,20 Q2,14 9,14 Q16,14 16,20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="17" cy="9" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+            <path d="M15,15 Q17,13 21,15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        </symbol>
+
+        <!-- Compose / New Message (quill pen) -->
+        <symbol id="icon-compose" viewBox="0 0 24 24">
+            <path d="M16,3 L21,8 L8,21 L3,21 L3,16 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            <line x1="13" y1="6" x2="18" y2="11" stroke="currentColor" stroke-width="1.8"/>
+        </symbol>
+
+        <!-- Send (paper plane) -->
+        <symbol id="icon-send" viewBox="0 0 24 24">
+            <path d="M3,3 L21,12 L3,21 L6,12 Z" fill="currentColor" opacity="0.9"/>
+        </symbol>
+
+        <!-- Back Arrow -->
+        <symbol id="icon-back" viewBox="0 0 24 24">
+            <polyline points="15,4 7,12 15,20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </symbol>
+
+        <!-- Close (X) -->
+        <symbol id="icon-close" viewBox="0 0 24 24">
+            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </symbol>
+
+        <!-- Settings Gear -->
+        <symbol id="icon-settings" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M12,1 L13.5,4 L16.5,3 L16,6 L19.5,7 L17.5,9.5 L20,12 L17.5,14.5 L19.5,17 L16,18 L16.5,21 L13.5,20 L12,23 L10.5,20 L7.5,21 L8,18 L4.5,17 L6.5,14.5 L4,12 L6.5,9.5 L4.5,7 L8,6 L7.5,3 L10.5,4 Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        </symbol>
+
+        <!-- Location Pin -->
+        <symbol id="icon-location" viewBox="0 0 24 24">
+            <path d="M12,2 C8,2 5,5.5 5,9.5 C5,15 12,22 12,22 C12,22 19,15 19,9.5 C19,5.5 16,2 12,2 Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="12" cy="9.5" r="2.5" fill="currentColor" opacity="0.4"/>
+        </symbol>
+
+        <!-- Bell (notifications) -->
+        <symbol id="icon-bell" viewBox="0 0 24 24">
+            <path d="M12,3 C8.5,3 6,6 6,9 L6,14 L4,17 L20,17 L18,14 L18,9 C18,6 15.5,3 12,3 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            <path d="M10,17 Q10,20 12,20 Q14,20 14,17" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        </symbol>
+
+        <!-- Sign Out -->
+        <symbol id="icon-signout" viewBox="0 0 24 24">
+            <path d="M14,4 L4,4 L4,20 L14,20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="10,12 20,12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <polyline points="17,9 20,12 17,15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </symbol>
+
+        <!-- Moon Key (key + crescent) -->
+        <symbol id="icon-moonkey" viewBox="0 0 24 24">
+            <circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="8" cy="8" r="2" fill="currentColor" opacity="0.3"/>
+            <line x1="12" y1="12" x2="20" y2="20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="18" y1="18" x2="20" y2="16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </symbol>
+
+        <!-- Circle (moon circle group) -->
+        <symbol id="icon-circle" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 2"/>
+            <circle cx="12" cy="5" r="2" fill="currentColor" opacity="0.7"/>
+            <circle cx="7" cy="17" r="2" fill="currentColor" opacity="0.7"/>
+            <circle cx="17" cy="17" r="2" fill="currentColor" opacity="0.7"/>
+        </symbol>
+
+        <!-- Reactions: moon phases as reaction icons -->
+        <symbol id="icon-react-new" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="8" fill="#1a2332" stroke="#357dc5" stroke-width="0.5" stroke-opacity="0.4"/>
+        </symbol>
+        <symbol id="icon-react-half" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="8" fill="#1a2332"/>
+            <path d="M10,2 A8,8 0 0,1 10,18 L10,2 Z" fill="#FDF6E3"/>
+        </symbol>
+        <symbol id="icon-react-full" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="8" fill="#FDF6E3"/>
+            <circle cx="10" cy="10" r="7.5" fill="none" stroke="#d4c9a8" stroke-width="0.5"/>
+            <circle cx="7" cy="8" r="1.5" fill="#e8dcc6" opacity="0.3"/>
+            <circle cx="12" cy="12" r="2" fill="#e8dcc6" opacity="0.25"/>
+        </symbol>
+
+        <!-- Music Note (for Add a Song) -->
+        <symbol id="icon-music" viewBox="0 0 24 24">
+            <path d="M9,3 L9,16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M9,3 L20,1 L20,14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <ellipse cx="6" cy="17" rx="3.5" ry="2.5" fill="currentColor" opacity="0.8"/>
+            <ellipse cx="17" cy="15" rx="3.5" ry="2.5" fill="currentColor" opacity="0.8"/>
+        </symbol>
+
+        <!-- Photo / Camera (for Lunar Visuals) -->
+        <symbol id="icon-photo" viewBox="0 0 24 24">
+            <rect x="2" y="5" width="20" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="12" cy="13" r="1.5" fill="currentColor" opacity="0.4"/>
+            <path d="M8,5 L9,2 L15,2 L16,5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </symbol>
+
+        <!-- Rocket (for Send to the Moon) -->
+        <symbol id="icon-rocket" viewBox="0 0 24 24">
+            <path d="M12,2 C12,2 8,6 8,14 L10,16 L14,16 L16,14 C16,6 12,2 12,2 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <circle cx="12" cy="10" r="1.5" fill="currentColor" opacity="0.6"/>
+            <path d="M8,14 Q5,14 4,18 L8,16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+            <path d="M16,14 Q19,14 20,18 L16,16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+            <path d="M10,16 L10,19 L12,21 L14,19 L14,16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        </symbol>
+
+        <!-- Play (for song suggestion chips) -->
+        <symbol id="icon-play" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <polygon points="10,7 10,17 18,12" fill="currentColor" opacity="0.85"/>
+        </symbol>
+
+        <!-- Sparkle / Star (decorative) -->
+        <symbol id="icon-sparkle" viewBox="0 0 24 24">
+            <path d="M12,2 L13.5,8.5 L20,7 L15,11 L20,17 L13.5,14 L12,22 L10.5,14 L4,17 L9,11 L4,7 L10.5,8.5 Z" fill="currentColor" opacity="0.85"/>
+        </symbol>
+
+        <!-- Moon Send (crescent with arrow — for Send to Moon button) -->
+        <symbol id="icon-moon-send" viewBox="0 0 24 24">
+            <path d="M10,4 A8,8 0 1,0 10,20 A5.5,8 0 1,1 10,4" fill="currentColor" opacity="0.8"/>
+            <polyline points="16,6 21,3 18,8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="21" y1="3" x2="15" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </symbol>
+
+        <!-- YouTube (play button in rounded rect) -->
+        <symbol id="icon-youtube" viewBox="0 0 24 24">
+            <rect x="2" y="5" width="20" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <polygon points="10,8 10,16 17,12" fill="currentColor" opacity="0.85"/>
+        </symbol>
+
+        <!-- Attach / Paperclip (for attachments) -->
+        <symbol id="icon-attach" viewBox="0 0 24 24">
+            <path d="M16,6 L16,16 A4,4 0 0,1 8,16 L8,8 A2.5,2.5 0 0,1 13,8 L13,15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </symbol>
+    </svg>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-brand">
+            <img class="logo" src="assests/logo2.png" alt="MoonPop">
+            <span class="header-tagline">The World's Only Moon Postal Service</span>
+        </div>
+        <!-- Mini moon phase (disabled for MVP) -->
+        <div class="header-moon" id="headerMoon" style="display:none;">
+            <svg class="header-moon-svg" id="headerMoonSvg" viewBox="0 0 100 100"></svg>
+        </div>
+        <div class="header-right" style="position:relative;">
+            <!-- Hidden location element (used by JS) -->
+            <span id="userLocation" style="display:none;">—</span>
+
+            <!-- Desktop nav items -->
+            <div class="header-desktop-nav">
+                <!-- Philosophy -->
+                <button class="header-philosophy-btn" onclick="openPhilosophyPage()" aria-label="Our Philosophy" title="Our Philosophy" style="background:none;border:1.5px solid rgba(79,195,247,0.3);border-radius:24px;cursor:pointer;padding:8px 20px;transition:opacity 0.2s,border-color 0.2s,background 0.2s;display:flex;align-items:center;" onmouseover="this.style.borderColor='rgba(79,195,247,0.5)';this.style.background='rgba(79,195,247,0.06)'" onmouseout="this.style.borderColor='rgba(79,195,247,0.3)';this.style.background='none'">
+                    <span style="font-size:15px;font-weight:400;letter-spacing:0.3px;color:rgba(79,195,247,0.9);">Our Philosophy</span>
+                </button>
+
+                <!-- Contacts -->
+                <button class="header-contacts-btn" onclick="openContactsPage()" aria-label="Contacts" title="Contacts">
+                    <svg class="app-icon" style="width:22px;height:22px;"><use href="#icon-contacts"/></svg>
+                </button>
+
+                <!-- User / Settings -->
+                <button class="user-btn" onclick="toggleSettings()" aria-label="Settings">
+                    <span class="user-initials" id="userInitials">A</span>
+                    <img class="user-avatar-img" id="headerAvatarImg" style="display:none;">
+                </button>
+                <span class="settings-arrow" id="settingsArrow" onclick="toggleSettings()">▾</span>
+            </div>
+
+            <!-- Mobile hamburger menu -->
+            <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileMenu()" aria-label="Menu">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+
+        </div><!-- end header-right -->
+
+    </header>
+
+    <!-- Settings Dropdown (outside header to avoid stacking context from backdrop-filter) -->
+    <div class="settings-dropdown" id="settingsDropdown">
+                <!-- Close button (visible on mobile) -->
+                <button onclick="toggleSettings()" class="settings-close-btn" style="display:none;position:absolute;top:16px;right:16px;background:none;border:2px solid rgba(79,195,247,0.3);border-radius:50%;width:44px;height:44px;cursor:pointer;align-items:center;justify-content:center;color:rgba(255,255,255,0.7);font-size:22px;font-weight:700;z-index:10;">✕</button>
+                <!-- Profile Section -->
+                <div class="settings-section" id="settingsSectionProfile">
+                    <div class="settings-section-header" onclick="toggleSettingsSection(this)">
+                        <div class="section-summary">
+                            <div class="section-avatar" id="sectionProfileAvatar"><span id="sectionProfileInitial">?</span><img id="sectionProfileImg" style="display:none;"></div>
+                            <span class="summary-text" id="sectionProfileSummary">Profile</span>
+                        </div>
+                        <span class="section-chevron">▾</span>
+                    </div>
+                    <div class="settings-section-body">
+                        <div style="display:flex;flex-direction:column;align-items:center;padding:8px 0 10px;">
+                            <div id="profilePicPreview" style="width:64px;height:64px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:700;overflow:hidden;cursor:pointer;position:relative;" onclick="document.getElementById('profilePicInput').click()">
+                                <span id="profilePicInitial">?</span>
+                                <img id="profilePicImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
+                            </div>
+                            <input type="file" id="profilePicInput" accept="image/*" capture="user" style="display:none;" onchange="handleProfilePic(this)">
+                            <a href="#" onclick="event.preventDefault();document.getElementById('profilePicInput').click();" style="font-size:12px;color:var(--blue);margin-top:6px;">Change photo</a>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <div class="form-group" style="margin-bottom:8px;">
+                                <label style="font-size:11px;">First name</label>
+                                <input type="text" id="settingsFirstName" placeholder="First" style="font-size:13px;padding:6px 8px;" oninput="onProfileFieldChange()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:8px;">
+                                <label style="font-size:11px;">Last name</label>
+                                <input type="text" id="settingsLastName" placeholder="Last" style="font-size:13px;padding:6px 8px;" oninput="onProfileFieldChange()">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:8px;">
+                            <label style="font-size:11px;">Sender name</label>
+                            <input type="text" id="userName" placeholder="How recipients see you" style="font-size:13px;padding:6px 8px;" oninput="onProfileFieldChange()">
+                        </div>
+                        <div style="padding-top:4px;display:none;" id="settingsSaveBtnWrap">
+                            <button class="send-button" id="settingsSaveBtn" onclick="saveSettings()" style="font-size:13px;padding:8px;">Save</button>
+                        </div>
+                        <div style="text-align:center;padding:12px 0 0;">
+                            <a href="#" onclick="event.preventDefault();deleteAccount();" style="font-size:11px;color:rgba(200,80,80,0.7);text-decoration:none;">Delete my account</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Section (read-only display) -->
+                <div class="settings-section" id="settingsSectionLocation">
+                    <div class="settings-section-header">
+                        <div class="section-summary">
+                            <svg viewBox="0 0 78.91 105.29" xmlns="http://www.w3.org/2000/svg" style="width:14px;flex-shrink:0;"><path fill="#ff5558" d="M78.91,36.19v7.4c-.97,6.37-2.55,12.5-5.3,18.54-2.89,6.37-6.36,12.25-10.44,17.96-6.41,8.97-13.71,17.16-21.79,24.61-.43.4-1.03.2-1.32.59h-1.41c-.28-.38-.83-.3-1.25-.69C20.39,88.86-1.46,61.73.08,37.25c.67-10.75,5.65-20.69,13.76-27.7C26.22-1.16,43.98-3.04,58.27,4.82c11.84,6.52,19.05,18.13,20.64,31.37ZM38.22,17.59c-12.26.7-21.41,11.29-20.65,23.28s11.12,21.18,23.11,20.51,21.34-11.07,20.65-23.14-10.91-21.35-23.11-20.65Z"/></svg>
+                            <span class="summary-text" id="sectionLocationSummary">Your location</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preferences Section (time format only) -->
+                <div class="settings-section" id="settingsSectionPrefs">
+                    <div class="settings-section-header" onclick="toggleSettingsSection(this)">
+                        <div class="section-summary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span class="summary-text" id="sectionPrefsSummary">24-hour (18:00)</span>
+                        </div>
+                        <span class="section-chevron">▾</span>
+                    </div>
+                    <div class="settings-section-body">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:11px;">Time format</label>
+                            <select id="timeFormat" class="settings-select" style="font-size:13px;padding:6px 8px;" onchange="updateSettingsSummaries()">
+                                <option value="24" selected>24-hour (18:00)</option>
+                                <option value="12">12-hour (6:00 PM)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Section -->
+                <div class="settings-section" id="settingsSectionNotifs">
+                    <div class="settings-section-header" onclick="toggleSettingsSection(this)">
+                        <div class="section-summary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#ffd54f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                            <span class="summary-text">Notifications</span>
+                        </div>
+                        <span class="section-chevron">▾</span>
+                    </div>
+                    <div class="settings-section-body">
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <label style="font-size:11px;margin:0;">Email notifications</label>
+                            <button id="emailNotifToggleBtn" onclick="toggleEmailNotifications()" style="font-size:12px;padding:4px 12px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;">On</button>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+                            <label style="font-size:11px;margin:0;">Push notifications</label>
+                            <button id="notifToggleBtn" onclick="toggleNotifications()" style="font-size:12px;padding:4px 12px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;">Enable</button>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+                            <label style="font-size:11px;margin:0;">Message sounds</label>
+                            <button id="soundToggleBtn" onclick="toggleMessageSounds()" style="font-size:12px;padding:4px 12px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;">On</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Blocked Users section -->
+                <div class="settings-section">
+                    <div class="settings-section-header" onclick="this.parentElement.classList.toggle('open')">
+                        <div class="section-summary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,85,88,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                            <span class="summary-text">Blocked Users</span>
+                        </div>
+                        <span class="section-chevron">▾</span>
+                    </div>
+                    <div class="settings-section-body">
+                        <div id="blockedUsersList" style="font-size:13px;color:rgba(255,255,255,0.6);">
+                            No blocked users
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sign out (outside accordion) -->
+                <div style="padding:12px 16px 8px;border-top:1px solid rgba(128,128,128,0.12);">
+                    <button onclick="logOut()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.8);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;">Sign out</button>
+                </div>
+
+                <div style="text-align:center;padding:6px 0;border-top:1px solid rgba(128,128,128,0.08);">
+                    <span style="font-size:10px;color:var(--text-muted);">MoonPop v1.3.0</span>
+                </div>
+    </div><!-- end settings dropdown -->
+
+    <!-- Mobile Menu Overlay + Drawer (outside header to avoid stacking context issues) -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="closeMobileMenu()"></div>
+    <div class="mobile-menu-drawer" id="mobileMenuDrawer">
+        <div class="mobile-menu-header">
+            <span style="font-size:14px;font-weight:700;letter-spacing:0.5px;color:var(--text-muted);">MENU</span>
+            <button onclick="closeMobileMenu()" style="background:none;border:1.5px solid rgba(79,195,247,0.25);border-radius:50%;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                <span style="color:rgba(79,195,247,0.8);font-size:18px;font-weight:300;">✕</span>
+            </button>
+        </div>
+        <div class="mobile-menu-items">
+            <button class="mobile-menu-item" onclick="closeMobileMenu();openPhilosophyPage();">
+                <svg style="width:20px;height:20px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="rgba(79,195,247,0.7)" stroke-width="1.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                <span>Our Philosophy</span>
+            </button>
+            <button class="mobile-menu-item" onclick="closeMobileMenu();openContactsPage();">
+                <svg class="app-icon" style="width:20px;height:20px;flex-shrink:0;"><use href="#icon-contacts"/></svg>
+                <span>My Contacts</span>
+            </button>
+            <button class="mobile-menu-item" onclick="closeMobileMenu();setTimeout(toggleSettings,200);">
+                <svg style="width:20px;height:20px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="rgba(79,195,247,0.7)" stroke-width="1.5"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>Settings</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- First-time Onboarding Overlay -->
+    <div class="onboarding-overlay hidden" id="onboardingOverlay">
+        <!-- Twinkling stars for landing page -->
+        <div class="onboarding-stars" id="onboardingStars"></div>
+        <!-- Sticky header -->
+        <nav class="landing-nav">
+            <div class="landing-nav-brand">
+                <img src="assests/logo2.png" alt="Moon Post Service">
+                <span>The World's Only Moon Postal Service</span>
+            </div>
+            <div class="landing-nav-actions">
+                <button class="btn-login" onclick="showAuthModal('login')">Log in</button>
+                <button class="btn-signup" onclick="showAuthModal('signup')">Sign up</button>
+            </div>
+        </nav>
+
+        <!-- Auth modal (popup overlay) -->
+        <div id="authModalOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;" onclick="if(event.target===this)closeAuthModal()">
+            <div class="onboarding-card" style="position:relative;max-width:420px;width:90%;margin:auto;">
+                <button onclick="closeAuthModal()" style="position:absolute;top:14px;right:14px;background:none;border:none;color:rgba(255,255,255,0.4);font-size:22px;cursor:pointer;padding:4px;">✕</button>
+                <img class="onboarding-logo" src="assests/logo2.png" alt="Moon Post Service">
+                <h1 id="authModalTitle">Messages released by the moon</h1>
+                <p class="onboarding-tagline">Write now. It unlocks when the moon rises where they are.</p>
+
+                <!-- Step 1: Email -->
+                <div class="auth-step active" id="authStepEmail">
+                    <div class="onboarding-form">
+                        <div class="form-group">
+                            <label>Enter your email</label>
+                            <input type="email" class="auth-email-input" id="authEmail" placeholder="you@email.com" autocomplete="email">
+                            <div class="auth-error" id="authError"></div>
+                        </div>
+                    </div>
+                    <button class="onboarding-primary" id="authSendBtn" onclick="sendMoonKey()">
+                        Send Moon Code <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>
+                    </button>
+                    <p class="auth-note">No password needed. We'll send an 8-digit code to your inbox.</p>
+                </div>
+
+                <!-- Step 2: Enter code -->
+                <div class="auth-step" id="authStepCode">
+                    <div class="auth-check-inbox">
+                        <div class="inbox-icon">🌙</div>
+                        <h2>Enter your Moon Code</h2>
+                        <p>We sent an 8-digit code to</p>
+                        <p class="auth-email-highlight" id="authEmailSent"></p>
+                        <div style="display:flex;justify-content:center;gap:8px;margin:20px 0;">
+                            <input type="text" id="otpDigit1" class="otp-digit" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+                            <input type="text" id="otpDigit2" class="otp-digit" maxlength="1" inputmode="numeric">
+                            <input type="text" id="otpDigit3" class="otp-digit" maxlength="1" inputmode="numeric">
+                            <input type="text" id="otpDigit4" class="otp-digit" maxlength="1" inputmode="numeric">
+                            <input type="text" id="otpDigit5" class="otp-digit" maxlength="1" inputmode="numeric">
+                            <input type="text" id="otpDigit6" class="otp-digit" maxlength="1" inputmode="numeric">
+                            <input type="text" id="otpDigit7" class="otp-digit" maxlength="1" inputmode="numeric">
+                            <input type="text" id="otpDigit8" class="otp-digit" maxlength="1" inputmode="numeric">
+                        </div>
+                        <div class="auth-error" id="otpError" style="display:none;"></div>
+                        <button class="onboarding-primary" id="verifyCodeBtn" onclick="verifyMoonKey()" disabled>
+                            Enter Moon Post Service
+                        </button>
+                        <div class="auth-actions" style="margin-top:12px;">
+                            <button class="auth-link-btn" onclick="resendMoonKey()">Resend code</button>
+                            <button class="auth-link-btn" onclick="changeEmail()">Change email</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Location -->
+                <div class="auth-step" id="authStepLocation">
+                    <div class="auth-check-inbox" style="text-align:center;">
+                        <div style="font-size:48px;margin-bottom:8px;">📍</div>
+                        <h2 style="margin-bottom:4px;">Where are you watching the moon tonight?</h2>
+                        <p id="locationDetectStatus" style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Detecting your sky...</p>
+                        <div id="detectedCityCard" style="display:none;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:12px;padding:16px;margin-bottom:16px;">
+                            <p style="color:var(--text-muted);font-size:13px;margin-bottom:4px;">It looks like you're in</p>
+                            <h2 id="detectedCityName" style="color:var(--blue);font-size:24px;font-weight:700;margin:0;">Tel Aviv</h2>
+                        </div>
+                        <button class="onboarding-primary" id="confirmLocationBtn" onclick="confirmDetectedLocation()" style="display:none;">
+                            That's my sky 🌙
+                        </button>
+                        <p style="margin-top:12px;">
+                            <a href="#" id="showManualCityLink" onclick="event.preventDefault();document.getElementById('manualCityPicker').style.display='block';this.style.display='none';" style="color:var(--blue);font-size:13px;text-decoration:none;">I'm somewhere else</a>
+                        </p>
+                        <div id="manualCityPicker" style="display:none;margin-top:12px;">
+                            <div style="position:relative;">
+                                <input type="text" id="onboardingCityInput" placeholder="Search for your city..." autocomplete="off" oninput="filterOnboardingCities(this.value)" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:white;font-size:14px;box-sizing:border-box;">
+                                <div id="onboardingCityDropdown" class="city-dropdown" style="max-height:180px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Profile setup -->
+                <div class="auth-step" id="authStepProfile">
+                    <div style="text-align:center;">
+                        <div style="font-size:36px;margin-bottom:8px;">✨</div>
+                        <h2 style="color:#4fc3f7;font-size:20px;font-weight:700;margin:0 0 4px;">Set up your profile</h2>
+                        <p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0 0 20px;">So people can find you and know who's writing</p>
+
+                        <!-- Profile photo upload -->
+                        <div style="margin-bottom:20px;">
+                            <div id="onboardingAvatarPreview" onclick="document.getElementById('onboardingAvatarInput').click()" style="width:80px;height:80px;border-radius:50%;margin:0 auto 8px;border:2px dashed rgba(79,195,247,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:rgba(79,195,247,0.05);transition:border-color 0.2s;">
+                                <span id="onboardingAvatarPlaceholder" style="font-size:28px;color:rgba(79,195,247,0.4);">📷</span>
+                            </div>
+                            <input type="file" id="onboardingAvatarInput" accept="image/*" style="display:none;" onchange="previewOnboardingAvatar(this)">
+                            <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:0;">Add a photo (optional)</p>
+                        </div>
+
+                        <div class="onboarding-form" style="text-align:left;">
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label>First name</label>
+                                <input type="text" id="onboardingFirstName" placeholder="Your first name" autocomplete="given-name" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:white;font-size:14px;" oninput="autoFillSenderName()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label>Last name</label>
+                                <input type="text" id="onboardingLastName" placeholder="Your last name" autocomplete="family-name" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:white;font-size:14px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom:4px;">
+                                <label>Sender name <span style="color:rgba(255,255,255,0.3);font-weight:400;">(shown on your messages)</span></label>
+                                <input type="text" id="onboardingSenderName" placeholder="Nickname or first name" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:white;font-size:14px;">
+                            </div>
+                        </div>
+
+                        <div id="onboardingProfileError" style="color:var(--coral);font-size:12px;margin:8px 0;display:none;"></div>
+
+                        <button class="onboarding-primary" id="saveProfileBtn" onclick="saveOnboardingProfile()" style="margin-top:16px;">
+                            Start sending 🌙
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Moonlight ambient overlay -->
+        <div class="moonrise-light" id="moonriseLight"></div>
+
+        <!-- Parallax Moonrise Landing Page -->
+        <div class="moonrise-scroll" id="moonriseScroll">
+
+            <!-- Fixed moon (parallax — rises as user scrolls) -->
+            <div class="moonrise-moon" id="moonriseMoon">
+                <img src="assests/moon-realistic.jpg" alt="Moon" draggable="false">
+                <div class="moonrise-glow" id="moonriseGlow"></div>
+            </div>
+
+            <!-- Scrollable text content -->
+            <div class="moonrise-content">
+
+                <section class="moonrise-section moonrise-hero">
+                    <p class="moonrise-tagline">The World's Only Moon Postal Service</p>
+                    <h1 class="moonrise-title"><span style="display:block">Not every message</span><span style="display:block">should arrive <span class="moonrise-accent">immediately.</span></span></h1>
+                    <p class="moonrise-subtitle">Some words deserve distance. Anticipation. A sky.</p>
+                </section>
+
+                <section class="moonrise-section">
+                    <p class="moonrise-text">Moon Post Service is the world's only moon-based messaging platform.<br>Here is how it works: a message can be sent only when the moon is above you.<br>It does not arrive instantly. It travels, and is delivered only when the moon rises for the person you sent it to.</p>
+                </section>
+
+                <section class="moonrise-section moonrise-quote">
+                    <p>That waiting is part of the feeling.</p>
+                </section>
+
+                <section class="moonrise-section">
+                    <p class="moonrise-text">Because some messages should not arrive like every other notification.<br>They should gather a little darkness around them.<br>A little time. A little longing.</p>
+                </section>
+
+                <section class="moonrise-section moonrise-quote">
+                    <p>◑</p>
+                </section>
+
+                <section class="moonrise-section">
+                    <p class="moonrise-text">There was a time when sending something meant letting it go.<br>A letter crossed distance before it arrived.<br>That distance gave it weight.<br>Instant messaging erased much of that space between us.</p>
+                </section>
+
+                <section class="moonrise-section">
+                    <p class="moonrise-text">Moon Post Service brings some of it back.<br>A small daily ritual.<br>A different way of staying close.</p>
+                </section>
+
+                <section class="moonrise-section">
+                    <p class="moonrise-text">Messages live for one lunar cycle. Like moonlight, they're not meant to be stored &mdash; they're meant to be felt.</p>
+                </section>
+
+                <section class="moonrise-section moonrise-quote">
+                    <p>◑</p>
+                </section>
+
+                <!-- Bottom CTA — moonlit -->
+                <section class="moonrise-section moonrise-cta" id="moonriseCta">
+                    <p class="moonrise-text" style="margin-bottom:24px;">Let the moon keep you close.</p>
+                    <h2 class="moonrise-cta-title" id="onboardingMoonTitle">Rising in</h2>
+                    <p id="onboardingCountdown" class="moonrise-cta-countdown"></p>
+                    <div class="moonrise-cta-buttons">
+                        <button onclick="showAuthModal('signup')" class="moonrise-btn-signup">Sign up &mdash; it's free &rarr;</button>
+                    </div>
+                    <p style="color:rgba(232,244,253,0.4);font-size:14px;font-style:italic;margin-top:40px;">Yours, under the same moon,<br><span style="color:rgba(232,244,253,0.6);font-weight:600;">Manko &amp; Yoash</span></p>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Location Drift Modal (timezone changed since last visit) -->
+    <div id="locationDriftModal" class="drift-modal-overlay" style="display:none;">
+        <div class="drift-modal-card">
+            <div style="font-size:36px;text-align:center;margin-bottom:8px;">🌍</div>
+            <h2 style="text-align:center;font-size:18px;margin-bottom:4px;color:white;" id="driftTitle">It looks like you moved</h2>
+            <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:16px;" id="driftSubtitle">Your moon times are based on a different sky</p>
+
+            <p style="color:var(--text-muted);font-size:13px;margin-bottom:4px;text-align:center;">We think you're now in</p>
+            <h3 id="driftNewCity" style="color:var(--blue);font-size:24px;font-weight:700;margin:0 0 20px;text-align:center;">London</h3>
+
+            <button class="onboarding-primary" onclick="acceptDrift()" style="width:100%;margin-bottom:12px;">
+                Update my sky 🌙
+            </button>
+            <div style="display:flex;justify-content:center;gap:16px;align-items:center;">
+                <a href="#" onclick="event.preventDefault();dismissDrift();" id="driftDismissLink" style="color:var(--text-muted);font-size:13px;text-decoration:none;">No, I'm still in <span id="driftOldCity">Tel Aviv</span></a>
+                <span style="color:rgba(255,255,255,0.15);">|</span>
+                <a href="#" onclick="event.preventDefault();showManualLocationPicker();" style="color:var(--blue);font-size:13px;text-decoration:none;">Choose my location</a>
+            </div>
+
+            <!-- Manual location picker (hidden by default) -->
+            <div id="driftManualPicker" style="display:none;margin-top:16px;">
+                <div style="position:relative;">
+                    <input type="text" id="driftManualInput" placeholder="Enter city name..." style="width:100%;padding:10px 14px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:10px;color:white;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" />
+                    <div id="driftManualDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card-bg);border:1px solid rgba(0,212,255,0.2);border-radius:0 0 10px 10px;max-height:200px;overflow-y:auto;z-index:10;"></div>
+                </div>
+                <button onclick="applyManualLocation()" class="onboarding-primary" style="width:100%;margin-top:8px;padding:10px;font-size:14px;">Set this as my sky</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Push Notification Soft Prompt (shown after first message received) -->
+    <div id="pushPromptModal" class="drift-modal-overlay" style="display:none;">
+        <div class="drift-modal-card">
+            <div style="font-size:36px;text-align:center;margin-bottom:8px;">🌙</div>
+            <h2 style="text-align:center;font-size:18px;margin-bottom:4px;color:white;">Get notified when the moon delivers</h2>
+            <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:20px;">We'll let you know when a moon message arrives for you</p>
+            <button class="onboarding-primary" onclick="acceptPushPrompt()" style="width:100%;margin-bottom:10px;">
+                Enable notifications
+            </button>
+            <p style="text-align:center;">
+                <a href="#" onclick="event.preventDefault();dismissPushPrompt();" style="color:var(--text-muted);font-size:13px;text-decoration:none;">Not now</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Moon Down Modal (when trying to compose) -->
+    <div class="modal-overlay" id="moonDownModal">
+        <div class="modal moon-down-modal">
+            <button class="modal-close" onclick="closeMoonDownModal()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-close"/></svg></button>
+            <div class="moon-down-content">
+                <div class="moon-down-icon"></div>
+                <h2>Moon below horizon</h2>
+                <div class="moon-down-countdown">
+                    <span class="countdown-label">You can compose a new message when the moon rises</span>
+                    <span class="countdown-value" id="moonDownCountdown">2h 34m</span>
+                    <span class="countdown-sublabel" id="moonDownRiseTime"></span>
+                </div>
+                <p class="moon-down-note">Your chat history is available to browse, but sending and receiving messages requires the moon in your sky.</p>
+                <button class="send-button" onclick="closeMoonDownModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="notification-toast" id="notificationToast"></div>
+
+    <!-- Split-screen layout: Inbox left, Moon right -->
+    <div class="split-layout" id="splitLayout">
+
+        <!-- LEFT PANEL: Inbox (scrollable) -->
+        <div class="split-left">
+            <section class="inbox-section">
+        <div class="inbox-card">
+            <div class="inbox-header">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="inbox-title">INBOX</span>
+                </div>
+                <button class="new-message-btn" onclick="openNewMessagePicker()"><svg class="app-icon lg"><use href="#icon-compose"/></svg></button>
+            </div>
+            <!-- Shared Sky as first row (public chat) -->
+            <div class="shared-sky-row" onclick="openSharedSkyModal()">
+                <div class="shared-sky-row-icon"><img src="assests/shared-sky-icon.png" alt="Shared Sky" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"></div>
+                <div class="shared-sky-row-content">
+                    <div class="shared-sky-row-title">Shared Sky <span style="font-size:10px;font-weight:500;color:rgba(255,255,255,0.35);margin-left:4px;">PUBLIC</span></div>
+                    <div class="shared-sky-row-preview" id="sharedSkyPreview">Loading...</div>
+                </div>
+                <span class="shared-sky-row-badge" id="sharedSkyBadge" style="display:none;"></span>
+            </div>
+            <!-- Moon Circles (disabled for MVP — see memory/project_moon_circles.md) -->
+            <ul class="message-list" id="messageList">
+                <!-- Populated by JS -->
+            </ul>
+            <!-- New Moon Message CTA inside inbox -->
+            <div id="inboxNewMsgCta" class="inbox-new-msg-cta" style="display:none;">
+                <button class="cta-button inbox-cta-btn" onclick="openModal()"><svg class="app-icon md" style="vertical-align:-3px;margin-right:4px;"><use href="#icon-compose"/></svg> New Moon Message</button>
+            </div>
+        </div>
+    </section>
+            <!-- New Transmission button removed — CTA now inside inbox card -->
+        </div><!-- /split-left -->
+
+        <!-- RIGHT PANEL: Moon orbit (fixed, no scroll) -->
+        <div class="split-right">
+            <h1 class="ring-title" id="heroTitle">MESSAGES RELEASED BY THE MOON</h1>
+            <div class="new-moon-warning hidden" id="newMoonWarning">
+                <span class="new-moon-warning-text" id="newMoonWarningText"></span>
+                <button class="new-moon-warning-dismiss" onclick="dismissNewMoonWarning()">&#10005;</button>
+            </div>
+            <main class="main-content">
+                <div class="orbit-container">
+                    <div class="orbit-ring"></div>
+
+                    <!-- Moon illustration background -->
+                    <div class="orbit-bg-illustration">
+                        <img src="assests/moonillustrationinsiering.svg" alt="" aria-hidden="true">
+                    </div>
+
+                    <!-- Message dots - positioned dynamically by JS based on recipient moonrise -->
+                    <div id="messageDots"></div>
+
+                    <!-- Moon position - brand crescent moon on the orbit stroke -->
+                    <div class="moon-orbit" id="moonOrbit">
+                        <div class="moon-icon" id="orbitMoonIcon">
+                            <!-- Moon phase icon: dynamically updated by updateMoonPhaseIcon() -->
+                        </div>
+                    </div>
+
+                    <!-- Moonrise/moonset markers - positioned dynamically by JS -->
+                    <div class="horizon-marker" id="moonriseMarker">
+                        <div class="horizon-dot rise"></div>
+                        <div class="horizon-label rise-label">
+                            <span class="horizon-title">moonrise</span>
+                            <span class="horizon-time" id="moonriseLabel">--:--</span>
+                        </div>
+                    </div>
+                    <div class="horizon-marker" id="moonsetMarker">
+                        <div class="horizon-dot set"></div>
+                        <div class="horizon-label set-label">
+                            <span class="horizon-title">moonset</span>
+                            <span class="horizon-time" id="moonsetLabel">--:--</span>
+                        </div>
+                    </div>
+
+                    <!-- Center content -->
+                    <div class="orbit-center" id="orbitCenter">
+                        <!-- Content changes based on moon visibility -->
+                    </div>
+                </div>
+            </main>
+
+            <!-- Tooltip for dots -->
+            <div class="dot-tooltip" id="dotTooltip">
+                <span class="tooltip-name"></span>
+                <span class="tooltip-meta"></span>
+                <span class="tooltip-phase"></span>
+                <div class="tooltip-progress"><div class="tooltip-progress-fill"></div></div>
+            </div>
+
+            <!-- Moon phase detail popup -->
+            <div class="moon-phase-popup" id="moonPhasePopup">
+                <div class="moon-phase-popup-header">
+                    <span class="moon-phase-emoji" id="moonPhaseEmoji"></span>
+                    <span class="moon-phase-name" id="moonPhaseName"></span>
+                </div>
+                <div class="moon-phase-popup-stats" id="moonPhaseStats"></div>
+            </div>
+
+            <!-- Moon Data Bar -->
+            <div class="moon-data-bar">
+                <div class="moon-data-item">
+                    <span class="moon-data-label">MOONRISE:</span>
+                    <span class="moon-data-value" id="moonriseTime">18:33</span>
+                </div>
+                <div class="moon-data-item">
+                    <span class="moon-data-label">MOONSET:</span>
+                    <span class="moon-data-value" id="moonsetTime">23:45</span>
+                </div>
+                <div class="moon-data-item">
+                    <span class="moon-data-label">MOON AGE:</span>
+                    <span class="moon-data-value" id="moonAgeBar">— days</span>
+                </div>
+                <div class="moon-data-item">
+                    <span class="moon-data-label">DISTANCE:</span>
+                    <span class="moon-data-value" id="moonDistanceBar">— km</span>
+                </div>
+            </div>
+        </div><!-- /split-right -->
+
+    </div><!-- /split-layout -->
+
+    <!-- Shared Sky (Full Page) -->
+    <div class="message-page" id="sharedSkyPage">
+        <div class="message-page-inner">
+            <div class="message-page-header" style="justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                    <div class="message-page-avatar" style="padding:0;border:none;background:transparent;"><img src="assests/shared-sky-icon.png" alt="Shared Sky" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"></div>
+                    <div class="message-page-info" style="min-width:0;">
+                        <h3>Shared Sky</h3>
+                        <p id="sharedSkySubtitle">Public thread · Everyone under the moon</p>
+                    </div>
+                </div>
+                <button class="message-page-close" onclick="closeSharedSkyModal()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="message-page-body shared-sky-feed" id="sharedSkySignals">
+                <!-- Populated by JS -->
+            </div>
+            <div class="message-page-footer">
+                <!-- Shared Sky Lunar Note Panel -->
+                <div id="ssLunarPanel" style="display:none;padding:12px 16px;animation:lunarPanelIn 0.25s ease;">
+                    <p style="font-size:12px;color:rgba(255,255,255,0.4);margin:0 0 10px;">Give me three things. The moon does the rest.</p>
+                    <div id="ssLunarStepContainer">
+                        <div class="lunar-step-card active" id="ssLunarStep1">
+                            <div class="lunar-step-dots"><span class="lunar-dot active"></span><span class="lunar-dot"></span><span class="lunar-dot"></span></div>
+                            <label class="lunar-step-label" id="ssLunarLabel1">an emotion</label>
+                            <input type="text" id="ssLunarInput1" class="lunar-input" placeholder="anything that comes to mind" autocomplete="off" oninput="document.getElementById('ssLunarNext1').disabled=!this.value.trim()">
+                            <button class="lunar-step-next" id="ssLunarNext1" onclick="goSSLunarStep(2)" disabled>Next →</button>
+                        </div>
+                        <div class="lunar-step-card" id="ssLunarStep2">
+                            <div class="lunar-step-dots"><span class="lunar-dot done"></span><span class="lunar-dot active"></span><span class="lunar-dot"></span></div>
+                            <label class="lunar-step-label" id="ssLunarLabel2">a different emotion</label>
+                            <input type="text" id="ssLunarInput2" class="lunar-input" placeholder="something else entirely" autocomplete="off" oninput="document.getElementById('ssLunarNext2').disabled=!this.value.trim()">
+                            <div class="lunar-step-nav">
+                                <button class="lunar-step-back" onclick="goSSLunarStep(1)">← Back</button>
+                                <button class="lunar-step-next" id="ssLunarNext2" onclick="goSSLunarStep(3)" disabled>Next →</button>
+                            </div>
+                        </div>
+                        <div class="lunar-step-card" id="ssLunarStep3">
+                            <div class="lunar-step-dots"><span class="lunar-dot done"></span><span class="lunar-dot done"></span><span class="lunar-dot active"></span></div>
+                            <label class="lunar-step-label" id="ssLunarLabel3">something you pretend not to care about</label>
+                            <input type="text" id="ssLunarInput3" class="lunar-input" placeholder="you know the one" autocomplete="off" oninput="document.getElementById('ssLunarNext3').disabled=!this.value.trim()">
+                            <div class="lunar-step-nav">
+                                <button class="lunar-step-back" onclick="goSSLunarStep(2)">← Back</button>
+                                <button class="lunar-step-next" id="ssLunarNext3" onclick="revealSSLunarNote()" disabled>Reveal 🌙</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="ssLunarResultCard" style="display:none;background:rgba(79,195,247,0.08);border:1px solid rgba(79,195,247,0.2);border-radius:12px;padding:14px;margin-top:10px;">
+                        <div style="font-size:11px;font-weight:700;color:#4fc3f7;letter-spacing:1px;margin-bottom:6px;">LUNAR NOTE</div>
+                        <div id="ssLunarResultText" style="font-size:14px;color:rgba(255,255,255,0.9);line-height:1.6;font-style:italic;"></div>
+                        <div id="ssLunarResultClosing" style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:6px;"></div>
+                        <div style="display:flex;gap:8px;margin-top:10px;">
+                            <button onclick="regenerateSSLunarNote()" style="background:none;border:1px solid rgba(79,195,247,0.25);border-radius:16px;padding:6px 12px;color:#4fc3f7;font-size:12px;cursor:pointer;">↻ try another</button>
+                            <button onclick="goSSLunarStep(1);document.getElementById('ssLunarResultCard').style.display='none'" style="background:none;border:1px solid rgba(79,195,247,0.25);border-radius:16px;padding:6px 12px;color:#4fc3f7;font-size:12px;cursor:pointer;">✎ edit</button>
+                        </div>
+                    </div>
+                    <div id="ssLunarSendRow" style="display:none;margin-top:10px;">
+                        <button onclick="sendSharedSkyMessage()" style="width:100%;padding:12px;border-radius:24px;background:var(--coral);border:none;color:white;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background 0.2s;">Send Lunar Note</button>
+                    </div>
+                </div>
+                <!-- Note type toggle — same pill as chat -->
+                <div class="note-toggle-bar">
+                    <div class="note-mode-toggle" onclick="toggleSSNoteMode()">
+                        <span class="toggle-option active" id="ssOpenToggle">✏ Open</span>
+                        <span class="toggle-option" id="ssLunarToggle">🌙 Lunar</span>
+                    </div>
+                </div>
+                <!-- Open Note: text + photo input -->
+                <div id="ssOpenNotePanel">
+                    <div id="sharedSkyPhotoPreview" style="display:none;padding:8px 8px 0;">
+                        <div style="position:relative;display:inline-block;">
+                            <img id="sharedSkyPhotoImg" style="max-height:100px;border-radius:8px;">
+                            <button onclick="clearSharedSkyPhoto()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:12px;cursor:pointer;">&times;</button>
+                        </div>
+                    </div>
+                    <div class="reply-row">
+                        <div style="position:relative;flex-shrink:0;">
+                            <button id="sharedSkyPlusBtn" onclick="event.stopPropagation();sharedSkyPlusAction()" style="cursor:pointer;padding:0;background:none;border:1px solid rgba(79,195,247,0.3);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:#4fc3f7;font-size:20px;font-weight:300;line-height:1;">+</button>
+                            <div id="sharedSkyPhotoMenu" style="position:absolute;bottom:40px;left:0;background:rgba(10,22,40,0.95);border:1px solid rgba(79,195,247,0.2);border-radius:10px;padding:4px 0;min-width:180px;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+                                <label for="sharedSkyCameraInput" class="ss-photo-menu-item ss-camera-only" style="display:none;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;color:white;font-size:13px;font-weight:500;transition:background 0.15s;" onmouseover="this.style.background='rgba(79,195,247,0.1)'" onmouseout="this.style.background='transparent'">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                    📷 Snap the Moon
+                                </label>
+                                <label for="sharedSkyPhotoInput" class="ss-photo-menu-item" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;color:white;font-size:13px;font-weight:500;transition:background 0.15s;" onmouseover="this.style.background='rgba(79,195,247,0.1)'" onmouseout="this.style.background='transparent'">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                    Upload Photo
+                                </label>
+                            </div>
+                        </div>
+                        <input type="file" id="sharedSkyCameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleSharedSkyPhoto(this); document.getElementById('sharedSkyPhotoMenu').classList.remove('active');">
+                        <input type="file" id="sharedSkyPhotoInput" accept="image/*" style="display:none;" onchange="handleSharedSkyPhoto(this); document.getElementById('sharedSkyPhotoMenu').classList.remove('active');">
+                        <input type="text" class="message-page-input" placeholder="Share something with the sky..." id="sharedSkyInput" onkeydown="if(event.key==='Enter')sendSharedSkyMessage()">
+                        <button class="message-page-send" onclick="sendSharedSkyMessage()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Philosophy Page -->
+    <div id="philosophyPage" style="display:none;position:fixed;inset:0;z-index:99999;background:#080d18;overflow-y:auto;overflow-x:hidden;">
+        <div style="position:sticky;top:0;z-index:10;padding:16px 48px;height:108px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,13,24,0.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(79,195,247,0.1);">
+            <a onclick="closePhilosophyPage()" style="cursor:pointer;display:flex;align-items:center;gap:16px;text-decoration:none;">
+                <img class="logo" src="assests/logo2.png" alt="Moon Post Service" style="width:80px;height:80px;">
+                <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.55);">The World's Only Moon Postal Service</span>
+            </a>
+            <button onclick="closePhilosophyPage()" style="background:none;border:2px solid rgba(79,195,247,0.3);border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.7);font-size:24px;font-weight:700;transition:border-color 0.2s,background 0.2s;" onmouseover="this.style.background='rgba(79,195,247,0.08)';this.style.borderColor='rgba(79,195,247,0.45)'" onmouseout="this.style.background='none';this.style.borderColor='rgba(79,195,247,0.3)'">✕</button>
+        </div>
+
+        <!-- Hero with orbital dots -->
+        <section style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:40px 40px 0;text-align:center;position:relative;">
+            <canvas id="philosophy-ring-canvas" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-48%);pointer-events:none;z-index:1;opacity:0.85;"></canvas>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(ellipse at center,rgba(53,125,197,0.04) 0%,transparent 60%);pointer-events:none;"></div>
+            <div style="position:relative;z-index:2;max-width:900px;">
+                <h1 style="font-size:clamp(42px,7vw,72px);font-weight:300;color:#fff;line-height:1.12;letter-spacing:-0.5px;margin-bottom:36px;text-align:center;">Not every message<br>should arrive <span style="font-weight:800;color:#4fc3f7;">immediately.</span></h1>
+                <p style="font-size:clamp(16px,3vw,32px);font-weight:300;color:rgba(255,255,255,0.85);line-height:1.5;letter-spacing:0.01em;margin:0;">Some words deserve distance. Anticipation. A sky.</p>
+            </div>
+        </section>
+
+        <!-- Body -->
+        <div class="phil-body">
+            <p class="phil-text">Moon Post Service is the world's only moon-based messaging platform.<br>Here is how it works: a message can be sent only when the moon is above you.<br>It does not arrive instantly. It travels, and is delivered only when the moon rises for the person you sent it to.</p>
+
+            <span class="phil-accent">That waiting is part of the feeling.</span>
+
+            <p class="phil-text">Because some messages should not arrive like every other notification.<br>They should gather a little darkness around them.<br>A little time. A little longing.</p>
+
+            <div class="phil-separator">◑</div>
+
+            <p class="phil-text">There was a time when sending something meant letting it go.<br>A letter crossed distance before it arrived.<br>That distance gave it weight.<br>Instant messaging erased much of that space between us.</p>
+
+            <p class="phil-text">Moon Post Service brings some of it back.<br>A small daily ritual.<br>A different way of staying close.</p>
+
+            <p class="phil-text">Messages live for one lunar cycle. Like moonlight, they're not meant to be stored &mdash; they're meant to be felt.</p>
+        </div>
+
+        <!-- CTA -->
+        <section style="padding:100px 32px 60px;text-align:center;position:relative;">
+            <div class="phil-separator" style="margin-bottom:64px;">◑</div>
+            <p class="phil-text" style="margin-bottom:24px;">Let the moon keep you close.</p>
+            <h2 id="philMoonTitle" style="font-size:clamp(36px,7vw,58px);font-weight:300;color:#fff;line-height:1.2;letter-spacing:-0.3px;margin-bottom:8px;">Rising in</h2>
+            <p id="philCountdown" style="font-size:clamp(36px,6vw,56px);font-weight:800;color:#4fc3f7;margin:0 0 36px;letter-spacing:-0.5px;"></p>
+            <a onclick="closePhilosophyPage();setTimeout(()=>openModal(),300);" class="phil-cta-btn" style="display:inline-flex;align-items:center;gap:10px;background:var(--coral);color:#fff;border:none;border-radius:32px;padding:16px 48px;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer;text-decoration:none;letter-spacing:0.3px;transition:transform 0.2s,box-shadow 0.2s;">Send a Lunar Note &rarr;</a>
+        </section>
+
+        <!-- Sign-off -->
+        <div class="phil-signoff">
+            <p class="phil-signoff-line">Yours, under the same moon,</p>
+            <p class="phil-signoff-names">Manko & Yoash</p>
+        </div>
+
+        <!-- Footer removed -->
+    </div>
+
+    <!-- Contacts Page -->
+    <div id="contactsPage" style="display:none;position:fixed;inset:0;z-index:99998;background:#080d18;overflow-y:auto;overflow-x:hidden;">
+        <!-- Header -->
+        <div style="position:sticky;top:0;z-index:10;padding:0 48px;height:88px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,13,24,0.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(79,195,247,0.1);">
+            <a onclick="closeContactsPage()" style="cursor:pointer;display:flex;align-items:center;gap:16px;text-decoration:none;">
+                <img class="logo" src="assests/logo2.png" alt="Moon Post Service" style="width:80px;height:80px;">
+                <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.55);">The World's Only Moon Postal Service</span>
+            </a>
+            <button onclick="closeContactsPage()" style="background:none;border:2px solid rgba(79,195,247,0.3);border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.7);font-size:24px;font-weight:700;transition:border-color 0.2s,background 0.2s;" onmouseover="this.style.background='rgba(79,195,247,0.08)';this.style.borderColor='rgba(79,195,247,0.45)'" onmouseout="this.style.background='none';this.style.borderColor='rgba(79,195,247,0.3)'">✕</button>
+        </div>
+        <!-- Content -->
+        <div style="max-width:660px;margin:0 auto;padding:48px 40px;">
+            <p style="font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#4fc3f7;margin-bottom:12px;">Contacts</p>
+            <h2 style="font-size:clamp(28px,4.5vw,42px);font-weight:900;color:#fff;line-height:1.1;letter-spacing:0.3px;margin-bottom:32px;">My Contacts</h2>
+            <!-- Search bar -->
+            <div style="margin-bottom:24px;">
+                <input type="text" id="contactSearchInput" placeholder="Search by name, username, or email..." autocomplete="off" oninput="debouncedContactSearch()" style="width:100%;box-sizing:border-box;padding:12px 16px;border:1px solid rgba(79,195,247,0.25);border-radius:12px;font-size:14px;background:rgba(5,10,20,0.6);color:white;font-family:inherit;">
+                <div id="contactSearchResults" style="max-height:300px;overflow-y:auto;margin-top:4px;"></div>
+            </div>
+            <div id="contactsListBody" style="padding:0;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- New Message Contact Picker (WhatsApp-style) -->
+    <div class="message-page" id="newMessagePicker">
+        <div class="message-page-inner">
+            <div class="message-page-header" style="justify-content:space-between;">
+                <button class="message-page-back" onclick="closeNewMessagePicker()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
+                <span style="font-weight:700;color:#4fc3f7;font-size:15px;">New Moon Message</span>
+                <button class="message-page-close" onclick="closeNewMessagePicker()" style="display:none;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div style="padding:8px 16px;border-bottom:1px solid rgba(79,195,247,0.12);">
+                <input type="text" id="newMsgContactSearch" placeholder="Search MoonPop users or type an email..." autocomplete="off" oninput="filterNewMsgContacts(this.value)" style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid rgba(79,195,247,0.25);border-radius:10px;font-size:14px;background:rgba(5,10,20,0.6);color:white;">
+            </div>
+            <div class="message-page-body" id="newMsgContactList" style="padding:0;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Moon Circle Detail Page -->
+    <div class="message-page" id="circleDetailPage">
+        <div class="message-page-inner">
+            <div class="message-page-header" style="justify-content:space-between;">
+                <button class="message-page-back" onclick="closeCircleDetail()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
+                <span id="circleDetailTitle" style="font-weight:700;color:var(--blue);font-size:15px;">Moon Circle</span>
+                <span style="width:34px;"></span>
+            </div>
+            <div class="message-page-body" id="circleDetailBody" style="padding:0;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Moon Circle Page -->
+    <div class="message-page" id="createCirclePage">
+        <div class="message-page-inner">
+            <div class="message-page-header" style="justify-content:space-between;">
+                <button class="message-page-back" onclick="closeCreateCircle()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
+                <span style="font-weight:700;color:var(--blue);font-size:15px;">New Moon Circle</span>
+                <span style="width:34px;"></span>
+            </div>
+            <div class="message-page-body" style="padding:20px 24px;overflow-y:auto;">
+                <p class="modal-subtitle" style="text-align:center;margin-bottom:20px;">A shared ritual under the same moon</p>
+                
+                <div class="form-group">
+                    <label>Circle name</label>
+                    <input type="text" id="newCircleName" placeholder="e.g. College Friends, Family">
+                </div>
+                
+                <div class="form-group">
+                    <label>Choose an icon</label>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+                        <button class="reaction-option circle-emoji-pick active" onclick="pickCircleEmoji(this, '🔥')">🔥</button>
+                        <button class="reaction-option circle-emoji-pick" onclick="pickCircleEmoji(this, '🌸')">🌸</button>
+                        <button class="reaction-option circle-emoji-pick" onclick="pickCircleEmoji(this, '🌊')">🌊</button>
+                        <button class="reaction-option circle-emoji-pick" onclick="pickCircleEmoji(this, '✨')">✨</button>
+                        <button class="reaction-option circle-emoji-pick" onclick="pickCircleEmoji(this, '🦋')">🦋</button>
+                        <button class="reaction-option circle-emoji-pick" onclick="pickCircleEmoji(this, '🍂')">🍂</button>
+                        <button class="reaction-option circle-emoji-pick" onclick="pickCircleEmoji(this, '🎵')">🎵</button>
+                        <button class="reaction-option circle-emoji-pick" onclick="pickCircleEmoji(this, '💫')">💫</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Add members</label>
+                    <div id="circleSelectedMembers" style="margin-bottom:8px;"></div>
+                    <input type="text" id="circleMemberSearch" placeholder="Search contacts..." oninput="filterCircleMembers(this.value)" onfocus="filterCircleMembers('')">
+                    <div class="recipient-dropdown" id="circleMemberDropdown" style="position:relative;"></div>
+                </div>
+                
+                <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:16px;">
+                    Each night, everyone in the circle receives the same prompt.<br>
+                    Fill in your 3 words, and at moonrise all notes are revealed together.
+                </p>
+                
+                <button class="send-button" id="createCircleBtn" onclick="createCircle()" disabled style="margin-top:16px;">Create Moon Circle</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <!-- New Moon Message (Full Page) -->
+    <div class="message-page" id="messageModal">
+        <div class="message-page-inner">
+            <div class="message-page-header" id="composeHeader" style="justify-content:space-between;">
+                <button class="message-page-back" onclick="backToRecipientPicker()" style="font-size:20px;">←</button>
+                <span style="font-weight:700;color:var(--blue);font-size:15px;">New Moon Message</span>
+                <span style="width:34px;"></span>
+            </div>
+            <div class="message-page-body" style="padding:20px 24px;overflow-y:auto;">
+            
+            <!-- Step 1: Compose (Dark Redesign) -->
+            <div id="composeStep1">
+                <!-- Glass Card with Toggle + Content -->
+                <div class="compose-glass-card">
+                    <!-- Segmented Toggle: Open Note / Go Lunar -->
+                    <div class="compose-toggle-wrap">
+                        <div class="compose-toggle">
+                            <button class="compose-toggle-btn active" id="toggleOpenNote" onclick="composeToggleMode('open-note')">
+                                <svg class="app-icon sm" style="width:16px;height:16px"><use href="#icon-compose"/></svg> Open Note
+                            </button>
+                            <button class="compose-toggle-btn" id="toggleGoLunar" onclick="composeToggleMode('go-lunar')">
+                                <svg class="app-icon sm" style="width:16px;height:16px"><use href="#icon-lunar-note"/></svg> Go Lunar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Open Note mode: freeform text -->
+                    <div id="composeOpenNote">
+                        <textarea id="messageText" class="compose-textarea" placeholder="Whisper your message to the stars..."></textarea>
+                        <!-- Removed: transmitting label -->
+                    </div>
+
+                    <!-- Go Lunar mode: step wizard (hidden by default) -->
+                    <div id="composeGoLunar" style="display:none;">
+                        <div class="lunar-note-inline" id="lunarNoteInline">
+                            <div class="lunar-note-panel" id="lunarNotePanel" style="display:block;">
+                                <div class="lunar-panel-header">
+                                    <span class="lunar-panel-label"><svg class="app-icon sm" style="color:#4fc3f7"><use href="#icon-lunar-note"/></svg> Lunar Note</span>
+                                </div>
+                                <p class="lunar-intro">Give me three things. The moon does the rest.</p>
+
+                                <!-- Step-through input cards -->
+                                <div class="lunar-step-container" id="lunarStepContainer">
+                                    <!-- Card 1 -->
+                                    <div class="lunar-step-card active" id="lunarStep1">
+                                        <div class="lunar-step-dots">
+                                            <span class="lunar-dot active"></span>
+                                            <span class="lunar-dot"></span>
+                                            <span class="lunar-dot"></span>
+                                        </div>
+                                        <label class="lunar-step-label" id="lunarLabel1">an emotion</label>
+                                        <input type="text" id="lunarInput1" class="lunar-input" placeholder="anything that comes to mind" autocomplete="off">
+                                        <button class="lunar-step-next" id="lunarNext1" onclick="goLunarStep(2)" disabled>Next →</button>
+                                    </div>
+                                    <!-- Card 2 -->
+                                    <div class="lunar-step-card" id="lunarStep2">
+                                        <div class="lunar-step-dots">
+                                            <span class="lunar-dot done"></span>
+                                            <span class="lunar-dot active"></span>
+                                            <span class="lunar-dot"></span>
+                                        </div>
+                                        <label class="lunar-step-label" id="lunarLabel2">a different emotion</label>
+                                        <input type="text" id="lunarInput2" class="lunar-input" placeholder="something else entirely" autocomplete="off">
+                                        <div class="lunar-step-nav">
+                                            <button class="lunar-step-back" onclick="goLunarStep(1)"><svg class="app-icon sm"><use href="#icon-back"/></svg> Back</button>
+                                            <button class="lunar-step-next" id="lunarNext2" onclick="goLunarStep(3)" disabled>Next →</button>
+                                        </div>
+                                    </div>
+                                    <!-- Card 3 -->
+                                    <div class="lunar-step-card" id="lunarStep3">
+                                        <div class="lunar-step-dots">
+                                            <span class="lunar-dot done"></span>
+                                            <span class="lunar-dot done"></span>
+                                            <span class="lunar-dot active"></span>
+                                        </div>
+                                        <label class="lunar-step-label" id="lunarLabel3">something you pretend not to care about</label>
+                                        <input type="text" id="lunarInput3" class="lunar-input" placeholder="you know the one" autocomplete="off">
+                                        <div class="lunar-step-nav">
+                                            <button class="lunar-step-back" onclick="goLunarStep(2)"><svg class="app-icon sm"><use href="#icon-back"/></svg> Back</button>
+                                            <button class="lunar-step-next" id="lunarNext3" onclick="revealLunarNote()" disabled>Reveal 🌙</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Generated result card -->
+                                <div class="lunar-result-card" id="lunarResultCard" style="display:none;">
+                                    <div class="lunar-result-label">Lunar Note</div>
+                                    <div class="lunar-result-text" id="lunarResultText"></div>
+                                    <div class="lunar-result-closing" id="lunarResultClosing"></div>
+                                    <div class="lunar-result-actions">
+                                        <button class="lunar-action-btn" onclick="regenerateLunarNote()">↻ try another version</button>
+                                        <button class="lunar-action-btn" onclick="editLunarInputs()">✎ change answers</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADD: row with music + photo buttons -->
+                <div class="compose-add-row">
+                    <span class="compose-add-label">ADD:</span>
+                    <button class="compose-add-btn" id="composeMusicBtn" onclick="toggleComposeMusic()">
+                        <svg width="16" height="16" style="color:inherit"><use href="#icon-music"/></svg>
+                    </button>
+                    <button class="compose-add-btn" id="composePhotoBtn" onclick="toggleComposePhoto()">
+                        <svg width="16" height="16" style="color:inherit"><use href="#icon-photo"/></svg>
+                    </button>
+                </div>
+
+                <!-- Music expansion panel (hidden by default) -->
+                <div class="compose-music-panel" id="composeMusicPanel" style="display:none;">
+                    <div class="compose-music-search">
+                        <span class="compose-music-yt-icon">
+                            <svg width="18" height="18" style="color:white"><use href="#icon-youtube"/></svg>
+                        </span>
+                        <input type="text" id="songInput" placeholder="Search YouTube for a song..." oninput="onSongInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();if(!extractYouTubeId(this.value.trim()) && !extractSpotifyTrackId(this.value.trim()))searchYouTubeSong();}">
+                    </div>
+                    <button onclick="searchYouTubeSong()" id="songSearchBtn" style="display:none;margin-top:8px;background:#4fc3f7;color:#0a1628;border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;">Search</button>
+                    <div id="songSearchResults" style="max-height:180px;overflow-y:auto;display:none;margin-top:8px;"></div>
+                    <div class="song-suggestions" id="songSuggestions">
+                        <!-- Populated by JS on each compose open -->
+                    </div>
+                    <div id="ytEmbedContainer" style="margin-top:10px;"></div>
+                    <div class="compose-music-note">Songs play when the message is opened</div>
+                </div>
+
+                <!-- Photo panel (hidden by default) -->
+                <div class="compose-photo-panel" id="composePhotoPanel" style="display:none;">
+                    <label for="moonPhotoInput" class="compose-photo-dropzone" id="composePhotoDropzone">
+                        <svg width="32" height="32"><use href="#icon-photo"/></svg>
+                        <div class="compose-photo-dropzone-text" id="moonPhotoLabel">Tap to add a moon photo</div>
+                    </label>
+                    <input type="file" id="moonPhotoInput" accept="image/*" style="display:none;" onchange="handleMoonPhoto(this)">
+                    <div id="moonPhotoPreview" style="display:none;position:relative;margin-top:12px;">
+                        <img id="moonPhotoImg" style="width:100%;max-height:200px;object-fit:cover;border-radius:14px;">
+                        <button class="compose-photo-remove" onclick="clearMoonPhoto()">&times;</button>
+                    </div>
+                </div>
+
+                <!-- Send to the Moon button -->
+                <div class="compose-send-container">
+                    <button class="compose-send-btn" id="composeMainBtn" onclick="composeMainAction()">
+                        Send to the Moon
+                        <span class="compose-send-icons">
+                            <svg width="22" height="22" style="color:white"><use href="#icon-rocket"/></svg>
+                            <svg width="18" height="18" style="color:white"><use href="#icon-moon-send"/></svg>
+                        </span>
+                    </button>
+                    <!-- Removed: transmission encrypted line -->
+                </div>
+            </div>
+            
+            <!-- Step 2: Choose recipient -->
+            <div id="composeStep2" style="display: none;">
+                <div class="modal-header">
+                    <h2>Send to</h2>
+                    <p class="modal-subtitle">Who's getting this moon message?</p>
+                </div>
+                
+                <div class="form-group">
+                    <label>Send to</label>
+                    <div class="recipient-selector">
+                        <input type="text" id="recipient" 
+                               placeholder="Search contacts..." 
+                               onfocus="showRecipientDropdown()" 
+                               oninput="filterRecipients(this.value)">
+                        <div class="recipient-dropdown" id="recipientDropdown"></div>
+                    </div>
+                    <button class="new-contact-btn" onclick="showNewContactForm()">+ Add New Contact</button>
+                </div>
+                
+                <div class="delivery-info-box" id="deliveryInfoBox" style="display:none;"></div>
+                <button class="send-button" onclick="handleComposeSend()">Release to the Moon</button>
+            </div>
+            
+            <!-- New Contact view -->
+            <div id="composeNewContact" style="display: none;">
+                <div class="form-group">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div>
+                            <label>First name</label>
+                            <input type="text" id="newContactFirstName" placeholder="First name" oninput="checkNewContactForm()">
+                        </div>
+                        <div>
+                            <label>Last name</label>
+                            <input type="text" id="newContactLastName" placeholder="Last name" oninput="checkNewContactForm()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="display:none;">
+                    <label>Display name</label>
+                    <input type="text" id="newContactName" placeholder="Their name" oninput="checkNewContactForm()">
+                </div>
+                
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="newContactEmail" placeholder="their@email.com" oninput="checkNewContactForm(); debouncedEmailLookup()">
+                    <div id="emailLookupResult" style="display:none;margin-top:8px;padding:10px 14px;border-radius:10px;font-size:13px;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Where are they?</label>
+                    <input type="text" id="newContactCity" placeholder="City" oninput="filterNewContactCities(this.value); checkNewContactForm()">
+                    <div class="city-dropdown" id="newContactCityDropdown"></div>
+                </div>
+                
+                <button class="send-button" id="saveContactBtn" onclick="confirmNewContact()" disabled>Save & Compose Message</button>
+            </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Public Message Modal -->
+    <div class="modal-overlay public-modal" id="publicModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closePublicModal()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-close"/></svg></button>
+            <div class="modal-header">
+                <h2>Add to Shared Sky</h2>
+                <p class="modal-subtitle">A whisper for others looking up</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="publicMessage" style="color: white;">Your message</label>
+                <textarea id="publicMessage" placeholder="What would you share with a stranger looking at the same moon?"></textarea>
+            </div>
+            
+            <button class="send-button" onclick="sendPublicMessage()">Send to the Sky</button>
+            
+            <p class="delivery-info">
+                Brief and anonymous. Others will glimpse this, not browse it.
+            </p>
+        </div>
+    </div>
+
+    <!-- Moon Reveal Page (recipient view) -->
+    <div class="moon-reveal-page" id="moonRevealPage">
+        <button class="close-reveal-page" onclick="closeMoonRevealPage()">&times;</button>
+        
+        <div class="moon-reveal-header">
+            <svg class="moon-reveal-logo" viewBox="0 0 529.49 72.65" xmlns="http://www.w3.org/2000/svg">
+                <path fill="rgba(255,255,255,0.6)" d="M196.78,72.65h-10.63c-.57-1.25-1.89-1.37-3.52-1.85-18.75-5.51-29.64-24-25.22-43.08C161.43,10.41,178.37-1.89,197.26.25s32.95,17.82,32.4,37.06c-.52,18.14-14.48,32.13-32.89,35.34Z"/>
+                <path fill="rgba(255,255,255,0.6)" d="M425.49,72.65h-11.63c-.58-1.24-1.89-1.38-3.51-1.86-18.73-5.51-29.64-23.96-25.22-43.06,4-17.28,20.89-29.61,39.82-27.49,18.05,2.02,32.47,17.24,32.45,36.09-.02,18.32-13.64,32.32-31.91,36.32Z"/>
+                <path fill="rgba(255,255,255,0.6)" d="M118.88,72.65h-10.99c-.57-1.15-1.87-1.22-3.42-1.64-18.85-5.13-30.12-23.35-26.13-42.49C81.95,11.14,98.55-1.5,117.38.14c18.55,1.62,33.42,16.98,33.41,36.19-.01,18.31-13.66,32.32-31.91,36.32Z"/>
+                <polygon fill="rgba(255,255,255,0.6)" points="306.61 71.76 260.34 59.26 259.73 70.65 236.71 70.65 236.75 .38 283.01 13.03 283.64 1.62 306.66 1.61 306.61 71.76"/>
+                <polygon fill="rgba(255,255,255,0.6)" points="69.64 2.09 70.01 70.68 0 70.69 .05 1.92 34.97 21.62 69.64 2.09"/>
+                <path fill="rgba(255,255,255,0.6)" d="M495.04,59c-1.08,4.08-.07,7.51-.63,11.66h-28.97s0-69.08,0-69.08l35.96.14c16.98.07,29.35,15.19,27.99,31.03-1.44,16.8-16.49,28.68-34.35,26.25Z"/>
+                <path fill="rgba(255,255,255,0.6)" d="M346.23,59c-1.09,4.08-.07,7.5-.63,11.65h-28.97s0-69.08,0-69.08l35.96.15c17,.07,29.34,15.16,28,31.03-1.42,16.78-16.5,28.68-34.35,26.26Z"/>
+            </svg>
+            <div class="moon-reveal-visual" id="revealMoonVisual"></div>
+            <p class="moon-reveal-tagline">This message was written for this moon.</p>
+        </div>
+
+        <div class="moon-reveal-content">
+            <!-- Loading state -->
+            <div id="revealLoading" style="text-align:center;padding:40px;color:rgba(255,255,255,0.6);">
+                Loading your moon message...
+            </div>
+
+            <!-- Error state / invite landing for non-users -->
+            <div id="revealError" style="display:none;text-align:center;padding:40px;">
+                <div style="margin-bottom:16px;color:#FDF6E3;"><svg class="app-icon xxl"><use href="#icon-lunar-note"/></svg></div>
+                <p style="color:rgba(255,255,255,0.9);font-size:18px;font-weight:600;">Someone sent you a moon message</p>
+                <p style="color:rgba(255,255,255,0.5);font-size:14px;margin-top:12px;line-height:1.6;">
+                    Messages on Moon Post Service travel with the moon.<br>
+                    Sign up to reveal your message and reply.
+                </p>
+                <button class="cta-primary" onclick="revealSignupToReply()" style="font-size:15px;padding:12px 32px;margin-top:24px;">
+                    Join MoonPop to read your message
+                </button>
+                <p style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:16px;">Free · No app download needed</p>
+            </div>
+
+            <!-- Real content (hidden until loaded) -->
+            <div id="revealLoaded" style="display:none;">
+                <p class="moon-reveal-sender">From <strong id="revealSenderName">A Friend</strong></p>
+                
+                <!-- Countdown (shown before moonrise) -->
+                <div class="moon-reveal-countdown" id="revealCountdown" style="display:none;">
+                    <div class="countdown-label-reveal">Your moon message arrives in</div>
+                    <div class="countdown-time-reveal" id="revealCountdownTime">--:--:--</div>
+                    <div class="countdown-note">The message will be revealed at moonrise over <span id="revealCity">your city</span></div>
+                    <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1);">
+                        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:12px;">While you wait — join MoonPop so you can reply when it arrives</p>
+                        <button class="cta-primary" onclick="revealSignupToReply()" style="font-size:14px;padding:10px 24px;">Sign up now</button>
+                    </div>
+                </div>
+
+                <!-- Message (shown after release) -->
+                <div class="moon-reveal-message" id="revealMessage" style="display:none;">
+                    <p class="reveal-message-text" id="revealMessageText"></p>
+                    <div id="revealLunarNote" style="display:none;">
+                        <div style="margin-top:20px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;border-left:3px solid rgba(255,255,255,0.2);">
+                            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:8px;display:flex;align-items:center;gap:4px;justify-content:center;"><svg class="app-icon sm"><use href="#icon-lunar-note"/></svg> Lunar Note</div>
+                            <p id="revealLunarText" style="white-space:pre-line;color:rgba(255,255,255,0.85);"></p>
+                            <p id="revealLunarClosing" style="color:rgba(255,255,255,0.5);font-style:italic;margin-top:8px;"></p>
+                        </div>
+                    </div>
+                    <div class="reveal-message-meta">
+                        <span id="revealPhaseIcon" style="display:inline-flex;vertical-align:middle;margin-right:4px;"></span>Sent under a <span id="revealPhaseName">waxing gibbous</span> moon
+                    </div>
+                </div>
+
+                <!-- CTA -->
+                <div class="moon-reveal-cta" id="revealCta">
+                    <p>This message traveled through lunar time.<br>Join MoonPop to reply and send your own.</p>
+                    <div class="moon-reveal-cta-buttons">
+                        <button class="cta-primary" id="revealReplyBtn" onclick="revealSignupToReply()">Join MoonPop to reply</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Detail Popup -->
+    <div class="modal-overlay" id="contactDetailModal" style="display:none;" onclick="if(event.target===this)closeContactDetail()">
+        <div style="background:white;border-radius:24px;width:min(340px,90vw);padding:32px 24px 24px;text-align:center;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <button onclick="closeContactDetail()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;color:#999;cursor:pointer;">&times;</button>
+
+            <!-- Profile Picture -->
+            <div id="contactDetailAvatar" style="width:80px;height:80px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;margin:0 auto 16px;overflow:hidden;position:relative;">
+                <span id="contactDetailInitial"></span>
+                <img id="contactDetailImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
+            </div>
+
+            <!-- Name & Username -->
+            <h3 id="contactDetailName" style="font-size:18px;font-weight:700;color:var(--blue);margin:0 0 4px;"></h3>
+            <p id="contactDetailUsername" style="font-size:13px;color:var(--text-muted);margin:0 0 4px;"></p>
+            <p id="contactDetailLocation" style="font-size:12px;color:var(--text-muted);margin:0 0 16px;"></p>
+
+            <!-- Online badge -->
+            <div id="contactDetailOnline" style="display:none;margin-bottom:16px;">
+                <span style="display:inline-flex;align-items:center;gap:4px;background:#e8f5e9;color:#2e7d32;font-size:12px;font-weight:600;padding:4px 12px;border-radius:12px;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:#4caf50;"></span> Online now
+                </span>
+            </div>
+
+            <!-- Stats -->
+            <div id="contactDetailStats" style="font-size:13px;color:var(--text-muted);margin-bottom:20px;padding:12px;background:var(--cream);border-radius:12px;"></div>
+
+            <!-- CTA -->
+            <button id="contactDetailCta" onclick="contactDetailSendMessage()" style="width:100%;background:var(--blue);color:white;border:none;border-radius:20px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);"></button>
+        </div>
+    </div>
+
+    <!-- Chat Profile Popup (tap avatar in chat) -->
+    <div class="modal-overlay" id="chatProfileModal" style="display:none;" onclick="if(event.target===this)closeChatProfile()">
+        <div style="background:#0d1b2a;border:1px solid rgba(79,195,247,0.15);border-radius:24px;width:min(340px,90vw);padding:32px 24px 24px;text-align:center;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+            <button onclick="closeChatProfile()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;color:rgba(255,255,255,0.4);cursor:pointer;">&times;</button>
+
+            <!-- Large Avatar -->
+            <div id="chatProfileAvatar" style="width:96px;height:96px;border-radius:50%;background:rgba(79,195,247,0.15);border:2px solid rgba(79,195,247,0.25);color:white;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;margin:0 auto 16px;overflow:hidden;position:relative;">
+                <span id="chatProfileInitial"></span>
+                <img id="chatProfileImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
+            </div>
+
+            <!-- Name -->
+            <h3 id="chatProfileName" style="font-size:20px;font-weight:700;color:rgba(255,255,255,0.95);margin:0 0 4px;"></h3>
+            <p id="chatProfileLocation" style="font-size:13px;color:rgba(255,255,255,0.4);margin:0 0 16px;"></p>
+
+            <!-- Online badge -->
+            <div id="chatProfileOnline" style="display:none;margin-bottom:16px;">
+                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(76,175,80,0.15);color:#81c784;font-size:12px;font-weight:600;padding:4px 12px;border-radius:12px;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:#4caf50;"></span> Online now
+                </span>
+            </div>
+
+            <!-- Stats -->
+            <div id="chatProfileStats" style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:24px;padding:12px;background:rgba(79,195,247,0.08);border-radius:12px;border:1px solid rgba(79,195,247,0.1);"></div>
+
+            <!-- Block Button -->
+            <button id="chatProfileBlockBtn" onclick="chatProfileBlock()" style="width:100%;background:rgba(255,85,88,0.1);color:#ff5558;border:1px solid rgba(255,85,88,0.25);border-radius:16px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;">
+                Block User
+            </button>
+        </div>
+    </div>
+
+    <!-- Message Detail Modal -->
+    <!-- Full-page Message View -->
+    <div class="message-page" id="messagePageView">
+        <div class="message-page-inner">
+            <div class="message-page-header" style="justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                    <div class="message-page-avatar" id="detailAvatar" onclick="openChatProfile()" style="cursor:pointer;"><span id="detailAvatarInitial">J</span><img id="detailAvatarImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;display:none;"></div>
+                    <div class="message-page-info" style="min-width:0;">
+                        <h3 id="detailSender">Jonah Doyle</h3>
+                        <p id="detailLocation">London · Received under waxing gibbous</p>
+                    </div>
+                </div>
+                <button class="message-page-close" onclick="closeMessageDetail()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="message-page-body" id="detailContent">
+                <!-- Message bubbles will be inserted here -->
+            </div>
+            <div class="message-page-footer">
+                <!-- Reply context bar (shown when replying to a specific message) -->
+                <div id="replyContextBar" style="display:none;padding:8px 12px;border-left:3px solid #4fc3f7;margin:0 0 8px;background:rgba(18,35,58,0.5);border-radius:0 8px 8px 0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span id="replyContextText" style="font-size:12px;color:rgba(255,255,255,0.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"></span>
+                        <button onclick="clearReplyContext()" style="background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:14px;padding:0 0 0 8px;">✕</button>
+                    </div>
+                </div>
+                <div id="replyPhotoPreview" style="display:none;padding:8px 8px 0;">
+                    <div style="position:relative;display:inline-block;">
+                        <img id="replyPhotoImg" style="max-height:100px;border-radius:8px;">
+                        <button onclick="clearReplyPhoto()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:white;font-size:12px;cursor:pointer;">&times;</button>
+                    </div>
+                </div>
+                <!-- Note type toggle — single pill switch -->
+                <div class="note-toggle-bar">
+                    <div class="note-mode-toggle" onclick="toggleNoteMode()">
+                        <span class="toggle-option active" id="openNoteToggle">✏ Open</span>
+                        <span class="toggle-option" id="lunarNoteToggle">🌙 Lunar</span>
+                    </div>
+                </div>
+                <!-- Open Note: regular reply input -->
+                <div id="openNotePanel">
+                    <div class="reply-row" id="replyRow">
+                        <div class="reply-input-wrapper">
+                            <button class="reply-attach-btn" id="attachBtn" onclick="toggleAttachMenu()">+</button>
+                            <input type="text" class="message-page-input" placeholder="Whisper your message to the stars..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()" oninput="emitTyping()">
+                        </div>
+                        <button class="message-page-send" id="replySendBtn" onclick="sendReply()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
+                        <input type="file" id="replyPhotoInput" accept="image/*" style="display:none;" onchange="handleReplyPhoto(this)">
+                    </div>
+                    <div class="attach-menu" id="attachMenu" style="display:none;">
+                        <button class="attach-option" onclick="triggerPhotoAttach()">📷 Photo</button>
+                        <button class="attach-option" onclick="triggerYoutubeAttach()">🔗 YouTube Link</button>
+                    </div>
+                </div>
+                <!-- Lunar Note: 3-step creative wizard (matches compose flow) -->
+                <div class="thread-lunar-panel" id="threadLunarPanel" style="display:none;">
+                    <div class="thread-lunar-header-row">
+                        <p class="thread-lunar-intro" id="threadLunarIntro">Give me three things. The moon does the rest.</p>
+                        <button class="thread-lunar-cancel-link" onclick="closeThreadLunar()">Cancel</button>
+                    </div>
+                    <div class="thread-lunar-steps" id="threadLunarSteps">
+                        <div class="thread-lunar-step" id="threadStep1">
+                            <div class="thread-lunar-dots">
+                                <span class="thread-dot active"></span>
+                                <span class="thread-dot"></span>
+                                <span class="thread-dot"></span>
+                            </div>
+                            <label class="thread-lunar-label" id="threadLabel1">an emotion</label>
+                            <input type="text" class="thread-lunar-input" id="threadLunarInput1" placeholder="anything that comes to mind" oninput="updateThreadLunarNextBtn(1)">
+                            <button class="lunar-step-next thread-lunar-next-btn" id="threadNext1" onclick="advanceThreadStep(2)" disabled>Next →</button>
+                        </div>
+                        <div class="thread-lunar-step" id="threadStep2" style="display:none;">
+                            <div class="thread-lunar-dots">
+                                <span class="thread-dot done"></span>
+                                <span class="thread-dot active"></span>
+                                <span class="thread-dot"></span>
+                            </div>
+                            <label class="thread-lunar-label" id="threadLabel2">a different emotion</label>
+                            <input type="text" class="thread-lunar-input" id="threadLunarInput2" placeholder="something else entirely" oninput="updateThreadLunarNextBtn(2)">
+                            <div class="thread-lunar-step-nav">
+                                <button class="lunar-step-back" onclick="goBackThreadStep(1)">← Back</button>
+                                <button class="lunar-step-next thread-lunar-next-btn" id="threadNext2" onclick="advanceThreadStep(3)" disabled>Next →</button>
+                            </div>
+                        </div>
+                        <div class="thread-lunar-step" id="threadStep3" style="display:none;">
+                            <div class="thread-lunar-dots">
+                                <span class="thread-dot done"></span>
+                                <span class="thread-dot done"></span>
+                                <span class="thread-dot active"></span>
+                            </div>
+                            <label class="thread-lunar-label" id="threadLabel3">something you pretend not to care about</label>
+                            <input type="text" class="thread-lunar-input" id="threadLunarInput3" placeholder="you know the one" oninput="updateThreadLunarNextBtn(3)">
+                            <div class="thread-lunar-step-nav">
+                                <button class="lunar-step-back" onclick="goBackThreadStep(2)">← Back</button>
+                                <button class="lunar-step-next thread-lunar-next-btn" id="threadNext3" onclick="generateThreadLunarResult()" disabled>Reveal 🌙</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Result card (hidden until reveal) -->
+                    <div class="thread-lunar-result-card" id="threadLunarResultCard" style="display:none;">
+                        <div class="thread-lunar-result-label">Lunar Note</div>
+                        <div class="thread-lunar-result-text" id="threadLunarResultText"></div>
+                        <div class="thread-lunar-result-closing" id="threadLunarResultClosing"></div>
+                        <div class="thread-lunar-result-actions">
+                            <button class="thread-lunar-action-btn" onclick="regenerateThreadLunar()">↻ try another version</button>
+                            <button class="thread-lunar-action-btn" onclick="editThreadInputs()">✎ change answers</button>
+                        </div>
+                    </div>
+                    <!-- Send button (only visible after reveal) -->
+                    <div id="threadLunarSendRow" style="display:none;margin-top:10px;">
+                        <button class="thread-lunar-send" id="threadLunarSendBtn" onclick="sendThreadLunarNote()">Send Lunar Note</button>
+                    </div>
+                </div>
+                <div id="replyMoonGate" style="display:none;text-align:center;padding:16px 16px 20px;background:rgba(0,40,80,0.4);border-radius:12px;margin:8px 16px;">
+                    <div style="margin-bottom:6px;font-size:15px;color:#4fc3f7;font-weight:500;">🌙 The moon is below your horizon</div>
+                    <div id="replyMoonGateTime" style="font-size:13px;color:rgba(255,255,255,0.6);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <script type="module" src="/src/main.js"></script>
 </body>
 </html>
