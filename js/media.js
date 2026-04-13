@@ -1,6 +1,5 @@
 // Media — YouTube Embed & Moon Photos
 
-// ========================
 // YOUTUBE EMBED
 // ========================
 let selectedSongTitle = '';
@@ -514,3 +513,4 @@ function updateSharedSkyBadge() {
     }
 }
 
+// ========================

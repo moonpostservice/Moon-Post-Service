@@ -1,6 +1,5 @@
 // Moon Reveal Page
 
-// ============================================
 // MOON REVEAL PAGE (recipient landing page)
 // ============================================
 let revealCountdownInterval = null;
@@ -132,3 +131,4 @@ function closeMoonRevealPage() {
 }
 
 
+// ============================================

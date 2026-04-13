@@ -1,6 +1,5 @@
 // Moon Calculations — SunCalc + Orbit Model
 
-// ============================================
 // REAL MOON DATA - SunCalc (pure JS, no API)
 // ============================================
 
@@ -899,3 +898,4 @@ function getCountdown() {
 }
 
 
+// ============================================

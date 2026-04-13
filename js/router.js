@@ -1,6 +1,5 @@
 // URL Routing & Resize Handler
 
-// ========================
 // URL ROUTING (popstate)
 // ========================
 
@@ -91,3 +90,4 @@ window.addEventListener('resize', function() {
     }
 });
 
+// ========================

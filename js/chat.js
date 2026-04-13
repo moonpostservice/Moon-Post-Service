@@ -1,6 +1,5 @@
 // Chat — Message Detail, Typing, Replies
 
-// ========================
 // ORBIT DOT HIGHLIGHT
 // ========================
 function highlightOrbitDot(senderName, show) {
@@ -1804,3 +1803,4 @@ async function sendReply() {
     document.getElementById('detailContent').scrollTop = document.getElementById('detailContent').scrollHeight;
 }
 
+// ========================

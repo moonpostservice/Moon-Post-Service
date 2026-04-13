@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "moonpop",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-l", "3000", "/Users/manko/Documents/moon post service/.claude/worktrees/hardcore-bhaskara"],
+      "port": 3000
+    }
+  ]
+}

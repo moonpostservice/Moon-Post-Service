@@ -1,6 +1,5 @@
 // Notification Sound, Visuals & Lunar Note Generator
 
-// ========================
 // MESSAGE NOTIFICATION SOUND & VISUALS
 // ========================
 let _audioCtx = null;
@@ -1658,3 +1657,4 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 
 // Update dot positions based on time-to-release
 // 270° = 12h away, 0° = 6h away, 90° = imminent
+// ============================================

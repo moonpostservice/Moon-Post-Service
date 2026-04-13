@@ -1,6 +1,5 @@
 // Supabase Auth, Onboarding & Initialization
 
-// ============================================
 // SUPABASE AUTH
 // ============================================
 const SUPABASE_URL = 'https://znfqqehthxcrizcixzpu.supabase.co';
@@ -719,3 +718,4 @@ async function initAuth(sessionOverride) {
     }
 }
 
+// ========================

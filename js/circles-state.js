@@ -1,6 +1,5 @@
 // Moon Circles — State & Rendering
 
-// ============================================
 // MOON CIRCLES
 // ============================================
 // Moon Circles - loaded from Supabase
@@ -1207,3 +1206,4 @@ async function loadSharedSky() {
 let selectedRecipient = null;
 let isNewContact = false;
 
+// ============================================

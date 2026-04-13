@@ -1,6 +1,5 @@
 // Reactions System
 
-// ========================
 // REACTIONS — Clean rewrite using event delegation
 // ========================
 const MOON_REACTIONS = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
@@ -341,3 +340,4 @@ async function toggleReaction(msgDbId, reactionIndex) {
     return handleReaction(msgDbId, msg.reactions[reactionIndex].emoji);
 }
 
+// ========================

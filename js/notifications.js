@@ -1,6 +1,5 @@
 // Email Notifications via Supabase Edge Function
 
-// ============================================
 // EMAIL NOTIFICATIONS via Supabase Edge Function (Resend)
 // ============================================
 
@@ -680,3 +679,4 @@ document.addEventListener('click', (e) => {
 
 // Dot tooltips are now attached dynamically by attachDotTooltips()
 
+// ============================================

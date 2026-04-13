@@ -59,3 +59,4 @@ function iconSvg(name, size = 'md') {
     return `<svg class="app-icon ${size}"><use href="#icon-${name}"/></svg>`;
 }
 
+// ============================================

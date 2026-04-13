@@ -1,6 +1,5 @@
 // Realtime, Polling & Presence
 
-// ========================
 // REALTIME + POLLING ENGINE
 // ========================
 let realtimeChannels = [];      // Track all channels for cleanup
@@ -1079,79 +1078,48 @@ function generateLandingStars() {
 }
 
 function initMoonriseParallax() {
+    // Scroll-based fade-in animations for editorial landing page
     const scrollContainer = document.getElementById('moonriseScroll');
-    const moon = document.getElementById('moonriseMoon');
-    const glow = document.getElementById('moonriseGlow');
-    const light = document.getElementById('moonriseLight');
-    const signupBtn = document.querySelector('.moonrise-btn-signup');
-    const loginBtn = document.querySelector('.moonrise-btn-login');
-    const overlay = document.getElementById('onboardingOverlay');
-    if (!scrollContainer || !moon) return;
+    if (!scrollContainer) return;
 
-    let ticking = false;
-    scrollContainer.addEventListener('scroll', () => {
-        if (!ticking) {
-            requestAnimationFrame(() => {
-                const scrollTop = scrollContainer.scrollTop;
-                const scrollHeight = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-                const progress = Math.min(scrollTop / scrollHeight, 1); // 0 to 1
+    // IntersectionObserver for fade-in-up elements (uses viewport)
+    const fadeObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                fadeObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
 
-                // Moon rises continuously — enters early, never stops, shrinks as it rises
-                const vh = scrollContainer.clientHeight;
-                // Slightly accelerated curve so moon enters sooner but never caps
-                const moonProg = Math.pow(progress, 0.85);
-                const moonStartY = vh * 1.05;    // starts just below viewport
-                const moonEndY = vh * 0.08;      // ends near top
-                const moonY = moonStartY - (moonStartY - moonEndY) * moonProg;
-                // Moon shrinks continuously — starts at 1.6x, ends at 0.25x
-                const moonScale = 1.6 - moonProg * 1.35;
-                moon.style.transform = `translateX(-50%) translateY(${moonY}px) scale(${moonScale})`;
+    document.querySelectorAll('.fade-in-up').forEach(el => {
+        fadeObserver.observe(el);
+    });
 
-                // Glow intensifies continuously
-                if (glow) glow.style.opacity = Math.min(progress * 1.8, 1);
-
-                // Sky brightening — subtle
-                if (overlay) {
-                    const r = Math.round(5 + progress * 5);    // 5 → 10
-                    const g = Math.round(10 + progress * 9);   // 10 → 19
-                    const b = Math.round(20 + progress * 16);  // 20 → 36
-                    overlay.style.background = `rgb(${r},${g},${b})`;
-                }
-
-                // Ambient glow — radiates from bottom center (behind CTA buttons)
-                if (light) {
-                    const glowIntensity = Math.pow(progress, 1.5);
-                    light.style.background = `radial-gradient(ellipse 80% 50% at 50% 85%, rgba(200,220,255,${0.06 * glowIntensity}) 0%, rgba(79,195,247,${0.03 * glowIntensity}) 35%, transparent 70%)`;
-                    light.style.opacity = 1;
-                }
-
-                // Moonlit shine on CTA buttons at bottom
-                const isBottom = progress > 0.8;
-                if (signupBtn) signupBtn.classList.toggle('moonlit', isBottom);
-                if (loginBtn) loginBtn.classList.toggle('moonlit', isBottom);
-
-                ticking = false;
-            });
-            ticking = true;
-        }
-    }, { passive: true });
+    // Glassmorphism header scroll state
+    const nav = document.querySelector('.landing-nav');
+    if (nav) {
+        window.addEventListener('scroll', () => {
+            nav.classList.toggle('scrolled', window.scrollY > 40);
+        }, { passive: true });
+    }
 }
 
 function showOnboarding() {
     const overlay = document.getElementById('onboardingOverlay');
     if (!overlay) return;
     overlay.classList.remove('hidden');
-    // Initialize parallax moonrise + landing starfield
+    // Initialize scroll animations + landing starfield + orbital dots
     initMoonriseParallax();
     generateLandingStars();
+    setupRingCanvas('landing-ring-canvas');
+    initTransitIllustration();
 
-    // Start countdown for bottom CTA with seconds
-    const cdEl = document.getElementById('onboardingCountdown');
-    const cdTitle = document.getElementById('onboardingMoonTitle');
-    if (cdEl) {
-        // Try to get user's approximate location from browser timezone
+    // Dynamic CTA based on moon state
+    const heroCta = document.getElementById('heroCta');
+    const bottomCta = document.getElementById('bottomCta');
+    if (heroCta) {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-        // Simple timezone→coords mapping for common locations
         const tzCoords = {
             'Asia/Jerusalem': [32.08, 34.78], 'Asia/Tel_Aviv': [32.08, 34.78],
             'America/New_York': [40.71, -74.01], 'America/Chicago': [41.88, -87.63],
@@ -1160,46 +1128,67 @@ function showOnboarding() {
             'Europe/Berlin': [52.52, 13.41], 'Australia/Sydney': [-33.87, 151.21],
             'Asia/Tokyo': [35.68, 139.69], 'Asia/Dubai': [25.20, 55.27],
         };
-        const coords = tzCoords[tz] || [32.08, 34.78]; // fallback Tel Aviv
+        const coords = tzCoords[tz] || [32.08, 34.78];
 
-        function updateOnboardingCountdown() {
-            try {
-                const now = new Date();
-                // Check if moon is currently up
-                const moonPos = SunCalc.getMoonPosition(now, coords[0], coords[1]);
-                const altDeg = moonPos.altitude * (180 / Math.PI);
-                if (altDeg > -0.5) {
-                    // Moon is up
-                    if (cdTitle) cdTitle.textContent = 'The moon is rising now.';
-                    cdEl.textContent = '';
-                    return;
-                }
-                // Moon is down — find next moonrise
-                if (cdTitle) cdTitle.textContent = 'The moon rises in';
-                const moonTimes = SunCalc.getMoonTimes(now, coords[0], coords[1]);
-                let target = moonTimes.rise;
-                if (!target || target < now) {
-                    const tomorrow = new Date(now.getTime() + 86400000);
-                    const mt2 = SunCalc.getMoonTimes(tomorrow, coords[0], coords[1]);
-                    target = mt2.rise;
-                }
-                if (target && target > now) {
-                    const diff = target - now;
-                    const h = Math.floor(diff / 3600000);
-                    const m = Math.floor((diff % 3600000) / 60000);
-                    const s = Math.floor((diff % 60000) / 1000);
-                    cdEl.textContent = h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
-                } else {
-                    cdEl.textContent = '';
-                    if (cdTitle) cdTitle.textContent = 'The moon rises tonight.';
-                }
-            } catch(e) {
-                cdEl.textContent = '';
-                if (cdTitle) cdTitle.textContent = 'The moon rises tonight.';
+        function buildRetroCounter(h, m, s, idPrefix) {
+            const pad = (n) => String(n).padStart(2, '0');
+            const hh = pad(h), mm = pad(m), ss = pad(s);
+            return '<div class="retro-counter">' +
+                '<div class="retro-counter-unit"><div class="retro-counter-group"><span class="retro-digit">' + hh[0] + '</span><span class="retro-digit">' + hh[1] + '</span></div><div class="retro-label">hrs</div></div>' +
+                '<span class="retro-separator">:</span>' +
+                '<div class="retro-counter-unit"><div class="retro-counter-group"><span class="retro-digit">' + mm[0] + '</span><span class="retro-digit">' + mm[1] + '</span></div><div class="retro-label">min</div></div>' +
+                '<span class="retro-separator">:</span>' +
+                '<div class="retro-counter-unit"><div class="retro-counter-group"><span class="retro-digit">' + ss[0] + '</span><span class="retro-digit">' + ss[1] + '</span></div><div class="retro-label">sec</div></div>' +
+            '</div>';
+        }
+
+        function renderMoonCta(container, isMoonUp, h, m, s, isBottom) {
+            if (isMoonUp) {
+                container.innerHTML =
+                    '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Send a moon message</button>' +
+                    '<p class="hero-moon-up-label">The moon is above you now.</p>';
+            } else {
+                const sub = isBottom ? '<p class="bottom-cta-sub">Add someone you love.</p>' : '';
+                container.innerHTML =
+                    '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Join free</button>' + sub +
+                    '<div class="retro-countdown-group"><p class="retro-rises-label">Your moon rises in</p>' +
+                    buildRetroCounter(h, m, s, isBottom ? 'bot' : 'hero') + '</div>';
             }
         }
-        updateOnboardingCountdown();
-        setInterval(updateOnboardingCountdown, 1000);
+
+        function updateLandingCta() {
+            try {
+                const now = new Date();
+                const moonPos = SunCalc.getMoonPosition(now, coords[0], coords[1]);
+                const altDeg = moonPos.altitude * (180 / Math.PI);
+                const isMoonUp = altDeg > -0.5;
+
+                let ch = 0, cm = 0, cs = 0;
+                if (!isMoonUp) {
+                    const moonTimes = SunCalc.getMoonTimes(now, coords[0], coords[1]);
+                    let target = moonTimes.rise;
+                    if (!target || target < now) {
+                        const tomorrow = new Date(now.getTime() + 86400000);
+                        const mt2 = SunCalc.getMoonTimes(tomorrow, coords[0], coords[1]);
+                        target = mt2.rise;
+                    }
+                    if (target && target > now) {
+                        const diff = target - now;
+                        ch = Math.floor(diff / 3600000);
+                        cm = Math.floor((diff % 3600000) / 60000);
+                        cs = Math.floor((diff % 60000) / 1000);
+                    }
+                }
+
+                renderMoonCta(heroCta, isMoonUp, ch, cm, cs, false);
+                if (bottomCta) renderMoonCta(bottomCta, isMoonUp, ch, cm, cs, true);
+            } catch(e) {
+                heroCta.innerHTML = '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Join free</button>';
+                if (bottomCta) bottomCta.innerHTML = '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Join free</button>';
+            }
+        }
+        updateLandingCta();
+        setInterval(updateLandingCta, 1000);
     }
 
     // Add Enter key handler for email input
@@ -1894,3 +1883,4 @@ function renderMessages() {
     }).join('');
 }
 
+// ========================

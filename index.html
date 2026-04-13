@@ -434,7 +434,6 @@
         <nav class="landing-nav">
             <div class="landing-nav-brand">
                 <img src="assests/logo2.png" alt="Moon Post Service">
-                <span>The World's Only Moon Postal Service</span>
             </div>
             <div class="landing-nav-actions">
                 <button class="btn-login" onclick="showAuthModal('login')">Log in</button>
@@ -559,69 +558,76 @@
             </div>
         </div>
 
-        <!-- Moonlight ambient overlay -->
-        <div class="moonrise-light" id="moonriseLight"></div>
-
-        <!-- Parallax Moonrise Landing Page -->
+        <!-- Landing Page — Dark Starfield -->
         <div class="moonrise-scroll" id="moonriseScroll">
-
-            <!-- Fixed moon (parallax — rises as user scrolls) -->
-            <div class="moonrise-moon" id="moonriseMoon">
-                <img src="assests/moon-realistic.jpg" alt="Moon" draggable="false">
-                <div class="moonrise-glow" id="moonriseGlow"></div>
-            </div>
-
-            <!-- Scrollable text content -->
             <div class="moonrise-content">
 
+                <!-- HERO -->
                 <section class="moonrise-section moonrise-hero">
-                    <p class="moonrise-tagline">The World's Only Moon Postal Service</p>
-                    <h1 class="moonrise-title"><span style="display:block">Not every message</span><span style="display:block">should arrive <span class="moonrise-accent">immediately.</span></span></h1>
-                    <p class="moonrise-subtitle">Some words deserve distance. Anticipation. A sky.</p>
-                </section>
-
-                <section class="moonrise-section">
-                    <p class="moonrise-text">Moon Post Service is the world's only moon-based messaging platform.<br>Here is how it works: a message can be sent only when the moon is above you.<br>It does not arrive instantly. It travels, and is delivered only when the moon rises for the person you sent it to.</p>
-                </section>
-
-                <section class="moonrise-section moonrise-quote">
-                    <p>That waiting is part of the feeling.</p>
-                </section>
-
-                <section class="moonrise-section">
-                    <p class="moonrise-text">Because some messages should not arrive like every other notification.<br>They should gather a little darkness around them.<br>A little time. A little longing.</p>
-                </section>
-
-                <section class="moonrise-section moonrise-quote">
-                    <p>◑</p>
-                </section>
-
-                <section class="moonrise-section">
-                    <p class="moonrise-text">There was a time when sending something meant letting it go.<br>A letter crossed distance before it arrived.<br>That distance gave it weight.<br>Instant messaging erased much of that space between us.</p>
-                </section>
-
-                <section class="moonrise-section">
-                    <p class="moonrise-text">Moon Post Service brings some of it back.<br>A small daily ritual.<br>A different way of staying close.</p>
-                </section>
-
-                <section class="moonrise-section">
-                    <p class="moonrise-text">Messages live for one lunar cycle. Like moonlight, they're not meant to be stored &mdash; they're meant to be felt.</p>
-                </section>
-
-                <section class="moonrise-section moonrise-quote">
-                    <p>◑</p>
-                </section>
-
-                <!-- Bottom CTA — moonlit -->
-                <section class="moonrise-section moonrise-cta" id="moonriseCta">
-                    <p class="moonrise-text" style="margin-bottom:24px;">Let the moon keep you close.</p>
-                    <h2 class="moonrise-cta-title" id="onboardingMoonTitle">Rising in</h2>
-                    <p id="onboardingCountdown" class="moonrise-cta-countdown"></p>
-                    <div class="moonrise-cta-buttons">
-                        <button onclick="showAuthModal('signup')" class="moonrise-btn-signup">Sign up &mdash; it's free &rarr;</button>
+                    <canvas id="landing-ring-canvas" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-48%);pointer-events:none;z-index:1;opacity:0.7;"></canvas>
+                    <p class="hero-tagline fade-in-up">The World's Only Moon Postal Service</p>
+                    <h1 class="moonrise-title fade-in-up" style="position:relative;z-index:2;"><span style="display:block">Your loved ones</span><span style="display:block">should not arrive</span><span style="display:block"><span class="moonrise-accent">like every other notification.</span></span></h1>
+                    <p class="moonrise-subtitle fade-in-up" style="position:relative;z-index:2;">Moon Post Service is the world's only moon-based postal service. No pings. No red dots. No noise. To see if you have mail from the people you love, just look at the sky.</p>
+                    <div class="hero-cta-area fade-in-up" id="heroCta" style="position:relative;z-index:2;">
+                        <!-- JS will populate based on moon state -->
                     </div>
-                    <p style="color:rgba(232,244,253,0.4);font-size:14px;font-style:italic;margin-top:40px;">Yours, under the same moon,<br><span style="color:rgba(232,244,253,0.6);font-weight:600;">Manko &amp; Yoash</span></p>
                 </section>
+
+                <!-- HOW IT WORKS -->
+                <div class="hiw-section">
+                    <div class="hiw-inner fade-in-up">
+                        <p class="hiw-title">How it works</p>
+                        <p class="hiw-text">Moon Post Service opens at moonrise and closes at moonset. During that time, you can send and receive messages. The messages you send travel with the moon and arrive when the moon rises for the person you sent them to.</p>
+                    </div>
+                </div>
+
+                <!-- MOON TRANSIT ILLUSTRATION -->
+                <div class="transit-illustration">
+                    <div class="transit-canvas-wrap">
+                        <canvas id="transitCanvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- BENEFITS -->
+                <div class="benefit-section">
+                    <div class="benefit-block fade-in-up">
+                        <h2>The moon becomes your daily ritual</h2>
+                        <p>When the moon appears, that is your moment to pause, look up, and check in on the people you love.</p>
+                    </div>
+
+                    <div class="benefit-divider" aria-hidden="true">&#9790;</div>
+
+                    <div class="benefit-block fade-in-up">
+                        <h2>Good things come slower</h2>
+                        <p>Moon messages do not arrive instantly. They travel with the moon, giving surprise, anticipation, and longing a little time to build.</p>
+                    </div>
+
+                    <div class="benefit-divider" aria-hidden="true">&#9711;</div>
+
+                    <div class="benefit-block fade-in-up">
+                        <h2>Some relationships deserve a different place</h2>
+                        <p>Some conversations do not belong in the stream of updates, logistics, and digital noise. Some relationships deserve a different light, a different rhythm, and a different place.</p>
+                    </div>
+                </div>
+
+                <!-- POSITIONING -->
+                <div class="positioning-section fade-in-up">
+                    <h2>The natural way to stay close</h2>
+                    <p>Moon Post Service makes room for a slower, more intentional way to stay close to the people you love, guided by one of the oldest rhythms humans have ever known.</p>
+                </div>
+
+                <!-- BOTTOM CTA -->
+                <div class="bottom-cta-section">
+                    <h2 class="bottom-cta-title fade-in-up">Let the moon keep you closer.</h2>
+                    <div class="fade-in-up" id="bottomCta">
+                        <!-- JS will populate based on moon state -->
+                    </div>
+                </div>
+
+                <!-- FOOTER -->
+                <footer class="landing-footer">
+                    <p class="footer-signoff">Yours, under the same moon,<br><strong>Manko &amp; Yoash</strong></p>
+                </footer>
 
             </div>
         </div>

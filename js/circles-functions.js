@@ -1,6 +1,5 @@
 // Moon Circles Functions
 
-// ============================================
 // MOON CIRCLES FUNCTIONS
 // ============================================
 let currentCircleIndex = -1;
@@ -376,3 +375,4 @@ async function createCircle() {
     closeCreateCircle();
     renderCircleRows();
 }
+
