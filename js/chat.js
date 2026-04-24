@@ -597,19 +597,39 @@ function renderConversationThread() {
     let lastDate = '';
     let transitBannerShown = false;
 
-    // Empty state: show "new cycle begins" if no messages
+    // Empty state: distinguish between never-had-messages, new-moon-in-progress,
+    // and "this conversation was wiped by the last new moon" (conv.wipedAt set).
     if (timeline.length === 0) {
-        const illum = typeof SunCalc !== 'undefined' ? SunCalc.getMoonIllumination(new Date()) : null;
-        const isNewMoon = illum && (illum.phase < 0.05 || illum.phase > 0.95);
-        const emptyTitle = isNewMoon ? 'A new cycle begins' : 'No messages yet';
-        const emptySubtitle = isNewMoon
-            ? 'Your messages faded with the last new moon.'
-            : 'Send the first moon message!';
-        html = `<div class="new-cycle-empty">
-            <div class="new-cycle-empty-icon">${iconSvg('new-moon', 'lg')}</div>
-            <div class="new-cycle-empty-title">${emptyTitle}</div>
-            <div class="new-cycle-empty-subtitle">${emptySubtitle}</div>
-        </div>`;
+        if (conv.wipedAt) {
+            // Dedicated wiped-by-new-moon state with dissolving-silhouette visual
+            const wipedDate = new Date(conv.wipedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+            const dots = Array.from({ length: 7 }, (_, i) =>
+                `<span class="wiped-particle" style="--i:${i}"></span>`
+            ).join('');
+            html = `<div class="new-cycle-empty wiped">
+                <div class="wiped-silhouettes">
+                    <div class="wiped-silhouette-row right"><span></span></div>
+                    <div class="wiped-silhouette-row left"><span></span></div>
+                    <div class="wiped-silhouette-row right"><span></span></div>
+                </div>
+                <div class="wiped-particles">${dots}</div>
+                <div class="new-cycle-empty-icon wiped-moon">${iconSvg('new-moon', 'lg')}</div>
+                <div class="new-cycle-empty-title">Wiped at the new moon</div>
+                <div class="new-cycle-empty-subtitle">This conversation dissolved with the dark moon on ${wipedDate}.</div>
+            </div>`;
+        } else {
+            const illum = typeof SunCalc !== 'undefined' ? SunCalc.getMoonIllumination(new Date()) : null;
+            const isNewMoon = illum && (illum.phase < 0.05 || illum.phase > 0.95);
+            const emptyTitle = isNewMoon ? 'A new cycle begins' : 'No messages yet';
+            const emptySubtitle = isNewMoon
+                ? 'Your messages faded with the last new moon.'
+                : 'Send the first moon message!';
+            html = `<div class="new-cycle-empty">
+                <div class="new-cycle-empty-icon">${iconSvg('new-moon', 'lg')}</div>
+                <div class="new-cycle-empty-title">${emptyTitle}</div>
+                <div class="new-cycle-empty-subtitle">${emptySubtitle}</div>
+            </div>`;
+        }
     }
 
     timeline.forEach((item, itemIndex) => {

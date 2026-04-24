@@ -1667,41 +1667,34 @@ function updateOrbitCenter() {
 }
 
 // --- New Moon Warning + Vaporize Logic ---
+//
+// There are two banners:
+//   • Right-panel banner (`#newMoonWarning`): shows only ON the new moon
+//     itself ("the new moon is here") and triggers the vaporize animation.
+//   • Inbox-top banner (`#inboxWipeBanner`): the 5-day heads-up with the
+//     actual wipe date — this is what users see leading up to the wipe.
+
 function checkNewMoonWarning() {
     const warningEl = document.getElementById('newMoonWarning');
     const warningText = document.getElementById('newMoonWarningText');
-    if (!warningEl || !warningText) return;
-
     const now = new Date();
     const illum = SunCalc.getMoonIllumination(now);
-    const phase = illum.phase; // 0 = new moon, 0.5 = full moon
-
-    // New moon = phase < 0.03 or > 0.97
+    const phase = illum.phase;
     const isNewMoon = phase < 0.03 || phase > 0.97;
-    // Approaching new moon = waning crescent (phase > 0.90)
-    const isApproaching = phase > 0.90 && !isNewMoon;
 
-    // Calculate days until new moon
-    const daysUntilNew = phase > 0.5 ? Math.round((1 - phase) * 29.53) : 0;
-
-    // Check if user dismissed today
-    const dismissKey = 'moonpop_newmoon_dismiss';
-    const dismissedDate = localStorage.getItem(dismissKey);
-    const todayStr = now.toISOString().slice(0, 10);
-    const wasDismissedToday = dismissedDate === todayStr;
-
-    if (isApproaching && !wasDismissedToday) {
-        const dayWord = daysUntilNew === 1 ? 'day' : 'days';
-        warningText.textContent = `New moon in ${daysUntilNew} ${dayWord} \u2014 your messages will fade with the moonlight`;
-        warningEl.classList.remove('hidden');
-    } else if (isNewMoon) {
-        warningText.textContent = 'The new moon is here \u2014 a new cycle begins';
-        warningEl.classList.remove('hidden');
-        // Trigger vaporize animation once per cycle
-        triggerNewMoonVaporize();
-    } else {
-        warningEl.classList.add('hidden');
+    if (warningEl && warningText) {
+        if (isNewMoon) {
+            warningText.textContent = 'The new moon is here \u2014 a new cycle begins';
+            warningEl.classList.remove('hidden');
+        } else {
+            warningEl.classList.add('hidden');
+        }
     }
+
+    if (isNewMoon) triggerNewMoonVaporize();
+
+    // Run the inbox-top heads-up on the same tick
+    try { checkInboxWipeBanner(); } catch (e) { /* no-op */ }
 }
 
 function dismissNewMoonWarning() {
@@ -1709,6 +1702,58 @@ function dismissNewMoonWarning() {
     localStorage.setItem('moonpop_newmoon_dismiss', todayStr);
     const warningEl = document.getElementById('newMoonWarning');
     if (warningEl) warningEl.classList.add('hidden');
+}
+
+// --- Inbox-top wipe heads-up (≤5 days before new moon) ---
+//
+// Shows the actual date the dark moon arrives and how many days remain.
+// Dismissal is keyed to the lunar cycle so the banner reappears the next
+// cycle rather than staying dismissed forever.
+function checkInboxWipeBanner() {
+    const bannerEl = document.getElementById('inboxWipeBanner');
+    const titleEl = document.getElementById('inboxWipeBannerTitle');
+    const subEl = document.getElementById('inboxWipeBannerSub');
+    if (!bannerEl || !titleEl || !subEl) return;
+
+    if (typeof SunCalc === 'undefined') return;
+
+    const now = new Date();
+    const illum = SunCalc.getMoonIllumination(now);
+    const phase = illum.phase;
+
+    // phase > 0.5 is waning; 1 - phase scales 0→29.53 days to next new moon.
+    // 5 days out corresponds to phase ≳ 0.83.
+    const daysUntilNew = phase > 0.5 ? (1 - phase) * 29.53 : Infinity;
+
+    if (daysUntilNew > 5) {
+        bannerEl.classList.add('hidden');
+        return;
+    }
+
+    const cycleNum = Math.floor(Date.now() / (29.53 * 24 * 3600 * 1000));
+    const dismissedCycle = localStorage.getItem('moonpop_inbox_wipe_dismiss_cycle');
+    if (dismissedCycle === String(cycleNum)) {
+        bannerEl.classList.add('hidden');
+        return;
+    }
+
+    const wipeAt = new Date(now.getTime() + daysUntilNew * 24 * 3600 * 1000);
+    const dateStr = wipeAt.toLocaleDateString(undefined, {
+        weekday: 'long', month: 'short', day: 'numeric'
+    });
+    const rounded = Math.max(1, Math.ceil(daysUntilNew));
+    const dayWord = rounded === 1 ? 'day' : 'days';
+
+    titleEl.textContent = `The dark moon rises ${dateStr}`;
+    subEl.textContent = `Your chat history dissolves with it in ${rounded} ${dayWord}. Unread messages under 7 days old are kept.`;
+    bannerEl.classList.remove('hidden');
+}
+
+function dismissInboxWipeBanner() {
+    const cycleNum = Math.floor(Date.now() / (29.53 * 24 * 3600 * 1000));
+    localStorage.setItem('moonpop_inbox_wipe_dismiss_cycle', String(cycleNum));
+    const bannerEl = document.getElementById('inboxWipeBanner');
+    if (bannerEl) bannerEl.classList.add('hidden');
 }
 
 function triggerNewMoonVaporize() {

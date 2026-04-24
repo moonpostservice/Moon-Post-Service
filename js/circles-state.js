@@ -531,6 +531,27 @@ async function loadConversationMetadata() {
 
         // 2. Fetch other participants' read_receipts (for blue checkmarks on sent messages)
         const myConvIds = conversations.map(c => c.dbConversationId).filter(Boolean);
+
+        // 2a. Fetch conversations.wiped_at so the chat empty-state can show
+        // the "new moon wiped this conversation" UI for threads whose messages
+        // were deleted by the new-moon-wipe edge function.
+        if (myConvIds.length > 0) {
+            const { data: convRows, error: convErr } = await sb.from('conversations')
+                .select('id, wiped_at')
+                .in('id', myConvIds);
+            if (convErr) {
+                console.error('conversations SELECT (wiped_at) failed:', convErr.message);
+            } else if (convRows) {
+                const wipedMap = {};
+                convRows.forEach(r => { wipedMap[r.id] = r.wiped_at; });
+                conversations.forEach(conv => {
+                    if (conv.dbConversationId) {
+                        conv.wipedAt = wipedMap[conv.dbConversationId] || null;
+                    }
+                });
+            }
+        }
+
         let otherReceiptMap = {};
         if (myConvIds.length > 0) {
             const { data: otherReceipts } = await sb.from('read_receipts')

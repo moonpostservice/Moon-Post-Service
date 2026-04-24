@@ -706,6 +706,15 @@
         <div class="split-left">
             <section class="inbox-section">
         <div class="inbox-card">
+            <!-- Inbox-top heads-up: appears ≤5 days before the new moon -->
+            <div class="inbox-wipe-banner hidden" id="inboxWipeBanner" role="status" aria-live="polite">
+                <div class="inbox-wipe-banner-icon" aria-hidden="true"></div>
+                <div class="inbox-wipe-banner-body">
+                    <div class="inbox-wipe-banner-title" id="inboxWipeBannerTitle"></div>
+                    <div class="inbox-wipe-banner-sub" id="inboxWipeBannerSub"></div>
+                </div>
+                <button class="inbox-wipe-banner-dismiss" onclick="dismissInboxWipeBanner()" aria-label="Dismiss">&#10005;</button>
+            </div>
             <div class="inbox-header">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <span class="inbox-title">INBOX</span>
