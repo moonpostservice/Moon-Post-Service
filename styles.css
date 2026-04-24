@@ -5240,6 +5240,86 @@ body.moon-down .inbox-new-msg-cta {
     50% { border-color: rgba(79, 195, 247, 0.3); }
 }
 
+/* Inbox-top wipe heads-up banner (≤5 days before the new moon) */
+.inbox-wipe-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin: 14px 16px 6px;
+    padding: 14px 16px;
+    background:
+        radial-gradient(80% 140% at 0% 0%, rgba(79, 195, 247, 0.14), transparent 70%),
+        linear-gradient(135deg, rgba(10, 22, 40, 0.85), rgba(19, 39, 68, 0.85));
+    border: 1px solid rgba(79, 195, 247, 0.22);
+    border-radius: 14px;
+    position: relative;
+    overflow: hidden;
+}
+.inbox-wipe-banner.hidden { display: none; }
+.inbox-wipe-banner::before {
+    /* thin moonlight sweep across the top edge */
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(79, 195, 247, 0.55), transparent);
+    opacity: 0.7;
+    animation: inboxWipeSheen 6s ease-in-out infinite;
+}
+@keyframes inboxWipeSheen {
+    0%, 100% { opacity: 0.25; }
+    50%      { opacity: 0.75; }
+}
+.inbox-wipe-banner-icon {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    margin-top: 2px;
+    background:
+        radial-gradient(circle at 35% 35%, rgba(232, 244, 253, 0.15), transparent 60%),
+        #0a1628;
+    border: 1px solid rgba(79, 195, 247, 0.35);
+    box-shadow:
+        inset 0 0 10px rgba(10, 22, 40, 0.9),
+        0 0 14px rgba(79, 195, 247, 0.25);
+    animation: inboxWipeMoonBreathe 5s ease-in-out infinite;
+}
+@keyframes inboxWipeMoonBreathe {
+    0%, 100% { box-shadow: inset 0 0 10px rgba(10, 22, 40, 0.9), 0 0 10px rgba(79, 195, 247, 0.18); }
+    50%      { box-shadow: inset 0 0 10px rgba(10, 22, 40, 0.9), 0 0 22px rgba(79, 195, 247, 0.45); }
+}
+.inbox-wipe-banner-body {
+    flex: 1;
+    min-width: 0;
+}
+.inbox-wipe-banner-title {
+    color: rgba(232, 244, 253, 0.92);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+}
+.inbox-wipe-banner-sub {
+    color: rgba(232, 244, 253, 0.58);
+    font-size: 12px;
+    line-height: 1.5;
+    font-style: italic;
+}
+.inbox-wipe-banner-dismiss {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: rgba(232, 244, 253, 0.35);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    line-height: 1;
+    align-self: flex-start;
+    transition: color 0.2s ease;
+}
+.inbox-wipe-banner-dismiss:hover { color: rgba(232, 244, 253, 0.85); }
+
 /* Vaporize Animation — messages dissolving at new moon */
 @keyframes vaporize {
     0% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
@@ -5286,6 +5366,105 @@ body.moon-down .inbox-new-msg-cta {
 .new-cycle-empty-subtitle {
     color: rgba(232, 244, 253, 0.35);
     font-size: 13px;
+}
+
+/* --- "Wiped by the new moon" empty state ---
+   Shown when conversations.wiped_at is set: the conversation shell survives
+   but all messages were removed at the last new moon. Ghostly silhouettes
+   of the gone messages dissolve into particles around a dark moon. */
+.new-cycle-empty.wiped {
+    position: relative;
+    padding-top: 56px;
+    overflow: hidden;
+}
+.new-cycle-empty.wiped .wiped-silhouettes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 24px;
+}
+.new-cycle-empty.wiped .wiped-silhouette-row {
+    display: flex;
+}
+.new-cycle-empty.wiped .wiped-silhouette-row.right { justify-content: flex-end; }
+.new-cycle-empty.wiped .wiped-silhouette-row.left  { justify-content: flex-start; }
+.new-cycle-empty.wiped .wiped-silhouette-row span {
+    display: block;
+    height: 28px;
+    border-radius: 14px;
+    background: linear-gradient(90deg,
+        rgba(79, 195, 247, 0.08),
+        rgba(79, 195, 247, 0.18),
+        rgba(79, 195, 247, 0.04));
+    filter: blur(0.5px);
+    animation: wiped-dissolve 4.5s ease-in-out infinite;
+}
+.new-cycle-empty.wiped .wiped-silhouette-row.right span {
+    width: 62%;
+    animation-delay: 0s;
+}
+.new-cycle-empty.wiped .wiped-silhouette-row.left span {
+    width: 48%;
+    animation-delay: 1.2s;
+}
+.new-cycle-empty.wiped .wiped-silhouette-row:nth-child(3) span {
+    width: 72%;
+    animation-delay: 2.4s;
+}
+@keyframes wiped-dissolve {
+    0%   { opacity: 0.55; transform: translateY(0) scaleX(1); filter: blur(0.5px); }
+    55%  { opacity: 0.15; transform: translateY(-6px) scaleX(1.02); filter: blur(2px); }
+    100% { opacity: 0;    transform: translateY(-14px) scaleX(0.92); filter: blur(5px); }
+}
+.new-cycle-empty.wiped .wiped-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+.new-cycle-empty.wiped .wiped-particle {
+    position: absolute;
+    left: 50%;
+    top: 58%;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(232, 244, 253, 0.7);
+    box-shadow: 0 0 6px rgba(79, 195, 247, 0.6);
+    opacity: 0;
+    transform: translate(-50%, -50%);
+    animation: wiped-particle-drift 3.8s ease-out infinite;
+    animation-delay: calc(var(--i) * 0.35s);
+}
+@keyframes wiped-particle-drift {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20%  { opacity: 0.9; }
+    100% {
+        opacity: 0;
+        transform: translate(
+            calc(-50% + (var(--i) - 3) * 32px),
+            calc(-180% + (var(--i) * -8px))
+        ) scale(0.3);
+    }
+}
+.new-cycle-empty.wiped .wiped-moon {
+    opacity: 0.55;
+    filter: drop-shadow(0 0 18px rgba(79, 195, 247, 0.35));
+    animation: wiped-moon-breathe 5s ease-in-out infinite;
+}
+@keyframes wiped-moon-breathe {
+    0%, 100% { opacity: 0.45; transform: scale(1); }
+    50%      { opacity: 0.7;  transform: scale(1.04); }
+}
+.new-cycle-empty.wiped .new-cycle-empty-title {
+    color: rgba(232, 244, 253, 0.82);
+    letter-spacing: 1px;
+}
+.new-cycle-empty.wiped .new-cycle-empty-subtitle {
+    color: rgba(232, 244, 253, 0.5);
+    max-width: 280px;
+    line-height: 1.5;
 }
 
 .split-right .main-content {
