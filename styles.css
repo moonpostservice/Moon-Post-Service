@@ -7720,12 +7720,13 @@ body.moon-down .new-message-btn {
 }
 .moonrise-accent { font-weight: 800; color: #4fc3f7; }
 .moonrise-subtitle {
-    font-size: clamp(16px, 2.2vw, 20px);
+    font-size: clamp(19px, 2.4vw, 28px);
     font-weight: 400;
-    color: rgba(255,255,255,0.9);
-    line-height: 1.8;
-    max-width: 580px;
-    margin: 0 0 48px;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.55;
+    max-width: 720px;
+    margin: 0 0 56px;
+    letter-spacing: -0.2px;
 }
 
 /* Hero CTA area — button above countdown */
@@ -7832,160 +7833,432 @@ body.moon-down .new-message-btn {
     letter-spacing: 0.3px;
 }
 
-/* ---- HOW IT WORKS ---- */
-.hiw-section {
-    padding: 60px 32px 0;
+/* ============================================ */
+/* MOTION SYSTEM                                 */
+/* ============================================ */
+.fade-in-up {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+        opacity .9s cubic-bezier(.2,.65,.2,1),
+        transform .9s cubic-bezier(.2,.65,.2,1);
+    will-change: opacity, transform;
+}
+.fade-in-up.visible {
+    opacity: 1;
+    transform: none;
+}
+.fade-in-up.visible[data-delay="1"] { transition-delay: .15s; }
+.fade-in-up.visible[data-delay="2"] { transition-delay: .32s; }
+.fade-in-up.visible[data-delay="3"] { transition-delay: .48s; }
+
+/* ============================================ */
+/* HIW — PINNED HORIZONTAL JOURNEY               */
+/* ============================================ */
+/* Outer scroll container: 3× viewport tall, drives the journey progress. */
+.hiw-journey {
+    position: relative;
+    width: 100%;
+    height: 320vh;
     border-top: 1px solid rgba(79, 195, 247, 0.08);
     border-bottom: 1px solid rgba(79, 195, 247, 0.08);
 }
-.hiw-inner {
-    max-width: 720px;
-    margin: 0 auto;
+/* Inner stage: pinned, full viewport, houses canvas + horizontal track. */
+.hiw-stage {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+}
+/* Canvas sits behind everything, fills stage. */
+.hiw-canvas-wrap {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+.hiw-canvas-wrap canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+/* Small eyebrow anchored top-center of the stage */
+.hiw-eyebrow-top {
+    position: absolute;
+    top: clamp(36px, 6vh, 72px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3.5px;
+    text-transform: uppercase;
+    color: rgba(79, 195, 247, 0.55);
+    white-space: nowrap;
+}
+/* Horizontal track of 3 copy panels — each 100vw wide, total 300vw. */
+.hiw-frames {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    width: 300vw;
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+}
+.hiw-frame {
+    width: 100vw;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 0 clamp(24px, 8vw, 120px) clamp(80px, 16vh, 160px);
+    max-width: none;
+    opacity: 0.35;
+    transition: opacity .8s cubic-bezier(.2,.65,.2,1);
+}
+.hiw-frame.active { opacity: 1; }
+.hiw-frame-step {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(79, 195, 247, 0.6);
+    margin-bottom: 20px;
+}
+.hiw-frame-title {
+    font-size: clamp(26px, 3.6vw, 46px);
+    font-weight: 300;
+    line-height: 1.25;
+    letter-spacing: -0.6px;
+    color: rgba(255,255,255,0.92);
+    max-width: 640px;
+    margin: 0;
+}
+/* Frame 2 (carry) centers its copy; frame 3 (deliver) aligns right. */
+.hiw-frame[data-frame="1"] {
+    align-items: center;
     text-align: center;
 }
-.hiw-title {
-    font-size: clamp(28px, 4vw, 42px);
-    font-weight: 300;
-    letter-spacing: -0.5px;
-    color: #4fc3f7;
-    margin: 0 0 48px;
+.hiw-frame[data-frame="1"] .hiw-frame-title { text-align: center; }
+.hiw-frame[data-frame="2"] {
+    align-items: flex-end;
+    text-align: right;
 }
-.hiw-text {
-    font-size: clamp(20px, 3.5vw, 32px);
+.hiw-frame[data-frame="2"] .hiw-frame-title { text-align: right; }
+/* Progress dots at the bottom of the stage. */
+.hiw-progress {
+    position: absolute;
+    bottom: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    gap: 10px;
+}
+.hiw-progress-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,247,214,0.25);
+    transition: background .3s ease, transform .3s ease;
+}
+.hiw-progress-dot.active {
+    background: rgba(255,247,214,0.85);
+    transform: scale(1.4);
+}
+
+/* ============================================ */
+/* BENEFITS — THREE DISTINCT SCENES              */
+/* ============================================ */
+.scene {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: clamp(60px, 12vh, 140px) clamp(24px, 6vw, 96px);
+    overflow: hidden;
+}
+.scene-copy {
+    position: relative;
+    z-index: 2;
+    max-width: 560px;
+}
+.scene-copy--left   { margin-right: auto; }
+.scene-copy--center { margin-left: auto; margin-right: auto; text-align: center; }
+.scene-copy--right  { margin-left: auto; }
+.scene-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3.5px;
+    text-transform: uppercase;
+    color: rgba(79, 195, 247, 0.55);
+    margin-bottom: 28px;
+}
+.scene-title {
+    font-size: clamp(32px, 4.6vw, 56px);
     font-weight: 300;
-    color: rgba(255,255,255,0.7);
-    line-height: 1.7;
+    color: #fff;
+    line-height: 1.12;
+    letter-spacing: -1px;
+    margin: 0 0 28px;
+}
+.scene-body {
+    font-size: clamp(17px, 1.8vw, 22px);
+    color: rgba(255,255,255,0.55);
+    line-height: 1.65;
+    font-weight: 300;
     margin: 0;
 }
 
-/* ---- MOON TRANSIT ILLUSTRATION ---- */
-.transit-illustration {
-    padding: 20px 32px;
-    display: flex;
+/* ---- Scene 1: Daily ritual — moonrise on horizon ---- */
+.scene--ritual {
+    background: linear-gradient(180deg, #05101e 0%, #0a1628 70%, #0d1c32 100%);
+}
+.scene-ritual-sky {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+.scene-ritual-horizon {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 24%;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(79, 195, 247, 0.35),
+        rgba(79, 195, 247, 0.45),
+        rgba(79, 195, 247, 0.35),
+        transparent);
+    box-shadow: 0 0 28px rgba(79, 195, 247, 0.18);
+}
+.scene-ritual-horizon::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    top: 1px;
+    height: 140px;
+    background: linear-gradient(180deg, rgba(79, 195, 247, 0.07), transparent);
+}
+.scene-ritual-moon {
+    position: absolute;
+    right: clamp(40px, 12vw, 180px);
+    bottom: 22%;
+    width: clamp(140px, 22vw, 260px);
+    height: clamp(140px, 22vw, 260px);
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 35% 35%, #ffffff 0%, #f3efe4 48%, #c6cfd9 100%);
+    box-shadow:
+        0 0 60px rgba(255, 247, 214, 0.25),
+        0 0 120px rgba(255, 247, 214, 0.12),
+        inset -10px -10px 40px rgba(100, 110, 130, 0.25);
+    transform: translateY(40%);
+    opacity: 0;
+    transition: transform 1.6s cubic-bezier(.2,.65,.2,1), opacity 1.6s cubic-bezier(.2,.65,.2,1);
+    animation: wiped-moon-breathe 5s ease-in-out infinite;
+}
+.scene--ritual.in-view .scene-ritual-moon {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* ---- Scene 2: Slower — horizontal slip drift ---- */
+.scene--slower {
+    background: linear-gradient(180deg, #0d1c32 0%, #091428 100%);
+    min-height: 110vh;
     justify-content: center;
-    align-items: center;
+    text-align: center;
 }
-.transit-canvas-wrap {
-    position: relative;
-    width: min(90vw, 900px);
-    height: min(90vw, 900px);
+.scene-slip-track {
+    position: absolute;
+    left: 0; right: 0;
+    top: 38%;
+    height: 260px;
+    pointer-events: none;
 }
-.transit-canvas-wrap canvas {
+.scene-slip-track canvas {
     width: 100%;
     height: 100%;
+    display: block;
 }
+.scene--slower .scene-copy {
+    z-index: 2;
+}
+.scene--slower .scene-body { max-width: 560px; margin: 0 auto; }
 
-@media (max-width: 480px) {
-    .transit-canvas-wrap {
-        width: 300px;
-        height: 300px;
-    }
+/* ---- Scene 3: Different place — split notification grid vs moon ---- */
+.scene--place {
+    background: linear-gradient(180deg, #091428 0%, #05101e 100%);
+    padding: 0;
+    min-height: 100vh;
 }
-
-/* ---- BENEFIT SECTIONS ---- */
-.benefit-section {
-    padding: 40px 32px 120px;
-    max-width: 800px;
-    margin: 0 auto;
+.scene-place-grid {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
 }
-.benefit-block {
-    margin-bottom: 140px;
+.scene-place-noise {
+    position: relative;
+    background: #0a1628;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(20, 1fr);
+    grid-auto-rows: 1fr;
+    gap: 4px;
+    padding: 32px;
+    align-content: start;
 }
-.benefit-block:last-child {
-    margin-bottom: 0;
+.scene-place-noise .noise-dot {
+    display: block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ff7a7d, #d93a3d);
+    transform: translate(calc(var(--jx, 0) * 4px), calc(var(--jy, 0) * 4px));
+    opacity: 0.38;
+    box-shadow: 0 0 6px rgba(255, 85, 88, 0.3);
+    animation: noise-pulse 3.4s ease-in-out infinite;
+    animation-delay: var(--d, 0s);
 }
-.benefit-block {
-    text-align: center;
+@keyframes noise-pulse {
+    0%, 100% { opacity: 0.28; }
+    50%      { opacity: 0.52; }
 }
-.benefit-label {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    color: rgba(79, 195, 247, 0.5);
-    margin-bottom: 16px;
-}
-.benefit-block h2 {
-    font-size: clamp(28px, 4.5vw, 48px);
-    font-weight: 300;
-    color: #4fc3f7;
-    line-height: 1.15;
-    letter-spacing: -1px;
-    margin: 0 0 20px;
-}
-.benefit-block p {
-    font-size: clamp(20px, 3.5vw, 32px);
-    color: rgba(255,255,255,0.45);
-    line-height: 1.7;
-    margin: 0 auto;
-    max-width: 700px;
-    font-weight: 300;
-}
-.benefit-divider {
+.scene-place-quiet {
+    position: relative;
+    background: #020811;
     display: flex;
-    justify-content: center;
     align-items: center;
-    margin: 80px 0;
-    color: rgba(79, 195, 247, 0.3);
-    font-size: 24px;
+    justify-content: center;
+    overflow: hidden;
+}
+.scene-place-moon {
+    width: clamp(160px, 20vw, 280px);
+    height: clamp(160px, 20vw, 280px);
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 38% 38%, #ffffff 0%, #f3efe4 52%, #c6cfd9 100%);
+    box-shadow:
+        0 0 80px rgba(255, 247, 214, 0.3),
+        0 0 160px rgba(255, 247, 214, 0.15),
+        inset -14px -14px 50px rgba(100, 110, 130, 0.3);
+    animation: wiped-moon-breathe 5.5s ease-in-out infinite;
+}
+.scene--place .scene-copy {
+    position: absolute;
+    right: clamp(40px, 6vw, 96px);
+    top: 50%;
+    transform: translateY(-50%);
+    max-width: 420px;
+    text-align: right;
 }
 
-/* ---- POSITIONING / MANIFESTO ---- */
+/* ============================================ */
+/* POSITIONING / PAUSE                           */
+/* ============================================ */
 .positioning-section {
-    padding: 120px 32px;
+    position: relative;
+    min-height: 100vh;
+    padding: clamp(80px, 14vh, 180px) clamp(24px, 6vw, 96px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    max-width: 720px;
-    margin: 0 auto;
-    border-top: 1px solid rgba(79, 195, 247, 0.08);
+    overflow: hidden;
+    border-top: 1px solid rgba(79, 195, 247, 0.06);
 }
+.positioning-ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.2;
+    pointer-events: none;
+}
+.positioning-inner {
+    position: relative;
+    z-index: 2;
+    max-width: 820px;
+}
+.positioning-inner .scene-eyebrow { margin-bottom: 24px; }
 .positioning-section h2 {
-    font-size: clamp(32px, 5vw, 52px);
+    font-size: clamp(40px, 6vw, 84px);
     font-weight: 300;
-    color: #4fc3f7;
-    line-height: 1.2;
-    letter-spacing: -1px;
-    margin: 0 0 24px;
+    color: #fff;
+    line-height: 1.08;
+    letter-spacing: -1.5px;
+    margin: 0 0 28px;
 }
 .positioning-section p {
-    font-size: clamp(20px, 3.5vw, 32px);
-    color: rgba(255,255,255,0.45);
-    line-height: 1.7;
+    font-size: clamp(18px, 2vw, 24px);
+    color: rgba(255,255,255,0.55);
+    line-height: 1.65;
     font-weight: 300;
     margin: 0 auto;
-    max-width: 700px;
+    max-width: 640px;
 }
 
-/* ---- BOTTOM CTA SECTION ---- */
+/* ============================================ */
+/* BOTTOM CTA                                    */
+/* ============================================ */
 .bottom-cta-section {
-    padding: 140px 32px 100px;
-    text-align: center;
+    position: relative;
+    min-height: 100vh;
+    padding: clamp(100px, 16vh, 180px) 32px clamp(60px, 10vh, 120px);
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.bottom-cta-moon-glow {
+    position: absolute;
+    left: 50%;
+    top: 48%;
+    transform: translate(-50%, -50%);
+    width: clamp(320px, 50vw, 620px);
+    height: clamp(320px, 50vw, 620px);
+    border-radius: 50%;
+    background: radial-gradient(circle,
+        rgba(255, 247, 214, 0.15) 0%,
+        rgba(79, 195, 247, 0.08) 30%,
+        rgba(79, 195, 247, 0) 70%);
+    pointer-events: none;
+    animation: wiped-moon-breathe 6s ease-in-out infinite;
+    z-index: 1;
 }
 .bottom-cta-title {
-    font-size: clamp(36px, 6vw, 60px);
+    position: relative;
+    z-index: 2;
+    font-size: clamp(36px, 6vw, 72px);
     font-weight: 300;
-    color: #4fc3f7;
-    letter-spacing: -1px;
-    margin: 0 0 24px;
+    color: #fff;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    margin: 0 0 48px;
+    text-align: center;
+    max-width: 880px;
+}
+.bottom-cta-section > .fade-in-up {
+    position: relative;
+    z-index: 2;
 }
 .bottom-cta-sub {
     font-size: clamp(16px, 2vw, 20px);
     color: rgba(255,255,255,0.4);
     margin: 0 0 40px;
 }
-.bottom-cta-countdown {
-    margin-top: 20px;
-    font-size: 15px;
-    color: rgba(255,255,255,0.35);
-}
-.bottom-cta-countdown .countdown-time {
-    font-weight: 800;
-    color: #4fc3f7;
-}
 
-/* ---- FOOTER ---- */
+/* ============================================ */
+/* FOOTER                                        */
+/* ============================================ */
 .landing-footer {
     padding: 80px 32px 48px;
     text-align: center;
@@ -8002,25 +8275,95 @@ body.moon-down .new-message-btn {
     font-style: normal;
 }
 
-/* No scroll animation — regular scroll */
-
-/* ---- RESPONSIVE ---- */
+/* ============================================ */
+/* RESPONSIVE                                    */
+/* ============================================ */
 @media (max-width: 768px) {
-    .benefit-block:nth-child(even),
-    .benefit-block:nth-child(odd) {
+    .scene {
+        padding: clamp(60px, 10vh, 100px) 24px;
+    }
+    .scene-copy--right,
+    .scene-copy--left {
+        max-width: 100%;
+    }
+    .scene--ritual .scene-ritual-moon {
+        right: 50%;
+        transform: translate(50%, 40%);
+        bottom: 14%;
+    }
+    .scene--ritual.in-view .scene-ritual-moon {
+        transform: translate(50%, 0);
+    }
+    .scene--ritual .scene-copy {
         text-align: center;
+        margin: 0 auto;
     }
-    .benefit-block:nth-child(even) p {
-        margin-left: auto;
-        margin-right: auto;
+    .scene--place {
+        padding: 0;
     }
-    .benefit-block {
-        margin-bottom: 100px;
+    .scene--place .scene-place-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 1fr;
     }
+    .scene--place .scene-copy {
+        position: static;
+        transform: none;
+        text-align: center;
+        margin: 0 auto;
+        padding: 48px 24px 64px;
+    }
+    .scene-place-noise {
+        grid-template-columns: repeat(14, 1fr);
+        padding: 20px;
+    }
+}
+@media (max-width: 640px) {
+    /* HIW collapses to vertical: drop the tall scroll container, stack frames. */
+    .hiw-journey {
+        height: auto;
+    }
+    .hiw-stage {
+        position: relative;
+        height: auto;
+    }
+    .hiw-canvas-wrap {
+        position: relative;
+        inset: auto;
+        height: 60vh;
+    }
+    .hiw-eyebrow-top {
+        position: relative;
+        top: auto;
+        left: auto;
+        transform: none;
+        padding: 32px 0 12px;
+        text-align: center;
+        width: 100%;
+    }
+    .hiw-frames {
+        position: relative;
+        inset: auto;
+        display: block;
+        width: 100%;
+        transform: none !important;
+    }
+    .hiw-frame {
+        width: 100%;
+        height: auto;
+        padding: 40px 24px 56px;
+        align-items: center !important;
+        text-align: center !important;
+        opacity: 1 !important;
+    }
+    .hiw-frame .hiw-frame-title { text-align: center !important; }
+    .hiw-progress { display: none; }
 }
 @media (max-width: 480px) {
     .moonrise-title {
         font-size: clamp(26px, 7vw, 36px);
+    }
+    .moonrise-subtitle {
+        font-size: clamp(16px, 4.4vw, 20px);
     }
     .moonrise-hero {
         padding-top: 40px;
@@ -8031,5 +8374,11 @@ body.moon-down .new-message-btn {
     .hero-cta-btn {
         padding: 14px 36px;
         font-size: 16px;
+    }
+    .scene-title {
+        font-size: clamp(26px, 7vw, 36px);
+    }
+    .positioning-section h2 {
+        font-size: clamp(28px, 8vw, 42px);
     }
 }

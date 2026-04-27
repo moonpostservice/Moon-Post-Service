@@ -566,60 +566,95 @@
                 <section class="moonrise-section moonrise-hero">
                     <canvas id="landing-ring-canvas" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-48%);pointer-events:none;z-index:1;opacity:0.7;"></canvas>
                     <p class="hero-tagline fade-in-up">The World's Only Moon Postal Service</p>
-                    <h1 class="moonrise-title fade-in-up" style="position:relative;z-index:2;"><span style="display:block">Your loved ones</span><span style="display:block">should not arrive</span><span style="display:block"><span class="moonrise-accent">like every other notification.</span></span></h1>
-                    <p class="moonrise-subtitle fade-in-up" style="position:relative;z-index:2;">Moon Post Service is the world's only moon-based postal service. No pings. No red dots. No noise. To see if you have mail from the people you love, just look at the sky.</p>
+                    <h1 class="moonrise-title fade-in-up" style="position:relative;z-index:2;"><span style="display:block">A messaging app</span><span style="display:block">that <span class="moonrise-accent">opens with the moon.</span></span></h1>
+                    <p class="moonrise-subtitle fade-in-up" style="position:relative;z-index:2;">The world's only moon-based postal service. No pings. No red dots. No noise. Just look at the sky to see if you have mail.</p>
                     <div class="hero-cta-area fade-in-up" id="heroCta" style="position:relative;z-index:2;">
                         <!-- JS will populate based on moon state -->
                     </div>
                 </section>
 
-                <!-- HOW IT WORKS -->
-                <div class="hiw-section">
-                    <div class="hiw-inner fade-in-up">
-                        <p class="hiw-title">How it works</p>
-                        <p class="hiw-text">Moon Post Service opens at moonrise and closes at moonset. During that time, you can send and receive messages. The messages you send travel with the moon and arrive when the moon rises for the person you sent them to.</p>
+                <!-- HOW IT WORKS — pinned horizontal journey -->
+                <section class="hiw-journey" id="hiwJourney" aria-label="How it works">
+                    <div class="hiw-stage">
+                        <div class="hiw-canvas-wrap">
+                            <canvas id="transitCanvas"></canvas>
+                        </div>
+                        <div class="hiw-eyebrow-top fade-in-up">How it works</div>
+                        <div class="hiw-frames" id="hiwFrames">
+                            <article class="hiw-frame" data-frame="0">
+                                <div class="hiw-frame-step">01 &middot; Open</div>
+                                <h2 class="hiw-frame-title">Moon Post Service opens at moonrise and closes at moonset.</h2>
+                            </article>
+                            <article class="hiw-frame" data-frame="1">
+                                <div class="hiw-frame-step">02 &middot; Send</div>
+                                <h2 class="hiw-frame-title">During that time, you can send and receive messages.</h2>
+                            </article>
+                            <article class="hiw-frame" data-frame="2">
+                                <div class="hiw-frame-step">03 &middot; Deliver</div>
+                                <h2 class="hiw-frame-title">The messages you send travel with the moon and arrive when the moon rises for the person you sent them to.</h2>
+                            </article>
+                        </div>
+                        <div class="hiw-progress" aria-hidden="true">
+                            <span class="hiw-progress-dot" data-i="0"></span>
+                            <span class="hiw-progress-dot" data-i="1"></span>
+                            <span class="hiw-progress-dot" data-i="2"></span>
+                        </div>
                     </div>
-                </div>
+                </section>
 
-                <!-- MOON TRANSIT ILLUSTRATION -->
-                <div class="transit-illustration">
-                    <div class="transit-canvas-wrap">
-                        <canvas id="transitCanvas"></canvas>
+                <!-- BENEFITS — three distinct scenes -->
+                <section class="scene scene--ritual" aria-label="Daily ritual">
+                    <div class="scene-ritual-sky" aria-hidden="true">
+                        <div class="scene-ritual-horizon"></div>
+                        <div class="scene-ritual-moon"></div>
                     </div>
-                </div>
-
-                <!-- BENEFITS -->
-                <div class="benefit-section">
-                    <div class="benefit-block fade-in-up">
-                        <h2>The moon becomes your daily ritual</h2>
-                        <p>When the moon appears, that is your moment to pause, look up, and check in on the people you love.</p>
+                    <div class="scene-copy scene-copy--left">
+                        <div class="scene-eyebrow fade-in-up">A daily ritual</div>
+                        <h2 class="scene-title fade-in-up" data-delay="1">The moon becomes your daily ritual</h2>
+                        <p class="scene-body fade-in-up" data-delay="2">When the moon appears, that is your moment to pause, look up, and check in on the people you love.</p>
                     </div>
+                </section>
 
-                    <div class="benefit-divider" aria-hidden="true">&#9790;</div>
-
-                    <div class="benefit-block fade-in-up">
-                        <h2>Good things come slower</h2>
-                        <p>Moon messages do not arrive instantly. They travel with the moon, giving surprise, anticipation, and longing a little time to build.</p>
+                <section class="scene scene--slower" aria-label="Good things come slower">
+                    <div class="scene-slip-track" aria-hidden="true">
+                        <canvas id="slipCanvas"></canvas>
                     </div>
-
-                    <div class="benefit-divider" aria-hidden="true">&#9711;</div>
-
-                    <div class="benefit-block fade-in-up">
-                        <h2>Some relationships deserve a different place</h2>
-                        <p>Some conversations do not belong in the stream of updates, logistics, and digital noise. Some relationships deserve a different light, a different rhythm, and a different place.</p>
+                    <div class="scene-copy scene-copy--center">
+                        <div class="scene-eyebrow fade-in-up">A slower pace</div>
+                        <h2 class="scene-title fade-in-up" data-delay="1">Good things come slower</h2>
+                        <p class="scene-body fade-in-up" data-delay="2">Moon messages do not arrive instantly. They travel with the moon, giving surprise, anticipation, and longing a little time to build.</p>
                     </div>
-                </div>
+                </section>
+
+                <section class="scene scene--place" aria-label="A different place">
+                    <div class="scene-place-grid" aria-hidden="true">
+                        <div class="scene-place-noise" id="sceneNoiseGrid"></div>
+                        <div class="scene-place-quiet">
+                            <div class="scene-place-moon"></div>
+                        </div>
+                    </div>
+                    <div class="scene-copy scene-copy--right">
+                        <div class="scene-eyebrow fade-in-up">A different place</div>
+                        <h2 class="scene-title fade-in-up" data-delay="1">Some relationships deserve a different place</h2>
+                        <p class="scene-body fade-in-up" data-delay="2">Some conversations do not belong in the stream of updates, logistics, and digital noise. Some relationships deserve a different light, a different rhythm, and a different place.</p>
+                    </div>
+                </section>
 
                 <!-- POSITIONING -->
-                <div class="positioning-section fade-in-up">
-                    <h2>The natural way to stay close</h2>
-                    <p>Moon Post Service makes room for a slower, more intentional way to stay close to the people you love, guided by one of the oldest rhythms humans have ever known.</p>
-                </div>
+                <section class="positioning-section" aria-label="The natural way to stay close">
+                    <canvas id="positioningRingCanvas" class="positioning-ring" aria-hidden="true"></canvas>
+                    <div class="positioning-inner">
+                        <div class="scene-eyebrow fade-in-up">The natural way</div>
+                        <h2 class="fade-in-up" data-delay="1">The natural way to stay close</h2>
+                        <p class="fade-in-up" data-delay="2">Moon Post Service makes room for a slower, more intentional way to stay close to the people you love, guided by one of the oldest rhythms humans have ever known.</p>
+                    </div>
+                </section>
 
                 <!-- BOTTOM CTA -->
                 <div class="bottom-cta-section">
-                    <h2 class="bottom-cta-title fade-in-up">Let the moon keep you closer.</h2>
-                    <div class="fade-in-up" id="bottomCta">
+                    <div class="bottom-cta-moon-glow" aria-hidden="true"></div>
+                    <h2 class="bottom-cta-title fade-in-up">Let the moon keep you closer</h2>
+                    <div class="fade-in-up" data-delay="1" id="bottomCta">
                         <!-- JS will populate based on moon state -->
                     </div>
                 </div>

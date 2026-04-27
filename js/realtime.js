@@ -1077,12 +1077,29 @@ function generateLandingStars() {
     setTimeout(reshuffleStars, 3000);
 }
 
+// Landing actually scrolls inside the onboarding overlay (the signed-out
+// screen takeover), not on window. Find the real scroll parent so
+// IntersectionObserver roots and scroll listeners fire correctly.
+function getLandingScrollRoot() {
+    const overlay = document.getElementById('onboardingOverlay');
+    if (overlay && overlay.scrollHeight > overlay.clientHeight + 10) return overlay;
+    // Fallback to window scroller
+    return null;
+}
+
 function initMoonriseParallax() {
-    // Scroll-based fade-in animations for editorial landing page
     const scrollContainer = document.getElementById('moonriseScroll');
     if (!scrollContainer) return;
 
-    // IntersectionObserver for fade-in-up elements (uses viewport)
+    const root = getLandingScrollRoot();
+
+    // IntersectionObserver observes against the real scroll root.
+    const ioOptions = {
+        threshold: 0.15,
+        rootMargin: '0px 0px -60px 0px',
+    };
+    if (root) ioOptions.root = root;
+
     const fadeObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -1090,19 +1107,126 @@ function initMoonriseParallax() {
                 fadeObserver.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+    }, ioOptions);
 
     document.querySelectorAll('.fade-in-up').forEach(el => {
         fadeObserver.observe(el);
     });
 
-    // Glassmorphism header scroll state
+    const sceneOptions = { threshold: 0.25 };
+    if (root) sceneOptions.root = root;
+    const sceneObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            entry.target.classList.toggle('in-view', entry.isIntersecting);
+        });
+    }, sceneOptions);
+    document.querySelectorAll('.scene').forEach(el => sceneObserver.observe(el));
+
+    // Scroll target: overlay or window.
+    const scrollTarget = root || window;
+    const getScrollY = () => root ? root.scrollTop : window.scrollY;
+
     const nav = document.querySelector('.landing-nav');
-    if (nav) {
-        window.addEventListener('scroll', () => {
-            nav.classList.toggle('scrolled', window.scrollY > 40);
-        }, { passive: true });
+    const onScroll = () => {
+        const y = getScrollY();
+        if (nav) nav.classList.toggle('scrolled', y > 40);
+        document.documentElement.style.setProperty('--scroll-y', y + 'px');
+    };
+    scrollTarget.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    // HIW horizontal journey: drive camera + track from scroll progress
+    initHiwJourneyScroll(root);
+}
+
+// ---- HIW pinned horizontal journey driver ----
+// As the user scrolls through the tall `.hiw-journey` container, we:
+//   (1) translate the inner frames track horizontally (0 → -66.66%)
+//   (2) update window.__hiwCameraTarget so the transit canvas camera
+//       pans between YOU → wide orbit → THEM in sync.
+function initHiwJourneyScroll(scrollRoot) {
+    const journey = document.getElementById('hiwJourney');
+    const track = document.getElementById('hiwFrames');
+    if (!journey || !track) return;
+
+    const dots = document.querySelectorAll('.hiw-progress-dot');
+    const frames = document.querySelectorAll('.hiw-frame');
+    const scrollTarget = scrollRoot || window;
+
+    // Camera keypoints in fractional viewport coords.
+    // cx/cy of 0.5 = canvas center. < 0.5 biases to the left side of the earth.
+    // (The YOU marker sits lower-right; zoomed camera targets it at roughly 0.58, 0.60.)
+    const KEY = [
+        { cx: 0.56, cy: 0.56, zoom: 1.5 }, // Send / YOU zoom (lower-right of globe)
+        { cx: 0.50, cy: 0.50, zoom: 1.0 }, // Carry / wide
+        { cx: 0.44, cy: 0.56, zoom: 1.5 }, // Deliver / THEM zoom (lower-left of globe)
+    ];
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function ease(t) { return t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2; }
+
+    // Check if we're in mobile stacked mode (no horizontal translation)
+    function isStacked() { return window.innerWidth <= 640; }
+
+    function getProgress() {
+        const jr = journey.getBoundingClientRect();
+        const rootRect = scrollRoot
+            ? scrollRoot.getBoundingClientRect()
+            : { top: 0, height: window.innerHeight };
+        const relTop = jr.top - rootRect.top;
+        const viewH = rootRect.height;
+        const total = jr.height - viewH;
+        if (total <= 0) return 0;
+        // Give the journey a little padding at top/bottom so raw 0 and 1 are
+        // actually reachable. Compress the active range into 0.05 → 0.95 of scroll.
+        const raw = -relTop / total;
+        const compressed = (raw - 0.05) / 0.9;
+        return Math.max(0, Math.min(1, compressed));
     }
+
+    function update() {
+        if (isStacked()) {
+            track.style.transform = '';
+            window.__hiwCameraTarget = { cx: 0.5, cy: 0.5, zoom: 1.0 };
+            frames.forEach((f) => f.classList.add('active'));
+            return;
+        }
+
+        const raw = getProgress();
+
+        // 2 segments (KEY has 3 points)
+        let seg, localT;
+        if (raw < 0.5) { seg = 0; localT = raw / 0.5; }
+        else           { seg = 1; localT = (raw - 0.5) / 0.5; }
+        const t = ease(Math.max(0, Math.min(1, localT)));
+
+        const from = KEY[seg];
+        const to = KEY[seg + 1];
+        window.__hiwCameraTarget = {
+            cx: lerp(from.cx, to.cx, t),
+            cy: lerp(from.cy, to.cy, t),
+            zoom: lerp(from.zoom, to.zoom, t),
+        };
+
+        // Track is 300vw wide (3 frames × 100vw). Shift by -raw * 200vw to move
+        // through frames 0 → 1 → 2.
+        track.style.transform = `translate3d(${(-raw * 200).toFixed(3)}vw, 0, 0)`;
+
+        const activeIdx = raw < 0.33 ? 0 : raw < 0.66 ? 1 : 2;
+        frames.forEach((f, i) => f.classList.toggle('active', i === activeIdx));
+        dots.forEach((d, i) => d.classList.toggle('active', i === activeIdx));
+    }
+
+    let ticking = false;
+    function onScroll() {
+        if (!ticking) {
+            requestAnimationFrame(() => { update(); ticking = false; });
+            ticking = true;
+        }
+    }
+    scrollTarget.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', update);
+    update();
 }
 
 function showOnboarding() {
@@ -1113,7 +1237,10 @@ function showOnboarding() {
     initMoonriseParallax();
     generateLandingStars();
     setupRingCanvas('landing-ring-canvas');
+    setupRingCanvas('positioningRingCanvas');
     initTransitIllustration();
+    if (typeof initSlipDriftScene === 'function') initSlipDriftScene();
+    if (typeof initPlaceNoiseGrid === 'function') initPlaceNoiseGrid();
 
     // Dynamic CTA based on moon state
     const heroCta = document.getElementById('heroCta');
@@ -1144,15 +1271,22 @@ function showOnboarding() {
 
         function renderMoonCta(container, isMoonUp, h, m, s, isBottom) {
             if (isMoonUp) {
+                // Moon up: same action both places, subtext differs.
+                //   Hero  → "It's free"
+                //   Bottom → "The moon is above you now."
+                const moonUpSub = isBottom ? 'The moon is above you now.' : 'It\u2019s free';
                 container.innerHTML =
                     '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Send a moon message</button>' +
-                    '<p class="hero-moon-up-label">The moon is above you now.</p>';
+                    '<p class="hero-moon-up-label">' + moonUpSub + '</p>';
             } else {
-                const sub = isBottom ? '<p class="bottom-cta-sub">Add someone you love.</p>' : '';
+                // Moon down: countdown first, then button. Button label differs.
+                //   Hero  → "Join free"
+                //   Bottom → "Add someone you love"
+                const btnLabel = isBottom ? 'Add someone you love' : 'Join free';
                 container.innerHTML =
-                    '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Join free</button>' + sub +
                     '<div class="retro-countdown-group"><p class="retro-rises-label">Your moon rises in</p>' +
-                    buildRetroCounter(h, m, s, isBottom ? 'bot' : 'hero') + '</div>';
+                    buildRetroCounter(h, m, s, isBottom ? 'bot' : 'hero') + '</div>' +
+                    '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">' + btnLabel + '</button>';
             }
         }
 
@@ -1184,7 +1318,7 @@ function showOnboarding() {
                 if (bottomCta) renderMoonCta(bottomCta, isMoonUp, ch, cm, cs, true);
             } catch(e) {
                 heroCta.innerHTML = '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Join free</button>';
-                if (bottomCta) bottomCta.innerHTML = '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Join free</button>';
+                if (bottomCta) bottomCta.innerHTML = '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Add someone you love</button>';
             }
         }
         updateLandingCta();
