@@ -80,7 +80,7 @@ function initTransitIllustration() {
         canvas.style.width = ww + 'px';
         canvas.style.height = ww + 'px';
         cx = W / 2; cy = H / 2;
-        sc = W / 840; // base scale (840 = 420*2dpr reference)
+        sc = W / 460; // base scale — illustration fills most of the canvas
         earthR = 115 * sc;
         orbitR = 185 * sc;
     }
@@ -150,135 +150,132 @@ function initTransitIllustration() {
         ctx.beginPath();
         ctx.arc(cx, cy, orbitR, 0, Math.PI * 2);
         ctx.setLineDash([10 * sc, 14 * sc]);
-        ctx.strokeStyle = 'rgba(79,195,247,0.14)';
-        ctx.lineWidth = 2 * sc;
+        ctx.strokeStyle = 'rgba(208,180,137,0.30)';
+        ctx.lineWidth = 1.4 * sc;
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.restore();
     }
 
-    // Earth SVG embedded as data URL for reliable canvas rendering
-    const earthSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><clipPath id="g"><circle cx="200" cy="200" r="195"/></clipPath></defs><circle cx="200" cy="200" r="195" fill="%232E9BD6"/><g clip-path="url(%23g)" fill="%237EC850"><path d="M168 28Q178 22 192 24Q208 26 218 34Q224 42 220 52Q214 62 204 66Q192 68 182 62Q172 56 168 46Q164 36 168 28Z"/><path d="M52 72Q58 64 68 58Q82 52 96 48Q108 46 118 50Q128 48 138 44Q148 42 158 46Q166 50 170 58Q174 66 172 76Q168 86 160 92Q154 98 152 108Q150 118 146 126Q140 134 132 140Q124 148 118 152Q112 158 104 162Q96 168 88 172Q78 176 70 172Q62 168 56 160Q48 148 42 136Q36 124 34 112Q32 100 34 88Q38 78 46 74Z"/><path d="M88 172Q94 178 98 186Q102 194 108 200Q114 206 118 214Q120 220 116 226Q112 230 106 228Q100 224 96 218Q90 210 86 202Q82 192 80 184Q80 176 84 172Z"/><path d="M106 228Q114 224 122 226Q132 230 140 238Q148 248 152 260Q154 274 152 288Q148 302 142 316Q136 330 128 342Q120 352 112 358Q104 362 98 356Q92 348 88 336Q84 322 82 308Q80 294 82 280Q84 266 88 252Q92 240 98 234Z"/><path d="M222 52Q230 48 240 50Q250 48 258 52Q266 56 272 64Q276 72 274 82Q270 88 264 92Q256 96 248 98Q240 102 234 108Q228 102 222 96Q216 88 214 78Q214 68 218 60Z"/><path d="M210 62Q214 58 218 60Q222 64 220 70Q216 74 212 72Q208 68 210 62Z"/><path d="M204 68Q208 66 210 70Q208 74 204 72Z"/><path d="M252 32Q258 28 264 32Q268 38 266 46Q262 54 256 52Q250 48 250 40Z"/><path d="M234 108Q244 104 256 106Q268 110 278 118Q288 128 294 140Q298 154 298 168Q296 184 290 198Q284 212 276 226Q268 240 258 252Q248 262 238 268Q228 272 220 266Q214 258 210 246Q206 232 206 218Q208 202 212 188Q216 174 220 160Q224 146 228 132Q230 118 232 112Z"/><path d="M302 218Q306 214 310 218Q312 228 310 238Q306 244 302 240Q298 232 302 218Z"/><path d="M278 108Q286 104 294 108Q302 114 306 122Q308 132 304 138Q298 142 290 140Q284 136 280 128Q276 118 278 108Z"/><path d="M312 118Q320 114 326 120Q332 128 334 140Q334 152 330 162Q324 170 318 166Q312 160 310 148Q308 136 308 126Z"/><path d="M338 128Q344 124 350 128Q354 136 352 144Q346 150 340 146Q336 140 338 128Z"/><path d="M272 52Q284 46 298 48Q314 50 328 54Q342 58 354 64Q364 72 368 82Q370 92 366 100Q358 108 348 112Q338 114 328 110Q316 106 306 100Q296 94 288 86Q280 78 276 68Q272 60 272 52Z"/></g></svg>';
-    const earthImg = new Image();
-    let earthReady = false;
-    earthImg.onload = () => { earthReady = true; };
-    earthImg.src = 'data:image/svg+xml,' + earthSvg;
-
     function drawEarth() {
         ctx.save();
-        if (earthReady) {
-            // SVG viewBox is 400x400, globe radius 195 in that space
-            // Scale so SVG globe radius maps to our earthR
-            const svgSize = earthR * (400 / 195);
-            ctx.drawImage(earthImg, cx - svgSize/2, cy - svgSize/2, svgSize, svgSize);
-        } else {
-            // Fallback while loading
-            ctx.beginPath();
-            ctx.arc(cx, cy, earthR, 0, Math.PI * 2);
-            ctx.fillStyle = '#2E9BD6';
-            ctx.fill();
-        }
-        ctx.restore();
-
-        // Subtle specular highlight
-        ctx.save();
+        // Earth body — matte dark navy disc
         ctx.beginPath();
         ctx.arc(cx, cy, earthR, 0, Math.PI * 2);
-        ctx.clip();
-        const shine = ctx.createRadialGradient(cx - earthR*0.3, cy - earthR*0.3, 0, cx, cy, earthR);
-        shine.addColorStop(0, 'rgba(255,255,255,0.1)');
-        shine.addColorStop(0.6, 'rgba(255,255,255,0)');
-        shine.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = shine;
+        ctx.fillStyle = 'rgba(7, 15, 30, 0.85)';
         ctx.fill();
-        ctx.restore();
-
-        // Atmosphere glow
+        // Brass rim outline
         ctx.beginPath();
-        ctx.arc(cx, cy, earthR + 4*sc, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(100,200,255,0.12)';
-        ctx.lineWidth = 2.5*sc;
+        ctx.arc(cx, cy, earthR, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(208, 180, 137, 0.55)';
+        ctx.lineWidth = 1 * sc;
         ctx.stroke();
+
+        // Inner concentric brass dotted ring (decorative — celestial instrument feel)
+        ctx.beginPath();
+        ctx.arc(cx, cy, earthR * 0.62, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(208, 180, 137, 0.22)';
+        ctx.lineWidth = 0.6 * sc;
+        ctx.setLineDash([2 * sc, 4 * sc]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Equator + meridian thin brass crosshair
+        ctx.beginPath();
+        ctx.moveTo(cx - earthR, cy);
+        ctx.lineTo(cx + earthR, cy);
+        ctx.strokeStyle = 'rgba(208, 180, 137, 0.18)';
+        ctx.lineWidth = 0.5 * sc;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - earthR);
+        ctx.lineTo(cx, cy + earthR);
+        ctx.stroke();
+
+        // Outer faint brass halo
+        ctx.beginPath();
+        ctx.arc(cx, cy, earthR + 5 * sc, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(208, 180, 137, 0.10)';
+        ctx.lineWidth = 1 * sc;
+        ctx.stroke();
+        ctx.restore();
     }
 
     function drawMoon(x, y) {
-        const moonR = 28 * sc;
-        // Glow
-        const glow = ctx.createRadialGradient(x, y, 0, x, y, moonR * 2.5);
-        glow.addColorStop(0, 'rgba(255,255,255,0.2)');
-        glow.addColorStop(0.4, 'rgba(200,220,255,0.06)');
-        glow.addColorStop(1, 'rgba(200,220,255,0)');
-        ctx.beginPath(); ctx.arc(x, y, moonR * 2.5, 0, Math.PI * 2);
+        const moonR = 24 * sc;
+        // Soft brass glow
+        const glow = ctx.createRadialGradient(x, y, 0, x, y, moonR * 2.4);
+        glow.addColorStop(0, 'rgba(212, 181, 138, 0.20)');
+        glow.addColorStop(0.45, 'rgba(212, 181, 138, 0.04)');
+        glow.addColorStop(1, 'rgba(212, 181, 138, 0)');
+        ctx.beginPath(); ctx.arc(x, y, moonR * 2.4, 0, Math.PI * 2);
         ctx.fillStyle = glow; ctx.fill();
-        // Body
-        const grad = ctx.createRadialGradient(x - moonR*0.25, y - moonR*0.25, moonR*0.1, x, y, moonR);
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.5, '#e8eef5');
-        grad.addColorStop(1, '#bccfdf');
+        // Body — ivory
         ctx.beginPath(); ctx.arc(x, y, moonR, 0, Math.PI * 2);
-        ctx.fillStyle = grad; ctx.fill();
-        // Craters
-        ctx.fillStyle = 'rgba(160,178,195,0.35)';
-        ctx.beginPath(); ctx.arc(x + 7*sc, y - 5*sc, 5*sc, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = 'rgba(160,178,195,0.25)';
-        ctx.beginPath(); ctx.arc(x - 9*sc, y + 8*sc, 4*sc, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = 'rgba(160,178,195,0.2)';
-        ctx.beginPath(); ctx.arc(x + 3*sc, y + 11*sc, 3*sc, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(234, 216, 191, 0.96)';
+        ctx.fill();
+        // Brass rim
+        ctx.beginPath(); ctx.arc(x, y, moonR, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(208, 180, 137, 0.45)';
+        ctx.lineWidth = 0.6 * sc;
+        ctx.stroke();
+        // Subtle craters
+        ctx.fillStyle = 'rgba(120, 95, 65, 0.22)';
+        ctx.beginPath(); ctx.arc(x + 6 * sc, y - 4 * sc, 3.5 * sc, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(120, 95, 65, 0.18)';
+        ctx.beginPath(); ctx.arc(x - 7 * sc, y + 6 * sc, 3 * sc, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(120, 95, 65, 0.14)';
+        ctx.beginPath(); ctx.arc(x + 2 * sc, y + 9 * sc, 2 * sc, 0, Math.PI * 2); ctx.fill();
     }
-
-    // Preload pin SVGs
-    const pinYouImg = new Image();
-    const pinThemImg = new Image();
-    let pinYouReady = false, pinThemReady = false;
-    pinYouImg.onload = () => { pinYouReady = true; };
-    pinThemImg.onload = () => { pinThemReady = true; };
-    // Standard map pin SVGs — clean Google Maps style
-    pinYouImg.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 64"><defs><filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/></filter></defs><path d="M24 62 C24 62 4 36 4 22 A20 20 0 1 1 44 22 C44 36 24 62 24 62Z" fill="#ff5558" filter="url(#s)"/><circle cx="24" cy="22" r="9" fill="white"/></svg>');
-    pinThemImg.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 64"><defs><filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.5"/></filter></defs><path d="M24 62 C24 62 4 36 4 22 A20 20 0 1 1 44 22 C44 36 24 62 24 62Z" fill="#FFD54F" filter="url(#s)"/><circle cx="24" cy="22" r="9" fill="white"/></svg>');
 
     function drawPin(px, py, color, label) {
         const s = sc;
-        const pinH = 48*s;
-        const pinW = pinH * (48/64);
-        const img = color === '#ff5558' ? pinYouImg : pinThemImg;
-        const ready = color === '#ff5558' ? pinYouReady : pinThemReady;
+        const isYou = color === '#ff5558';
+        const dotColor = isYou ? '#D4B58A' : '#EAD8BF';
+        const ringColor = isYou ? 'rgba(212,181,138,0.40)' : 'rgba(234,216,191,0.40)';
 
         ctx.save();
-        if (ready) {
-            ctx.drawImage(img, px - pinW/2, py - pinH + 6*s, pinW, pinH);
-        } else {
-            // Fallback simple circle
-            ctx.beginPath(); ctx.arc(px, py - 14*s, 10*s, 0, Math.PI*2);
-            ctx.fillStyle = color; ctx.fill();
-        }
-        // Label
-        ctx.font = '700 ' + (15*s) + 'px Satoshi, sans-serif';
+        // Subtle outer ring
+        ctx.beginPath();
+        ctx.arc(px, py, 7 * s, 0, Math.PI * 2);
+        ctx.strokeStyle = ringColor;
+        ctx.lineWidth = 0.7 * s;
+        ctx.stroke();
+        // Brass dot
+        ctx.beginPath();
+        ctx.arc(px, py, 3 * s, 0, Math.PI * 2);
+        ctx.fillStyle = dotColor;
+        ctx.fill();
+        // Label below — uses the hero serif (Cormorant Garamond)
+        ctx.font = '500 ' + (14 * s) + 'px "Cormorant Garamond", "Iowan Old Style", Georgia, serif';
         ctx.textAlign = 'center';
-        ctx.fillStyle = color;
-        ctx.fillText(label, px, py + 16*s);
+        ctx.fillStyle = dotColor;
+        ctx.fillText(label, px, py + 20 * s);
         ctx.restore();
     }
 
     function drawEnvelope(x, y, color, alpha) {
         if (alpha <= 0) return;
         const s = sc;
+        const fillColor = color === '#ff5558' ? '#D4B58A' : '#EAD8BF';
+        const glowRgb = color === '#ff5558' ? '212,181,138' : '234,216,191';
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.translate(x, y);
-        // Glow
+        // Restrained warm glow
         const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 22*s);
-        g.addColorStop(0, color === '#ff5558' ? 'rgba(255,85,88,0.3)' : 'rgba(79,195,247,0.3)');
+        g.addColorStop(0, 'rgba(' + glowRgb + ',0.28)');
         g.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.beginPath(); ctx.arc(0, 0, 22*s, 0, Math.PI*2);
         ctx.fillStyle = g; ctx.fill();
         // Envelope body
         const ew = 22*s, eh = 16*s;
         ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(-ew/2, -eh/2, ew, eh, 3*s);
+        if (ctx.roundRect) ctx.roundRect(-ew/2, -eh/2, ew, eh, 2*s);
         else { ctx.rect(-ew/2, -eh/2, ew, eh); }
-        ctx.fillStyle = color;
+        ctx.fillStyle = fillColor;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.strokeStyle = 'rgba(3,16,31,0.5)';
         ctx.lineWidth = 1*s;
         ctx.stroke();
         // Flap
@@ -286,7 +283,7 @@ function initTransitIllustration() {
         ctx.moveTo(-ew/2 + 2*s, -eh/2 + 1*s);
         ctx.lineTo(0, 2*s);
         ctx.lineTo(ew/2 - 2*s, -eh/2 + 1*s);
-        ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+        ctx.strokeStyle = 'rgba(3,16,31,0.55)';
         ctx.lineWidth = 1.2*s;
         ctx.stroke();
         ctx.restore();
@@ -295,11 +292,11 @@ function initTransitIllustration() {
     function drawTrail(color) {
         for (let i = 0; i < trail.length; i++) {
             const p = trail[i];
-            const alpha = (1 - i / trail.length) * 0.35;
+            const alpha = (1 - i / trail.length) * 0.32;
             const size = (1 - i / trail.length) * 4 * sc + 1;
             ctx.beginPath();
             ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
-            const c = color === '#ff5558' ? '255,85,88' : '79,195,247';
+            const c = color === '#ff5558' ? '212,181,138' : '234,216,191';
             ctx.fillStyle = 'rgba(' + c + ',' + alpha + ')';
             ctx.fill();
         }

@@ -1130,29 +1130,28 @@ function showOnboarding() {
         };
         const coords = tzCoords[tz] || [32.08, 34.78];
 
-        function buildRetroCounter(h, m, s, idPrefix) {
+        function buildBrassCounter(h, m, s) {
             const pad = (n) => String(n).padStart(2, '0');
             const hh = pad(h), mm = pad(m), ss = pad(s);
-            return '<div class="retro-counter">' +
-                '<div class="retro-counter-unit"><div class="retro-counter-group"><span class="retro-digit">' + hh[0] + '</span><span class="retro-digit">' + hh[1] + '</span></div><div class="retro-label">hrs</div></div>' +
-                '<span class="retro-separator">:</span>' +
-                '<div class="retro-counter-unit"><div class="retro-counter-group"><span class="retro-digit">' + mm[0] + '</span><span class="retro-digit">' + mm[1] + '</span></div><div class="retro-label">min</div></div>' +
-                '<span class="retro-separator">:</span>' +
-                '<div class="retro-counter-unit"><div class="retro-counter-group"><span class="retro-digit">' + ss[0] + '</span><span class="retro-digit">' + ss[1] + '</span></div><div class="retro-label">sec</div></div>' +
+            return '<div class="ed-counter">' +
+                '<div class="ed-counter-unit"><div class="ed-counter-digits"><span class="ed-digit">' + hh[0] + '</span><span class="ed-digit">' + hh[1] + '</span></div><span class="ed-digit-label">hrs</span></div>' +
+                '<span class="ed-counter-sep">:</span>' +
+                '<div class="ed-counter-unit"><div class="ed-counter-digits"><span class="ed-digit">' + mm[0] + '</span><span class="ed-digit">' + mm[1] + '</span></div><span class="ed-digit-label">min</span></div>' +
+                '<span class="ed-counter-sep">:</span>' +
+                '<div class="ed-counter-unit"><div class="ed-counter-digits"><span class="ed-digit">' + ss[0] + '</span><span class="ed-digit">' + ss[1] + '</span></div><span class="ed-digit-label">sec</span></div>' +
             '</div>';
         }
 
         function renderMoonCta(container, isMoonUp, h, m, s, isBottom) {
             if (isMoonUp) {
+                const subline = isBottom ? 'The moon is above you now' : 'It’s free';
                 container.innerHTML =
-                    '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Send a moon message</button>' +
-                    '<p class="hero-moon-up-label">The moon is above you now.</p>';
+                    '<button class="ed-cta-link" onclick="showAuthModal(\'signup\')">Send a moon message</button>' +
+                    '<p class="ed-cta-subline">' + subline + '</p>';
             } else {
-                const sub = isBottom ? '<p class="bottom-cta-sub">Add someone you love.</p>' : '';
                 container.innerHTML =
-                    '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Join free</button>' + sub +
-                    '<div class="retro-countdown-group"><p class="retro-rises-label">Your moon rises in</p>' +
-                    buildRetroCounter(h, m, s, isBottom ? 'bot' : 'hero') + '</div>';
+                    '<div class="ed-countdown-row"><span class="ed-countdown-label">Your moon rises in</span>' + buildBrassCounter(h, m, s) + '</div>' +
+                    '<button class="ed-cta-link" onclick="showAuthModal(\'signup\')">' + (isBottom ? 'Add someone you love' : 'Join free') + '</button>';
             }
         }
 
@@ -1183,8 +1182,8 @@ function showOnboarding() {
                 renderMoonCta(heroCta, isMoonUp, ch, cm, cs, false);
                 if (bottomCta) renderMoonCta(bottomCta, isMoonUp, ch, cm, cs, true);
             } catch(e) {
-                heroCta.innerHTML = '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Join free</button>';
-                if (bottomCta) bottomCta.innerHTML = '<button class="hero-cta-btn" onclick="showAuthModal(\'signup\')">Join free</button>';
+                heroCta.innerHTML = '<button class="ed-cta-link" onclick="showAuthModal(\'signup\')">Join free</button>';
+                if (bottomCta) bottomCta.innerHTML = '<button class="ed-cta-link" onclick="showAuthModal(\'signup\')">Add someone you love</button>';
             }
         }
         updateLandingCta();

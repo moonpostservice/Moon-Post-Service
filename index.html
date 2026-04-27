@@ -18,6 +18,9 @@
     <meta name="twitter:title" content="Moon Post Service">
     <meta name="twitter:description" content="Messages released by the moon.">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="/styles.css">
@@ -433,12 +436,15 @@
         <!-- Sticky header -->
         <nav class="landing-nav">
             <div class="landing-nav-brand">
-                <img src="assests/logo2.png" alt="Moon Post Service">
+                <span class="landing-wordmark">Moon Post Service</span>
             </div>
             <div class="landing-nav-actions">
-                <button class="btn-login" onclick="showAuthModal('login')">Log in</button>
-                <button class="btn-signup" onclick="showAuthModal('signup')">Sign up</button>
+                <a class="landing-nav-link" href="#how-it-works">How it works</a>
+                <a class="landing-nav-link" href="#about">About</a>
+                <button class="landing-nav-link landing-nav-login" onclick="showAuthModal('login')">Log in</button>
+                <button class="landing-nav-signup" onclick="showAuthModal('signup')">Sign up</button>
             </div>
+            <button class="landing-nav-mobile-btn" onclick="showAuthModal('signup')">Sign up</button>
         </nav>
 
         <!-- Auth modal (popup overlay) -->
@@ -558,75 +564,345 @@
             </div>
         </div>
 
-        <!-- Landing Page — Dark Starfield -->
-        <div class="moonrise-scroll" id="moonriseScroll">
+        <!-- Landing Page — Editorial Lunar -->
+        <div class="moonrise-scroll editorial-landing" id="moonriseScroll">
             <div class="moonrise-content">
 
                 <!-- HERO -->
-                <section class="moonrise-section moonrise-hero">
-                    <canvas id="landing-ring-canvas" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-48%);pointer-events:none;z-index:1;opacity:0.7;"></canvas>
-                    <p class="hero-tagline fade-in-up">The World's Only Moon Postal Service</p>
-                    <h1 class="moonrise-title fade-in-up" style="position:relative;z-index:2;"><span style="display:block">Your loved ones</span><span style="display:block">should not arrive</span><span style="display:block"><span class="moonrise-accent">like every other notification.</span></span></h1>
-                    <p class="moonrise-subtitle fade-in-up" style="position:relative;z-index:2;">Moon Post Service is the world's only moon-based postal service. No pings. No red dots. No noise. To see if you have mail from the people you love, just look at the sky.</p>
-                    <div class="hero-cta-area fade-in-up" id="heroCta" style="position:relative;z-index:2;">
-                        <!-- JS will populate based on moon state -->
+                <section class="ed-hero">
+                    <div class="ed-hero-grid">
+                        <div class="ed-hero-text">
+                            <h1 class="ed-hero-title fade-in-up">Let the moon keep you closer.</h1>
+                            <p class="ed-hero-sub fade-in-up">Moon Post Service is a messaging app that opens with the moon. No pings. No red dots. No noise. Just look at the sky to see if you have mail.</p>
+                            <div class="ed-hero-cta fade-in-up" id="heroCta">
+                                <!-- JS populates based on moon state -->
+                            </div>
+                        </div>
+                        <div class="ed-hero-art" aria-hidden="true">
+                            <svg class="ed-hero-moon-svg" viewBox="0 0 360 360">
+                                <defs>
+                                    <radialGradient id="edHeroOuterGlow" cx="50%" cy="50%" r="50%">
+                                        <stop offset="0%" stop-color="rgba(212,181,138,0.10)"/>
+                                        <stop offset="55%" stop-color="rgba(212,181,138,0.03)"/>
+                                        <stop offset="100%" stop-color="rgba(212,181,138,0)"/>
+                                    </radialGradient>
+                                    <radialGradient id="edHeroCresGlow" cx="68%" cy="50%" r="32%">
+                                        <stop offset="0%" stop-color="rgba(245,225,180,0.22)"/>
+                                        <stop offset="60%" stop-color="rgba(245,225,180,0.04)"/>
+                                        <stop offset="100%" stop-color="rgba(245,225,180,0)"/>
+                                    </radialGradient>
+                                    <radialGradient id="edHeroEarthshine" cx="40%" cy="40%" r="70%">
+                                        <stop offset="0%" stop-color="rgba(78,62,42,0.55)"/>
+                                        <stop offset="55%" stop-color="rgba(38,30,20,0.70)"/>
+                                        <stop offset="100%" stop-color="rgba(10,7,5,0.85)"/>
+                                    </radialGradient>
+                                    <linearGradient id="edHeroCresFill" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="rgba(225,205,170,0.85)"/>
+                                        <stop offset="55%" stop-color="rgba(248,232,200,0.96)"/>
+                                        <stop offset="100%" stop-color="rgba(255,245,220,1)"/>
+                                    </linearGradient>
+                                    <filter id="edMoonNoise" x="-10%" y="-10%" width="120%" height="120%">
+                                        <feTurbulence type="fractalNoise" baseFrequency="2.4" numOctaves="2" seed="3"/>
+                                        <feColorMatrix values="0 0 0 0 0.85  0 0 0 0 0.78  0 0 0 0 0.62  0 0 0 0.18 0"/>
+                                        <feComposite in2="SourceGraphic" operator="in"/>
+                                    </filter>
+                                </defs>
+
+                                <!-- Wrapping group so the entire moon drifts as one -->
+                                <g class="ed-hero-moon-grp">
+                                    <!-- Outer halo -->
+                                    <circle cx="180" cy="180" r="178" fill="url(#edHeroOuterGlow)"/>
+
+                                    <!-- Crescent glow halo focused on right edge -->
+                                    <circle cx="180" cy="180" r="162" fill="url(#edHeroCresGlow)"/>
+
+                                    <!-- The moon disc — earthshine on the dark side -->
+                                    <circle cx="180" cy="180" r="125" fill="url(#edHeroEarthshine)"/>
+
+                                    <!-- Subtle earthshine maria/craters on dark side (rustic, irregular) -->
+                                    <g opacity="0.32">
+                                        <ellipse cx="155" cy="158" rx="16" ry="13" fill="rgba(72,56,38,0.65)"/>
+                                        <ellipse cx="125" cy="205" rx="10" ry="8" fill="rgba(72,56,38,0.55)"/>
+                                        <ellipse cx="172" cy="222" rx="7" ry="5" fill="rgba(72,56,38,0.45)"/>
+                                        <circle cx="195" cy="135" r="3" fill="rgba(72,56,38,0.45)"/>
+                                        <circle cx="100" cy="175" r="2.4" fill="rgba(72,56,38,0.40)"/>
+                                        <circle cx="142" cy="248" r="3.2" fill="rgba(72,56,38,0.40)"/>
+                                        <circle cx="110" cy="140" r="1.8" fill="rgba(72,56,38,0.30)"/>
+                                    </g>
+
+                                    <!-- Faint rim outline so the full disc is hinted -->
+                                    <circle cx="180" cy="180" r="125" fill="none" stroke="rgba(212,181,138,0.20)" stroke-width="0.6"/>
+
+                                    <!-- The bright thin crescent on the right (waxing), with rustic gradient -->
+                                    <path d="M180,55 A125,125 0 1,1 180,305 A116,125 0 1,0 180,55 Z" fill="url(#edHeroCresFill)"/>
+
+                                    <!-- Rustic noise texture on the crescent -->
+                                    <path d="M180,55 A125,125 0 1,1 180,305 A116,125 0 1,0 180,55 Z" fill="rgba(180,150,110,0.15)" filter="url(#edMoonNoise)"/>
+
+                                    <!-- Tiny crater shadows on the lit crescent -->
+                                    <g opacity="0.28">
+                                        <ellipse cx="262" cy="172" rx="3.2" ry="2.4" fill="rgba(120,95,65,0.7)"/>
+                                        <ellipse cx="248" cy="220" rx="2.6" ry="2" fill="rgba(120,95,65,0.65)"/>
+                                        <ellipse cx="255" cy="135" rx="2" ry="1.6" fill="rgba(120,95,65,0.55)"/>
+                                        <ellipse cx="270" cy="195" rx="1.8" ry="1.4" fill="rgba(120,95,65,0.5)"/>
+                                    </g>
+
+                                </g>
+
+                                <!-- Faint outer orbit ring — gentle slow rotation only -->
+                                <circle class="ed-hero-moon-orbit" cx="180" cy="180" r="170" fill="none" stroke="rgba(208,180,137,0.12)" stroke-width="0.6" stroke-dasharray="2 7"/>
+                            </svg>
+                        </div>
                     </div>
                 </section>
 
-                <!-- HOW IT WORKS -->
-                <div class="hiw-section">
-                    <div class="hiw-inner fade-in-up">
-                        <p class="hiw-title">How it works</p>
-                        <p class="hiw-text">Moon Post Service opens at moonrise and closes at moonset. During that time, you can send and receive messages. The messages you send travel with the moon and arrive when the moon rises for the person you sent them to.</p>
-                    </div>
+                <div class="ed-horizon" aria-hidden="true">
+                    <svg viewBox="0 0 1600 380" preserveAspectRatio="none">
+                        <defs>
+                            <!-- ONE light source — fades fully to 0 well within the viewBox so no hard edge -->
+                            <radialGradient id="edHorizonLight" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%"   stop-color="rgba(255,228,175,0.78)"/>
+                                <stop offset="6%"   stop-color="rgba(250,212,160,0.62)"/>
+                                <stop offset="14%"  stop-color="rgba(235,190,140,0.42)"/>
+                                <stop offset="26%"  stop-color="rgba(215,170,120,0.24)"/>
+                                <stop offset="42%"  stop-color="rgba(195,155,108,0.12)"/>
+                                <stop offset="60%"  stop-color="rgba(180,140,98,0.05)"/>
+                                <stop offset="80%"  stop-color="rgba(170,130,90,0.015)"/>
+                                <stop offset="100%" stop-color="rgba(160,125,85,0)"/>
+                            </radialGradient>
+
+                            <!-- Stroke gradient: line fades to transparent at both edges, brightest at the light source -->
+                            <linearGradient id="edHorizonLine" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%"   stop-color="rgba(245,210,160,0)"/>
+                                <stop offset="8%"   stop-color="rgba(245,210,160,0.18)"/>
+                                <stop offset="30%"  stop-color="rgba(245,210,160,0.55)"/>
+                                <stop offset="62%"  stop-color="rgba(255,232,185,1)"/>
+                                <stop offset="85%"  stop-color="rgba(245,210,160,0.45)"/>
+                                <stop offset="96%"  stop-color="rgba(245,210,160,0.10)"/>
+                                <stop offset="100%" stop-color="rgba(245,210,160,0)"/>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- One holistic light source: center sits AT the ridge, gradient fades fully to 0
+                             before reaching the viewBox edges, so no hard clipping line at top. -->
+                        <ellipse cx="992" cy="270" rx="1050" ry="270" fill="url(#edHorizonLight)"/>
+
+                        <!-- Sparse stars high in the sky (outside the bright zone) -->
+                        <g fill="rgba(255,245,225,0.40)">
+                            <circle cx="180" cy="80" r="0.6"/>
+                            <circle cx="420" cy="58" r="0.5"/>
+                            <circle cx="640" cy="98" r="0.7"/>
+                            <circle cx="1300" cy="62" r="0.5"/>
+                            <circle cx="1480" cy="118" r="0.6"/>
+                        </g>
+
+                        <!-- Hill silhouette — uses the SAME color as the page bg (--bg #030A18) so it
+                             blends seamlessly into the page below, with no visible bottom seam.
+                             The silhouette is still visible against the warm glow above. -->
+                        <path d="M0,295
+                                 C90,265 180,310 280,283
+                                 C380,256 460,308 560,278
+                                 C660,250 760,300 850,270
+                                 C920,247 980,278 1060,260
+                                 C1140,275 1230,310 1320,288
+                                 C1410,266 1490,298 1560,280
+                                 C1580,274 1592,284 1600,282
+                                 L1600,380 L0,380 Z"
+                              fill="#030A18"/>
+
+                        <!-- Glowing rim line — fades at edges via gradient stroke -->
+                        <path d="M0,295
+                                 C90,265 180,310 280,283
+                                 C380,256 460,308 560,278
+                                 C660,250 760,300 850,270
+                                 C920,247 980,278 1060,260
+                                 C1140,275 1230,310 1320,288
+                                 C1410,266 1490,298 1560,280
+                                 C1580,274 1592,284 1600,282"
+                              fill="none"
+                              stroke="url(#edHorizonLine)"
+                              stroke-width="1.5"
+                              stroke-linecap="round"/>
+                    </svg>
                 </div>
 
-                <!-- MOON TRANSIT ILLUSTRATION -->
-                <div class="transit-illustration">
-                    <div class="transit-canvas-wrap">
+                <!-- HOW IT WORKS -->
+                <section class="ed-hiw" id="how-it-works">
+                    <h2 class="ed-section-title fade-in-up">How it works</h2>
+                    <div class="ed-hiw-grid">
+                        <div class="ed-hiw-step fade-in-up">
+                            <div class="ed-illo ed-illo-horizon">
+                                <svg viewBox="0 0 120 120" aria-hidden="true">
+                                    <!-- Outer ring container -->
+                                    <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(208,180,137,0.30)" stroke-width="0.6"/>
+                                    <!-- Clip the moon to the area ABOVE the horizon line so it appears to set/rise behind it -->
+                                    <defs>
+                                        <clipPath id="hiwClip1">
+                                            <rect x="6" y="6" width="108" height="72"/>
+                                        </clipPath>
+                                    </defs>
+                                    <g clip-path="url(#hiwClip1)">
+                                        <!-- Moon (ring + crescent spot, matching the hero moon style) — rises and sets -->
+                                        <g class="ed-illo-moon-rise">
+                                            <circle cx="60" cy="78" r="15" fill="none" stroke="rgba(212,181,138,0.65)" stroke-width="0.9"/>
+                                            <circle cx="60" cy="78" r="19" fill="none" stroke="rgba(212,181,138,0.30)" stroke-width="0.4" stroke-dasharray="0.6 1.6"/>
+                                            <circle cx="68" cy="78" r="3.2" fill="rgba(245,228,185,0.95)"/>
+                                        </g>
+                                    </g>
+                                    <!-- Horizon line + faint reflection -->
+                                    <line x1="20" y1="78" x2="100" y2="78" stroke="rgba(208,180,137,0.65)" stroke-width="0.8"/>
+                                    <path d="M22,84 Q40,80 60,84 T98,84" fill="none" stroke="rgba(208,180,137,0.20)" stroke-width="0.5"/>
+                                </svg>
+                            </div>
+                            <p class="ed-hiw-num">01</p>
+                            <p class="ed-hiw-text">Moon Post Service opens at moonrise and closes at moonset.</p>
+                        </div>
+                        <div class="ed-hiw-step fade-in-up">
+                            <div class="ed-illo ed-illo-window">
+                                <svg viewBox="0 0 120 120" aria-hidden="true">
+                                    <!-- Outer ring -->
+                                    <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(208,180,137,0.30)" stroke-width="0.6"/>
+                                    <!-- Moon at top (ring + crescent spot style) -->
+                                    <circle cx="60" cy="36" r="15" fill="none" stroke="rgba(212,181,138,0.65)" stroke-width="0.9"/>
+                                    <circle cx="60" cy="36" r="19" fill="none" stroke="rgba(212,181,138,0.30)" stroke-width="0.4" stroke-dasharray="0.6 1.6"/>
+                                    <circle cx="68" cy="36" r="3.2" fill="rgba(245,228,185,0.95)"/>
+                                    <!-- Faint trajectory dashed line from sender at bottom up to moon -->
+                                    <line x1="60" y1="92" x2="60" y2="55" stroke="rgba(208,180,137,0.22)" stroke-width="0.6" stroke-dasharray="2 3"/>
+                                    <!-- Sender point at bottom -->
+                                    <circle cx="60" cy="92" r="2.4" fill="rgba(212,181,138,0.75)"/>
+                                    <circle cx="60" cy="92" r="5" fill="none" stroke="rgba(212,181,138,0.30)" stroke-width="0.5"/>
+                                    <!-- Sparkle symbol rising from sender to moon -->
+                                    <g class="ed-illo-sending">
+                                        <path d="M0,-7 L1.6,-1.8 L7,0 L1.6,1.8 L0,7 L-1.6,1.8 L-7,0 L-1.6,-1.8 Z" fill="rgba(245,228,185,0.95)"/>
+                                        <circle r="9" fill="none" stroke="rgba(245,228,185,0.18)" stroke-width="0.3"/>
+                                    </g>
+                                </svg>
+                            </div>
+                            <p class="ed-hiw-num">02</p>
+                            <p class="ed-hiw-text">During that time, you can send and receive messages.</p>
+                        </div>
+                        <div class="ed-hiw-step fade-in-up">
+                            <div class="ed-illo ed-illo-delivery">
+                                <svg viewBox="0 0 120 120" aria-hidden="true">
+                                    <!-- Outer ring container -->
+                                    <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(208,180,137,0.30)" stroke-width="0.6"/>
+                                    <!-- Brass dashed orbit -->
+                                    <circle cx="60" cy="60" r="36" fill="none" stroke="rgba(208,180,137,0.50)" stroke-width="0.6" stroke-dasharray="1.5 3"/>
+                                    <!-- Single small moon traveling along the orbit. Sits exactly on the orbit ring (cy=24, radius 36). -->
+                                    <g class="ed-illo-orbit-moon">
+                                        <g class="ed-orbiting-moon">
+                                            <circle cx="60" cy="24" r="6" fill="rgba(245,228,185,0.95)"/>
+                                            <circle cx="60" cy="24" r="6" fill="none" stroke="rgba(212,181,138,0.55)" stroke-width="0.5"/>
+                                        </g>
+                                    </g>
+                                </svg>
+                            </div>
+                            <p class="ed-hiw-num">03</p>
+                            <p class="ed-hiw-text">The messages you send travel with the moon and arrive when the moon rises for the person you sent them to.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- MOON TRANSIT (existing canvas, kept) -->
+                <section class="ed-transit">
+                    <p class="ed-transit-caption fade-in-up">A letter, carried by the moon — from your sky to theirs.</p>
+                    <div class="ed-transit-frame">
                         <canvas id="transitCanvas"></canvas>
                     </div>
-                </div>
+                </section>
 
-                <!-- BENEFITS -->
-                <div class="benefit-section">
-                    <div class="benefit-block fade-in-up">
-                        <h2>The moon becomes your daily ritual</h2>
-                        <p>When the moon appears, that is your moment to pause, look up, and check in on the people you love.</p>
+                <!-- SUPPORTING SECTIONS -->
+                <section class="ed-benefits" id="about">
+                    <div class="ed-benefit-card fade-in-up">
+                        <div class="ed-illo ed-illo-ritual">
+                            <svg viewBox="0 0 120 120" aria-hidden="true">
+                                <line x1="14" y1="84" x2="106" y2="84" stroke="rgba(208,180,137,0.55)" stroke-width="0.7"/>
+                                <path d="M14,88 Q60,82 106,88" fill="none" stroke="rgba(208,180,137,0.22)" stroke-width="0.5"/>
+                                <circle class="ed-illo-soft" cx="60" cy="58" r="22" fill="rgba(234,216,191,0.85)"/>
+                                <circle cx="60" cy="58" r="22" fill="none" stroke="rgba(208,180,137,0.30)" stroke-width="0.5"/>
+                                <circle cx="60" cy="58" r="34" fill="none" stroke="rgba(208,180,137,0.18)" stroke-width="0.5" stroke-dasharray="1 3"/>
+                            </svg>
+                        </div>
+                        <h3 class="ed-benefit-title">The moon becomes your daily ritual</h3>
+                        <p class="ed-benefit-body">When the moon appears, that is your moment to pause, look up, and check in on the people you love.</p>
                     </div>
 
-                    <div class="benefit-divider" aria-hidden="true">&#9790;</div>
-
-                    <div class="benefit-block fade-in-up">
-                        <h2>Good things come slower</h2>
-                        <p>Moon messages do not arrive instantly. They travel with the moon, giving surprise, anticipation, and longing a little time to build.</p>
+                    <div class="ed-benefit-card fade-in-up">
+                        <div class="ed-illo ed-illo-slow">
+                            <svg viewBox="0 0 120 120" aria-hidden="true">
+                                <defs>
+                                    <!-- Hidden path that mirrors the orbit ellipse — traveler follows this -->
+                                    <path id="edSlowOrbitPath" d="M 108 60 A 48 22 0 1 1 12 60 A 48 22 0 1 1 108 60 Z"/>
+                                </defs>
+                                <ellipse class="ed-illo-orbit-slow" cx="60" cy="60" rx="48" ry="22" fill="none" stroke="rgba(208,180,137,0.55)" stroke-width="0.7" stroke-dasharray="2 4"/>
+                                <ellipse cx="60" cy="60" rx="34" ry="14" fill="none" stroke="rgba(208,180,137,0.30)" stroke-width="0.5"/>
+                                <circle cx="60" cy="60" r="6" fill="rgba(234,216,191,0.85)"/>
+                                <!-- Traveler follows the ellipse path via SMIL motion -->
+                                <circle r="2.8" fill="rgba(245,228,185,0.95)">
+                                    <animateMotion dur="14s" repeatCount="indefinite" rotate="auto">
+                                        <mpath href="#edSlowOrbitPath"/>
+                                    </animateMotion>
+                                </circle>
+                            </svg>
+                        </div>
+                        <h3 class="ed-benefit-title">Good things come slower</h3>
+                        <p class="ed-benefit-body">Moon messages do not arrive instantly. They travel with the moon, giving surprise, anticipation, and longing a little time to build.</p>
                     </div>
 
-                    <div class="benefit-divider" aria-hidden="true">&#9711;</div>
-
-                    <div class="benefit-block fade-in-up">
-                        <h2>Some relationships deserve a different place</h2>
-                        <p>Some conversations do not belong in the stream of updates, logistics, and digital noise. Some relationships deserve a different light, a different rhythm, and a different place.</p>
+                    <div class="ed-benefit-card fade-in-up">
+                        <div class="ed-illo ed-illo-quiet">
+                            <svg viewBox="0 0 120 120" aria-hidden="true">
+                                <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(208,180,137,0.30)" stroke-width="0.5" stroke-dasharray="1 4"/>
+                                <line x1="34" y1="42" x2="86" y2="78" stroke="rgba(208,180,137,0.22)" stroke-width="0.4"/>
+                                <line x1="78" y1="40" x2="46" y2="80" stroke="rgba(208,180,137,0.22)" stroke-width="0.4"/>
+                                <!-- Constellation stars — radius + opacity + color animated for noticeable pulse -->
+                                <circle cx="34" cy="42" r="1.8" fill="rgba(212,181,138,0.85)">
+                                    <animate attributeName="r" values="1.5;3.5;1.5" dur="4.5s" repeatCount="indefinite"/>
+                                    <animate attributeName="opacity" values="0.4;1;0.4" dur="4.5s" repeatCount="indefinite"/>
+                                    <animate attributeName="fill" values="rgba(212,181,138,0.85);rgba(255,235,200,1);rgba(212,181,138,0.85)" dur="4.5s" repeatCount="indefinite"/>
+                                </circle>
+                                <circle cx="86" cy="78" r="2.2" fill="rgba(212,181,138,0.95)">
+                                    <animate attributeName="r" values="1.6;3.8;1.6" dur="4.5s" begin="0.9s" repeatCount="indefinite"/>
+                                    <animate attributeName="opacity" values="0.4;1;0.4" dur="4.5s" begin="0.9s" repeatCount="indefinite"/>
+                                    <animate attributeName="fill" values="rgba(212,181,138,0.85);rgba(255,235,200,1);rgba(212,181,138,0.85)" dur="4.5s" begin="0.9s" repeatCount="indefinite"/>
+                                </circle>
+                                <circle cx="78" cy="40" r="1.6" fill="rgba(212,181,138,0.75)">
+                                    <animate attributeName="r" values="1.3;3;1.3" dur="4.5s" begin="1.8s" repeatCount="indefinite"/>
+                                    <animate attributeName="opacity" values="0.4;1;0.4" dur="4.5s" begin="1.8s" repeatCount="indefinite"/>
+                                    <animate attributeName="fill" values="rgba(212,181,138,0.85);rgba(255,235,200,1);rgba(212,181,138,0.85)" dur="4.5s" begin="1.8s" repeatCount="indefinite"/>
+                                </circle>
+                                <circle cx="46" cy="80" r="1.4" fill="rgba(212,181,138,0.65)">
+                                    <animate attributeName="r" values="1.2;2.8;1.2" dur="4.5s" begin="2.7s" repeatCount="indefinite"/>
+                                    <animate attributeName="opacity" values="0.4;1;0.4" dur="4.5s" begin="2.7s" repeatCount="indefinite"/>
+                                    <animate attributeName="fill" values="rgba(212,181,138,0.85);rgba(255,235,200,1);rgba(212,181,138,0.85)" dur="4.5s" begin="2.7s" repeatCount="indefinite"/>
+                                </circle>
+                                <circle cx="60" cy="60" r="8" fill="rgba(234,216,191,0.85)"/>
+                            </svg>
+                        </div>
+                        <h3 class="ed-benefit-title">Some relationships deserve a different place</h3>
+                        <p class="ed-benefit-body">Some conversations do not belong in the stream of updates, logistics, and digital noise. Some relationships deserve a different light, a different rhythm, and a different place.</p>
                     </div>
-                </div>
+                </section>
 
                 <!-- POSITIONING -->
-                <div class="positioning-section fade-in-up">
-                    <h2>The natural way to stay close</h2>
-                    <p>Moon Post Service makes room for a slower, more intentional way to stay close to the people you love, guided by one of the oldest rhythms humans have ever known.</p>
-                </div>
+                <section class="ed-positioning fade-in-up">
+                    <div class="ed-rule-row" aria-hidden="true"><span class="ed-rule"></span><span class="ed-diamond">&#10070;</span><span class="ed-rule"></span></div>
+                    <h2 class="ed-positioning-title">The natural way to stay close</h2>
+                    <p class="ed-positioning-body">Moon Post Service makes room for a slower, more intentional way to stay close to the people you love, guided by one of the oldest rhythms humans have ever known.</p>
+                </section>
 
-                <!-- BOTTOM CTA -->
-                <div class="bottom-cta-section">
-                    <h2 class="bottom-cta-title fade-in-up">Let the moon keep you closer.</h2>
-                    <div class="fade-in-up" id="bottomCta">
-                        <!-- JS will populate based on moon state -->
+                <!-- FINAL CTA -->
+                <section class="ed-final-cta">
+                    <div class="ed-rule-row" aria-hidden="true"><span class="ed-rule"></span><span class="ed-diamond">&#10070;</span><span class="ed-rule"></span></div>
+                    <h2 class="ed-final-cta-title fade-in-up">Let the moon keep you closer</h2>
+                    <div class="ed-final-cta-area fade-in-up" id="bottomCta">
+                        <!-- JS populates based on moon state -->
                     </div>
-                </div>
+                </section>
 
                 <!-- FOOTER -->
-                <footer class="landing-footer">
-                    <p class="footer-signoff">Yours, under the same moon,<br><strong>Manko &amp; Yoash</strong></p>
+                <footer class="ed-footer" id="faq">
+                    <p class="ed-footer-signoff">Yours, under the same moon,<br><span>Manko &amp; Yoash</span></p>
                 </footer>
 
             </div>
