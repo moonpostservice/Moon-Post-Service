@@ -5,15 +5,97 @@
 }
 
 :root {
-    --cream: #FDF6E3;
-    --cream-dark: #F5EBDA;
-    --blue: #357dc5;
-    --blue-light: #4a8fd4;
-    --coral: #ff5558;
-    --coral-light: #ff7a7c;
-    --text-dark: #357dc5;
-    --text-muted: #6a9fd4;
-    --white: #ffffff;
+    /* ============================================================
+       MOON POST SERVICE — DESIGN SYSTEM
+       Editorial brass-on-navy lithograph aesthetic
+       Source of truth for color, type, spacing, radius, shadow,
+       and motion. Surfaces opt in by using these tokens.
+       ============================================================ */
+
+    /* --- Surface & ink --- */
+    --bg: #030A18;                              /* Deep midnight, app surface */
+    --bg-2: #071327;                            /* Slightly lifted surface */
+    --panel: rgba(7, 15, 30, 0.72);             /* Glass panel */
+    --panel-strong: rgba(6, 12, 24, 0.88);      /* Opaque panel */
+    --line: rgba(208, 180, 137, 0.46);          /* Brass rule */
+    --line-soft: rgba(208, 180, 137, 0.20);     /* Soft brass divider */
+    --text: #EAD8BF;                            /* Body cream */
+    --text-bright: #F0DFC2;                     /* Display cream */
+    --muted: rgba(234, 216, 191, 0.72);         /* Secondary copy */
+    --muter: rgba(234, 216, 191, 0.46);         /* Tertiary copy */
+    --accent: #D4B58A;                          /* Brass primary */
+    --accent-bright: #E5C9A0;                   /* Brass hover */
+    --accent-deep: #C99D57;                     /* Brass pressed / live */
+    --live: #D7B171;                            /* Live indicator */
+    --live-dot: #C99D57;                        /* Live dot */
+    --on-accent: #0A1422;                       /* Ink on brass */
+
+    /* --- Typography --- */
+    --serif: 'Cormorant Garamond', 'Iowan Old Style', 'Garamond', Georgia, serif;
+    --sans: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    --fs-display: clamp(40px, 5.4vw, 76px);
+    --fs-h1: clamp(38px, 5vw, 58px);
+    --fs-h2: clamp(30px, 3.4vw, 44px);
+    --fs-h3: clamp(22px, 2vw, 28px);
+    --fs-lead: clamp(17px, 1.6vw, 22px);
+    --fs-body: 15px;
+    --fs-small: 13px;
+    --fs-caption: 11px;
+    --lh-tight: 1.05;
+    --lh-snug: 1.2;
+    --lh-body: 1.55;
+    --tracking-label: 2.5px;
+
+    /* --- Spacing scale --- */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 40px;
+    --space-8: 48px;
+    --space-9: 56px;
+    --space-10: 80px;
+
+    /* --- Radius --- */
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 22px;
+    --radius-pill: 999px;
+
+    /* --- Shadow --- */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+    --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.42);
+    --shadow: var(--shadow-lg);
+
+    /* --- Motion --- */
+    --dur-fast: 0.2s;
+    --dur-normal: 0.4s;
+    --dur-slow: 0.9s;
+    --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+    /* --- Legacy aliases — redirected to brass-on-navy.
+       The light-cream/blue/coral theme is fully retired. These tokens
+       remain only so older selectors keep working without churn; they
+       all resolve to brass-system values. New code should use the
+       canonical tokens above. --- */
+    --cream: var(--bg);
+    --cream-dark: var(--bg-2);
+    --blue: var(--accent);
+    --blue-light: var(--accent-bright);
+    --coral: var(--accent);
+    --coral-light: var(--accent-bright);
+    --text-dark: var(--text-bright);
+    --text-muted: var(--muted);
+    /* Legacy --white was used both for backgrounds and for text on solid
+       colored buttons. The brass system uses --bg for panels and
+       --on-accent for text-on-brass, so --white now resolves to --bg
+       (the most common use was a panel background). The handful of
+       legacy `color: var(--white)` sites are already overridden by
+       dark-theme rules higher in specificity. */
+    --white: var(--bg);
 }
 
 body {
@@ -47,6 +129,94 @@ body {
     border-radius: 50%;
 }
 .phase-icon .app-icon { fill: none; } /* phases use their own fills */
+
+/* ============================================================
+   PRIMITIVES — canonical components for new surfaces
+   See DESIGN.md for usage. Older surface-specific classes
+   (.cta-button, .onboarding-primary, etc.) predate this layer
+   and remain in place; new code should use .btn.
+   ============================================================ */
+
+/* --- Button primitive ---
+   Base + modifiers. Compose with .btn .btn--primary, .btn--ghost, etc. */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: 12px 22px;
+    border-radius: var(--radius-pill);
+    border: 1px solid transparent;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+        background var(--dur-fast) ease,
+        border-color var(--dur-fast) ease,
+        color var(--dur-fast) ease,
+        transform var(--dur-fast) ease,
+        box-shadow var(--dur-fast) ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: translateY(1px); }
+.btn:disabled,
+.btn[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+/* Primary: solid brass pill, dark ink. The "do this" CTA. */
+.btn--primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+}
+.btn--primary:hover:not(:disabled) {
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+}
+
+/* Ghost: brass outline, transparent, brass text. Secondary actions. */
+.btn--ghost {
+    background: transparent;
+    border-color: var(--line);
+    color: var(--accent);
+}
+.btn--ghost:hover:not(:disabled) {
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
+    color: var(--accent-bright);
+}
+
+/* Link: text-only, brass. For tertiary "Resend code" etc. */
+.btn--link {
+    background: transparent;
+    border-color: transparent;
+    color: var(--muted);
+    padding: 8px 16px;
+    font-weight: 500;
+}
+.btn--link:hover:not(:disabled) {
+    background: rgba(212, 181, 138, 0.06);
+    color: var(--accent-bright);
+}
+
+/* Tracked: editorial uppercase label-style ghost. Used for
+   "NEW MOON MESSAGE" / "DELETE MY ACCOUNT" style buttons. */
+.btn--tracked {
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Sizes */
+.btn--sm { padding: 8px 16px; font-size: 13px; }
+.btn--lg { padding: 16px 32px; font-size: 15px; }
+.btn--block { width: 100%; }
 
 /* Header */
 .header {
@@ -126,7 +296,7 @@ body {
 }
 
 .location:hover {
-    background: rgba(53, 125, 197, 0.1);
+    background: rgba(212, 181, 138, 0.1);
 }
 
 .location-pin {
@@ -185,19 +355,21 @@ body {
 .dropdown-btn {
     width: 100%;
     padding: 12px;
-    background: var(--blue);
-    color: var(--white);
-    border: none;
-    border-radius: 8px;
-    font-family: 'Satoshi', sans-serif;
+    background: var(--accent);
+    color: var(--on-accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-pill);
+    font-family: var(--sans);
     font-size: 14px;
     font-weight: 600;
+    letter-spacing: 0.4px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
 
 .dropdown-btn:hover {
-    background: var(--blue-light);
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
 }
 
 /* Moon phase selector */
@@ -245,7 +417,7 @@ body {
 
 .user-btn:hover {
     transform: scale(1.08);
-    background: rgba(53, 125, 197, 0.08);
+    background: rgba(212, 181, 138, 0.08);
 }
 
 .user-initials {
@@ -325,15 +497,18 @@ body {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .settings-section-header .section-chevron {
-    transition: transform 0.2s; font-size: 18px; color: #4fc3f7; margin-left: 8px;
+    transition: transform 0.2s; font-size: 18px; color: var(--accent); margin-left: 8px;
 }
 .settings-section.open .section-chevron { transform: rotate(180deg); }
 .settings-section-body { display: none; padding: 4px 16px 14px; }
 .settings-section.open .settings-section-body { display: block; }
 .settings-section .section-avatar {
-    width: 32px; height: 32px; border-radius: 50%; background: var(--blue);
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(212, 181, 138, 0.16);
+    border: 1px solid var(--line-soft);
     display: flex; align-items: center; justify-content: center;
-    color: white; font-size: 14px; font-weight: 700; overflow: hidden; flex-shrink: 0;
+    color: var(--accent); font-family: var(--serif); font-size: 14px; font-weight: 500;
+    overflow: hidden; flex-shrink: 0;
 }
 .settings-section .section-avatar img {
     width: 100%; height: 100%; object-fit: cover;
@@ -429,37 +604,48 @@ body {
     color: var(--text-dark);
 }
 
-/* First-time Onboarding Overlay */
+/* ============================================================
+   AUTH & ONBOARDING — editorial brass-on-navy
+   First-impression surfaces. Mirror landing aesthetic: serif
+   display type, brass accents, navy panels with cream ink.
+   ============================================================ */
+
 .drift-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.7);
+    background: rgba(3, 10, 24, 0.78);
     z-index: 6000;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px;
-    backdrop-filter: blur(4px);
+    padding: var(--space-5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 .drift-modal-card {
-    max-width: 360px;
+    max-width: 380px;
     width: 100%;
-    background: var(--card-bg, #0d1b2a);
-    border: 1px solid rgba(0,212,255,0.15);
-    border-radius: 16px;
-    padding: 28px 24px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    background: var(--panel-strong);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-md);
+    padding: var(--space-7) var(--space-6);
+    box-shadow: var(--shadow-lg);
+    color: var(--text);
+    font-family: var(--sans);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .onboarding-overlay {
     position: fixed;
     inset: 0;
-    background: #050a14;
+    background: var(--bg);
     z-index: 5000;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
+    color: var(--text);
 }
 /* Twinkling starfield inside onboarding */
 .onboarding-stars {
@@ -474,83 +660,99 @@ body {
 }
 
 .onboarding-card {
-    max-width: 420px;
+    max-width: 440px;
     width: 100%;
     text-align: center;
     position: relative;
     z-index: 1;
-    background: rgba(10, 22, 40, 0.85);
-    border: 1px solid rgba(79, 195, 247, 0.15);
-    border-radius: 20px;
-    padding: 40px 32px;
-    backdrop-filter: blur(20px);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(79, 195, 247, 0.05);
+    background: var(--panel-strong);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8) var(--space-6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-lg);
+    color: var(--text);
+    font-family: var(--sans);
 }
 
 .onboarding-logo {
-    height: 80px;
+    height: 64px;
     width: auto;
-    margin-bottom: 24px;
+    margin-bottom: var(--space-5);
+    opacity: 0.92;
 }
 
 .onboarding-card h1 {
-    font-size: 24px;
-    font-weight: 900;
-    color: #4fc3f7;
-    margin-bottom: 12px;
-    line-height: 1.2;
+    font-family: var(--serif);
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--text-bright);
+    margin-bottom: var(--space-3);
+    line-height: var(--lh-snug);
+    letter-spacing: -0.3px;
 }
 
 .onboarding-tagline {
     font-size: 15px;
-    color: rgba(255, 255, 255, 0.5);
-    margin-bottom: 36px;
-    line-height: 1.5;
+    color: var(--muted);
+    margin-bottom: var(--space-7);
+    line-height: var(--lh-body);
 }
 
-.onboarding-form {
+.onboarding-card .onboarding-form {
     text-align: left;
-    margin-bottom: 28px;
+    margin-bottom: var(--space-6);
 }
 
-.onboarding-form label {
-    color: #4fc3f7;
-    font-size: 12px;
-    font-weight: 700;
+.onboarding-card .onboarding-form label,
+.onboarding-card .form-group label {
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
+    letter-spacing: var(--tracking-label);
+    margin-bottom: var(--space-2);
     display: block;
 }
 
-.onboarding-form .form-group {
-    margin-bottom: 20px;
+.onboarding-card .onboarding-form .form-group {
+    margin-bottom: var(--space-5);
+}
+
+/* Inputs inside the auth/onboarding card — boosted specificity so editorial
+   tokens win over the generic .form-group input rules used elsewhere. */
+.onboarding-card .form-group input,
+.onboarding-card .form-group textarea,
+.onboarding-card .location-input-wrapper input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 15px;
+    transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+    background: rgba(3, 10, 24, 0.6);
+    color: var(--text-bright);
+}
+
+.onboarding-card .form-group input::placeholder,
+.onboarding-card .form-group textarea::placeholder,
+.onboarding-card .location-input-wrapper input::placeholder {
+    color: var(--muter);
+}
+
+.onboarding-card .form-group input:focus,
+.onboarding-card .form-group textarea:focus,
+.onboarding-card .location-input-wrapper input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
 }
 
 .location-input-wrapper {
     position: relative;
-}
-
-.location-input-wrapper input {
-    width: 100%;
-    padding: 14px 16px;
-    border: 1px solid rgba(79, 195, 247, 0.25);
-    border-radius: 8px;
-    font-family: 'Satoshi', sans-serif;
-    font-size: 15px;
-    transition: border-color 0.2s;
-    background: rgba(5, 10, 20, 0.6);
-    color: white;
-}
-
-.location-input-wrapper input::placeholder {
-    color: rgba(255, 255, 255, 0.3);
-}
-
-.location-input-wrapper input:focus {
-    outline: none;
-    border-color: #4fc3f7;
-    box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.15);
 }
 
 .city-dropdown {
@@ -558,14 +760,15 @@ body {
     top: 100%;
     left: 0;
     right: 0;
-    background: rgba(10, 22, 40, 0.95);
-    border: 1px solid rgba(79, 195, 247, 0.25);
+    background: var(--panel-strong);
+    border: 1px solid var(--line-soft);
     border-top: none;
-    border-radius: 0 0 8px 8px;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
     max-height: 200px;
     overflow-y: auto;
     z-index: 100;
     display: none;
+    box-shadow: var(--shadow-md);
 }
 
 .city-dropdown.active {
@@ -576,173 +779,218 @@ body {
     padding: 12px 16px;
     cursor: pointer;
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.8);
-    transition: background 0.15s;
+    color: var(--text);
+    transition: background var(--dur-fast) ease;
 }
 
 .city-option:hover {
-    background: rgba(79, 195, 247, 0.1);
+    background: rgba(212, 181, 138, 0.08);
 }
 
 .city-option .country {
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--muter);
     font-size: 12px;
     margin-left: 8px;
 }
 
 .location-detect-btn {
     width: 100%;
-    margin-top: 12px;
+    margin-top: var(--space-3);
     padding: 12px 16px;
     background: transparent;
-    border: 1px solid rgba(79, 195, 247, 0.3);
-    color: #4fc3f7;
-    border-radius: 8px;
-    font-family: 'Satoshi', sans-serif;
+    border: 1px solid var(--line);
+    color: var(--accent);
+    border-radius: var(--radius-pill);
+    font-family: var(--sans);
     font-size: 13px;
     font-weight: 600;
+    letter-spacing: 0.3px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 
 .location-detect-btn:hover {
-    background: rgba(79, 195, 247, 0.1);
+    background: rgba(212, 181, 138, 0.08);
+    color: var(--accent-bright);
+    border-color: var(--accent);
 }
 
 .onboarding-primary {
     width: 100%;
-    padding: 16px;
-    background: rgba(79, 195, 247, 0.2);
-    border: 1px solid rgba(79, 195, 247, 0.4);
-    color: #4fc3f7;
-    border-radius: 8px;
-    font-family: 'Satoshi', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
+    padding: 14px 22px;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: var(--on-accent);
+    border-radius: var(--radius-pill);
+    font-family: var(--sans);
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
     cursor: pointer;
-    transition: all 0.2s;
-    margin-bottom: 12px;
-    box-shadow: 0 0 20px rgba(79, 195, 247, 0.1);
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, transform var(--dur-fast) ease;
+    margin-bottom: var(--space-3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .onboarding-primary:hover {
-    background: rgba(79, 195, 247, 0.3);
-    box-shadow: 0 0 30px rgba(79, 195, 247, 0.2);
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+}
+
+.onboarding-primary:active {
+    transform: translateY(1px);
+}
+
+.onboarding-primary:disabled {
+    background: rgba(212, 181, 138, 0.25);
+    border-color: rgba(212, 181, 138, 0.25);
+    color: rgba(10, 20, 34, 0.6);
+    cursor: not-allowed;
 }
 
 .onboarding-skip {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.4);
-    font-family: 'Satoshi', sans-serif;
+    color: var(--muter);
+    font-family: var(--sans);
     font-size: 13px;
     cursor: pointer;
+    transition: color var(--dur-fast) ease;
 }
 
 .onboarding-skip:hover {
-    color: #4fc3f7;
+    color: var(--text-bright);
 }
 
-/* Auth Flow Styles */
+/* --- Auth flow steps --- */
 .auth-step {
     display: none;
 }
 .auth-step.active {
     display: block;
 }
-.auth-email-input {
+.onboarding-card .auth-email-input {
     width: 100%;
     padding: 14px 16px;
-    border: 1px solid rgba(79, 195, 247, 0.25);
-    border-radius: 8px;
-    font-family: 'Satoshi', sans-serif;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
     font-size: 15px;
-    transition: border-color 0.2s;
-    margin-bottom: 16px;
-    background: rgba(5, 10, 20, 0.6);
-    color: white;
+    transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+    margin-bottom: var(--space-4);
+    background: rgba(3, 10, 24, 0.6);
+    color: var(--text-bright);
 }
-.auth-email-input::placeholder {
-    color: rgba(255, 255, 255, 0.3);
+.onboarding-card .auth-email-input::placeholder {
+    color: var(--muter);
 }
-.auth-email-input:focus {
+.onboarding-card .auth-email-input:focus {
     outline: none;
-    border-color: #4fc3f7;
-    box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.15);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
 }
 .auth-note {
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.4);
-    margin-top: 8px;
-    line-height: 1.5;
+    color: var(--muter);
+    margin-top: var(--space-2);
+    line-height: var(--lh-body);
 }
 .auth-check-inbox {
     text-align: center;
 }
 .auth-check-inbox .inbox-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
+    font-size: 44px;
+    margin-bottom: var(--space-4);
+    opacity: 0.92;
 }
 .auth-check-inbox h2 {
-    font-size: 22px;
-    font-weight: 800;
-    color: #4fc3f7;
-    margin-bottom: 12px;
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--text-bright);
+    margin-bottom: var(--space-3);
+    letter-spacing: -0.2px;
 }
 .auth-check-inbox p {
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.5);
-    line-height: 1.6;
-    margin-bottom: 8px;
+    color: var(--muted);
+    line-height: var(--lh-body);
+    margin-bottom: var(--space-2);
 }
 .auth-email-highlight {
-    font-weight: 700;
-    color: #4fc3f7;
+    font-weight: 600;
+    color: var(--accent);
+    font-style: italic;
+    font-family: var(--serif);
+    font-size: 16px;
 }
 .auth-actions {
     display: flex;
-    gap: 12px;
+    gap: var(--space-3);
     justify-content: center;
-    margin-top: 24px;
+    margin-top: var(--space-5);
 }
 .auth-link-btn {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.4);
-    font-family: 'Satoshi', sans-serif;
+    color: var(--muted);
+    font-family: var(--sans);
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
     padding: 8px 16px;
-    border-radius: 8px;
-    transition: all 0.2s;
+    border-radius: var(--radius-pill);
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 .auth-link-btn:hover {
-    background: rgba(79, 195, 247, 0.1);
-    color: #4fc3f7;
+    background: rgba(212, 181, 138, 0.08);
+    color: var(--accent-bright);
 }
 .auth-error {
-    color: var(--coral);
+    color: #E89B73;
     font-size: 13px;
-    margin-top: 8px;
+    margin-top: var(--space-2);
     display: none;
+    font-style: italic;
 }
-.otp-digit {
-    width: 38px;
-    height: 46px;
+.onboarding-card .otp-digit {
+    width: 40px;
+    height: 52px;
     text-align: center;
-    font-size: 20px;
-    font-weight: 700;
-    border: 1px solid rgba(79, 195, 247, 0.25);
-    border-radius: 10px;
-    background: rgba(5, 10, 20, 0.6);
-    color: #4fc3f7;
-    transition: border-color 0.2s;
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 500;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    background: rgba(3, 10, 24, 0.7);
+    color: var(--text-bright);
+    transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+    box-shadow: inset 0 1px 0 rgba(212, 181, 138, 0.04);
 }
-.otp-digit:focus {
+.onboarding-card .otp-digit:focus {
     outline: none;
-    border-color: #4fc3f7;
-    box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.15);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.18), inset 0 1px 0 rgba(212, 181, 138, 0.04);
+}
+
+/* Auth modal close button */
+#authModalOverlay .onboarding-card > button[onclick*="closeAuthModal"] {
+    color: var(--muter);
+    transition: color var(--dur-fast) ease;
+}
+#authModalOverlay .onboarding-card > button[onclick*="closeAuthModal"]:hover {
+    color: var(--accent-bright);
+}
+
+/* Brass rule used between sections inside the auth card */
+.auth-rule {
+    height: 1px;
+    background: var(--line-soft);
+    margin: var(--space-5) 0;
+    border: 0;
 }
 
 /* Moon Down Modal */
@@ -889,7 +1137,7 @@ body.moon-down .message-dot.releasing {
 }
 
 .notify-btn:hover {
-    background: rgba(53, 125, 197, 0.1);
+    background: rgba(212, 181, 138, 0.1);
 }
 
 /* Disabled compose tooltip */
@@ -928,7 +1176,7 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 .posting-disabled-note {
     text-align: center;
     padding: 14px 16px;
-    background: rgba(53, 125, 197, 0.08);
+    background: rgba(212, 181, 138, 0.08);
     border-radius: 8px;
     margin-bottom: 16px;
     font-size: 13px;
@@ -947,17 +1195,171 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 #sharedSkyPage .message-page-send {
     cursor: pointer !important;
 }
-/* Shared Sky lunar note step cards — dark theme overrides */
-#ssLunarPanel .lunar-step-card { background: rgba(10,22,40,0.6); border-color: rgba(79,195,247,0.15); }
-#ssLunarPanel .lunar-step-label { color: #4fc3f7; }
-#ssLunarPanel .lunar-input { background: rgba(10,22,40,0.8); border-color: rgba(79,195,247,0.2); color: white; }
-#ssLunarPanel .lunar-input::placeholder { color: rgba(255,255,255,0.25); }
-#ssLunarPanel .lunar-step-next { background: rgba(79,195,247,0.15); color: #4fc3f7; border-color: rgba(79,195,247,0.3); }
-#ssLunarPanel .lunar-step-next:not(:disabled):hover { background: rgba(79,195,247,0.25); }
-#ssLunarPanel .lunar-step-back { color: rgba(255,255,255,0.5); }
-#ssLunarPanel .lunar-dot { background: rgba(79,195,247,0.2); }
-#ssLunarPanel .lunar-dot.active { background: #4fc3f7; }
-#ssLunarPanel .lunar-dot.done { background: rgba(79,195,247,0.5); }
+
+/* ============================================================
+   SHARED SKY — editorial brass-on-navy
+   Public anonymous thread. Reuses the .message-page shell but
+   with a dark editorial palette so it sits next to the landing
+   and reveal pages. Scoped to #sharedSkyPage so chat (still
+   light cream) is untouched.
+   ============================================================ */
+#sharedSkyPage.message-page { background: var(--bg); }
+#sharedSkyPage .message-page-inner {
+    background: var(--bg);
+    box-shadow: none;
+    color: var(--text);
+    font-family: var(--sans);
+}
+#sharedSkyPage .message-page-header {
+    border-bottom: 1px solid var(--line-soft);
+    background: rgba(3, 10, 24, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+#sharedSkyPage .message-page-info h3 {
+    font-family: var(--serif);
+    color: var(--text-bright);
+    font-weight: 500;
+    letter-spacing: -0.2px;
+}
+#sharedSkyPage .message-page-info p {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+}
+#sharedSkyPage .message-page-close {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+}
+#sharedSkyPage .message-page-close:hover {
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
+    color: var(--accent-bright);
+}
+#sharedSkyPage .message-page-body { background: var(--bg); }
+#sharedSkyPage .message-page-footer {
+    background: rgba(3, 10, 24, 0.92);
+    border-top: 1px solid var(--line-soft);
+}
+#sharedSkyPage .message-page-input {
+    background: rgba(3, 10, 24, 0.6);
+    border: 1px solid var(--line-soft);
+    color: var(--text-bright);
+    font-family: var(--sans);
+}
+#sharedSkyPage .message-page-input::placeholder { color: var(--muter); }
+#sharedSkyPage .message-page-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
+}
+#sharedSkyPage .message-page-send {
+    background: var(--accent);
+    color: var(--on-accent);
+    border: 1px solid var(--accent);
+}
+#sharedSkyPage .message-page-send:hover {
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+}
+
+/* Feed dividers between signals */
+#sharedSkyPage .shared-sky-feed .shared-sky-signal {
+    border-bottom: 1px solid var(--line-soft);
+}
+
+/* Note-mode toggle (Open / Lunar) inside shared-sky footer */
+#sharedSkyPage .note-mode-toggle {
+    background: rgba(3, 10, 24, 0.55);
+    border: 1px solid var(--line-soft);
+}
+#sharedSkyPage .note-mode-toggle .toggle-option {
+    color: var(--muter);
+}
+#sharedSkyPage .note-mode-toggle .toggle-option:hover {
+    color: var(--text);
+}
+#sharedSkyPage .note-mode-toggle .toggle-option.active {
+    background: rgba(212, 181, 138, 0.16);
+    color: var(--accent-bright);
+}
+
+/* Plus button in the reply row (photo attachment) */
+#sharedSkyPage #sharedSkyPlusBtn {
+    border: 1px solid var(--line) !important;
+    color: var(--accent) !important;
+    background: transparent !important;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+#sharedSkyPage #sharedSkyPlusBtn:hover {
+    background: rgba(212, 181, 138, 0.08) !important;
+    border-color: var(--accent) !important;
+}
+
+/* Photo attachment menu — brass-on-navy popover */
+#sharedSkyPage #sharedSkyPhotoMenu {
+    background: var(--panel-strong) !important;
+    border: 1px solid var(--line-soft) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+#sharedSkyPage .ss-photo-menu-item {
+    color: var(--text) !important;
+    font-family: var(--sans) !important;
+}
+
+/* Lunar Note multi-step composer */
+#ssLunarPanel .lunar-step-card {
+    background: var(--panel);
+    border-color: var(--line-soft);
+}
+#ssLunarPanel .lunar-step-label {
+    color: var(--accent);
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
+}
+#ssLunarPanel .lunar-input {
+    background: rgba(3, 10, 24, 0.7);
+    border-color: var(--line-soft);
+    color: var(--text-bright);
+    font-family: var(--sans);
+}
+#ssLunarPanel .lunar-input::placeholder { color: var(--muter); }
+#ssLunarPanel .lunar-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
+}
+#ssLunarPanel .lunar-step-next {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+    font-weight: 600;
+}
+#ssLunarPanel .lunar-step-next:not(:disabled):hover {
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+}
+#ssLunarPanel .lunar-step-next:disabled {
+    background: rgba(212, 181, 138, 0.18);
+    color: rgba(10, 20, 34, 0.5);
+    border-color: rgba(212, 181, 138, 0.18);
+}
+#ssLunarPanel .lunar-step-back {
+    color: var(--muted);
+}
+#ssLunarPanel .lunar-step-back:hover {
+    color: var(--accent-bright);
+}
+#ssLunarPanel .lunar-dot { background: rgba(212, 181, 138, 0.22); }
+#ssLunarPanel .lunar-dot.active { background: var(--accent); }
+#ssLunarPanel .lunar-dot.done { background: rgba(212, 181, 138, 0.55); }
+#ssLunarPanel > p {
+    font-family: var(--serif) !important;
+    font-style: italic !important;
+    color: var(--muted) !important;
+    font-size: 13px !important;
+}
 
 /* Settings Modal Styles */
 /* Settings location display */
@@ -966,9 +1368,9 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
     align-items: center;
     gap: 10px;
     padding: 12px 16px;
-    background: rgba(53, 125, 197, 0.04);
-    border: 1.5px solid rgba(53, 125, 197, 0.12);
-    border-radius: 10px;
+    background: rgba(212, 181, 138, 0.05);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
     margin-bottom: 12px;
 }
 
@@ -979,46 +1381,54 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 }
 
 .settings-location-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--blue);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-bright);
 }
 
 .location-btn {
     width: 100%;
-    padding: 14px 16px;
-    background: rgba(53, 125, 197, 0.1);
-    border: 2px solid var(--blue);
-    border-radius: 6px;
-    color: var(--blue);
-    font-family: 'Satoshi', sans-serif;
-    font-size: 14px;
+    padding: 12px 16px;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 13px;
     font-weight: 600;
+    letter-spacing: 0.3px;
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    transition: all 0.2s;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 
 .location-btn:hover {
-    background: rgba(53, 125, 197, 0.15);
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
+    color: var(--accent-bright);
 }
 
 .settings-select {
     width: 100%;
-    padding: 14px 16px;
-    border: 2px solid #e0dcd4;
-    border-radius: 6px;
-    font-family: 'Satoshi', sans-serif;
+    padding: 12px 14px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
     font-size: 14px;
-    background: white;
+    background: rgba(3, 10, 24, 0.6);
+    color: var(--text-bright);
     cursor: pointer;
 }
 
 .settings-select:focus {
     outline: none;
-    border-color: var(--blue);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
 }
 
 .settings-checkbox {
@@ -1136,7 +1546,7 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 .orbit-ring {
     width: 100%;
     height: 100%;
-    border: 2px solid rgba(79, 195, 247, 0.3);
+    border: 2px solid rgba(212, 181, 138, 0.3);
     border-radius: 50%;
     position: relative;
     transition: border-color 0.6s ease, box-shadow 0.6s ease;
@@ -1150,7 +1560,7 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
     left: 4%;
     width: 92%;
     height: 92%;
-    border: 1px solid rgba(79, 195, 247, 0.08);
+    border: 1px solid rgba(212, 181, 138, 0.08);
     border-radius: 50%;
     pointer-events: none;
 }
@@ -1198,14 +1608,14 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 }
 
 .horizon-dot.rise {
-    background: #4fc3f7;
-    box-shadow: 0 0 8px rgba(79, 195, 247, 0.5);
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(212, 181, 138, 0.55);
 }
 
 .horizon-dot.set {
-    background: #4fc3f7;
+    background: var(--accent);
     opacity: 0.6;
-    box-shadow: 0 0 6px rgba(79, 195, 247, 0.3);
+    box-shadow: 0 0 6px rgba(212, 181, 138, 0.35);
 }
 
 .horizon-label {
@@ -1222,33 +1632,36 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 }
 
 .horizon-title {
+    font-family: var(--sans);
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    opacity: 0.85;
+    letter-spacing: var(--tracking-label);
+    opacity: 0.95;
 }
 
 .horizon-time {
-    font-size: 17px;
-    font-weight: 800;
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 500;
     letter-spacing: -0.3px;
+    font-variant-numeric: tabular-nums;
 }
 
 .rise-label .horizon-title {
-    color: #4fc3f7;
+    color: var(--accent);
 }
 
 .rise-label .horizon-time {
-    color: #4fc3f7;
+    color: var(--text-bright);
 }
 
 .set-label .horizon-title {
-    color: #4fc3f7;
+    color: var(--accent);
 }
 
 .set-label .horizon-time {
-    color: #4fc3f7;
+    color: var(--text-bright);
     opacity: 0.6;
 }
 
@@ -1266,42 +1679,105 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
     }
 }
 
-/* ── Philosophy Page ── */
-#philosophyPage { font-family: var(--font); line-height: 1.75; }
-.phil-body { max-width: 800px; margin: 0 auto; padding: 0 40px; text-align: center; }
-.phil-text {
-    font-size: 28px; color: rgba(255,255,255,0.88); line-height: 1.75; font-weight: 400;
-    margin-bottom: 0; letter-spacing: -0.01em; text-align: center;
+/* ============================================================
+   PHILOSOPHY PAGE — editorial brass-on-navy
+   Long-form essay. Cormorant serif body for reading rhythm,
+   Satoshi for labels. Brass diamond separators.
+   ============================================================ */
+#philosophyPage {
+    font-family: var(--sans);
+    line-height: var(--lh-body);
+    color: var(--text);
+    background: var(--bg);
 }
-.phil-text + .phil-text { margin-top: 44px; }
+.phil-body {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 var(--space-7);
+    text-align: center;
+}
+.phil-text {
+    font-family: var(--serif);
+    font-size: clamp(22px, 2.4vw, 30px);
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+    text-align: center;
+    margin-bottom: 0;
+}
+.phil-text + .phil-text { margin-top: var(--space-9); }
 .phil-accent {
-    display: block; text-align: center; margin: 80px 0;
-    font-size: clamp(32px, 5vw, 48px); font-weight: 800; font-style: normal;
-    color: #4fc3f7; line-height: 1.3; letter-spacing: -0.02em;
-    text-transform: none;
+    display: block;
+    text-align: center;
+    margin: var(--space-10) 0;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(30px, 4.6vw, 46px);
+    font-weight: 500;
+    color: var(--text-bright);
+    line-height: var(--lh-snug);
+    letter-spacing: -0.01em;
 }
 .phil-separator {
-    display: flex; align-items: center; justify-content: center; gap: 16px;
-    margin: 64px 0; color: rgba(79,195,247,0.3); font-size: 14px; letter-spacing: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin: var(--space-10) 0;
+    color: var(--accent);
+    font-size: 14px;
+    letter-spacing: 6px;
 }
 .phil-separator::before, .phil-separator::after {
-    content: ''; flex: 1; max-width: 80px; height: 1px;
-    background: linear-gradient(to right, transparent, rgba(79,195,247,0.15), transparent);
+    content: '';
+    flex: 1;
+    max-width: 80px;
+    height: 1px;
+    background: var(--line);
+    opacity: 0.7;
 }
-.phil-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 36px rgba(255,85,88,0.4); }
+.phil-cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 36px rgba(212, 181, 138, 0.28);
+}
 .header-philosophy-btn:hover { opacity: 1 !important; }
-.phil-signoff { text-align: center; padding: 80px 32px 48px; line-height: 1.3; }
-.phil-signoff-line { font-size: 20px; color: rgba(255,255,255,0.85); font-style: italic; margin-bottom: 6px; }
-.phil-signoff-names { font-size: 16px; font-weight: 600; color: #4fc3f7; margin-bottom: 2px; letter-spacing: 0.5px; }
-.phil-signoff-role { font-size: 14px; color: rgba(255,255,255,0.85); letter-spacing: 1px; text-transform: uppercase; }
+.phil-signoff {
+    text-align: center;
+    padding: var(--space-10) var(--space-6) var(--space-8);
+    line-height: var(--lh-snug);
+}
+.phil-signoff-line {
+    font-family: var(--serif);
+    font-size: 22px;
+    color: var(--text);
+    font-style: italic;
+    margin-bottom: var(--space-2);
+    letter-spacing: -0.01em;
+}
+.phil-signoff-names {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 2px;
+    letter-spacing: 0.3px;
+}
+.phil-signoff-role {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--muter);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+}
 @media (max-width: 740px) {
-    .phil-body { padding: 0 20px; }
-    .phil-text { font-size: 18px; line-height: 1.75; color: rgba(255,255,255,0.9); }
-    .phil-accent { font-size: 24px; margin: 48px 0; color: #4fc3f7; }
-    .phil-signoff-line { font-size: 16px; color: rgba(255,255,255,0.85); }
-    .phil-signoff-names { font-size: 18px; }
-    .phil-signoff-role { font-size: 12px; }
-    .phil-separator { margin: 40px 0; }
+    .phil-body { padding: 0 var(--space-5); }
+    .phil-text { font-size: 19px; line-height: 1.65; }
+    .phil-accent { font-size: 26px; margin: var(--space-8) 0; }
+    .phil-signoff-line { font-size: 18px; }
+    .phil-signoff-names { font-size: 17px; }
+    .phil-signoff-role { font-size: 11px; }
+    .phil-separator { margin: var(--space-7) 0; }
     #philosophyPage > div:first-child { padding: 0 16px; }
 }
 
@@ -1345,12 +1821,14 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
     height: 40px;
     pointer-events: auto;
     cursor: pointer;
+    /* SVG paths inherit currentColor — set the brass tone here */
+    color: var(--accent);
 }
 
 .moon-icon svg {
     width: 100%;
     height: 100%;
-    filter: drop-shadow(0 2px 6px rgba(79, 195, 247, 0.4));
+    filter: drop-shadow(0 2px 6px rgba(212, 181, 138, 0.4));
 }
 
 /* Message dots on orbit - positioned using rotation like the moon */
@@ -1367,7 +1845,7 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
     position: absolute;
     width: 14px;
     height: 14px;
-    background-color: var(--coral);
+    background-color: var(--accent);
     border-radius: 50%;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
@@ -1399,18 +1877,18 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
     transform: translateY(-50%);
     width: 20px;
     height: 4px;
-    background: linear-gradient(270deg, rgba(255, 85, 88, 0.4), transparent);
+    background: linear-gradient(270deg, rgba(212, 181, 138, 0.45), transparent);
     border-radius: 2px;
     pointer-events: none;
 }
 
 .message-dot.incoming::after {
-    background: linear-gradient(270deg, rgba(79, 195, 247, 0.4), transparent);
+    background: linear-gradient(270deg, rgba(234, 216, 191, 0.45), transparent);
 }
 
 .message-dot:hover {
     transform: translateX(-50%) scale(1.3);
-    box-shadow: 0 0 12px rgba(255, 85, 88, 0.5);
+    box-shadow: 0 0 12px rgba(212, 181, 138, 0.55);
 }
 
 /* Tooltip for dot hover - dark glass card */
@@ -1421,7 +1899,7 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
     -webkit-backdrop-filter: blur(12px);
     padding: 14px 18px;
     border-radius: 12px;
-    border: 1px solid rgba(79, 195, 247, 0.2);
+    border: 1px solid rgba(212, 181, 138, 0.2);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     font-size: 13px;
     z-index: 1000;
@@ -1458,7 +1936,7 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 }
 
 .dot-tooltip .tooltip-phase {
-    color: #4fc3f7;
+    color: var(--accent);
     font-size: 11px;
     display: block;
 }
@@ -1475,12 +1953,12 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 .dot-tooltip .tooltip-progress-fill {
     height: 100%;
     border-radius: 2px;
-    background: linear-gradient(90deg, #4fc3f7, #ffd54f);
+    background: linear-gradient(90deg, var(--accent), #ffd54f);
     transition: width 0.3s ease;
 }
 
 .dot-tooltip .tooltip-progress-fill.outgoing {
-    background: linear-gradient(90deg, #ff5558, #ffd54f);
+    background: linear-gradient(90deg, var(--accent), #ffd54f);
 }
 
 /* Moon phase detail popup */
@@ -1491,7 +1969,7 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
     -webkit-backdrop-filter: blur(16px);
     padding: 16px 20px;
     border-radius: 14px;
-    border: 1px solid rgba(79, 195, 247, 0.2);
+    border: 1px solid rgba(212, 181, 138, 0.2);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
     z-index: 1001;
     opacity: 0;
@@ -1515,7 +1993,7 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
     gap: 8px;
     margin-bottom: 12px;
     padding-bottom: 10px;
-    border-bottom: 1px solid rgba(79, 195, 247, 0.12);
+    border-bottom: 1px solid rgba(212, 181, 138, 0.12);
 }
 
 .moon-phase-emoji {
@@ -1525,7 +2003,7 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 .moon-phase-name {
     font-size: 15px;
     font-weight: 700;
-    color: #4fc3f7;
+    color: var(--accent);
 }
 
 .moon-phase-popup-stats {
@@ -1562,7 +2040,7 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
     line-height: 1.5;
 }
 .moon-carrying-count {
-    color: #4fc3f7;
+    color: var(--accent);
     font-weight: 700;
 }
 
@@ -1772,18 +2250,19 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
     border-bottom: 2px solid rgba(0, 117, 234, 0.15);
     cursor: pointer;
     transition: background 0.2s;
-    background: rgba(53, 125, 197, 0.03);
+    background: rgba(212, 181, 138, 0.03);
 }
 
 .shared-sky-row:hover {
-    background: rgba(53, 125, 197, 0.08);
+    background: rgba(212, 181, 138, 0.08);
 }
 
 .shared-sky-row-icon {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--blue), var(--coral));
+    background: linear-gradient(135deg, rgba(212, 181, 138, 0.32), rgba(201, 157, 87, 0.55));
+    border: 1px solid var(--line-soft);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1812,18 +2291,20 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 }
 
 .shared-sky-row-badge {
-    background: var(--coral);
-    color: white;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-family: var(--sans);
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     min-width: 20px;
     height: 20px;
-    border-radius: 10px;
+    border-radius: var(--radius-pill);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0 6px;
     flex-shrink: 0;
+    letter-spacing: 0.2px;
 }
 
 .inbox-tab {
@@ -1916,7 +2397,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .message-item:hover {
-    background: rgba(53, 125, 197, 0.05);
+    background: rgba(212, 181, 138, 0.05);
 }
 
 .message-item:last-child {
@@ -1955,12 +2436,12 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .message-direction.sent-arrow {
-    background: rgba(255, 85, 88, 0.12);
+    background: rgba(212, 181, 138, 0.12);
     color: var(--coral);
 }
 
 .message-direction.recv-arrow {
-    background: rgba(53, 125, 197, 0.1);
+    background: rgba(212, 181, 138, 0.1);
     color: var(--blue);
 }
 
@@ -2024,7 +2505,7 @@ body.moon-down .inbox-new-msg-cta {
 .moon-transit-bar {
     width: 100%;
     height: 3px;
-    background: rgba(53, 125, 197, 0.1);
+    background: rgba(212, 181, 138, 0.1);
     border-radius: 2px;
     overflow: hidden;
     margin-top: 8px;
@@ -2033,7 +2514,7 @@ body.moon-down .inbox-new-msg-cta {
 .moon-transit-fill {
     height: 100%;
     border-radius: 2px;
-    background: linear-gradient(90deg, rgba(53, 125, 197, 0.3), rgba(53, 125, 197, 0.7));
+    background: linear-gradient(90deg, rgba(212, 181, 138, 0.3), rgba(212, 181, 138, 0.7));
     transition: width 2s ease;
 }
 .moon-transit-fill.active {
@@ -2177,8 +2658,8 @@ body.moon-down .inbox-new-msg-cta {
     width: 220px;
     height: 220px;
     border-radius: 50%;
-    border: 2px solid rgba(53,125,197,0.35);
-    box-shadow: inset 0 0 0 6px rgba(53,125,197,0.05);
+    border: 2px solid rgba(212,181,138,0.35);
+    box-shadow: inset 0 0 0 6px rgba(212,181,138,0.05);
 }
 
 .shared-sky-ring-label {
@@ -2216,7 +2697,7 @@ body.moon-down .inbox-new-msg-cta {
 .shared-sky-signal {
     text-align: left;
     padding: 14px 0;
-    border-bottom: 1px solid rgba(53,125,197,0.22);
+    border-bottom: 1px solid rgba(212,181,138,0.22);
 }
 
 .shared-sky-signal:last-child {
@@ -2262,8 +2743,8 @@ body.moon-down .inbox-new-msg-cta {
 
 /* Animations */
 @keyframes subtleGlow {
-    0%, 100% { box-shadow: 0 0 8px rgba(255, 85, 88, 0.4); }
-    50% { box-shadow: 0 0 16px rgba(255, 85, 88, 0.7); }
+    0%, 100% { box-shadow: 0 0 8px rgba(212, 181, 138, 0.4); }
+    50% { box-shadow: 0 0 16px rgba(212, 181, 138, 0.7); }
 }
 
 @keyframes slideUp {
@@ -2297,14 +2778,14 @@ body.moon-down .inbox-new-msg-cta {
     transform: translateX(-50%) scale(1.1);
 }
 
-/* Incoming message dots on orbit ring */
+/* Incoming message dots on orbit ring (cream against brass for sent) */
 .message-dot.incoming {
-    background-color: var(--blue);
+    background-color: #EAD8BF;
     animation: incomingPulse 2s ease-in-out infinite;
 }
 
 .message-dot.incoming:hover {
-    box-shadow: 0 0 12px rgba(53, 125, 197, 0.5);
+    box-shadow: 0 0 12px rgba(234, 216, 191, 0.55);
 }
 
 @keyframes incomingPulse {
@@ -2319,7 +2800,7 @@ body.moon-down .inbox-new-msg-cta {
 
 /* Arriving badge style */
 .message-status-badge.arriving {
-    background: rgba(53, 125, 197, 0.12);
+    background: rgba(212, 181, 138, 0.12);
     color: var(--blue);
 }
 
@@ -2350,7 +2831,7 @@ body.moon-down .inbox-new-msg-cta {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(53, 125, 197, 0.3);
+    background: rgba(212, 181, 138, 0.3);
     backdrop-filter: blur(4px);
     z-index: 1000;
     align-items: center;
@@ -2649,8 +3130,8 @@ body.moon-down .inbox-new-msg-cta {
     align-items: center;
     gap: 6px;
     padding: 8px 16px;
-    background: rgba(53, 125, 197, 0.06);
-    border: 1.5px solid rgba(53, 125, 197, 0.2);
+    background: rgba(212, 181, 138, 0.06);
+    border: 1.5px solid rgba(212, 181, 138, 0.2);
     border-radius: 20px;
     font-family: 'Satoshi', sans-serif;
     font-size: 13px;
@@ -2661,7 +3142,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .lunar-note-pill:hover {
-    background: rgba(53, 125, 197, 0.12);
+    background: rgba(212, 181, 138, 0.12);
     border-color: var(--blue);
 }
 
@@ -2677,7 +3158,7 @@ body.moon-down .inbox-new-msg-cta {
 
 .lunar-note-panel {
     background: linear-gradient(135deg, #f8f5ef 0%, #f0ebe0 100%);
-    border: 1.5px solid rgba(53, 125, 197, 0.18);
+    border: 1.5px solid rgba(212, 181, 138, 0.18);
     border-radius: 14px;
     padding: 20px;
     margin-bottom: 20px;
@@ -2708,7 +3189,7 @@ body.moon-down .inbox-new-msg-cta {
     height: 24px;
     border-radius: 50%;
     border: none;
-    background: rgba(53, 125, 197, 0.1);
+    background: rgba(212, 181, 138, 0.1);
     color: var(--text-muted);
     font-size: 16px;
     cursor: pointer;
@@ -2719,7 +3200,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .lunar-panel-close:hover {
-    background: rgba(255, 85, 88, 0.15);
+    background: rgba(212, 181, 138, 0.15);
     color: var(--coral);
 }
 
@@ -2753,7 +3234,7 @@ body.moon-down .inbox-new-msg-cta {
 
 .lunar-input {
     padding: 12px 14px;
-    border: 1.5px solid rgba(53, 125, 197, 0.15);
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
     border-radius: 8px;
     font-family: 'Satoshi', sans-serif;
     font-size: 15px;
@@ -2775,7 +3256,7 @@ body.moon-down .inbox-new-msg-cta {
 /* Lunar Note result card — the collectible output */
 .lunar-result-card {
     background: white;
-    border: 1.5px solid rgba(53, 125, 197, 0.15);
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
     border-radius: 14px;
     padding: 24px 20px 16px;
     text-align: center;
@@ -2844,7 +3325,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .lunar-action-btn:hover {
-    background: rgba(53, 125, 197, 0.08);
+    background: rgba(212, 181, 138, 0.08);
 }
 
 /* Lunar Note step-through cards */
@@ -2855,7 +3336,7 @@ body.moon-down .inbox-new-msg-cta {
 .lunar-step-card {
     display: none;
     background: white;
-    border: 1.5px solid rgba(53, 125, 197, 0.15);
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
     border-radius: 12px;
     padding: 20px;
     text-align: center;
@@ -2877,7 +3358,7 @@ body.moon-down .inbox-new-msg-cta {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(53, 125, 197, 0.15);
+    background: rgba(212, 181, 138, 0.15);
     transition: all 0.2s;
 }
 
@@ -2938,7 +3419,7 @@ body.moon-down .inbox-new-msg-cta {
     padding: 12px 16px;
     background: none;
     color: var(--text-muted);
-    border: 1px solid rgba(53, 125, 197, 0.15);
+    border: 1px solid rgba(212, 181, 138, 0.15);
     border-radius: 8px;
     font-family: 'Satoshi', sans-serif;
     font-size: 13px;
@@ -2966,8 +3447,8 @@ body.moon-down .inbox-new-msg-cta {
     align-items: center;
     gap: 6px;
     padding: 7px 14px;
-    background: rgba(53, 125, 197, 0.04);
-    border: 1.5px solid rgba(53, 125, 197, 0.15);
+    background: rgba(212, 181, 138, 0.04);
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
     border-radius: 20px;
     font-family: 'Satoshi', sans-serif;
     font-size: 12px;
@@ -2978,7 +3459,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .song-pill:hover {
-    background: rgba(53, 125, 197, 0.1);
+    background: rgba(212, 181, 138, 0.1);
     border-color: var(--blue);
 }
 
@@ -3174,7 +3655,7 @@ body.moon-down .inbox-new-msg-cta {
     height: 34px;
     border-radius: 50%;
     border: none;
-    background: rgba(53, 125, 197, 0.08);
+    background: rgba(212, 181, 138, 0.08);
     color: var(--blue);
     font-size: 18px;
     cursor: pointer;
@@ -3186,7 +3667,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .message-page-back:hover {
-    background: rgba(53, 125, 197, 0.15);
+    background: rgba(212, 181, 138, 0.15);
 }
 
 /* X close button (right side of header) */
@@ -3195,8 +3676,8 @@ body.moon-down .inbox-new-msg-cta {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: 1px solid rgba(79, 195, 247, 0.2);
-    background: rgba(79, 195, 247, 0.08);
+    border: 1px solid rgba(212, 181, 138, 0.2);
+    background: rgba(212, 181, 138, 0.08);
     color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
     display: flex;
@@ -3206,9 +3687,9 @@ body.moon-down .inbox-new-msg-cta {
     flex-shrink: 0;
 }
 .message-page-close:hover {
-    background: rgba(79, 195, 247, 0.15);
+    background: rgba(212, 181, 138, 0.15);
     color: white;
-    border-color: rgba(79, 195, 247, 0.4);
+    border-color: rgba(212, 181, 138, 0.4);
 }
 
 /* Note type toggle bar */
@@ -3223,7 +3704,7 @@ body.moon-down .inbox-new-msg-cta {
     display: flex;
     align-items: center;
     background: rgba(10, 22, 40, 0.6);
-    border: 1px solid rgba(79, 195, 247, 0.15);
+    border: 1px solid rgba(212, 181, 138, 0.15);
     border-radius: 20px;
     padding: 2px;
     cursor: pointer;
@@ -3248,8 +3729,8 @@ body.moon-down .inbox-new-msg-cta {
     color: rgba(255, 255, 255, 0.55);
 }
 .note-mode-toggle .toggle-option.active {
-    background: rgba(79, 195, 247, 0.18);
-    color: #4fc3f7;
+    background: rgba(212, 181, 138, 0.18);
+    color: var(--accent);
 }
 
 /* Reply input wrapper (+ button inside input) */
@@ -3257,21 +3738,21 @@ body.moon-down .inbox-new-msg-cta {
     flex: 1;
     display: flex;
     align-items: center;
-    border: 1.5px solid rgba(79, 195, 247, 0.2);
+    border: 1.5px solid rgba(212, 181, 138, 0.2);
     border-radius: 24px;
     background: rgba(10, 22, 40, 0.6);
     overflow: hidden;
     transition: border-color 0.2s;
 }
 .reply-input-wrapper:focus-within {
-    border-color: rgba(79, 195, 247, 0.4);
+    border-color: rgba(212, 181, 138, 0.4);
 }
 .reply-attach-btn {
     width: 36px;
     height: 36px;
     border: none;
     background: transparent;
-    color: #4fc3f7;
+    color: var(--accent);
     font-size: 22px;
     font-weight: 300;
     cursor: pointer;
@@ -3282,7 +3763,7 @@ body.moon-down .inbox-new-msg-cta {
     justify-content: center;
 }
 .reply-attach-btn:hover {
-    background: rgba(79, 195, 247, 0.1);
+    background: rgba(212, 181, 138, 0.1);
 }
 .reply-input-wrapper .message-page-input {
     border: none !important;
@@ -3300,7 +3781,7 @@ body.moon-down .inbox-new-msg-cta {
 .attach-option {
     padding: 6px 14px;
     border-radius: 12px;
-    border: 1px solid rgba(79, 195, 247, 0.2);
+    border: 1px solid rgba(212, 181, 138, 0.2);
     background: rgba(10, 22, 40, 0.8);
     color: rgba(255, 255, 255, 0.7);
     font-size: 12px;
@@ -3309,8 +3790,8 @@ body.moon-down .inbox-new-msg-cta {
     transition: all 0.2s;
 }
 .attach-option:hover {
-    background: rgba(79, 195, 247, 0.1);
-    border-color: rgba(79, 195, 247, 0.35);
+    background: rgba(212, 181, 138, 0.1);
+    border-color: rgba(212, 181, 138, 0.35);
     color: white;
 }
 
@@ -3384,8 +3865,8 @@ body.moon-down .inbox-new-msg-cta {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    border: 1.5px solid rgba(53, 125, 197, 0.2);
-    background: rgba(53, 125, 197, 0.04);
+    border: 1.5px solid rgba(212, 181, 138, 0.2);
+    background: rgba(212, 181, 138, 0.04);
     font-size: 16px;
     cursor: pointer;
     display: flex;
@@ -3396,7 +3877,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .lunar-note-pill-sm:hover {
-    background: rgba(53, 125, 197, 0.1);
+    background: rgba(212, 181, 138, 0.1);
     border-color: var(--blue);
 }
 
@@ -3447,12 +3928,12 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .message-status-badge.orbiting {
-    background: rgba(255, 85, 88, 0.1);
+    background: rgba(212, 181, 138, 0.1);
     color: var(--coral);
 }
 
 .message-status-badge.released {
-    background: rgba(53, 125, 197, 0.1);
+    background: rgba(212, 181, 138, 0.1);
     color: var(--blue);
 }
 
@@ -3466,14 +3947,14 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .delivery-info-box.known {
-    background: rgba(53, 125, 197, 0.08);
-    border: 1px solid rgba(53, 125, 197, 0.15);
+    background: rgba(212, 181, 138, 0.08);
+    border: 1px solid rgba(212, 181, 138, 0.15);
     color: var(--blue);
 }
 
 .delivery-info-box.new-user {
-    background: rgba(255, 85, 88, 0.06);
-    border: 1px solid rgba(255, 85, 88, 0.15);
+    background: rgba(212, 181, 138, 0.06);
+    border: 1px solid rgba(212, 181, 138, 0.15);
     color: var(--text-dark);
 }
 
@@ -3483,7 +3964,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .message-status-badge.received {
-    background: rgba(53, 125, 197, 0.06);
+    background: rgba(212, 181, 138, 0.06);
     color: var(--text-muted);
 }
 
@@ -3514,7 +3995,7 @@ body.moon-down .inbox-new-msg-cta {
     background: conic-gradient(
         from var(--border-angle, 0deg),
         transparent 40%,
-        rgba(79, 195, 247, 0.6) 50%,
+        rgba(212, 181, 138, 0.6) 50%,
         transparent 60%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -3534,13 +4015,13 @@ body.moon-down .inbox-new-msg-cta {
 /* Fallback glow for browsers without @property */
 @supports not (background: conic-gradient(from 0deg, red, blue)) {
     .message-bubble-transit-wrap .message-bubble.sent {
-        border: 1.5px solid rgba(79, 195, 247, 0.3);
+        border: 1.5px solid rgba(212, 181, 138, 0.3);
         animation: transitPulseFallback 3s ease-in-out infinite;
     }
 }
 @keyframes transitPulseFallback {
-    0%, 100% { border-color: rgba(79, 195, 247, 0.2); }
-    50% { border-color: rgba(79, 195, 247, 0.5); }
+    0%, 100% { border-color: rgba(212, 181, 138, 0.2); }
+    50% { border-color: rgba(212, 181, 138, 0.5); }
 }
 /* No reactions or reply on in-transit messages */
 .message-bubble-transit-wrap .msg-actions-row {
@@ -3550,14 +4031,14 @@ body.moon-down .inbox-new-msg-cta {
     text-align: center;
     padding: 8px 0 2px;
     font-size: 15px;
-    color: rgba(79, 195, 247, 0.7);
+    color: rgba(212, 181, 138, 0.7);
     font-style: italic;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 5px;
 }
-.transit-eta-label svg { width: 16px; height: 16px; fill: rgba(79, 195, 247, 0.7); }
+.transit-eta-label svg { width: 16px; height: 16px; fill: rgba(212, 181, 138, 0.7); }
 /* Transit zone — starfield background */
 .transit-zone {
     position: relative;
@@ -3588,7 +4069,7 @@ body.moon-down .inbox-new-msg-cta {
 
 .transit-progress {
     height: 3px;
-    background: rgba(53, 125, 197, 0.15);
+    background: rgba(212, 181, 138, 0.15);
     border-radius: 2px;
     margin-top: 6px;
     overflow: hidden;
@@ -3645,7 +4126,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .message-bubble {
-    background: rgba(53, 125, 197, 0.1);
+    background: rgba(212, 181, 138, 0.1);
     padding: 16px 20px;
     border-radius: 16px;
     border-bottom-left-radius: 4px;
@@ -3681,28 +4162,32 @@ body.moon-down .inbox-new-msg-cta {
     color: rgba(255,255,255,0.7);
 }
 
-/* Unread badge (coral pill) */
+/* Unread badge (brass pill) */
 .unread-badge {
-    background: #E8755A;
-    color: white;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-family: var(--sans);
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     min-width: 20px;
     height: 20px;
-    border-radius: 10px;
+    border-radius: var(--radius-pill);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0 6px;
+    letter-spacing: 0.2px;
 }
 
 /* Unread conversation row styling */
 .message-item.unread .message-sender {
-    font-weight: 700;
+    font-weight: 600;
+    color: var(--text-bright);
 }
 .message-item.unread .message-preview {
-    color: var(--blue);
-    font-weight: 600;
+    color: var(--text);
+    font-style: normal;
+    font-weight: 500;
 }
 
 /* Pulsing unread badge */
@@ -3710,8 +4195,8 @@ body.moon-down .inbox-new-msg-cta {
     animation: unreadPulse 1.5s ease-in-out infinite;
 }
 @keyframes unreadPulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(232, 117, 90, 0.5); }
-    50% { transform: scale(1.15); box-shadow: 0 0 8px 2px rgba(232, 117, 90, 0.3); }
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(212, 181, 138, 0.5); }
+    50% { transform: scale(1.15); box-shadow: 0 0 8px 2px rgba(212, 181, 138, 0.35); }
 }
 
 /* New message flash animation on conversation row */
@@ -3719,13 +4204,13 @@ body.moon-down .inbox-new-msg-cta {
     animation: rowFlash 1.2s ease-out;
 }
 @keyframes rowFlash {
-    0% { background: rgba(53, 125, 197, 0.2); }
-    30% { background: rgba(53, 125, 197, 0.12); }
+    0% { background: rgba(212, 181, 138, 0.18); }
+    30% { background: rgba(212, 181, 138, 0.10); }
     100% { background: transparent; }
 }
-/* Unread conversation has subtle background tint */
+/* Unread conversation has subtle brass tint */
 .message-item.unread {
-    background: rgba(53, 125, 197, 0.05);
+    background: rgba(212, 181, 138, 0.04);
 }
 
 /* Notification toast */
@@ -3745,7 +4230,7 @@ body.moon-down .inbox-new-msg-cta {
     transition: transform 0.3s ease, opacity 0.3s ease;
     pointer-events: none;
     font-family: 'Satoshi', sans-serif;
-    box-shadow: 0 4px 20px rgba(53, 125, 197, 0.3);
+    box-shadow: 0 4px 20px rgba(212, 181, 138, 0.3);
     max-width: 90%;
     text-align: center;
 }
@@ -3764,7 +4249,7 @@ body.moon-down .inbox-new-msg-cta {
     color: rgba(255,255,255,0.5);
 }
 .read-receipt.read {
-    color: #4fc3f7;
+    color: var(--accent);
 }
 .read-receipt.seen-label {
     font-size: 10px;
@@ -3839,7 +4324,7 @@ body.moon-down .inbox-new-msg-cta {
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    border: 1px solid rgba(79, 195, 247, 0.25);
+    border: 1px solid rgba(212, 181, 138, 0.25);
     background: rgba(8, 18, 35, 0.85);
     color: rgba(255, 255, 255, 0.7);
     font-size: 15px;
@@ -3858,9 +4343,9 @@ body.moon-down .inbox-new-msg-cta {
 .msg-react-trigger:hover,
 .msg-react-trigger:active {
     opacity: 1 !important;
-    background: rgba(79, 195, 247, 0.18);
-    border-color: #4fc3f7;
-    color: #4fc3f7;
+    background: rgba(212, 181, 138, 0.18);
+    border-color: var(--accent);
+    color: var(--accent);
     transform: scale(1.12);
 }
 .msg-react-trigger.pulse {
@@ -3890,8 +4375,8 @@ body.moon-down .inbox-new-msg-cta {
     border-radius: 16px;
     background: rgba(12, 25, 45, 0.97);
     backdrop-filter: blur(16px);
-    border: 1px solid rgba(79, 195, 247, 0.25);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(79, 195, 247, 0.08);
+    border: 1px solid rgba(212, 181, 138, 0.25);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(212, 181, 138, 0.08);
     animation: pickerFadeIn 0.15s ease;
 }
 @keyframes pickerFadeIn {
@@ -3903,7 +4388,7 @@ body.moon-down .inbox-new-msg-cta {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
-    color: rgba(79, 195, 247, 0.5);
+    color: rgba(212, 181, 138, 0.5);
     padding: 2px 4px 6px;
     width: 100%;
 }
@@ -3923,7 +4408,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 .reaction-picker-fixed .reaction-option:hover,
 .reaction-picker-fixed .reaction-option:active {
-    background: rgba(79, 195, 247, 0.18);
+    background: rgba(212, 181, 138, 0.18);
     transform: scale(1.2);
 }
 
@@ -3943,7 +4428,7 @@ body.moon-down .inbox-new-msg-cta {
     gap: 4px;
     padding: 4px 10px;
     background: rgba(18, 32, 55, 0.85);
-    border: 1px solid rgba(79, 195, 247, 0.12);
+    border: 1px solid rgba(212, 181, 138, 0.12);
     border-radius: 16px;
     font-size: 14px;
     cursor: pointer;
@@ -3955,13 +4440,13 @@ body.moon-down .inbox-new-msg-cta {
 
 .reaction-chip:hover {
     background: rgba(24, 42, 68, 0.9);
-    border-color: rgba(79, 195, 247, 0.3);
+    border-color: rgba(212, 181, 138, 0.3);
 }
 
 .reaction-chip.active {
     background: rgba(30, 55, 90, 0.9);
-    border-color: rgba(79, 195, 247, 0.5);
-    box-shadow: 0 0 8px rgba(79, 195, 247, 0.15);
+    border-color: rgba(212, 181, 138, 0.5);
+    box-shadow: 0 0 8px rgba(212, 181, 138, 0.15);
 }
 
 .reaction-chip .reaction-count {
@@ -3972,14 +4457,14 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .reaction-chip.active .reaction-count {
-    color: #4fc3f7;
+    color: var(--accent);
 }
 
 .add-reaction-btn {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    border: 1.5px dashed rgba(53, 125, 197, 0.2);
+    border: 1.5px dashed rgba(212, 181, 138, 0.2);
     background: none;
     color: var(--text-muted);
     font-size: 14px;
@@ -3993,7 +4478,7 @@ body.moon-down .inbox-new-msg-cta {
 .add-reaction-btn:hover {
     border-color: var(--blue);
     color: var(--blue);
-    background: rgba(53, 125, 197, 0.06);
+    background: rgba(212, 181, 138, 0.06);
 }
 
 /* Reaction picker popup */
@@ -4039,7 +4524,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .reaction-option:hover {
-    background: rgba(53, 125, 197, 0.1);
+    background: rgba(212, 181, 138, 0.1);
     transform: scale(1.15);
 }
 
@@ -4057,7 +4542,7 @@ body.moon-down .inbox-new-msg-cta {
 /* In-thread Lunar Note panel — dark theme */
 .thread-lunar-panel {
     padding: 14px 16px;
-    border-top: 1px solid rgba(79, 195, 247, 0.15);
+    border-top: 1px solid rgba(212, 181, 138, 0.15);
     background: rgba(10, 22, 42, 0.95);
     border-radius: 12px 12px 0 0;
     margin: 0;
@@ -4071,7 +4556,7 @@ body.moon-down .inbox-new-msg-cta {
     align-items: center;
     font-size: 13px;
     font-weight: 700;
-    color: #4fc3f7;
+    color: var(--accent);
     margin-bottom: 8px;
 }
 
@@ -4080,7 +4565,7 @@ body.moon-down .inbox-new-msg-cta {
     height: 24px;
     border-radius: 50%;
     border: none;
-    background: rgba(255, 85, 88, 0.15);
+    background: rgba(212, 181, 138, 0.15);
     color: var(--coral);
     font-size: 14px;
     cursor: pointer;
@@ -4103,7 +4588,7 @@ body.moon-down .inbox-new-msg-cta {
 .thread-lunar-label {
     font-size: 15px;
     font-weight: 600;
-    color: #4fc3f7;
+    color: var(--accent);
     text-transform: lowercase;
     display: block;
     margin-bottom: 6px;
@@ -4112,7 +4597,7 @@ body.moon-down .inbox-new-msg-cta {
 .thread-lunar-input {
     width: 100%;
     padding: 12px 14px;
-    border: 1.5px solid rgba(79, 195, 247, 0.2);
+    border: 1.5px solid rgba(212, 181, 138, 0.2);
     border-radius: 10px;
     font-family: 'Satoshi', sans-serif;
     font-size: 16px;
@@ -4129,7 +4614,7 @@ body.moon-down .inbox-new-msg-cta {
 
 .thread-lunar-input:focus {
     outline: none;
-    border-color: #4fc3f7;
+    border-color: var(--accent);
 }
 
 .thread-lunar-result {
@@ -4141,12 +4626,12 @@ body.moon-down .inbox-new-msg-cta {
     line-height: 1.6;
     color: rgba(255, 255, 255, 0.85);
     white-space: pre-line;
-    border: 1px solid rgba(79, 195, 247, 0.15);
+    border: 1px solid rgba(212, 181, 138, 0.15);
 }
 
 .thread-lunar-result .lunar-closing {
     font-size: 14px;
-    color: rgba(79, 195, 247, 0.6);
+    color: rgba(212, 181, 138, 0.6);
     margin-top: 6px;
     font-style: italic;
 }
@@ -4164,7 +4649,7 @@ body.moon-down .inbox-new-msg-cta {
     padding: 10px;
     border-radius: 10px;
     border: none;
-    background: #4fc3f7;
+    background: var(--accent);
     color: #050e1e;
     font-family: 'Satoshi', sans-serif;
     font-size: 13px;
@@ -4189,9 +4674,9 @@ body.moon-down .inbox-new-msg-cta {
     font-size: 12px;
     font-weight: 600;
     margin-top: 6px;
-    background: rgba(79, 195, 247, 0.2);
-    color: #4fc3f7;
-    border: 1px solid rgba(79, 195, 247, 0.25);
+    background: rgba(212, 181, 138, 0.2);
+    color: var(--accent);
+    border: 1px solid rgba(212, 181, 138, 0.25);
     border-radius: 8px;
     cursor: pointer;
     font-family: 'Satoshi', sans-serif;
@@ -4199,14 +4684,14 @@ body.moon-down .inbox-new-msg-cta {
 }
 .thread-lunar-panel .lunar-step-next:hover:not(:disabled),
 .thread-lunar-panel .thread-lunar-next-btn:hover:not(:disabled) {
-    background: rgba(79, 195, 247, 0.3);
-    border-color: #4fc3f7;
+    background: rgba(212, 181, 138, 0.3);
+    border-color: var(--accent);
 }
 .thread-lunar-panel .lunar-step-next:disabled,
 .thread-lunar-panel .thread-lunar-next-btn:disabled {
-    background: rgba(79, 195, 247, 0.08);
-    color: rgba(79, 195, 247, 0.3);
-    border-color: rgba(79, 195, 247, 0.1);
+    background: rgba(212, 181, 138, 0.08);
+    color: rgba(212, 181, 138, 0.3);
+    border-color: rgba(212, 181, 138, 0.1);
     cursor: not-allowed;
 }
 /* Back button in thread lunar panel */
@@ -4214,7 +4699,7 @@ body.moon-down .inbox-new-msg-cta {
     color: rgba(255, 255, 255, 0.45) !important;
 }
 .thread-lunar-panel .lunar-step-back:hover {
-    color: #4fc3f7 !important;
+    color: var(--accent) !important;
 }
 /* Header row: title + cancel link */
 .thread-lunar-header-row {
@@ -4257,10 +4742,10 @@ body.moon-down .inbox-new-msg-cta {
     transition: background 0.2s;
 }
 .thread-dot.active {
-    background: #4fc3f7;
+    background: var(--accent);
 }
 .thread-dot.done {
-    background: rgba(79, 195, 247, 0.5);
+    background: rgba(212, 181, 138, 0.5);
 }
 /* Step nav row */
 .thread-lunar-step-nav {
@@ -4275,7 +4760,7 @@ body.moon-down .inbox-new-msg-cta {
     border-radius: 12px;
     padding: 16px;
     margin: 10px 0 0;
-    border: 1px solid rgba(79, 195, 247, 0.15);
+    border: 1px solid rgba(212, 181, 138, 0.15);
     animation: threadLunarCardIn 0.35s ease;
     overflow: hidden;
 }
@@ -4286,7 +4771,7 @@ body.moon-down .inbox-new-msg-cta {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #4fc3f7, rgba(255, 85, 88, 0.6), #4fc3f7);
+    background: linear-gradient(90deg, var(--accent), rgba(212, 181, 138, 0.6), var(--accent));
 }
 @keyframes threadLunarCardIn {
     from { opacity: 0; transform: scale(0.95); }
@@ -4296,7 +4781,7 @@ body.moon-down .inbox-new-msg-cta {
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    color: rgba(79, 195, 247, 0.5);
+    color: rgba(212, 181, 138, 0.5);
     margin-bottom: 10px;
     font-weight: 700;
 }
@@ -4308,7 +4793,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 .thread-lunar-result-closing {
     font-size: 14px;
-    color: rgba(79, 195, 247, 0.6);
+    color: rgba(212, 181, 138, 0.6);
     margin-top: 8px;
     font-style: italic;
 }
@@ -4320,19 +4805,19 @@ body.moon-down .inbox-new-msg-cta {
 }
 .thread-lunar-action-btn {
     background: none;
-    border: 1px solid rgba(79, 195, 247, 0.2);
+    border: 1px solid rgba(212, 181, 138, 0.2);
     border-radius: 8px;
     padding: 6px 12px;
     font-family: 'Satoshi', sans-serif;
     font-size: 12px;
-    color: rgba(79, 195, 247, 0.7);
+    color: rgba(212, 181, 138, 0.7);
     cursor: pointer;
     transition: all 0.15s;
 }
 .thread-lunar-action-btn:hover {
-    border-color: #4fc3f7;
-    color: #4fc3f7;
-    background: rgba(79, 195, 247, 0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(212, 181, 138, 0.08);
 }
 
 
@@ -4349,7 +4834,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .circle-row:hover {
-    background: rgba(53, 125, 197, 0.04);
+    background: rgba(212, 181, 138, 0.04);
 }
 
 .circle-row-icon {
@@ -4357,7 +4842,7 @@ body.moon-down .inbox-new-msg-cta {
     height: 36px;
     border-radius: 50%;
     background: linear-gradient(135deg, #f0ebe0 0%, #e8e0d0 100%);
-    border: 1.5px solid rgba(53, 125, 197, 0.15);
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4395,17 +4880,17 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .circle-row-status.awaiting {
-    background: rgba(255, 85, 88, 0.1);
+    background: rgba(212, 181, 138, 0.1);
     color: var(--coral);
 }
 
 .circle-row-status.contributed {
-    background: rgba(53, 125, 197, 0.08);
+    background: rgba(212, 181, 138, 0.08);
     color: var(--blue);
 }
 
 .circle-row-status.revealed {
-    background: rgba(53, 125, 197, 0.12);
+    background: rgba(212, 181, 138, 0.12);
     color: var(--blue);
 }
 
@@ -4437,7 +4922,7 @@ body.moon-down .inbox-new-msg-cta {
     margin: 0 20px 16px;
     border-radius: 12px;
     background: linear-gradient(135deg, #f8f5ef 0%, #f0ebe0 100%);
-    border: 1.5px solid rgba(53, 125, 197, 0.12);
+    border: 1.5px solid rgba(212, 181, 138, 0.12);
 }
 
 .circle-tonight-label {
@@ -4461,8 +4946,8 @@ body.moon-down .inbox-new-msg-cta {
     margin: 0 20px 16px;
     padding: 12px;
     border-radius: 12px;
-    border: 2px dashed rgba(53, 125, 197, 0.2);
-    background: rgba(53, 125, 197, 0.03);
+    border: 2px dashed rgba(212, 181, 138, 0.2);
+    background: rgba(212, 181, 138, 0.03);
     color: var(--blue);
     font-family: 'Satoshi', sans-serif;
     font-size: 14px;
@@ -4473,7 +4958,7 @@ body.moon-down .inbox-new-msg-cta {
 
 .circle-contribute-btn:hover {
     border-color: var(--blue);
-    background: rgba(53, 125, 197, 0.06);
+    background: rgba(212, 181, 138, 0.06);
 }
 
 /* Night sections */
@@ -4495,7 +4980,7 @@ body.moon-down .inbox-new-msg-cta {
     padding: 14px 16px;
     border-radius: 10px;
     background: var(--white);
-    border: 1px solid rgba(53, 125, 197, 0.08);
+    border: 1px solid rgba(212, 181, 138, 0.08);
     margin-bottom: 10px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.03);
 }
@@ -4531,7 +5016,7 @@ body.moon-down .inbox-new-msg-cta {
     font-style: italic;
     padding: 14px 16px;
     text-align: center;
-    background: rgba(53, 125, 197, 0.03);
+    background: rgba(212, 181, 138, 0.03);
     border-radius: 10px;
     margin-bottom: 10px;
 }
@@ -4551,14 +5036,14 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .create-circle-option:hover {
-    background: rgba(53, 125, 197, 0.04);
+    background: rgba(212, 181, 138, 0.04);
 }
 
 .create-circle-icon {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    border: 2px dashed rgba(53, 125, 197, 0.3);
+    border: 2px dashed rgba(212, 181, 138, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4572,7 +5057,7 @@ body.moon-down .inbox-new-msg-cta {
     padding: 16px;
     border-radius: 12px;
     background: linear-gradient(135deg, #f8f5ef 0%, #f0ebe0 100%);
-    border: 1.5px solid rgba(53, 125, 197, 0.12);
+    border: 1.5px solid rgba(212, 181, 138, 0.12);
 }
 
 .circle-contribute-panel .thread-lunar-step {
@@ -4587,7 +5072,7 @@ body.moon-down .inbox-new-msg-cta {
     font-size: 14px;
     line-height: 1.6;
     white-space: pre-line;
-    border: 1px solid rgba(53, 125, 197, 0.1);
+    border: 1px solid rgba(212, 181, 138, 0.1);
 }
 
 .circle-member-chip {
@@ -4595,7 +5080,7 @@ body.moon-down .inbox-new-msg-cta {
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: rgba(53, 125, 197, 0.06);
+    background: rgba(212, 181, 138, 0.06);
     border-radius: 20px;
     font-size: 13px;
     color: var(--text-dark);
@@ -4607,7 +5092,7 @@ body.moon-down .inbox-new-msg-cta {
     height: 16px;
     border-radius: 50%;
     border: none;
-    background: rgba(255, 85, 88, 0.15);
+    background: rgba(212, 181, 138, 0.15);
     color: var(--coral);
     font-size: 10px;
     cursor: pointer;
@@ -4619,7 +5104,7 @@ body.moon-down .inbox-new-msg-cta {
 /* Lunar Note card in message thread */
 .bubble-lunar-note {
     background: linear-gradient(135deg, #f8f5ef 0%, #f0ebe0 100%);
-    border: 1.5px solid rgba(53, 125, 197, 0.15);
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
     border-radius: 14px;
     padding: 18px 16px 14px;
     text-align: center;
@@ -4668,7 +5153,7 @@ body.moon-down .inbox-new-msg-cta {
     border-radius: 10px;
     overflow: hidden;
     margin-top: 10px;
-    border: 1.5px solid rgba(53, 125, 197, 0.15);
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
     animation: lunarCardIn 0.2s ease;
     position: relative;
 }
@@ -4699,7 +5184,7 @@ body.moon-down .inbox-new-msg-cta {
     height: 22px;
     border-radius: 50%;
     border: none;
-    background: rgba(255, 85, 88, 0.1);
+    background: rgba(212, 181, 138, 0.1);
     color: var(--coral);
     font-size: 13px;
     cursor: pointer;
@@ -4709,25 +5194,25 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .yt-embed-remove:hover {
-    background: rgba(255, 85, 88, 0.2);
+    background: rgba(212, 181, 138, 0.2);
 }
 
 /* Orbit dot highlight (from inbox hover) */
 .message-dot.highlighted {
     transform: translateX(-50%) scale(1.8);
-    box-shadow: 0 0 16px rgba(255, 85, 88, 0.7), 0 0 30px rgba(255, 85, 88, 0.3);
+    box-shadow: 0 0 16px rgba(212, 181, 138, 0.7), 0 0 30px rgba(212, 181, 138, 0.3);
     z-index: 20;
 }
 
 /* Inbox message item hover → orbit connection */
 .message-item[data-orbiting="true"]:hover {
-    background: rgba(255, 85, 88, 0.05);
+    background: rgba(212, 181, 138, 0.05);
 }
 
 /* New contact section in compose */
 .new-contact-section {
     padding: 12px 16px;
-    background: rgba(53, 125, 197, 0.08);
+    background: rgba(212, 181, 138, 0.08);
     border-radius: 8px;
     margin-top: 8px;
     display: none;
@@ -4756,7 +5241,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .add-contact-btn:hover {
-    background: rgba(53, 125, 197, 0.1);
+    background: rgba(212, 181, 138, 0.1);
 }
 
 /* Empty state for new users */
@@ -4815,7 +5300,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .gentle-reveal-preview {
-    background: rgba(53, 125, 197, 0.08);
+    background: rgba(212, 181, 138, 0.08);
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 24px;
@@ -4892,10 +5377,15 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .edit-button:hover {
-    background: rgba(53, 125, 197, 0.1);
+    background: rgba(212, 181, 138, 0.1);
 }
 
-/* Moon Reveal Page (for recipients) */
+/* ============================================================
+   MOON REVEAL PAGE (recipient landing) — editorial brass-on-navy
+   The first surface a recipient sees. Treats the message itself
+   like an aged-paper letter sitting under a brass spotlight on
+   a midnight desk.
+   ============================================================ */
 .moon-reveal-page {
     display: none;
     position: fixed;
@@ -4903,9 +5393,11 @@ body.moon-down .inbox-new-msg-cta {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    background: var(--bg);
     z-index: 6000;
     overflow-y: auto;
+    color: var(--text);
+    font-family: var(--sans);
 }
 
 .moon-reveal-page.active {
@@ -4913,94 +5405,132 @@ body.moon-down .inbox-new-msg-cta {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 40px 20px;
+    padding: var(--space-7) var(--space-5);
 }
 
 .moon-reveal-header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: var(--space-7);
 }
 
 .moon-reveal-logo {
-    height: 20px;
-    margin-bottom: 24px;
-    opacity: 0.6;
+    height: 22px;
+    margin-bottom: var(--space-5);
+    opacity: 0.85;
 }
 
 .moon-reveal-visual {
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 24px;
+    width: 132px;
+    height: 132px;
+    margin: 0 auto var(--space-5);
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #ffeaa7, #dfe6e9);
-    box-shadow: 0 0 60px rgba(255, 234, 167, 0.4);
+    background: radial-gradient(circle at 32% 32%, #F0DFC2, #C9A874 70%, #8B6F45);
+    box-shadow:
+        0 0 80px rgba(212, 181, 138, 0.32),
+        inset -10px -12px 30px rgba(120, 95, 65, 0.22);
 }
 
 .moon-reveal-tagline {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.6);
+    font-family: var(--serif);
     font-style: italic;
+    font-size: 16px;
+    color: var(--muted);
+    letter-spacing: -0.01em;
 }
 
 .moon-reveal-content {
-    max-width: 480px;
+    max-width: 520px;
     width: 100%;
     text-align: center;
 }
 
 .moon-reveal-sender {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 8px;
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    margin-bottom: var(--space-3);
+}
+.moon-reveal-sender strong {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 18px;
+    color: var(--accent);
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 6px;
 }
 
 .moon-reveal-countdown {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    padding: 32px;
-    margin-bottom: 24px;
+    background: var(--panel);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-lg);
+    padding: var(--space-7) var(--space-6);
+    margin-bottom: var(--space-5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .countdown-label-reveal {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.5);
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--accent);
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 12px;
+    letter-spacing: var(--tracking-label);
+    margin-bottom: var(--space-3);
 }
 
 .countdown-time-reveal {
-    font-size: 48px;
-    font-weight: 900;
-    color: white;
-    margin-bottom: 8px;
+    font-family: var(--serif);
+    font-size: clamp(44px, 8vw, 56px);
+    font-weight: 500;
+    color: var(--text-bright);
+    margin-bottom: var(--space-2);
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
 }
 
 .countdown-note {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.5);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: var(--lh-body);
 }
 
+/* The message itself — warm cream "letter paper" on the navy desk.
+   Dark navy ink mirrors a hand-written note. */
 .moon-reveal-message {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 16px;
-    padding: 32px;
-    margin-bottom: 24px;
+    background: linear-gradient(180deg, #F4E7CD 0%, #EAD8BF 100%);
+    border: 1px solid rgba(120, 95, 65, 0.22);
+    border-radius: var(--radius-md);
+    padding: var(--space-7) var(--space-6);
+    margin-bottom: var(--space-5);
     text-align: left;
+    box-shadow:
+        var(--shadow-md),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .reveal-message-text {
-    font-size: 18px;
-    line-height: 1.6;
+    font-family: var(--serif);
+    font-size: 19px;
+    line-height: 1.55;
     color: #1a1a2e;
-    margin-bottom: 16px;
+    margin-bottom: var(--space-4);
+    letter-spacing: -0.005em;
 }
 
 .reveal-message-meta {
-    font-size: 12px;
-    color: #666;
-    padding-top: 16px;
-    border-top: 1px solid #e0e0e0;
+    font-family: var(--sans);
+    font-size: 11px;
+    color: rgba(26, 26, 46, 0.55);
+    padding-top: var(--space-4);
+    border-top: 1px solid rgba(120, 95, 65, 0.18);
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
 }
 
 .moon-reveal-blurred {
@@ -5011,12 +5541,13 @@ body.moon-down .inbox-new-msg-cta {
 
 .reveal-state-toggle {
     display: flex;
-    gap: 8px;
+    gap: var(--space-2);
     justify-content: center;
-    margin-bottom: 24px;
+    margin-bottom: var(--space-5);
     padding: 4px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 24px;
+    background: var(--panel);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-pill);
     max-width: 280px;
     margin-left: auto;
     margin-right: auto;
@@ -5026,89 +5557,102 @@ body.moon-down .inbox-new-msg-cta {
     padding: 8px 16px;
     border: none;
     background: transparent;
-    color: rgba(255,255,255,0.5);
-    font-family: 'Satoshi', sans-serif;
+    color: var(--muted);
+    font-family: var(--sans);
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
-    border-radius: 20px;
-    transition: all 0.2s;
+    border-radius: var(--radius-pill);
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 
 .reveal-state-toggle button.active {
-    background: rgba(255,255,255,0.2);
-    color: white;
+    background: rgba(212, 181, 138, 0.16);
+    color: var(--accent-bright);
 }
 
 .reveal-state-toggle button:hover:not(.active) {
-    color: rgba(255,255,255,0.8);
+    color: var(--text-bright);
 }
 
 .moon-reveal-cta {
-    margin-top: 32px;
+    margin-top: var(--space-7);
     text-align: center;
 }
 
 .moon-reveal-cta p {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 16px;
-    line-height: 1.5;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 15px;
+    color: var(--muted);
+    margin-bottom: var(--space-4);
+    line-height: var(--lh-body);
 }
 
 .moon-reveal-cta-buttons {
     display: flex;
-    gap: 12px;
+    gap: var(--space-3);
     justify-content: center;
 }
 
 .cta-primary {
-    padding: 14px 28px;
-    background: var(--coral);
-    color: white;
-    border: none;
-    border-radius: 24px;
-    font-family: 'Satoshi', sans-serif;
+    padding: 14px 30px;
+    background: var(--accent);
+    color: var(--on-accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-pill);
+    font-family: var(--sans);
     font-size: 14px;
     font-weight: 600;
+    letter-spacing: 0.4px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, transform var(--dur-fast) ease;
 }
 
 .cta-primary:hover {
-    background: var(--coral-light);
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
     transform: translateY(-1px);
 }
 
 .cta-secondary {
     padding: 14px 28px;
     background: transparent;
-    color: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 24px;
-    font-family: 'Satoshi', sans-serif;
+    color: var(--accent);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    font-family: var(--sans);
     font-size: 14px;
     font-weight: 600;
+    letter-spacing: 0.3px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 
 .cta-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
+    color: var(--accent-bright);
 }
 
 .close-reveal-page {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(255,255,255,0.1);
-    border: none;
-    color: rgba(255,255,255,0.6);
-    width: 40px;
-    height: 40px;
+    top: var(--space-5);
+    right: var(--space-5);
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     font-size: 20px;
     cursor: pointer;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.close-reveal-page:hover {
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
+    color: var(--accent-bright);
 }
 
 /* ──── Split-screen layout ──── */
@@ -5195,15 +5739,17 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .ring-title {
-    color: rgba(255, 255, 255, 0.85);
-    font-size: clamp(14px, 2vw, 20px);
-    font-weight: 700;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text-bright);
+    font-size: clamp(18px, 2.6vw, 26px);
+    font-weight: 500;
     text-align: center;
     align-self: center;
     padding: 0 clamp(16px, 3vw, 32px);
     margin: 0 0 clamp(8px, 2vh, 32px) 0;
-    line-height: 1.4;
-    letter-spacing: 0.3px;
+    line-height: 1.3;
+    letter-spacing: -0.2px;
     flex-shrink: 0;
 }
 
@@ -5215,8 +5761,8 @@ body.moon-down .inbox-new-msg-cta {
     gap: 12px;
     padding: 10px 20px;
     margin: 0 24px 16px;
-    background: rgba(79, 195, 247, 0.08);
-    border: 1px solid rgba(79, 195, 247, 0.2);
+    background: rgba(212, 181, 138, 0.08);
+    border: 1px solid rgba(212, 181, 138, 0.2);
     border-radius: 12px;
     animation: newMoonPulse 4s ease-in-out infinite;
 }
@@ -5236,8 +5782,8 @@ body.moon-down .inbox-new-msg-cta {
 }
 .new-moon-warning-dismiss:hover { color: rgba(232, 244, 253, 0.8); }
 @keyframes newMoonPulse {
-    0%, 100% { border-color: rgba(79, 195, 247, 0.15); }
-    50% { border-color: rgba(79, 195, 247, 0.3); }
+    0%, 100% { border-color: rgba(212, 181, 138, 0.15); }
+    50% { border-color: rgba(212, 181, 138, 0.3); }
 }
 
 /* Inbox-top wipe heads-up banner (≤5 days before the new moon) */
@@ -5248,9 +5794,9 @@ body.moon-down .inbox-new-msg-cta {
     margin: 14px 16px 6px;
     padding: 14px 16px;
     background:
-        radial-gradient(80% 140% at 0% 0%, rgba(79, 195, 247, 0.14), transparent 70%),
+        radial-gradient(80% 140% at 0% 0%, rgba(212, 181, 138, 0.14), transparent 70%),
         linear-gradient(135deg, rgba(10, 22, 40, 0.85), rgba(19, 39, 68, 0.85));
-    border: 1px solid rgba(79, 195, 247, 0.22);
+    border: 1px solid rgba(212, 181, 138, 0.22);
     border-radius: 14px;
     position: relative;
     overflow: hidden;
@@ -5262,7 +5808,7 @@ body.moon-down .inbox-new-msg-cta {
     position: absolute;
     inset: 0 0 auto 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(79, 195, 247, 0.55), transparent);
+    background: linear-gradient(90deg, transparent, rgba(212, 181, 138, 0.55), transparent);
     opacity: 0.7;
     animation: inboxWipeSheen 6s ease-in-out infinite;
 }
@@ -5279,15 +5825,15 @@ body.moon-down .inbox-new-msg-cta {
     background:
         radial-gradient(circle at 35% 35%, rgba(232, 244, 253, 0.15), transparent 60%),
         #0a1628;
-    border: 1px solid rgba(79, 195, 247, 0.35);
+    border: 1px solid rgba(212, 181, 138, 0.35);
     box-shadow:
         inset 0 0 10px rgba(10, 22, 40, 0.9),
-        0 0 14px rgba(79, 195, 247, 0.25);
+        0 0 14px rgba(212, 181, 138, 0.25);
     animation: inboxWipeMoonBreathe 5s ease-in-out infinite;
 }
 @keyframes inboxWipeMoonBreathe {
-    0%, 100% { box-shadow: inset 0 0 10px rgba(10, 22, 40, 0.9), 0 0 10px rgba(79, 195, 247, 0.18); }
-    50%      { box-shadow: inset 0 0 10px rgba(10, 22, 40, 0.9), 0 0 22px rgba(79, 195, 247, 0.45); }
+    0%, 100% { box-shadow: inset 0 0 10px rgba(10, 22, 40, 0.9), 0 0 10px rgba(212, 181, 138, 0.18); }
+    50%      { box-shadow: inset 0 0 10px rgba(10, 22, 40, 0.9), 0 0 22px rgba(212, 181, 138, 0.45); }
 }
 .inbox-wipe-banner-body {
     flex: 1;
@@ -5357,7 +5903,7 @@ body.moon-down .inbox-new-msg-cta {
     margin-bottom: 8px;
 }
 .new-cycle-empty-title {
-    color: rgba(79, 195, 247, 0.7);
+    color: rgba(212, 181, 138, 0.7);
     font-size: 20px;
     font-weight: 300;
     font-style: italic;
@@ -5395,9 +5941,9 @@ body.moon-down .inbox-new-msg-cta {
     height: 28px;
     border-radius: 14px;
     background: linear-gradient(90deg,
-        rgba(79, 195, 247, 0.08),
-        rgba(79, 195, 247, 0.18),
-        rgba(79, 195, 247, 0.04));
+        rgba(212, 181, 138, 0.08),
+        rgba(212, 181, 138, 0.18),
+        rgba(212, 181, 138, 0.04));
     filter: blur(0.5px);
     animation: wiped-dissolve 4.5s ease-in-out infinite;
 }
@@ -5431,7 +5977,7 @@ body.moon-down .inbox-new-msg-cta {
     height: 3px;
     border-radius: 50%;
     background: rgba(232, 244, 253, 0.7);
-    box-shadow: 0 0 6px rgba(79, 195, 247, 0.6);
+    box-shadow: 0 0 6px rgba(212, 181, 138, 0.6);
     opacity: 0;
     transform: translate(-50%, -50%);
     animation: wiped-particle-drift 3.8s ease-out infinite;
@@ -5450,7 +5996,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 .new-cycle-empty.wiped .wiped-moon {
     opacity: 0.55;
-    filter: drop-shadow(0 0 18px rgba(79, 195, 247, 0.35));
+    filter: drop-shadow(0 0 18px rgba(212, 181, 138, 0.35));
     animation: wiped-moon-breathe 5s ease-in-out infinite;
 }
 @keyframes wiped-moon-breathe {
@@ -5501,8 +6047,8 @@ body.moon-down .inbox-new-msg-cta {
     }
     /* Horizontal connecting line from active inbox item to chat */
     body.chat-open .message-item.active {
-        background: rgba(79, 195, 247, 0.10);
-        border-left: 3px solid #4fc3f7;
+        background: rgba(212, 181, 138, 0.10);
+        border-left: 3px solid var(--accent);
         position: relative;
     }
     body.chat-open .message-item.active::after {
@@ -5512,19 +6058,24 @@ body.moon-down .inbox-new-msg-cta {
         top: 50%;
         width: 24px;
         height: 1.5px;
-        background: rgba(79, 195, 247, 0.25);
+        background: rgba(212, 181, 138, 0.25);
     }
-    /* Reposition chat overlay into right panel with margin */
+    /* Reposition chat overlay into right panel with margin.
+       Layout shared between chat-detail (cyan border) and shared-sky
+       (brass border). Visual borders/shadows split below. */
     body.chat-open #messagePageView.active,
     body.chat-open #sharedSkyPage.active {
         position: fixed;
         z-index: 100;
         animation: msgPageInDesktop 0.2s ease;
-        border: 2px solid rgba(79, 195, 247, 0.3);
         border-radius: 16px;
         overflow: hidden;
         margin-right: 24px;
-        box-shadow: 0 0 20px rgba(79, 195, 247, 0.06);
+    }
+    body.chat-open #messagePageView.active,
+    body.chat-open #sharedSkyPage.active {
+        border: 1px solid var(--line-soft);
+        box-shadow: 0 0 24px rgba(212, 181, 138, 0.06);
     }
     body.chat-open #messagePageView .message-page-inner,
     body.chat-open #sharedSkyPage .message-page-inner {
@@ -5532,19 +6083,19 @@ body.moon-down .inbox-new-msg-cta {
         margin: 0;
         height: 100%;
     }
-    /* Chat header — subtle bg like active inbox item */
-    body.chat-open #messagePageView .message-page-header,
-    body.chat-open #sharedSkyPage .message-page-header {
-        background: rgba(8, 18, 35, 0.95);
-        border-bottom: 1px solid rgba(79, 195, 247, 0.18);
+    /* Chat header — editorial dark glass */
+    body.chat-open #messagePageView .message-page-header {
+        background: rgba(3, 10, 24, 0.92);
+        border-bottom: 1px solid var(--line-soft);
         backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
     }
-    /* Chat footer — dark glass bg */
-    body.chat-open #messagePageView .message-page-footer,
-    body.chat-open #sharedSkyPage .message-page-footer {
-        background: rgba(14, 28, 50, 0.97);
-        border-top: 1px solid rgba(79, 195, 247, 0.22);
+    /* Chat footer — editorial dark glass */
+    body.chat-open #messagePageView .message-page-footer {
+        background: rgba(3, 10, 24, 0.92);
+        border-top: 1px solid var(--line-soft);
         backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
     }
     /* Close animation */
     body.chat-open #messagePageView.closing,
@@ -5823,7 +6374,7 @@ body.moon-down .inbox-new-msg-cta {
     background: rgba(10, 22, 40, 0.95);
 }
 #newMessagePicker .message-page-header {
-    border-bottom: 1px solid rgba(79, 195, 247, 0.12);
+    border-bottom: 1px solid rgba(212, 181, 138, 0.12);
 }
 @media (min-width: 901px) {
     body.chat-open #newMessagePicker.active {
@@ -5831,10 +6382,10 @@ body.moon-down .inbox-new-msg-cta {
         z-index: 200;
         right: 24px;
         animation: msgPageInDesktop 0.2s ease;
-        border: 2px solid rgba(79, 195, 247, 0.3);
+        border: 2px solid rgba(212, 181, 138, 0.3);
         border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 0 20px rgba(79, 195, 247, 0.06);
+        box-shadow: 0 0 20px rgba(212, 181, 138, 0.06);
     }
     body.chat-open #newMessagePicker .message-page-inner {
         max-width: none;
@@ -5843,7 +6394,7 @@ body.moon-down .inbox-new-msg-cta {
     }
     body.chat-open #newMessagePicker .message-page-header {
         background: rgba(8, 18, 35, 0.95);
-        border-bottom: 1px solid rgba(79, 195, 247, 0.18);
+        border-bottom: 1px solid rgba(212, 181, 138, 0.18);
         backdrop-filter: blur(16px);
     }
     body.chat-open #newMessagePicker.closing {
@@ -5861,8 +6412,8 @@ body.moon-down .inbox-new-msg-cta {
 }
 #newMsgContactSearch:focus {
     outline: none;
-    border-color: #4fc3f7;
-    box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.15);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
 }
 
 /* Dark starfield background for compose modal */
@@ -5896,10 +6447,10 @@ body.moon-down .inbox-new-msg-cta {
         right: 24px;
         background: transparent;
         animation: msgPageInDesktop 0.2s ease;
-        border: 2px solid rgba(79, 195, 247, 0.3);
+        border: 2px solid rgba(212, 181, 138, 0.3);
         border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 0 20px rgba(79, 195, 247, 0.06);
+        box-shadow: 0 0 20px rgba(212, 181, 138, 0.06);
     }
     body.chat-open #messageModal .message-page-inner {
         max-width: none;
@@ -5909,7 +6460,7 @@ body.moon-down .inbox-new-msg-cta {
     }
     body.chat-open #messageModal .message-page-header {
         background: rgba(8, 18, 35, 0.95);
-        border-bottom: 1px solid rgba(79, 195, 247, 0.18);
+        border-bottom: 1px solid rgba(212, 181, 138, 0.18);
         backdrop-filter: blur(16px);
     }
     body.chat-open #messageModal.closing {
@@ -5937,7 +6488,7 @@ body.moon-down .inbox-new-msg-cta {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: #357dc5;
+    background: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -5970,7 +6521,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 .compose-arrival-time {
     font-size: 12px;
-    color: rgba(79, 195, 247, 0.6);
+    color: rgba(212, 181, 138, 0.6);
     font-weight: 500;
 }
 .compose-header-btn {
@@ -5995,10 +6546,10 @@ body.moon-down .inbox-new-msg-cta {
 .compose-glass-card {
     background: rgba(18, 35, 58, 0.7);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(79, 195, 247, 0.5);
+    border: 1px solid rgba(212, 181, 138, 0.5);
     border-radius: 24px;
     padding: 28px;
-    box-shadow: inset 0 0 10px rgba(79, 195, 247, 0.1), 0 0 15px rgba(79, 195, 247, 0.2), 0 0 20px rgba(0,0,0,0.4);
+    box-shadow: inset 0 0 10px rgba(212, 181, 138, 0.1), 0 0 15px rgba(212, 181, 138, 0.2), 0 0 20px rgba(0,0,0,0.4);
 }
 
 /* Segmented Toggle */
@@ -6013,7 +6564,7 @@ body.moon-down .inbox-new-msg-cta {
     background: rgba(10, 22, 40, 0.6);
     padding: 4px;
     border-radius: 9999px;
-    border: 1px solid rgba(79, 195, 247, 0.15);
+    border: 1px solid rgba(212, 181, 138, 0.15);
 }
 .compose-toggle-btn {
     display: flex;
@@ -6031,9 +6582,9 @@ body.moon-down .inbox-new-msg-cta {
     font-family: inherit;
 }
 .compose-toggle-btn.active {
-    background: #4fc3f7;
+    background: var(--accent);
     color: #0a1628;
-    box-shadow: 0 0 15px rgba(79, 195, 247, 0.4);
+    box-shadow: 0 0 15px rgba(212, 181, 138, 0.4);
 }
 .compose-toggle-btn:not(.active):hover {
     color: rgba(255,255,255,0.7);
@@ -6059,7 +6610,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 .compose-transmit-label {
     text-align: right;
-    color: rgba(79, 195, 247, 0.25);
+    color: rgba(212, 181, 138, 0.25);
     font-size: 10px;
     font-family: monospace;
     text-transform: uppercase;
@@ -6076,16 +6627,16 @@ body.moon-down .inbox-new-msg-cta {
 }
 #messageModal .lunar-panel-header { display: none; }
 #messageModal .lunar-intro {
-    color: rgba(79, 195, 247, 0.5);
+    color: rgba(212, 181, 138, 0.5);
     font-size: 12px;
 }
 #messageModal .lunar-step-card {
     background: rgba(10, 22, 40, 0.4);
-    border-color: rgba(79, 195, 247, 0.15);
+    border-color: rgba(212, 181, 138, 0.15);
     color: white;
 }
 #messageModal .lunar-step-label {
-    color: rgba(79, 195, 247, 0.5);
+    color: rgba(212, 181, 138, 0.5);
 }
 #messageModal .lunar-input {
     background: rgba(10, 22, 40, 0.6);
@@ -6093,18 +6644,18 @@ body.moon-down .inbox-new-msg-cta {
     color: white;
 }
 #messageModal .lunar-input:focus {
-    border-color: rgba(79, 195, 247, 0.5);
+    border-color: rgba(212, 181, 138, 0.5);
 }
 #messageModal .lunar-input::placeholder {
     color: rgba(255,255,255,0.2);
 }
 #messageModal .lunar-step-next {
-    background: rgba(79, 195, 247, 0.1);
-    border: 1px solid rgba(79, 195, 247, 0.4);
-    color: #4fc3f7;
+    background: rgba(212, 181, 138, 0.1);
+    border: 1px solid rgba(212, 181, 138, 0.4);
+    color: var(--accent);
 }
 #messageModal .lunar-step-next:hover:not(:disabled) {
-    background: #4fc3f7;
+    background: var(--accent);
     color: #0a1628;
 }
 #messageModal .lunar-step-back {
@@ -6114,27 +6665,27 @@ body.moon-down .inbox-new-msg-cta {
     background: rgba(255,255,255,0.15);
 }
 #messageModal .lunar-dot.active {
-    background: #4fc3f7;
-    box-shadow: 0 0 8px rgba(79, 195, 247, 0.8);
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(212, 181, 138, 0.8);
 }
 #messageModal .lunar-dot.done {
-    background: rgba(79, 195, 247, 0.4);
+    background: rgba(212, 181, 138, 0.4);
 }
 #messageModal .lunar-result-card {
     background: rgba(18, 35, 58, 0.8);
-    border-color: rgba(79, 195, 247, 0.2);
+    border-color: rgba(212, 181, 138, 0.2);
     color: white;
 }
 #messageModal .lunar-result-card::before {
-    background: linear-gradient(90deg, #4fc3f7, #ff5558, #4fc3f7);
+    background: linear-gradient(90deg, var(--accent), var(--accent), var(--accent));
 }
 #messageModal .lunar-result-label {
-    color: rgba(79, 195, 247, 0.5);
+    color: rgba(212, 181, 138, 0.5);
 }
 #messageModal .lunar-result-text { color: white; }
 #messageModal .lunar-result-closing { color: rgba(255,255,255,0.4); }
-#messageModal .lunar-action-btn { color: #4fc3f7; }
-#messageModal .lunar-action-btn:hover { background: rgba(79, 195, 247, 0.1); }
+#messageModal .lunar-action-btn { color: var(--accent); }
+#messageModal .lunar-action-btn:hover { background: rgba(212, 181, 138, 0.1); }
 
 /* ADD: row */
 .compose-add-row {
@@ -6155,28 +6706,28 @@ body.moon-down .inbox-new-msg-cta {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    border: 1px solid rgba(79, 195, 247, 0.5);
+    border: 1px solid rgba(212, 181, 138, 0.5);
     background: #050a14;
-    color: #4fc3f7;
+    color: var(--accent);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
 }
-.compose-add-btn:hover { background: rgba(79, 195, 247, 0.1); }
+.compose-add-btn:hover { background: rgba(212, 181, 138, 0.1); }
 .compose-add-btn.active {
-    background: #4fc3f7;
+    background: var(--accent);
     color: #050a14;
-    border-color: #4fc3f7;
-    box-shadow: 0 0 15px rgba(79, 195, 247, 0.4);
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(212, 181, 138, 0.4);
 }
 
 /* Music expansion panel */
 .compose-music-panel {
     background: rgba(18, 35, 58, 0.7);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(79, 195, 247, 0.2);
+    border: 1px solid rgba(212, 181, 138, 0.2);
     border-radius: 20px;
     padding: 20px;
     margin-top: 16px;
@@ -6203,7 +6754,7 @@ body.moon-down .inbox-new-msg-cta {
     box-sizing: border-box;
 }
 .compose-music-search input::placeholder { color: rgba(255,255,255,0.35); }
-.compose-music-search input:focus { border-color: rgba(79, 195, 247, 0.5); }
+.compose-music-search input:focus { border-color: rgba(212, 181, 138, 0.5); }
 .compose-music-yt-icon {
     position: absolute;
     left: 14px;
@@ -6249,14 +6800,14 @@ body.moon-down .inbox-new-msg-cta {
     color: rgba(255,255,255,0.7);
 }
 #messageModal #songSearchResults a {
-    color: #4fc3f7;
+    color: var(--accent);
 }
 
 /* Photo panel */
 .compose-photo-panel {
     background: rgba(18, 35, 58, 0.7);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(79, 195, 247, 0.2);
+    border: 1px solid rgba(212, 181, 138, 0.2);
     border-radius: 20px;
     padding: 20px;
     margin-top: 16px;
@@ -6267,7 +6818,7 @@ body.moon-down .inbox-new-msg-cta {
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    border: 2px dashed rgba(79, 195, 247, 0.3);
+    border: 2px dashed rgba(212, 181, 138, 0.3);
     border-radius: 14px;
     padding: 24px;
     text-align: center;
@@ -6275,10 +6826,10 @@ body.moon-down .inbox-new-msg-cta {
     transition: all 0.2s;
 }
 .compose-photo-dropzone:hover {
-    border-color: rgba(79, 195, 247, 0.6);
-    background: rgba(79, 195, 247, 0.05);
+    border-color: rgba(212, 181, 138, 0.6);
+    background: rgba(212, 181, 138, 0.05);
 }
-.compose-photo-dropzone svg { color: rgba(79, 195, 247, 0.4); }
+.compose-photo-dropzone svg { color: rgba(212, 181, 138, 0.4); }
 .compose-photo-dropzone-text {
     color: rgba(255,255,255,0.4);
     font-size: 13px;
@@ -6325,7 +6876,7 @@ body.moon-down .inbox-new-msg-cta {
     justify-content: center;
     gap: 12px;
     padding: 18px 40px;
-    background: #ff5558;
+    background: var(--accent);
     border: none;
     border-radius: 16px;
     color: white;
@@ -6333,12 +6884,12 @@ body.moon-down .inbox-new-msg-cta {
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
-    box-shadow: 0 0 25px rgba(255, 85, 88, 0.4);
+    box-shadow: 0 0 25px rgba(212, 181, 138, 0.4);
     transition: all 0.2s;
 }
 .compose-send-btn:hover {
-    background: rgba(255, 85, 88, 0.9);
-    box-shadow: 0 0 35px rgba(255, 85, 88, 0.5);
+    background: rgba(212, 181, 138, 0.9);
+    box-shadow: 0 0 35px rgba(212, 181, 138, 0.5);
 }
 .compose-send-btn:active { transform: scale(0.97); }
 .compose-send-icons {
@@ -6357,7 +6908,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 /* Dark theme overrides for new contact / step2 forms inside compose */
-#messageModal .form-group label { color: rgba(79, 195, 247, 0.7); }
+#messageModal .form-group label { color: rgba(212, 181, 138, 0.7); }
 #messageModal .form-group input,
 #messageModal .form-group textarea {
     background: rgba(10, 22, 40, 0.6);
@@ -6366,23 +6917,23 @@ body.moon-down .inbox-new-msg-cta {
 }
 #messageModal .form-group input:focus,
 #messageModal .form-group textarea:focus {
-    border-color: rgba(79, 195, 247, 0.5);
+    border-color: rgba(212, 181, 138, 0.5);
 }
 #messageModal .form-group input::placeholder { color: rgba(255,255,255,0.25); }
 #messageModal .modal-header h2 { color: white; }
 #messageModal .modal-subtitle { color: rgba(255,255,255,0.4) !important; }
-#messageModal .new-contact-btn { color: #4fc3f7; border-color: rgba(79, 195, 247, 0.3); }
+#messageModal .new-contact-btn { color: var(--accent); border-color: rgba(212, 181, 138, 0.3); }
 #messageModal .send-button {
-    background: #ff5558;
-    box-shadow: 0 0 20px rgba(255, 85, 88, 0.3);
+    background: var(--accent);
+    box-shadow: 0 0 20px rgba(212, 181, 138, 0.3);
 }
-#messageModal .send-button:hover { background: rgba(255, 85, 88, 0.9); }
+#messageModal .send-button:hover { background: rgba(212, 181, 138, 0.9); }
 #messageModal .recipient-selector input { background: rgba(10, 22, 40, 0.6); color: white; border-color: rgba(255,255,255,0.1); }
-#messageModal .recipient-dropdown { background: rgba(18, 35, 58, 0.95); border-color: rgba(79, 195, 247, 0.2); }
-#messageModal #newContactCityDropdown { background: rgba(18, 35, 58, 0.95); border-color: rgba(79, 195, 247, 0.2); }
+#messageModal .recipient-dropdown { background: rgba(18, 35, 58, 0.95); border-color: rgba(212, 181, 138, 0.2); }
+#messageModal #newContactCityDropdown { background: rgba(18, 35, 58, 0.95); border-color: rgba(212, 181, 138, 0.2); }
 #messageModal #newContactCityDropdown .city-option { color: rgba(255,255,255,0.7); }
-#messageModal #newContactCityDropdown .city-option:hover { background: rgba(79, 195, 247, 0.1); }
-#messageModal .delivery-info-box { background: rgba(79, 195, 247, 0.08); border-color: rgba(79, 195, 247, 0.2); color: rgba(255,255,255,0.6); }
+#messageModal #newContactCityDropdown .city-option:hover { background: rgba(212, 181, 138, 0.1); }
+#messageModal .delivery-info-box { background: rgba(212, 181, 138, 0.08); border-color: rgba(212, 181, 138, 0.2); color: rgba(255,255,255,0.6); }
 /* Compose steps 2/3 — dark form overrides */
 #messageModal .modal-header h2 { color: rgba(255,255,255,0.9); }
 #messageModal .modal-subtitle { color: rgba(255,255,255,0.45); }
@@ -6391,21 +6942,21 @@ body.moon-down .inbox-new-msg-cta {
 #messageModal .form-group textarea {
     background: rgba(10, 22, 40, 0.6);
     color: rgba(255,255,255,0.9);
-    border-color: rgba(79, 195, 247, 0.15);
+    border-color: rgba(212, 181, 138, 0.15);
 }
 #messageModal .form-group input::placeholder { color: rgba(255,255,255,0.2); }
 #messageModal .form-group input:focus {
-    border-color: rgba(79, 195, 247, 0.4);
-    box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.08);
+    border-color: rgba(212, 181, 138, 0.4);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.08);
 }
 #messageModal .new-contact-btn {
-    color: #4fc3f7;
-    border-color: rgba(79, 195, 247, 0.2);
-    background: rgba(79, 195, 247, 0.06);
+    color: var(--accent);
+    border-color: rgba(212, 181, 138, 0.2);
+    background: rgba(212, 181, 138, 0.06);
 }
-#messageModal .new-contact-btn:hover { background: rgba(79, 195, 247, 0.12); }
+#messageModal .new-contact-btn:hover { background: rgba(212, 181, 138, 0.12); }
 #messageModal .recipient-dropdown .recipient-option { color: rgba(255,255,255,0.7); }
-#messageModal .recipient-dropdown .recipient-option:hover { background: rgba(79, 195, 247, 0.1); }
+#messageModal .recipient-dropdown .recipient-option:hover { background: rgba(212, 181, 138, 0.1); }
 
 /* ====================================== */
 /* CONTACTS PAGE — DARK THEME             */
@@ -6426,14 +6977,14 @@ body.moon-down .inbox-new-msg-cta {
 }
 #contactsPage .message-page-header {
     background: rgba(8, 18, 35, 0.9);
-    border-bottom: 1px solid rgba(79, 195, 247, 0.12);
+    border-bottom: 1px solid rgba(212, 181, 138, 0.12);
     backdrop-filter: blur(12px);
 }
 #contactsPage .message-page-header span {
-    color: #4fc3f7 !important;
+    color: var(--accent) !important;
 }
 #contactsPage .message-page-header button {
-    color: #4fc3f7 !important;
+    color: var(--accent) !important;
 }
 #contactsPage .message-page-body {
     background: transparent;
@@ -6443,21 +6994,21 @@ body.moon-down .inbox-new-msg-cta {
 #contactsPage #contactSearchInput {
     background: rgba(10, 22, 40, 0.6) !important;
     color: rgba(255,255,255,0.9) !important;
-    border: 1px solid rgba(79, 195, 247, 0.15) !important;
+    border: 1px solid rgba(212, 181, 138, 0.15) !important;
 }
 #contactsPage #contactSearchInput::placeholder {
     color: rgba(255,255,255,0.25) !important;
 }
 #contactsPage #contactSearchInput:focus {
-    border-color: rgba(79, 195, 247, 0.4) !important;
-    box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.08);
+    border-color: rgba(212, 181, 138, 0.4) !important;
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.08);
     outline: none;
 }
 
 /* Contacts search container (overrides inline styles) */
 #contactsPage .message-page-header + div {
     background: rgba(10, 22, 40, 0.4) !important;
-    border-bottom-color: rgba(79, 195, 247, 0.1) !important;
+    border-bottom-color: rgba(212, 181, 138, 0.1) !important;
 }
 
 /* Compose mobile responsive */
@@ -6663,18 +7214,24 @@ body::before {
     50% { opacity: var(--peak, 0.7); }
 }
 
-/* Header — dark theme (semi-transparent to show stars) */
+/* ============================================================
+   APP HEADER — editorial brass-on-navy
+   Sticky header used across all logged-in surfaces. Transparent
+   over starfield, glass on scroll.
+   ============================================================ */
 .header {
     background: transparent;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     border-bottom: none;
+    font-family: var(--sans);
 }
 .header.scrolled {
-    background: rgba(5, 10, 20, 0.60);
+    background: rgba(3, 10, 24, 0.72);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid var(--line-soft);
 }
 
 /* Header brand (logo + tagline) */
@@ -6692,11 +7249,12 @@ body::before {
     height: 68px;
 }
 .header-tagline {
+    font-family: var(--sans);
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: 1.5px;
+    letter-spacing: var(--tracking-label);
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--accent);
     white-space: nowrap;
 }
 
@@ -6717,22 +7275,23 @@ body::before {
     width: 40px;
     height: 40px;
     background: none;
-    border: 1.5px solid rgba(79,195,247,0.3);
+    border: 1px solid var(--line);
     border-radius: 50%;
     cursor: pointer;
     padding: 0;
-    transition: border-color 0.2s;
+    transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 .mobile-menu-btn:hover, .mobile-menu-btn:active {
-    border-color: rgba(79,195,247,0.6);
+    border-color: var(--accent);
+    background: rgba(212, 181, 138, 0.06);
 }
 .hamburger-line {
     display: block;
     width: 16px;
     height: 1.5px;
-    background: rgba(79,195,247,0.8);
+    background: var(--accent);
     border-radius: 1px;
-    transition: transform 0.2s;
+    transition: transform var(--dur-fast) ease;
 }
 
 /* Mobile menu overlay */
@@ -6740,7 +7299,9 @@ body::before {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(3, 10, 24, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 99998;
 }
 .mobile-menu-overlay.open {
@@ -6754,13 +7315,15 @@ body::before {
     right: -280px;
     width: 280px;
     height: 100%;
-    background: linear-gradient(180deg, #0d1526 0%, #0a1222 100%);
-    border-left: 1px solid rgba(79,195,247,0.12);
+    background: var(--panel-strong);
+    border-left: 1px solid var(--line-soft);
     z-index: 99999;
     transition: right 0.3s ease;
     display: flex;
     flex-direction: column;
     box-shadow: -8px 0 32px rgba(0,0,0,0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
 }
 .mobile-menu-drawer.open {
     right: 0;
@@ -6770,7 +7333,7 @@ body::before {
     align-items: center;
     justify-content: space-between;
     padding: 20px 20px 16px;
-    border-bottom: 1px solid rgba(79,195,247,0.08);
+    border-bottom: 1px solid var(--line-soft);
 }
 .mobile-menu-items {
     display: flex;
@@ -6784,16 +7347,17 @@ body::before {
     padding: 16px 24px;
     background: none;
     border: none;
-    color: rgba(255,255,255,0.8);
+    color: var(--text);
+    font-family: var(--sans);
     font-size: 15px;
     font-weight: 500;
-    font-family: inherit;
     cursor: pointer;
     text-align: left;
-    transition: background 0.15s;
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 .mobile-menu-item:hover, .mobile-menu-item:active {
-    background: rgba(79,195,247,0.06);
+    background: rgba(212, 181, 138, 0.08);
+    color: var(--accent-bright);
 }
 
 /* Header contacts button */
@@ -6801,103 +7365,153 @@ body::before {
     width: 40px;
     height: 40px;
     background: transparent;
-    border: 2px solid rgba(79, 195, 247, 0.4);
+    border: 1px solid var(--line);
     cursor: pointer;
-    color: #4fc3f7;
+    color: var(--accent);
     padding: 0;
     border-radius: 50%;
-    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+    transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease, transform var(--dur-fast) ease, color var(--dur-fast) ease;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
 }
 .header-contacts-btn:hover {
-    border-color: #4fc3f7;
-    background: rgba(79, 195, 247, 0.1);
-    transform: scale(1.08);
+    border-color: var(--accent);
+    background: rgba(212, 181, 138, 0.08);
+    color: var(--accent-bright);
+    transform: scale(1.06);
 }
 
 /* Header moon — dark theme */
 .header-moon {
-    border-color: rgba(79, 195, 247, 0.4);
+    border-color: var(--line);
 }
 .header-moon:hover {
-    border-color: #ffd54f;
+    border-color: var(--accent);
 }
 
-/* User button — dark theme */
+/* User button — brass ghost */
 .user-btn {
-    border-color: rgba(79, 195, 247, 0.4);
-    color: white;
+    border: 1px solid var(--line);
+    color: var(--text-bright);
 }
 .user-btn:hover {
-    background: rgba(79, 195, 247, 0.1);
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
 }
-.user-initials { color: #4fc3f7; }
-.settings-arrow { color: rgba(255, 255, 255, 0.4); }
+.user-initials {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--accent);
+}
+.settings-arrow { color: var(--accent); }
 
-/* Settings dropdown — dark theme */
+/* ============================================================
+   SETTINGS DROPDOWN — editorial brass-on-navy
+   ============================================================ */
 .settings-dropdown {
-    background: rgba(10, 22, 40, 0.95);
+    background: var(--panel-strong);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(79, 195, 247, 0.2);
-    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--line-soft);
+    box-shadow: var(--shadow-lg);
+    color: var(--text);
+    font-family: var(--sans);
 }
-.settings-section + .settings-section { border-top-color: rgba(79, 195, 247, 0.1); }
-.settings-section-header:active { background: rgba(79, 195, 247, 0.05); }
-.settings-section-header .section-summary { color: rgba(255, 255, 255, 0.85); }
-.settings-section-header .section-chevron { color: rgba(79, 195, 247, 0.4); }
-.settings-dropdown label { color: rgba(255, 255, 255, 0.5); }
+.settings-section + .settings-section { border-top-color: var(--line-soft); }
+.settings-section-header:active { background: rgba(212, 181, 138, 0.06); }
+.settings-section-header .section-summary { color: var(--text); }
+.settings-section-header .section-chevron { color: var(--accent); }
+.settings-dropdown label {
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+}
 .settings-dropdown input,
 .settings-dropdown select,
 .settings-select {
-    background: rgba(18, 35, 58, 0.6) !important;
-    border: 1px solid rgba(79, 195, 247, 0.15) !important;
-    color: white !important;
-    border-radius: 8px;
+    background: rgba(3, 10, 24, 0.6) !important;
+    border: 1px solid var(--line-soft) !important;
+    color: var(--text-bright) !important;
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
 }
-.settings-dropdown input::placeholder { color: rgba(255, 255, 255, 0.3); }
-.settings-dropdown p { color: rgba(255, 255, 255, 0.4) !important; }
+.settings-dropdown input::placeholder { color: var(--muter); }
+.settings-dropdown input:focus,
+.settings-dropdown select:focus,
+.settings-select:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
+}
+.settings-dropdown p {
+    color: var(--muted) !important;
+    font-family: var(--sans);
+}
 .settings-dropdown .send-button {
-    background: rgba(79, 195, 247, 0.2);
-    border: 1px solid rgba(79, 195, 247, 0.3);
-    color: #4fc3f7;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: var(--on-accent);
 }
-.settings-dropdown a { color: #4fc3f7 !important; }
-.settings-location-name { color: rgba(255, 255, 255, 0.7) !important; }
+.settings-dropdown .send-button:hover {
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+}
+.settings-dropdown a { color: var(--accent) !important; }
+.settings-dropdown a:hover { color: var(--accent-bright) !important; }
+.settings-location-name {
+    color: var(--text-bright) !important;
+    font-family: var(--serif);
+    font-style: italic;
+}
 
-/* Hero — dark theme */
+/* ============================================================
+   APP HERO (above split) — editorial brass-on-navy
+   The salutation line above the orbit + inbox split.
+   ============================================================ */
 .hero h1 {
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 22px;
-    font-weight: 700;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text-bright);
+    font-size: clamp(20px, 2.8vw, 26px);
+    font-weight: 500;
     text-align: left;
-    letter-spacing: 0.3px;
-    line-height: 1.4;
+    letter-spacing: -0.2px;
+    line-height: var(--lh-snug);
     margin-top: 24px;
 }
-.hero .subtitle { color: rgba(79, 195, 247, 0.5); }
+.hero .subtitle { color: var(--muted); font-family: var(--serif); font-style: italic; }
 
-/* Split layout — dark theme */
+/* ============================================================
+   INBOX (split-left column) — editorial brass-on-navy
+   ============================================================ */
 .split-left {
     border-right: none;
 }
 
-/* Inbox card — dark glass */
+/* Inbox card — dark glass with brass-soft border */
 .inbox-card {
-    background: rgba(18, 35, 58, 0.5);
+    background: var(--panel);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(79, 195, 247, 0.15);
+    border: 1px solid var(--line-soft);
 }
 .inbox-header {
-    border-bottom: 1px solid rgba(79, 195, 247, 0.12);
+    border-bottom: 1px solid var(--line-soft);
 }
-.inbox-title { color: #4fc3f7; }
+.inbox-title {
+    font-family: var(--serif);
+    font-weight: 500;
+    color: var(--text-bright);
+    letter-spacing: -0.2px;
+    text-transform: none;
+}
 
-/* New Transmission button at bottom of inbox */
+/* "New Moon Message" full-width pill at bottom of inbox */
 .new-transmission-bar {
     padding: 12px clamp(12px, 2vw, 24px);
     flex-shrink: 0;
@@ -6906,98 +7520,138 @@ body::before {
     width: 100%;
     padding: 12px 20px;
     background: transparent;
-    border: 1.5px solid rgba(79, 195, 247, 0.3);
-    border-radius: 24px;
-    color: #4fc3f7;
-    font-family: var(--font);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    color: var(--accent);
+    font-family: var(--sans);
     font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
+    font-weight: 600;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
 .new-transmission-btn:hover {
-    background: rgba(79, 195, 247, 0.1);
-    border-color: #4fc3f7;
-    box-shadow: 0 0 16px rgba(79, 195, 247, 0.15);
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
+    color: var(--accent-bright);
+    box-shadow: 0 0 16px rgba(212, 181, 138, 0.12);
 }
 .new-transmission-btn.moon-up {
-    background: rgba(79, 195, 247, 0.12);
-    border-color: #4fc3f7;
+    background: rgba(212, 181, 138, 0.12);
+    border-color: var(--accent);
+    color: var(--accent-bright);
 }
 
-/* New message button — dark */
+/* Compact new-message icon button (compose pencil in inbox header) */
 .new-message-btn {
-    background: rgba(79, 195, 247, 0.15);
-    border: 1px solid rgba(79, 195, 247, 0.25);
-    color: #4fc3f7;
+    background: rgba(212, 181, 138, 0.08);
+    border: 1px solid var(--line-soft);
+    color: var(--accent);
 }
 .new-message-btn:hover {
-    background: rgba(79, 195, 247, 0.25);
+    background: rgba(212, 181, 138, 0.16);
+    border-color: var(--accent);
+    color: var(--accent-bright);
 }
 
-/* Shared sky row — dark */
+/* Shared-sky row in inbox — top of the conversation list */
 .shared-sky-row {
-    background: rgba(79, 195, 247, 0.04);
-    border-bottom-color: rgba(79, 195, 247, 0.08);
+    background: rgba(212, 181, 138, 0.04);
+    border-bottom-color: var(--line-soft);
 }
-.shared-sky-row:hover { background: rgba(79, 195, 247, 0.08); }
-.shared-sky-row-title { color: #4fc3f7; }
-.shared-sky-row-preview { color: rgba(255, 255, 255, 0.4); }
+.shared-sky-row:hover { background: rgba(212, 181, 138, 0.10); }
+.shared-sky-row-title {
+    font-family: var(--serif);
+    font-weight: 500;
+    color: var(--text-bright);
+    letter-spacing: -0.1px;
+}
+.shared-sky-row-preview {
+    color: var(--muted);
+    font-family: var(--serif);
+    font-style: italic;
+}
 
-/* Create circle option — dark */
-.create-circle-option { color: rgba(255, 255, 255, 0.5); }
-.create-circle-option:hover { background: rgba(79, 195, 247, 0.05); }
+/* Create-circle option (legacy) — dark */
+.create-circle-option { color: var(--muted); }
+.create-circle-option:hover { background: rgba(212, 181, 138, 0.06); }
 
-/* Message list items — dark */
+/* Conversation list items — dark */
 .message-item {
-    border-bottom-color: rgba(79, 195, 247, 0.06);
+    border-bottom-color: var(--line-soft);
 }
-.message-item:hover { background: rgba(79, 195, 247, 0.05); }
-.message-sender { color: rgba(255, 255, 255, 0.9); }
-.message-preview { color: rgba(255, 255, 255, 0.4); }
-.message-time, .message-meta { color: rgba(79, 195, 247, 0.4) !important; }
+.message-item:hover { background: rgba(212, 181, 138, 0.06); }
+.message-sender {
+    font-family: var(--serif);
+    font-weight: 500;
+    color: var(--text-bright);
+    letter-spacing: -0.1px;
+}
+.message-preview {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+}
+.message-time, .message-meta {
+    color: var(--muter) !important;
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: 10px;
+}
 .msg-avatar {
-    background: rgba(79, 195, 247, 0.15);
-    border: 1px solid rgba(79, 195, 247, 0.25);
+    background: rgba(212, 181, 138, 0.12);
+    border: 1px solid var(--line-soft);
+    color: var(--accent);
+    font-family: var(--serif);
+    font-weight: 500;
 }
 .msg-avatar img[src=""], .msg-avatar img:not([src]) {
     display: none !important;
 }
 .message-avatar.outline {
     background: transparent;
-    border-color: rgba(255, 85, 88, 0.5);
+    border-color: var(--line);
 }
+/* Direction chips: outgoing = brass primary, incoming = brass-soft */
 .message-direction.sent-arrow {
-    background: rgba(255, 85, 88, 0.15);
+    background: rgba(212, 181, 138, 0.20);
+    color: var(--accent-bright);
 }
 .message-direction.recv-arrow {
-    background: rgba(79, 195, 247, 0.15);
-    color: #4fc3f7;
+    background: rgba(212, 181, 138, 0.10);
+    color: var(--accent);
 }
-.message-list::-webkit-scrollbar-thumb { background: rgba(79, 195, 247, 0.3); }
+.message-list::-webkit-scrollbar-thumb { background: rgba(212, 181, 138, 0.3); }
 
 /* Circle rows — dark */
-.circle-row { border-bottom-color: rgba(79, 195, 247, 0.06) !important; }
-.circle-row:hover { background: rgba(79, 195, 247, 0.05) !important; }
+.circle-row { border-bottom-color: var(--line-soft) !important; }
+.circle-row:hover { background: rgba(212, 181, 138, 0.06) !important; }
 
-/* Orbit ring — dark theme with ambient glow */
+/* ============================================================
+   ORBIT RING + MAIN CONTENT — editorial brass-on-navy
+   The signature visual: a brass orbital ring with the moon
+   tracking its phase. Message dots are warm brass envelopes
+   sitting on the ring; ambient brass glow when moon is above
+   the horizon.
+   ============================================================ */
 .orbit-ring {
-    border-color: rgba(79, 195, 247, 0.2);
-    box-shadow: 0 0 12px rgba(79, 195, 247, 0.04), inset 0 0 12px rgba(79, 195, 247, 0.02);
+    border-color: var(--line-soft);
+    box-shadow: 0 0 12px rgba(212, 181, 138, 0.04), inset 0 0 12px rgba(212, 181, 138, 0.02);
 }
 
 .orbit-ring.moon-visible {
-    border-color: rgba(79, 195, 247, 0.4);
-    box-shadow: 0 0 24px rgba(79, 195, 247, 0.1), inset 0 0 24px rgba(79, 195, 247, 0.05);
+    border-color: var(--line);
+    box-shadow: 0 0 24px rgba(212, 181, 138, 0.10), inset 0 0 24px rgba(212, 181, 138, 0.04);
 }
 
 .orbit-ring::before {
-    border-color: rgba(79, 195, 247, 0.06);
+    border-color: rgba(212, 181, 138, 0.06);
 }
 
 .orbit-ring.moon-visible::before {
-    border-color: rgba(79, 195, 247, 0.1);
+    border-color: rgba(212, 181, 138, 0.10);
 }
 
 /* Orbit illustration — solid dark, darker than page bg */
@@ -7010,102 +7664,156 @@ body::before {
     display: none;
 }
 
-/* Orbit center text — dark */
-.orbit-center { color: white; }
-.visibility-text { color: rgba(255, 255, 255, 0.5) !important; }
-.standby-countdown { color: #4fc3f7 !important; }
-.standby-label { color: rgba(255, 255, 255, 0.4) !important; }
-.moon-down-lockout { color: rgba(255, 255, 255, 0.25) !important; font-size: 11px !important; }
+/* Orbit center text — serif numerals, brass labels */
+.orbit-center { color: var(--text-bright); font-family: var(--serif); }
+.visibility-text {
+    color: var(--accent) !important;
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-size: 11px !important;
+    font-weight: 600;
+}
+.standby-countdown {
+    color: var(--text-bright) !important;
+    font-family: var(--serif) !important;
+    font-weight: 500;
+}
+.standby-label {
+    color: var(--accent) !important;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-family: var(--sans);
+    font-size: 11px !important;
+    font-weight: 600;
+}
+.moon-down-lockout {
+    color: var(--muter) !important;
+    font-size: 11px !important;
+    font-family: var(--serif);
+    font-style: italic;
+}
 
-/* Message dots on orbit — brighter on dark */
-.message-dot { box-shadow: 0 0 8px rgba(255, 85, 88, 0.4); }
-.message-dot:hover { box-shadow: 0 0 16px rgba(255, 85, 88, 0.6); }
-.message-dot.releasing { box-shadow: 0 0 12px rgba(255, 85, 88, 0.5); }
-.message-dot.incoming { box-shadow: 0 0 8px rgba(79, 195, 247, 0.4); }
-.message-dot.incoming:hover { box-shadow: 0 0 16px rgba(79, 195, 247, 0.6); }
+/* Message dots on orbit — brass for sent, brass-soft for incoming */
+.message-dot { box-shadow: 0 0 8px rgba(212, 181, 138, 0.50); }
+.message-dot:hover { box-shadow: 0 0 16px rgba(212, 181, 138, 0.75); }
+.message-dot.releasing { box-shadow: 0 0 14px rgba(212, 181, 138, 0.65); }
+.message-dot.incoming { box-shadow: 0 0 8px rgba(234, 216, 191, 0.45); }
+.message-dot.incoming:hover { box-shadow: 0 0 16px rgba(234, 216, 191, 0.65); }
 
-/* Moon data bar — dark glass */
+/* Moon data bar — brass-bordered glass pill */
 .moon-data-bar {
-    background: rgba(18, 35, 58, 0.6);
+    background: var(--panel);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(79, 195, 247, 0.15);
+    border: 1px solid var(--line-soft);
 }
-.moon-data-item { color: rgba(79, 195, 247, 0.6); }
-.moon-data-label { color: rgba(255, 255, 255, 0.35); }
-.moon-data-value { color: #4fc3f7; }
+.moon-data-item { color: var(--muted); }
+.moon-data-label {
+    color: var(--accent);
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-size: 10px;
+    font-weight: 600;
+}
+.moon-data-value {
+    color: var(--text-bright);
+    font-family: var(--serif);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
 
-/* Moon Down modal — dark theme */
-.moon-down-modal { background: rgba(10, 22, 40, 0.95); }
-.moon-down-modal h2 { color: #4fc3f7; }
-.moon-down-countdown .countdown-value { color: #ffd54f; }
+/* Moon Down modal — editorial */
+.moon-down-modal { background: var(--panel-strong); border: 1px solid var(--line-soft); }
+.moon-down-modal h2 {
+    color: var(--text-bright);
+    font-family: var(--serif);
+    font-weight: 500;
+    letter-spacing: -0.2px;
+}
+.moon-down-countdown .countdown-value {
+    color: var(--accent);
+    font-family: var(--serif);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
 
 /* Moon-down standby overrides for dark theme */
 body.moon-down .cta-button {
-    background: rgba(79, 195, 247, 0.1);
+    background: rgba(212, 181, 138, 0.18);
+    border-color: var(--line-soft);
+    color: var(--muter);
+    box-shadow: none;
 }
 body.moon-down .new-message-btn {
     opacity: 0.2;
 }
 
-/* ======================================= */
-/* MOON GLOW — when above horizon          */
-/* ======================================= */
+/* ============================================================
+   MOON GLOW — when above horizon
+   Brass-toned glow drop-shadows, pulsing breath
+   ============================================================ */
 .moon-icon.moon-glow svg {
     filter:
-        drop-shadow(0 0 6px rgba(79, 195, 247, 0.7))
-        drop-shadow(0 0 16px rgba(79, 195, 247, 0.4))
-        drop-shadow(0 0 32px rgba(79, 195, 247, 0.2));
+        drop-shadow(0 0 6px rgba(212, 181, 138, 0.70))
+        drop-shadow(0 0 16px rgba(212, 181, 138, 0.42))
+        drop-shadow(0 0 32px rgba(212, 181, 138, 0.22));
     animation: moonPulseGlow 4s ease-in-out infinite;
 }
 
 @keyframes moonPulseGlow {
     0%, 100% {
         filter:
-            drop-shadow(0 0 6px rgba(79, 195, 247, 0.7))
-            drop-shadow(0 0 16px rgba(79, 195, 247, 0.4))
-            drop-shadow(0 0 32px rgba(79, 195, 247, 0.2));
+            drop-shadow(0 0 6px rgba(212, 181, 138, 0.70))
+            drop-shadow(0 0 16px rgba(212, 181, 138, 0.42))
+            drop-shadow(0 0 32px rgba(212, 181, 138, 0.22));
     }
     50% {
         filter:
-            drop-shadow(0 0 10px rgba(79, 195, 247, 0.9))
-            drop-shadow(0 0 24px rgba(79, 195, 247, 0.5))
-            drop-shadow(0 0 40px rgba(79, 195, 247, 0.3));
+            drop-shadow(0 0 10px rgba(212, 181, 138, 0.90))
+            drop-shadow(0 0 24px rgba(212, 181, 138, 0.55))
+            drop-shadow(0 0 40px rgba(212, 181, 138, 0.32));
     }
 }
 
-/* Orbit ring glows when moon is visible */
+/* Orbit ring glows when moon is visible (brass) */
 .orbit-ring.moon-visible {
-    border-color: rgba(79, 195, 247, 0.45);
+    border-color: rgba(212, 181, 138, 0.45);
     box-shadow:
-        0 0 20px rgba(79, 195, 247, 0.08),
-        inset 0 0 20px rgba(79, 195, 247, 0.04);
+        0 0 20px rgba(212, 181, 138, 0.10),
+        inset 0 0 20px rgba(212, 181, 138, 0.05);
 }
 
 /* Onboarding overlay — dark theme (already styled in base) */
 
-/* Modal overlays — dark glass */
-.modal-overlay { background: rgba(5, 10, 20, 0.8); }
+/* Modal overlays — editorial dark glass */
+.modal-overlay { background: rgba(3, 10, 24, 0.78); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .modal {
-    background: rgba(10, 22, 40, 0.95);
-    border: 1px solid rgba(79, 195, 247, 0.15);
-    color: white;
+    background: var(--panel-strong);
+    border: 1px solid var(--line-soft);
+    color: var(--text);
+    font-family: var(--sans);
 }
 
-/* CTA button — dark theme */
+/* "New Moon Message" CTA pill — brass on navy */
 .cta-button {
-    background: rgba(79, 195, 247, 0.2);
-    border: 1px solid rgba(79, 195, 247, 0.35);
-    color: #4fc3f7;
-    box-shadow: 0 0 20px rgba(79, 195, 247, 0.1);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: var(--on-accent);
+    font-family: var(--sans);
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    box-shadow: 0 0 24px rgba(212, 181, 138, 0.18);
 }
 .cta-button:hover {
-    background: rgba(79, 195, 247, 0.3);
-    box-shadow: 0 0 30px rgba(79, 195, 247, 0.2);
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+    box-shadow: 0 0 32px rgba(212, 181, 138, 0.26);
 }
-.delivery-note { color: rgba(255, 255, 255, 0.35); }
-.moon-carrying-indicator { color: rgba(255, 255, 255, 0.5) !important; }
-.moon-carrying-count { color: #ffd54f !important; }
+.delivery-note { color: var(--muter); font-family: var(--serif); font-style: italic; }
+.moon-carrying-indicator { color: var(--muted) !important; }
+.moon-carrying-count { color: var(--accent-bright) !important; font-family: var(--serif); font-weight: 500; }
 
 /* Responsive — tagline hidden on small screens */
 @media (max-width: 768px) {
@@ -7119,8 +7827,10 @@ body.moon-down .new-message-btn {
 /* ============================== */
 
 /* Dark starfield background */
-#messagePageView.active,
-#sharedSkyPage.active {
+/* NOTE: shared-sky was previously bundled into this chat dark-theme
+   block. It now has its own editorial overrides higher up; these
+   rules are scoped to #messagePageView only. */
+#messagePageView.active {
     background: #050a14;
     background-image:
         radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.12), transparent),
@@ -7131,204 +7841,243 @@ body.moon-down .new-message-btn {
         radial-gradient(1px 1px at 160px 120px, rgba(255,255,255,0.08), transparent);
     background-size: 200px 200px;
 }
-#messagePageView .message-page-inner,
-#sharedSkyPage .message-page-inner {
+#messagePageView .message-page-inner {
     background: transparent;
     box-shadow: none;
 }
 
-/* Chat header — dark theme */
-#messagePageView .message-page-header,
-#sharedSkyPage .message-page-header {
-    border-bottom: 1px solid rgba(79, 195, 247, 0.12);
-    background: rgba(5, 10, 20, 0.85);
+/* ============================================================
+   CHAT DETAIL (#messagePageView) — editorial brass-on-navy
+   The conversation view. Received notes sit as dark glass cards
+   on the night sky; sent notes carry a brass-warm tint to mark
+   them as "what you wrote." Lunar notes are framed by brass
+   diamond seams.
+   ============================================================ */
+#messagePageView .message-page-header {
+    border-bottom: 1px solid var(--line-soft);
+    background: rgba(3, 10, 24, 0.85);
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
-#messagePageView .message-page-back,
-#sharedSkyPage .message-page-back {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: white;
+#messagePageView .message-page-back {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--accent);
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
 }
-#messagePageView .message-page-back:hover,
-#sharedSkyPage .message-page-back:hover {
-    background: rgba(255,255,255,0.1);
+#messagePageView .message-page-back:hover {
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
+    color: var(--accent-bright);
 }
-#messagePageView .message-page-avatar,
-#sharedSkyPage .message-page-avatar {
-    border: 2px solid #ffd54f;
+#messagePageView .message-page-avatar {
+    border: 1px solid var(--line);
     padding: 2px;
-    background: #357dc5;
+    background: rgba(212, 181, 138, 0.16);
+    color: var(--accent);
+    font-family: var(--serif);
+    font-weight: 500;
 }
-#messagePageView .message-page-info h3,
-#sharedSkyPage .message-page-info h3 {
-    color: white;
+#messagePageView .message-page-info h3 {
+    font-family: var(--serif);
+    font-weight: 500;
+    color: var(--text-bright);
+    letter-spacing: -0.2px;
 }
-#messagePageView .message-page-info p,
-#sharedSkyPage .message-page-info p {
-    color: rgba(79, 195, 247, 0.6);
+#messagePageView .message-page-info p {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
 }
 
 /* Chat body */
-#messagePageView .message-page-body,
-#sharedSkyPage .message-page-body {
+#messagePageView .message-page-body {
     padding: 20px;
     padding-bottom: 20px;
+    color: var(--text);
+    font-family: var(--sans);
 }
 
-/* Date separators in chat */
-#messagePageView .message-page-body .chat-date-sep,
-#sharedSkyPage .message-page-body .chat-date-sep {
-    color: rgba(255,255,255,0.35);
-    background: rgba(18, 35, 58, 0.7);
+/* Date separators in chat — brass tracked uppercase */
+#messagePageView .message-page-body .chat-date-sep {
+    color: var(--accent);
+    background: rgba(212, 181, 138, 0.08);
+    font-family: var(--sans);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
 }
 
-/* Message bubbles — dark theme */
-#messagePageView .message-bubble,
-#sharedSkyPage .message-bubble {
-    background: rgba(18, 35, 58, 0.7);
+/* Received bubbles — dark glass with brass-soft seam */
+#messagePageView .message-bubble {
+    background: var(--panel);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(79, 195, 247, 0.15);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--line-soft);
     max-width: 80%;
 }
-#messagePageView .message-bubble p,
-#sharedSkyPage .message-bubble p {
-    color: rgba(255,255,255,0.9);
+#messagePageView .message-bubble p {
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text-bright);
+    letter-spacing: -0.005em;
 }
-#messagePageView .message-bubble-time,
-#sharedSkyPage .message-bubble-time {
-    color: rgba(255,255,255,0.35);
+#messagePageView .message-bubble-time {
+    color: var(--muter);
+    font-family: var(--sans);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
 }
 
-/* Sent bubbles — slightly brighter blue */
-#messagePageView .message-bubble.sent,
-#sharedSkyPage .message-bubble.sent {
-    background: rgba(53, 125, 197, 0.35);
-    border: 1px solid rgba(79, 195, 247, 0.25);
+/* Sent bubbles — warm brass-tinted glass for "your letters" */
+#messagePageView .message-bubble.sent {
+    background: rgba(212, 181, 138, 0.16);
+    border: 1px solid var(--line);
 }
-#messagePageView .message-bubble.sent p,
-#sharedSkyPage .message-bubble.sent p {
-    color: white;
+#messagePageView .message-bubble.sent p {
+    color: var(--text-bright);
 }
 #messagePageView .message-bubble.sent .message-bubble-time {
-    color: rgba(255,255,255,0.5);
+    color: rgba(212, 181, 138, 0.6);
 }
 
-/* Lunar Note bubbles — dark glass with shimmer border */
+/* Lunar Note bubbles — special editorial frame */
 #messagePageView .bubble-lunar-note {
-    background: rgba(18, 35, 58, 0.8);
+    background: var(--panel-strong);
     backdrop-filter: blur(12px);
-    border: 1.5px solid rgba(79, 195, 247, 0.3);
-    box-shadow: inset 0 0 10px rgba(79, 195, 247, 0.08), 0 0 20px rgba(79, 195, 247, 0.1);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    box-shadow:
+        inset 0 0 12px rgba(212, 181, 138, 0.06),
+        0 0 24px rgba(212, 181, 138, 0.10);
 }
 #messagePageView .bubble-lunar-note::before {
-    background: linear-gradient(90deg, #4fc3f7, #ff5558, #4fc3f7);
-    opacity: 0.6;
-    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.65;
+    height: 1.5px;
 }
 #messagePageView .bubble-lunar-label {
-    color: #ffd54f;
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
 }
 #messagePageView .bubble-lunar-text {
-    color: rgba(255,255,255,0.9);
-    font-size: 15px;
-    line-height: 1.7;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text-bright);
+    font-size: 17px;
+    line-height: 1.65;
+    letter-spacing: -0.005em;
 }
 #messagePageView .bubble-lunar-closing {
-    color: rgba(79, 195, 247, 0.5);
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+    font-size: 14px;
 }
 #messagePageView .bubble-lunar-note .message-bubble-time {
-    color: rgba(255,255,255,0.3);
+    color: var(--muter);
 }
 #messagePageView .bubble-lunar-note .read-receipt.delivered {
-    color: rgba(255,255,255,0.4);
+    color: var(--muter);
 }
 #messagePageView .bubble-lunar-note .read-receipt.read {
-    color: #4fc3f7;
+    color: var(--accent);
 }
 
-/* Read receipts — dark theme */
+/* Read receipts — brass-toned */
 #messagePageView .read-receipt.delivered {
-    color: rgba(255,255,255,0.4);
+    color: var(--muter);
 }
 #messagePageView .read-receipt.read {
-    color: #4fc3f7;
+    color: var(--accent);
 }
 
-/* Reactions — dark theme */
+/* Reactions — brass-tinted chips */
 #messagePageView .reaction-chip {
-    background: rgba(18, 32, 55, 0.85);
-    border-color: rgba(79, 195, 247, 0.12);
+    background: rgba(3, 10, 24, 0.7);
+    border-color: var(--line-soft);
 }
 #messagePageView .reaction-chip:hover {
-    background: rgba(24, 42, 68, 0.9);
-    border-color: rgba(79, 195, 247, 0.3);
+    background: rgba(212, 181, 138, 0.10);
+    border-color: var(--line);
 }
 #messagePageView .reaction-chip.active {
-    background: rgba(24, 42, 68, 0.9);
-    border-color: rgba(79, 195, 247, 0.4);
+    background: rgba(212, 181, 138, 0.16);
+    border-color: var(--accent);
 }
 #messagePageView .reaction-chip .reaction-count {
-    color: rgba(255,255,255,0.55);
+    color: var(--muted);
+    font-family: var(--sans);
 }
 #messagePageView .reaction-chip.active .reaction-count {
-    color: rgba(255,255,255,0.75);
+    color: var(--accent-bright);
 }
 
-/* Reaction picker popup — dark glass */
+/* Reaction picker popup — editorial dark panel */
 #messagePageView .reaction-picker {
-    background: rgba(18, 35, 58, 0.95);
+    background: var(--panel-strong);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(79, 195, 247, 0.2);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--line-soft);
+    box-shadow: var(--shadow-md);
 }
 #messagePageView .reaction-picker-divider {
-    background: rgba(79, 195, 247, 0.15);
+    background: var(--line-soft);
 }
 #messagePageView .reaction-picker-label {
-    color: rgba(79, 195, 247, 0.5);
+    color: var(--accent);
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-size: 10px;
+    font-weight: 600;
 }
 #messagePageView .reaction-option:hover {
-    background: rgba(79, 195, 247, 0.15);
+    background: rgba(212, 181, 138, 0.10);
 }
 
-/* Chat footer — dark glass */
-#messagePageView .message-page-footer,
-#sharedSkyPage .message-page-footer {
-    border-top: 1px solid rgba(79, 195, 247, 0.18);
-    background: rgba(14, 28, 50, 0.95);
+/* Chat footer — editorial dark glass */
+#messagePageView .message-page-footer {
+    border-top: 1px solid var(--line-soft);
+    background: rgba(3, 10, 24, 0.92);
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 #sharedSkyPhotoMenu { display: none; }
 #sharedSkyPhotoMenu.active { display: block; }
 
-/* Chat input — dark theme */
-#messagePageView .message-page-input,
-#sharedSkyPage .message-page-input {
-    background: rgba(10, 22, 40, 0.6);
-    border: 1.5px solid rgba(79, 195, 247, 0.2);
-    color: white;
+/* Chat input */
+#messagePageView .message-page-input {
+    background: rgba(3, 10, 24, 0.6);
+    border: 1px solid var(--line-soft);
+    color: var(--text-bright);
+    font-family: var(--sans);
     font-size: 14px;
 }
-#messagePageView .message-page-input::placeholder,
-#sharedSkyPage .message-page-input::placeholder {
-    color: rgba(255,255,255,0.25);
+#messagePageView .message-page-input::placeholder {
+    color: var(--muter);
 }
-#messagePageView .message-page-input:focus,
-#sharedSkyPage .message-page-input:focus {
-    border-color: rgba(79, 195, 247, 0.5);
+#messagePageView .message-page-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
 }
 
-/* Send button — coral glow */
-#messagePageView .message-page-send,
-#sharedSkyPage .message-page-send {
-    background: #ff5558;
-    box-shadow: 0 0 15px rgba(255, 85, 88, 0.3);
+/* Send button — brass pill */
+#messagePageView .message-page-send {
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: 0 0 16px rgba(212, 181, 138, 0.22);
 }
-#messagePageView .message-page-send:hover,
-#sharedSkyPage .message-page-send:hover {
-    background: rgba(255, 85, 88, 0.9);
-    box-shadow: 0 0 20px rgba(255, 85, 88, 0.4);
+#messagePageView .message-page-send:hover {
+    background: var(--accent-bright);
+    box-shadow: 0 0 24px rgba(212, 181, 138, 0.32);
 }
 
 /* Photo label emoji in reply row */
@@ -7336,89 +8085,126 @@ body.moon-down .new-message-btn {
     filter: none;
 }
 
-/* Lunar Note pill button — dark */
+/* Lunar Note pill button (in composer) */
 #messagePageView .lunar-note-pill-sm {
-    border-color: rgba(79, 195, 247, 0.3);
-    background: rgba(79, 195, 247, 0.05);
+    border-color: var(--line);
+    background: rgba(212, 181, 138, 0.04);
+    color: var(--accent);
+    font-family: var(--sans);
 }
 #messagePageView .lunar-note-pill-sm:hover {
-    background: rgba(79, 195, 247, 0.12);
-    border-color: #4fc3f7;
+    background: rgba(212, 181, 138, 0.12);
+    border-color: var(--accent);
+    color: var(--accent-bright);
 }
 
-/* Add Lunar Link — dark */
+/* Add Lunar link */
 #messagePageView .add-lunar-link {
-    color: #4fc3f7;
+    color: var(--accent);
+    font-family: var(--sans);
+}
+#messagePageView .add-lunar-link:hover {
+    color: var(--accent-bright);
 }
 
-/* Moon gate — dark theme */
+/* Moon gate — disabled state copy */
 #messagePageView #replyMoonGate {
-    color: rgba(255,255,255,0.4);
+    color: var(--muter);
+    font-family: var(--serif);
+    font-style: italic;
 }
 #messagePageView #replyMoonGate svg {
-    color: #4fc3f7 !important;
+    color: var(--accent) !important;
 }
 
-/* Thread Lunar Note panel — dark glass */
+/* Thread Lunar Note panel — editorial dark glass */
 #messagePageView .thread-lunar-panel {
-    background: rgba(18, 35, 58, 0.8);
+    background: var(--panel-strong);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(79, 195, 247, 0.15);
-    border-radius: 12px 12px 0 0;
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line-soft);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 #messagePageView .thread-lunar-header {
-    color: #ffd54f;
+    color: var(--accent);
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
+    font-size: 11px;
 }
 #messagePageView .thread-lunar-close {
-    background: rgba(255, 85, 88, 0.15);
-    color: #ff5558;
+    background: rgba(212, 181, 138, 0.08);
+    border: 1px solid var(--line-soft);
+    color: var(--muted);
+}
+#messagePageView .thread-lunar-close:hover {
+    background: rgba(212, 181, 138, 0.16);
+    color: var(--accent-bright);
 }
 #messagePageView .thread-lunar-intro {
-    color: rgba(79, 195, 247, 0.5);
+    color: var(--muted);
+    font-family: var(--serif);
+    font-style: italic;
 }
 #messagePageView .thread-lunar-label {
-    color: rgba(79, 195, 247, 0.6);
+    color: var(--accent);
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
+    font-size: 11px;
 }
 #messagePageView .thread-lunar-input {
-    background: rgba(10, 22, 40, 0.6);
-    border-color: rgba(79, 195, 247, 0.2);
-    color: white;
+    background: rgba(3, 10, 24, 0.6);
+    border-color: var(--line-soft);
+    color: var(--text-bright);
+    font-family: var(--sans);
 }
 #messagePageView .thread-lunar-input::placeholder {
-    color: rgba(255,255,255,0.2);
+    color: var(--muter);
 }
 #messagePageView .thread-lunar-input:focus {
-    border-color: rgba(79, 195, 247, 0.5);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
 }
 #messagePageView .thread-lunar-result {
-    background: rgba(10, 22, 40, 0.5);
-    border-color: rgba(79, 195, 247, 0.15);
-    color: rgba(255,255,255,0.9);
+    background: rgba(212, 181, 138, 0.06);
+    border-color: var(--line-soft);
+    color: var(--text-bright);
+    font-family: var(--serif);
+    font-style: italic;
 }
 #messagePageView .thread-lunar-result .lunar-closing {
-    color: rgba(79, 195, 247, 0.5);
+    color: var(--muted);
 }
 #messagePageView .thread-lunar-send {
-    background: #ff5558;
-    box-shadow: 0 0 15px rgba(255, 85, 88, 0.3);
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: 0 0 16px rgba(212, 181, 138, 0.22);
 }
 #messagePageView .thread-lunar-send:not(:disabled):hover {
-    background: rgba(255, 85, 88, 0.9);
+    background: var(--accent-bright);
+    box-shadow: 0 0 24px rgba(212, 181, 138, 0.32);
 }
 
-/* Reply photo preview — dark */
+/* Reply photo preview */
 #messagePageView #replyPhotoPreview img {
-    border: 1px solid rgba(79, 195, 247, 0.2);
+    border: 1px solid var(--line-soft);
 }
 
-/* Transit/arriving messages — dark */
+/* Transit/arriving messages — italic serif waiting state */
 #messagePageView .chat-transit-msg {
-    background: rgba(18, 35, 58, 0.5);
-    border: 1px dashed rgba(79, 195, 247, 0.25);
-    color: rgba(79, 195, 247, 0.7);
+    background: rgba(212, 181, 138, 0.04);
+    border: 1px dashed var(--line-soft);
+    color: var(--muted);
+    font-family: var(--serif);
+    font-style: italic;
 }
 
-/* Typing indicator */
+/* ============================================================
+   Typing indicator (used in chat) — editorial brass
+   ============================================================ */
 .typing-indicator {
     display: flex;
     align-items: center;
@@ -7431,17 +8217,18 @@ body.moon-down .new-message-btn {
     align-items: center;
     gap: 4px;
     padding: 10px 16px;
-    background: rgba(18, 35, 58, 0.7);
+    background: var(--panel);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(79, 195, 247, 0.15);
-    border-radius: 16px;
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-md);
     border-bottom-left-radius: 4px;
 }
 .typing-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #4fc3f7;
+    background: var(--accent);
     animation: typingPulse 1.4s ease-in-out infinite;
 }
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
@@ -7451,8 +8238,9 @@ body.moon-down .new-message-btn {
     30% { opacity: 1; transform: scale(1); }
 }
 .typing-indicator-label {
-    font-size: 11px;
-    color: rgba(79, 195, 247, 0.5);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--serif);
     font-style: italic;
 }
 
@@ -7462,23 +8250,27 @@ body.moon-down .new-message-btn {
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: #4fc3f7;
+    color: var(--accent);
     cursor: pointer;
     margin-top: 4px;
     padding: 2px 0;
-    opacity: 0.7;
-    transition: opacity 0.15s;
+    opacity: 0.85;
+    transition: opacity var(--dur-fast) ease, color var(--dur-fast) ease;
     background: none;
     border: none;
-    font-family: inherit;
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
 }
 .msg-comments-link:hover {
     opacity: 1;
+    color: var(--accent-bright);
 }
 .msg-comments-thread {
     margin-top: 8px;
     padding-left: 16px;
-    border-left: 2px solid rgba(79, 195, 247, 0.15);
+    border-left: 1px solid var(--line-soft);
 }
 .msg-comment-item {
     display: flex;
@@ -7490,11 +8282,11 @@ body.moon-down .new-message-btn {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: rgba(79, 195, 247, 0.2);
+    background: rgba(212, 181, 138, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #4fc3f7;
+    color: var(--accent);
     font-size: 10px;
     font-weight: 700;
     flex-shrink: 0;
@@ -7526,7 +8318,7 @@ body.moon-down .new-message-btn {
     flex: 1;
     padding: 6px 12px;
     background: rgba(10, 22, 40, 0.5);
-    border: 1px solid rgba(79, 195, 247, 0.15);
+    border: 1px solid rgba(212, 181, 138, 0.15);
     border-radius: 16px;
     color: white;
     font-size: 12px;
@@ -7537,15 +8329,15 @@ body.moon-down .new-message-btn {
     color: rgba(255,255,255,0.2);
 }
 .msg-comment-input:focus {
-    border-color: rgba(79, 195, 247, 0.4);
+    border-color: rgba(212, 181, 138, 0.4);
 }
 .msg-comment-send {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: rgba(79, 195, 247, 0.15);
+    background: rgba(212, 181, 138, 0.15);
     border: none;
-    color: #4fc3f7;
+    color: var(--accent);
     font-size: 12px;
     cursor: pointer;
     display: flex;
@@ -7553,7 +8345,7 @@ body.moon-down .new-message-btn {
     justify-content: center;
 }
 .msg-comment-send:hover {
-    background: rgba(79, 195, 247, 0.25);
+    background: rgba(212, 181, 138, 0.25);
 }
 
 /* Chat mobile responsive */
@@ -7566,27 +8358,9 @@ body.moon-down .new-message-btn {
 /* EDITORIAL LANDING PAGE — LUNAR / NOCTURNAL   */
 /* ============================================ */
 
-.onboarding-overlay:has(.editorial-landing),
-.editorial-landing {
-    --bg: #030A18;
-    --bg-2: #071327;
-    --panel: rgba(7, 15, 30, 0.72);
-    --panel-strong: rgba(6, 12, 24, 0.88);
-    --line: rgba(208, 180, 137, 0.46);
-    --line-soft: rgba(208, 180, 137, 0.20);
-    --text: #EAD8BF;
-    --text-bright: #F0DFC2;
-    --muted: rgba(234, 216, 191, 0.72);
-    --muter: rgba(234, 216, 191, 0.46);
-    --accent: #D4B58A;
-    --live: #D7B171;
-    --live-dot: #C99D57;
-    --serif: 'Cormorant Garamond', 'Iowan Old Style', 'Garamond', Georgia, serif;
-    --sans: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-    --radius-lg: 22px;
-    --radius-md: 16px;
-    --shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
-}
+/* Editorial landing inherits all tokens from :root.
+   Color is set on the scope so cream text applies inside the landing
+   without affecting the rest of the (still light-themed) app. */
 .editorial-landing { color: var(--text); }
 
 /* Override base onboarding-overlay bg to deeper midnight */
@@ -7696,8 +8470,24 @@ body.moon-down .new-message-btn {
     background: #E5C9A0;
     border-color: #E5C9A0;
 }
-.landing-nav-mobile-btn {
+.landing-nav-mobile-actions {
     display: none;
+    align-items: center;
+    gap: 14px;
+}
+.landing-nav-mobile-login {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--text-bright);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+}
+.landing-nav-mobile-login:hover { color: var(--accent-bright); }
+.landing-nav-mobile-btn {
     background: var(--accent);
     border: 1px solid var(--accent);
     border-radius: 999px;
@@ -7714,7 +8504,7 @@ body.moon-down .new-message-btn {
     .landing-nav { padding: 16px 22px; }
     .landing-nav.scrolled { padding: 12px 22px; }
     .landing-nav-actions { display: none; }
-    .landing-nav-mobile-btn { display: inline-flex; }
+    .landing-nav-mobile-actions { display: inline-flex; }
 }
 
 /* ---- LANDING SCROLL CONTAINER ---- */
@@ -7961,8 +8751,8 @@ body.moon-down .new-message-btn {
     .ed-hero-grid { grid-template-columns: 1fr; gap: 36px; min-height: auto; }
     .ed-hero-art { min-height: 260px; order: -1; }
     .ed-hero-moon-svg { width: 220px; }
-    .ed-hero-title { font-size: clamp(36px, 9vw, 52px); }
-    .ed-hero-sub { font-size: 15px; }
+    .ed-hero-title { font-size: clamp(46px, 11vw, 64px); line-height: 1.04; }
+    .ed-hero-sub { font-size: 19px; line-height: 1.55; }
 }
 
 /* ---- HORIZON / ROLLING-HILL DIVIDER ---- */
@@ -8045,9 +8835,15 @@ body.moon-down .new-message-btn {
     .ed-hiw-step {
         border-right: none;
         border-bottom: 1px solid var(--line-soft);
-        padding: 32px 8px;
+        padding: 36px 12px;
     }
     .ed-hiw-step:last-child { border-bottom: none; }
+    .ed-hiw-text {
+        font-size: 21px;
+        line-height: 1.5;
+        max-width: 480px;
+    }
+    .ed-hiw-num { font-size: 13px; letter-spacing: 3.5px; }
 }
 
 /* ---- LUNAR LINEWORK ILLUSTRATIONS ---- */
@@ -8215,7 +9011,15 @@ body.moon-down .new-message-btn {
 
 @media (max-width: 1000px) {
     .ed-benefits { grid-template-columns: 1fr; padding: 40px 24px 60px; gap: 18px; }
-    .ed-benefit-card { padding: 30px 26px 28px; }
+    .ed-benefit-card { padding: 32px 28px 30px; }
+    .ed-benefit-title {
+        font-size: 30px;
+        line-height: 1.18;
+    }
+    .ed-benefit-body { font-size: 16.5px; line-height: 1.7; }
+    .ed-section-title { font-size: clamp(34px, 8.5vw, 46px); line-height: 1.05; }
+    .ed-positioning-title { font-size: clamp(26px, 7vw, 36px); line-height: 1.18; }
+    .ed-positioning-body { font-size: 16px; line-height: 1.7; }
 }
 
 /* ---- POSITIONING ---- */

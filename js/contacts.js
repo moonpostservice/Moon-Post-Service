@@ -396,9 +396,9 @@ function setupRingCanvas(canvasId) {
     const hero = canvas.parentElement;
     let W, H, cx, cy, baseR;
     const RINGS = [
-        { radiusFrac: 0.38, speed: 0.0055, dir: 1, ringColor: 'rgba(79,195,247,0.12)', ringWidth: 0.5, dots: [{ angle: 0, color: [79,195,247], size: 4.5, trail: 120, history: [] }, { angle: Math.PI, color: [53,125,197], size: 3, trail: 80, history: [] }] },
+        { radiusFrac: 0.38, speed: 0.0055, dir: 1, ringColor: 'rgba(212,181,138,0.12)', ringWidth: 0.5, dots: [{ angle: 0, color: [79,195,247], size: 4.5, trail: 120, history: [] }, { angle: Math.PI, color: [53,125,197], size: 3, trail: 80, history: [] }] },
         { radiusFrac: 0.62, speed: 0.0032, dir: 1, ringColor: 'rgba(100,160,220,0.18)', ringWidth: 0.8, dots: [{ angle: 0, color: [79,195,247], size: 5.5, trail: 160, history: [] }, { angle: Math.PI*0.67, color: [53,125,197], size: 3.5, trail: 100, history: [] }, { angle: Math.PI*1.33, color: [79,195,247], size: 3, trail: 80, history: [] }] },
-        { radiusFrac: 0.80, speed: 0.0018, dir: -1, ringColor: 'rgba(79,195,247,0.08)', ringWidth: 0.5, dots: [{ angle: Math.PI*0.25, color: [79,195,247], size: 3, trail: 90, history: [] }, { angle: Math.PI*1.25, color: [53,125,197], size: 2.5, trail: 70, history: [] }] },
+        { radiusFrac: 0.80, speed: 0.0018, dir: -1, ringColor: 'rgba(212,181,138,0.08)', ringWidth: 0.5, dots: [{ angle: Math.PI*0.25, color: [79,195,247], size: 3, trail: 90, history: [] }, { angle: Math.PI*1.25, color: [53,125,197], size: 2.5, trail: 70, history: [] }] },
     ];
     function resize() {
         W = hero.offsetWidth; H = hero.offsetHeight;
@@ -544,7 +544,7 @@ async function searchUsersForContact(query) {
                 }
 
                 return `
-                    <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(79,195,247,0.08);">
+                    <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(212,181,138,0.08);">
                         ${avatarHtml}
                         <div style="flex:1;min-width:0;">
                             <div style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.9);">${fullName || displayName}${usernameTag}${selfBadge}</div>
@@ -561,7 +561,7 @@ async function searchUsersForContact(query) {
             const exactMatch = _lastSearchResults.find(u => u.email && u.email.toLowerCase() === query.toLowerCase());
             if (!exactMatch) {
                 html += `
-                    <div style="display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid rgba(79,195,247,0.08);">
+                    <div style="display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid rgba(212,181,138,0.08);">
                         <div style="width:36px;height:36px;border-radius:50%;background:var(--coral);color:white;display:flex;align-items:center;justify-content:center;font-size:16px;">✉</div>
                         <div style="flex:1;">
                             <div style="font-size:14px;font-weight:600;color:var(--coral);">${query}</div>
@@ -726,7 +726,7 @@ function renderContactsList() {
     let html = '';
     
     if (onMps.length > 0) {
-        html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:#4fc3f7;text-transform:uppercase;letter-spacing:0.5px;">Your Contacts</div>`;
+        html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;">Your Contacts</div>`;
         html += onMps.map(c => renderContactRow(c, true)).join('');
     }
     
@@ -754,7 +754,7 @@ function renderContactRow(contact, isOnMps) {
     const selfBadge = contact._isSelf ? `<span style="font-size:10px;color:var(--coral);font-weight:600;margin-left:6px;background:rgba(231,111,81,0.1);padding:2px 8px;border-radius:10px;">You</span>` : '';
 
     return `
-        <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid rgba(79,195,247,0.08);gap:12px;">
+        <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid rgba(212,181,138,0.08);gap:12px;">
             <div class="msg-avatar" style="margin-right:0;">
                 ${statusDot}
                 ${avatarInner}
@@ -771,9 +771,9 @@ function renderContactRow(contact, isOnMps) {
             </div>
             <div style="position:relative;">
                 <button onclick="event.stopPropagation();toggleContactMenu(this)" style="background:none;border:none;cursor:pointer;font-size:18px;color:rgba(255,255,255,0.3);padding:4px 8px;line-height:1;" title="Options">⋮</button>
-                <div class="contact-menu" style="display:none;position:absolute;right:0;top:100%;background:#0d1b2a;border:1px solid rgba(79,195,247,0.15);border-radius:12px;overflow:hidden;z-index:100;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+                <div class="contact-menu" style="display:none;position:absolute;right:0;top:100%;background:#0d1b2a;border:1px solid rgba(212,181,138,0.15);border-radius:12px;overflow:hidden;z-index:100;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
                     <button onclick="event.stopPropagation();closeAllContactMenus();deleteContact('${escapedName}')" style="display:block;width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:rgba(255,255,255,0.8);font-size:13px;cursor:pointer;font-family:inherit;">Remove</button>
-                    ${contact.linkedProfileId ? `<button onclick="event.stopPropagation();closeAllContactMenus();blockUser('${contact.linkedProfileId}','${(contact.email||'').replace(/'/g,"\\'")}','${escapedName}')" style="display:block;width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:#ff5558;font-size:13px;cursor:pointer;font-family:inherit;border-top:1px solid rgba(79,195,247,0.08);">Block</button>` : ''}
+                    ${contact.linkedProfileId ? `<button onclick="event.stopPropagation();closeAllContactMenus();blockUser('${contact.linkedProfileId}','${(contact.email||'').replace(/'/g,"\\'")}','${escapedName}')" style="display:block;width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:#ff5558;font-size:13px;cursor:pointer;font-family:inherit;border-top:1px solid rgba(212,181,138,0.08);">Block</button>` : ''}
                 </div>
             </div>
         </div>
@@ -968,12 +968,12 @@ async function renderBlockedUsersList() {
         const name = p?.username || [p?.first_name, p?.last_name].filter(Boolean).join(' ') || b.blocked_email || 'Unknown';
         const initial = name.charAt(0).toUpperCase();
         return `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(79,195,247,0.06);">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(212,181,138,0.06);">
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:32px;height:32px;border-radius:50%;background:rgba(79,195,247,0.12);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:rgba(255,255,255,0.6);">${initial}</div>
+                    <div style="width:32px;height:32px;border-radius:50%;background:rgba(212,181,138,0.12);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:rgba(255,255,255,0.6);">${initial}</div>
                     <span style="font-size:13px;color:rgba(255,255,255,0.7);">${name}</span>
                 </div>
-                <button onclick="unblockUser('${b.blocked_id}')" style="font-size:11px;padding:4px 12px;border-radius:8px;border:1px solid rgba(79,195,247,0.2);background:transparent;color:rgba(79,195,247,0.7);cursor:pointer;font-family:inherit;">Unblock</button>
+                <button onclick="unblockUser('${b.blocked_id}')" style="font-size:11px;padding:4px 12px;border-radius:8px;border:1px solid rgba(212,181,138,0.2);background:transparent;color:rgba(212,181,138,0.7);cursor:pointer;font-family:inherit;">Unblock</button>
             </div>
         `;
     }).join('');
@@ -1321,12 +1321,12 @@ function renderNewMsgContactList(query) {
     // If query looks like email, show email invite option
     if (query && query.includes('@') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query.trim())) {
         html += `
-            <div style="display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid rgba(79,195,247,0.1);gap:14px;cursor:pointer;" onclick="pickEmailForMessage('${query.trim().replace(/'/g, "\\'")}')">
-                <div class="msg-avatar" style="margin-right:0;background:rgba(79,195,247,0.2);border:1px solid rgba(79,195,247,0.3);">
+            <div style="display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid rgba(212,181,138,0.1);gap:14px;cursor:pointer;" onclick="pickEmailForMessage('${query.trim().replace(/'/g, "\\'")}')">
+                <div class="msg-avatar" style="margin-right:0;background:rgba(212,181,138,0.2);border:1px solid rgba(212,181,138,0.3);">
                     <span style="font-size:16px;">✉</span>
                 </div>
                 <div style="flex:1;">
-                    <div style="font-size:14px;font-weight:600;color:#4fc3f7;">Send to ${query.trim()}</div>
+                    <div style="font-size:14px;font-weight:600;color:var(--accent);">Send to ${query.trim()}</div>
                     <div style="font-size:11px;color:rgba(255,255,255,0.4);">Invite them to MoonPop with your message</div>
                 </div>
             </div>
@@ -1337,7 +1337,7 @@ function renderNewMsgContactList(query) {
     const offMps = filtered.filter(c => !c.isOnMoonpop);
 
     if (onMps.length > 0) {
-        html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:#4fc3f7;text-transform:uppercase;letter-spacing:0.5px;">Your Contacts</div>`;
+        html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;">Your Contacts</div>`;
         html += onMps.map(c => renderPickerRow(c)).join('');
     }
 
@@ -1373,7 +1373,7 @@ function renderPickerRow(contact) {
     const statusDot = online ? `<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid #0a1628;z-index:1;"></span>` : '';
 
     return `
-        <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid rgba(79,195,247,0.1);gap:14px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(79,195,247,0.06)'" onmouseout="this.style.background='transparent'" onclick="pickContactForMessage('${escapedName}')">
+        <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid rgba(212,181,138,0.1);gap:14px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(212,181,138,0.06)'" onmouseout="this.style.background='transparent'" onclick="pickContactForMessage('${escapedName}')">
             <div class="msg-avatar" style="margin-right:0;">
                 ${statusDot}
                 ${avatarInner}
@@ -1462,7 +1462,7 @@ async function searchAllUsersForNewMsg(query) {
 
         // New MoonPop users found via search
         if (newUsers.length > 0) {
-            html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:#4fc3f7;text-transform:uppercase;letter-spacing:0.5px;">Users on Moon Post Service</div>`;
+            html += `<div style="padding:12px 20px 6px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;">Users on Moon Post Service</div>`;
             html += newUsers.map(u => {
                 const displayName = u.username || [u.first_name, u.last_name].filter(Boolean).join(' ') || 'MoonPop User';
                 return renderSearchedUserRow(u, displayName);

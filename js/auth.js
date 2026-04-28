@@ -251,7 +251,7 @@ function showManualLocationPicker() {
             if (matches.length === 0) { dropdown.innerHTML = ''; dropdown.style.display = 'none'; return; }
             dropdown.style.display = '';
             dropdown.innerHTML = matches.map(c =>
-                `<div onclick="selectDriftCity('${c.name}')" style="padding:8px 12px;cursor:pointer;color:var(--blue);font-size:14px;border-bottom:1px solid rgba(79,195,247,0.1);">${c.name}, ${c.country}</div>`
+                `<div onclick="selectDriftCity('${c.name}')" style="padding:8px 12px;cursor:pointer;color:var(--blue);font-size:14px;border-bottom:1px solid rgba(212,181,138,0.1);">${c.name}, ${c.country}</div>`
             ).join('');
         });
     }
