@@ -67,13 +67,13 @@ async function searchYouTubeSong() {
         let html = '';
         if (matches.length > 0) {
             html += matches.map(s =>
-                `<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(53,125,197,0.06)'" onmouseout="this.style.background=''" onclick="selectSong('${s.url}', '${s.title.replace(/'/g, "\\'")}');document.getElementById('songSearchResults').style.display='none';">
+                `<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(212,181,138,0.06)'" onmouseout="this.style.background=''" onclick="selectSong('${s.url}', '${s.title.replace(/'/g, "\\'")}');document.getElementById('songSearchResults').style.display='none';">
                     <span>🎵</span>
                     <div style="flex:1;font-size:13px;color:var(--blue);font-weight:500;">${s.title}</div>
                 </div>`
             ).join('');
         }
-        html += `<a href="https://open.spotify.com/search/${encodeURIComponent(query)}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;text-decoration:none;border-top:1px solid #f0ece4;margin-top:4px;" onmouseover="this.style.background='rgba(53,125,197,0.06)'" onmouseout="this.style.background=''">
+        html += `<a href="https://open.spotify.com/search/${encodeURIComponent(query)}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;text-decoration:none;border-top:1px solid #f0ece4;margin-top:4px;" onmouseover="this.style.background='rgba(212,181,138,0.06)'" onmouseout="this.style.background=''">
             <span>🔍</span>
             <div style="flex:1;font-size:13px;color:var(--blue);font-weight:500;">Search "${query}" on Spotify</div>
             <span style="font-size:11px;color:var(--text-muted);">↗</span>
@@ -374,9 +374,9 @@ function renderSharedSkySignals() {
         // Lunar note rendering
         if (t.lunarNoteText) {
             return `
-            <div class="shared-sky-signal" style="padding:14px 20px;border-bottom:1px solid rgba(79,195,247,0.1);margin:0 8px;">
+            <div class="shared-sky-signal" style="padding:14px 20px;border-bottom:1px solid rgba(212,181,138,0.1);margin:0 8px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                    <span style="font-size:12px;font-weight:700;color:#4fc3f7;">${nameLabel}<span style="font-weight:400;color:rgba(255,255,255,0.35);">${locationSuffix}</span></span>
+                    <span style="font-size:12px;font-weight:700;color:var(--accent);">${nameLabel}<span style="font-weight:400;color:rgba(255,255,255,0.35);">${locationSuffix}</span></span>
                     <span style="font-size:11px;color:rgba(255,255,255,0.35);">${t.time}</span>
                 </div>
                 <div class="bubble-lunar-note" style="max-width:100%;margin:0;">
@@ -391,9 +391,9 @@ function renderSharedSkySignals() {
         }
         // Regular message rendering
         return `
-        <div class="shared-sky-signal" style="padding:14px 20px;border-bottom:1px solid rgba(79,195,247,0.1);margin:0 8px;">
+        <div class="shared-sky-signal" style="padding:14px 20px;border-bottom:1px solid rgba(212,181,138,0.1);margin:0 8px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                <span style="font-size:12px;font-weight:700;color:#4fc3f7;">${nameLabel}<span style="font-weight:400;color:rgba(255,255,255,0.35);">${locationSuffix}</span></span>
+                <span style="font-size:12px;font-weight:700;color:var(--accent);">${nameLabel}<span style="font-weight:400;color:rgba(255,255,255,0.35);">${locationSuffix}</span></span>
                 <span style="font-size:11px;color:rgba(255,255,255,0.35);">${t.time}</span>
             </div>
             ${t.message ? `<p style="font-size:14px;color:rgba(255,255,255,0.85);line-height:1.5;margin:0;">${t.message}</p>` : ''}

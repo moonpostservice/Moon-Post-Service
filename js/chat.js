@@ -652,11 +652,11 @@ function renderConversationThread() {
             }
             html += `
                 <div style="display:flex;align-items:center;gap:8px;padding:12px 0;margin:8px 0;">
-                    <div style="flex:1;height:1px;background:rgba(79,195,247,0.15);"></div>
-                    <span style="font-size:15px;color:rgba(79,195,247,0.7);white-space:nowrap;font-style:italic;display:flex;align-items:center;gap:5px;">
+                    <div style="flex:1;height:1px;background:rgba(212,181,138,0.15);"></div>
+                    <span style="font-size:15px;color:rgba(212,181,138,0.7);white-space:nowrap;font-style:italic;display:flex;align-items:center;gap:5px;">
                         ${iconSvg('lunar-note', 'sm')} ${bannerText}
                     </span>
-                    <div style="flex:1;height:1px;background:rgba(79,195,247,0.15);"></div>
+                    <div style="flex:1;height:1px;background:rgba(212,181,138,0.15);"></div>
                 </div>
                 <div class="transit-zone" id="transitZone">
             `;
@@ -759,7 +759,7 @@ function renderConversationThread() {
                         <div class="transit-orbit-dot" style="--orbit-dur:5s;--orbit-delay:-1s;width:3px;height:3px;opacity:0.5;"></div>
                     </div>
                     <div class="message-bubble sent" style="text-align:center;">
-                        <p style="color:rgba(79,195,247,0.6);font-style:italic;font-size:13px;">Message in transit</p>
+                        <p style="color:rgba(212,181,138,0.6);font-style:italic;font-size:13px;">Message in transit</p>
                         <div class="message-bubble-time">${item.time}</div>
                     </div>
                     <div class="transit-eta-label">${iconSvg('lunar-note', 'sm')} ${transitEta}</div>
@@ -780,8 +780,8 @@ function renderConversationThread() {
                 }
             }
             html += `
-                <div class="chat-transit-msg chat-transit-countdown" data-release="${item.releaseAt || ''}" style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(18,35,58,0.5);border:1px dashed rgba(79,195,247,0.25);margin-bottom:8px;">
-                    <div class="chat-transit-note" style="font-size:13px;color:rgba(79,195,247,0.7);font-style:italic;">${arrivalNote}</div>
+                <div class="chat-transit-msg chat-transit-countdown" data-release="${item.releaseAt || ''}" style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(18,35,58,0.5);border:1px dashed rgba(212,181,138,0.25);margin-bottom:8px;">
+                    <div class="chat-transit-note" style="font-size:13px;color:rgba(212,181,138,0.7);font-style:italic;">${arrivalNote}</div>
                     <div class="message-bubble-time">${item.time}</div>
                     <div class="msg-actions-row">
                         ${actionsHtml(item.msgDbId)}
@@ -853,7 +853,7 @@ function renderConversationThread() {
 
     if (!html) {
         html = `
-            <div style="text-align:center;padding:40px 20px;color:rgba(79,195,247,0.4);font-size:13px;font-style:italic;">
+            <div style="text-align:center;padding:40px 20px;color:rgba(212,181,138,0.4);font-size:13px;font-style:italic;">
                 ✦ No transmissions yet ✦
             </div>
         `;

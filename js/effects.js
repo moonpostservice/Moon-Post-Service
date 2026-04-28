@@ -392,7 +392,7 @@ async function lookupEmailNow(email) {
     if (!currentAuthUser) return;
     
     resultDiv.style.display = 'block';
-    resultDiv.style.background = 'rgba(53,125,197,0.06)';
+    resultDiv.style.background = 'rgba(212,181,138,0.06)';
     resultDiv.style.color = 'var(--text-muted)';
     resultDiv.innerHTML = 'Checking...';
     
@@ -435,7 +435,7 @@ async function lookupEmailNow(email) {
             checkNewContactForm();
         } else {
             emailLookupResult = null;
-            resultDiv.style.background = 'rgba(53,125,197,0.06)';
+            resultDiv.style.background = 'rgba(212,181,138,0.06)';
             resultDiv.style.color = 'var(--text-muted)';
             resultDiv.innerHTML = 'Not on Moon Post Service yet — they\'ll get an invite email';
         }

@@ -36,7 +36,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
         <!-- MOON PHASE ICONS (viewBox 0 0 32 32) -->
         <symbol id="icon-new-moon" viewBox="0 0 32 32">
-            <circle cx="16" cy="16" r="14" fill="#1a2332" stroke="#357dc5" stroke-width="1" stroke-opacity="0.3"/>
+            <circle cx="16" cy="16" r="14" fill="#1a2332" stroke="var(--accent)" stroke-width="1" stroke-opacity="0.3"/>
         </symbol>
         <symbol id="icon-waxing-crescent" viewBox="0 0 32 32">
             <circle cx="16" cy="16" r="14" fill="#1a2332"/>
@@ -165,7 +165,7 @@
 
         <!-- Reactions: moon phases as reaction icons -->
         <symbol id="icon-react-new" viewBox="0 0 20 20">
-            <circle cx="10" cy="10" r="8" fill="#1a2332" stroke="#357dc5" stroke-width="0.5" stroke-opacity="0.4"/>
+            <circle cx="10" cy="10" r="8" fill="#1a2332" stroke="var(--accent)" stroke-width="0.5" stroke-opacity="0.4"/>
         </symbol>
         <symbol id="icon-react-half" viewBox="0 0 20 20">
             <circle cx="10" cy="10" r="8" fill="#1a2332"/>
@@ -250,8 +250,8 @@
             <!-- Desktop nav items -->
             <div class="header-desktop-nav">
                 <!-- Philosophy -->
-                <button class="header-philosophy-btn" onclick="openPhilosophyPage()" aria-label="Our Philosophy" title="Our Philosophy" style="background:none;border:1.5px solid rgba(79,195,247,0.3);border-radius:24px;cursor:pointer;padding:8px 20px;transition:opacity 0.2s,border-color 0.2s,background 0.2s;display:flex;align-items:center;" onmouseover="this.style.borderColor='rgba(79,195,247,0.5)';this.style.background='rgba(79,195,247,0.06)'" onmouseout="this.style.borderColor='rgba(79,195,247,0.3)';this.style.background='none'">
-                    <span style="font-size:15px;font-weight:400;letter-spacing:0.3px;color:rgba(79,195,247,0.9);">Our Philosophy</span>
+                <button class="header-philosophy-btn" onclick="openPhilosophyPage()" aria-label="Our Philosophy" title="Our Philosophy" style="background:none;border:1px solid var(--line);border-radius:var(--radius-pill);cursor:pointer;padding:8px 22px;transition:border-color var(--dur-fast) ease,background var(--dur-fast) ease,color var(--dur-fast) ease;display:flex;align-items:center;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(212,181,138,0.08)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='none'">
+                    <span style="font-family:var(--serif);font-style:italic;font-size:15px;font-weight:500;letter-spacing:0;color:var(--accent-bright);">Our Philosophy</span>
                 </button>
 
                 <!-- Contacts -->
@@ -281,7 +281,7 @@
     <!-- Settings Dropdown (outside header to avoid stacking context from backdrop-filter) -->
     <div class="settings-dropdown" id="settingsDropdown">
                 <!-- Close button (visible on mobile) -->
-                <button onclick="toggleSettings()" class="settings-close-btn" style="display:none;position:absolute;top:16px;right:16px;background:none;border:2px solid rgba(79,195,247,0.3);border-radius:50%;width:44px;height:44px;cursor:pointer;align-items:center;justify-content:center;color:rgba(255,255,255,0.7);font-size:22px;font-weight:700;z-index:10;">✕</button>
+                <button onclick="toggleSettings()" class="settings-close-btn" style="display:none;position:absolute;top:16px;right:16px;background:none;border:1px solid var(--line);border-radius:50%;width:44px;height:44px;cursor:pointer;align-items:center;justify-content:center;color:var(--muted);font-size:20px;font-weight:400;z-index:10;transition:border-color var(--dur-fast) ease,background var(--dur-fast) ease,color var(--dur-fast) ease;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(212,181,138,0.08)';this.style.color='var(--accent-bright)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='none';this.style.color='var(--muted)'">✕</button>
                 <!-- Profile Section -->
                 <div class="settings-section" id="settingsSectionProfile">
                     <div class="settings-section-header" onclick="toggleSettingsSection(this)">
@@ -293,12 +293,12 @@
                     </div>
                     <div class="settings-section-body">
                         <div style="display:flex;flex-direction:column;align-items:center;padding:8px 0 10px;">
-                            <div id="profilePicPreview" style="width:64px;height:64px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:700;overflow:hidden;cursor:pointer;position:relative;" onclick="document.getElementById('profilePicInput').click()">
+                            <div id="profilePicPreview" style="width:72px;height:72px;border-radius:50%;background:rgba(212,181,138,0.12);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--accent);font-family:var(--serif);font-size:24px;font-weight:500;overflow:hidden;cursor:pointer;position:relative;" onclick="document.getElementById('profilePicInput').click()">
                                 <span id="profilePicInitial">?</span>
                                 <img id="profilePicImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
                             </div>
                             <input type="file" id="profilePicInput" accept="image/*" capture="user" style="display:none;" onchange="handleProfilePic(this)">
-                            <a href="#" onclick="event.preventDefault();document.getElementById('profilePicInput').click();" style="font-size:12px;color:var(--blue);margin-top:6px;">Change photo</a>
+                            <a href="#" onclick="event.preventDefault();document.getElementById('profilePicInput').click();" style="font-family:var(--sans);font-size:11px;color:var(--accent);margin-top:8px;text-transform:uppercase;letter-spacing:2px;text-decoration:none;">Change photo</a>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                             <div class="form-group" style="margin-bottom:8px;">
@@ -318,7 +318,7 @@
                             <button class="send-button" id="settingsSaveBtn" onclick="saveSettings()" style="font-size:13px;padding:8px;">Save</button>
                         </div>
                         <div style="text-align:center;padding:12px 0 0;">
-                            <a href="#" onclick="event.preventDefault();deleteAccount();" style="font-size:11px;color:rgba(200,80,80,0.7);text-decoration:none;">Delete my account</a>
+                            <a href="#" onclick="event.preventDefault();deleteAccount();" style="font-family:var(--sans);font-size:11px;color:#E89B73 !important;text-decoration:none;text-transform:uppercase;letter-spacing:2px;">Delete my account</a>
                         </div>
                     </div>
                 </div>
@@ -337,7 +337,7 @@
                 <div class="settings-section" id="settingsSectionPrefs">
                     <div class="settings-section-header" onclick="toggleSettingsSection(this)">
                         <div class="section-summary">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                             <span class="summary-text" id="sectionPrefsSummary">24-hour (18:00)</span>
                         </div>
                         <span class="section-chevron">▾</span>
@@ -382,7 +382,7 @@
                 <div class="settings-section">
                     <div class="settings-section-header" onclick="this.parentElement.classList.toggle('open')">
                         <div class="section-summary">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,85,88,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(212,181,138,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
                             <span class="summary-text">Blocked Users</span>
                         </div>
                         <span class="section-chevron">▾</span>
@@ -408,22 +408,22 @@
     <div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="closeMobileMenu()"></div>
     <div class="mobile-menu-drawer" id="mobileMenuDrawer">
         <div class="mobile-menu-header">
-            <span style="font-size:14px;font-weight:700;letter-spacing:0.5px;color:var(--text-muted);">MENU</span>
-            <button onclick="closeMobileMenu()" style="background:none;border:1.5px solid rgba(79,195,247,0.25);border-radius:50%;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                <span style="color:rgba(79,195,247,0.8);font-size:18px;font-weight:300;">✕</span>
+            <span style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);">Menu</span>
+            <button onclick="closeMobileMenu()" style="background:none;border:1px solid var(--line);border-radius:50%;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:border-color var(--dur-fast) ease,background var(--dur-fast) ease,color var(--dur-fast) ease;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(212,181,138,0.08)';this.style.color='var(--accent-bright)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='none';this.style.color='var(--muted)'">
+                <span style="font-size:18px;font-weight:400;">✕</span>
             </button>
         </div>
         <div class="mobile-menu-items">
             <button class="mobile-menu-item" onclick="closeMobileMenu();openPhilosophyPage();">
-                <svg style="width:20px;height:20px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="rgba(79,195,247,0.7)" stroke-width="1.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                <svg style="width:20px;height:20px;flex-shrink:0;color:var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                 <span>Our Philosophy</span>
             </button>
             <button class="mobile-menu-item" onclick="closeMobileMenu();openContactsPage();">
-                <svg class="app-icon" style="width:20px;height:20px;flex-shrink:0;"><use href="#icon-contacts"/></svg>
+                <svg class="app-icon" style="width:20px;height:20px;flex-shrink:0;color:var(--accent);"><use href="#icon-contacts"/></svg>
                 <span>My Contacts</span>
             </button>
             <button class="mobile-menu-item" onclick="closeMobileMenu();setTimeout(toggleSettings,200);">
-                <svg style="width:20px;height:20px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="rgba(79,195,247,0.7)" stroke-width="1.5"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg style="width:20px;height:20px;flex-shrink:0;color:var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
                 <span>Settings</span>
             </button>
         </div>
@@ -444,13 +444,16 @@
                 <button class="landing-nav-link landing-nav-login" onclick="showAuthModal('login')">Log in</button>
                 <button class="landing-nav-signup" onclick="showAuthModal('signup')">Sign up</button>
             </div>
-            <button class="landing-nav-mobile-btn" onclick="showAuthModal('signup')">Sign up</button>
+            <div class="landing-nav-mobile-actions">
+                <button class="landing-nav-mobile-login" onclick="showAuthModal('login')">Log in</button>
+                <button class="landing-nav-mobile-btn" onclick="showAuthModal('signup')">Sign up</button>
+            </div>
         </nav>
 
         <!-- Auth modal (popup overlay) -->
-        <div id="authModalOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;" onclick="if(event.target===this)closeAuthModal()">
-            <div class="onboarding-card" style="position:relative;max-width:420px;width:90%;margin:auto;">
-                <button onclick="closeAuthModal()" style="position:absolute;top:14px;right:14px;background:none;border:none;color:rgba(255,255,255,0.4);font-size:22px;cursor:pointer;padding:4px;">✕</button>
+        <div id="authModalOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(3,10,24,0.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;" onclick="if(event.target===this)closeAuthModal()">
+            <div class="onboarding-card" style="position:relative;max-width:440px;width:90%;margin:auto;">
+                <button onclick="closeAuthModal()" style="position:absolute;top:14px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;">✕</button>
                 <img class="onboarding-logo" src="assests/logo2.png" alt="Moon Post Service">
                 <h1 id="authModalTitle">Messages released by the moon</h1>
                 <p class="onboarding-tagline">Write now. It unlocks when the moon rises where they are.</p>
@@ -465,7 +468,7 @@
                         </div>
                     </div>
                     <button class="onboarding-primary" id="authSendBtn" onclick="sendMoonKey()">
-                        Send Moon Code <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>
+                        Send Moon Code <svg class="app-icon md" style="color:var(--on-accent)"><use href="#icon-moonkey"/></svg>
                     </button>
                     <p class="auth-note">No password needed. We'll send an 8-digit code to your inbox.</p>
                 </div>
@@ -501,22 +504,22 @@
                 <!-- Step 3: Location -->
                 <div class="auth-step" id="authStepLocation">
                     <div class="auth-check-inbox" style="text-align:center;">
-                        <div style="font-size:48px;margin-bottom:8px;">📍</div>
+                        <div style="font-size:44px;margin-bottom:8px;opacity:0.92;">📍</div>
                         <h2 style="margin-bottom:4px;">Where are you watching the moon tonight?</h2>
-                        <p id="locationDetectStatus" style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Detecting your sky...</p>
-                        <div id="detectedCityCard" style="display:none;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:12px;padding:16px;margin-bottom:16px;">
-                            <p style="color:var(--text-muted);font-size:13px;margin-bottom:4px;">It looks like you're in</p>
-                            <h2 id="detectedCityName" style="color:var(--blue);font-size:24px;font-weight:700;margin:0;">Tel Aviv</h2>
+                        <p id="locationDetectStatus" style="color:var(--muted);font-size:13px;margin-bottom:16px;font-style:italic;">Detecting your sky...</p>
+                        <div id="detectedCityCard" style="display:none;background:rgba(212,181,138,0.08);border:1px solid var(--line-soft);border-radius:var(--radius-md);padding:18px 16px;margin-bottom:16px;">
+                            <p style="color:var(--muted);font-size:12px;margin-bottom:6px;text-transform:uppercase;letter-spacing:2.5px;">It looks like you're in</p>
+                            <h2 id="detectedCityName" style="font-family:var(--serif);color:var(--text-bright);font-size:28px;font-weight:500;margin:0;letter-spacing:-0.3px;">Tel Aviv</h2>
                         </div>
                         <button class="onboarding-primary" id="confirmLocationBtn" onclick="confirmDetectedLocation()" style="display:none;">
                             That's my sky 🌙
                         </button>
                         <p style="margin-top:12px;">
-                            <a href="#" id="showManualCityLink" onclick="event.preventDefault();document.getElementById('manualCityPicker').style.display='block';this.style.display='none';" style="color:var(--blue);font-size:13px;text-decoration:none;">I'm somewhere else</a>
+                            <a href="#" id="showManualCityLink" onclick="event.preventDefault();document.getElementById('manualCityPicker').style.display='block';this.style.display='none';" style="color:var(--accent);font-size:13px;text-decoration:none;font-style:italic;">I'm somewhere else</a>
                         </p>
                         <div id="manualCityPicker" style="display:none;margin-top:12px;">
                             <div style="position:relative;">
-                                <input type="text" id="onboardingCityInput" placeholder="Search for your city..." autocomplete="off" oninput="filterOnboardingCities(this.value)" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:white;font-size:14px;box-sizing:border-box;">
+                                <input type="text" id="onboardingCityInput" placeholder="Search for your city..." autocomplete="off" oninput="filterOnboardingCities(this.value)" style="width:100%;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.6);color:var(--text-bright);font-family:var(--sans);font-size:14px;box-sizing:border-box;">
                                 <div id="onboardingCityDropdown" class="city-dropdown" style="max-height:180px;"></div>
                             </div>
                         </div>
@@ -526,37 +529,37 @@
                 <!-- Step 4: Profile setup -->
                 <div class="auth-step" id="authStepProfile">
                     <div style="text-align:center;">
-                        <div style="font-size:36px;margin-bottom:8px;">✨</div>
-                        <h2 style="color:#4fc3f7;font-size:20px;font-weight:700;margin:0 0 4px;">Set up your profile</h2>
-                        <p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0 0 20px;">So people can find you and know who's writing</p>
+                        <div style="font-size:32px;margin-bottom:8px;opacity:0.92;">✨</div>
+                        <h2 style="font-family:var(--serif);color:var(--text-bright);font-size:26px;font-weight:500;margin:0 0 6px;letter-spacing:-0.2px;">Set up your profile</h2>
+                        <p style="color:var(--muted);font-size:13px;margin:0 0 24px;font-style:italic;">So people can find you and know who's writing</p>
 
                         <!-- Profile photo upload -->
                         <div style="margin-bottom:20px;">
-                            <div id="onboardingAvatarPreview" onclick="document.getElementById('onboardingAvatarInput').click()" style="width:80px;height:80px;border-radius:50%;margin:0 auto 8px;border:2px dashed rgba(79,195,247,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:rgba(79,195,247,0.05);transition:border-color 0.2s;">
-                                <span id="onboardingAvatarPlaceholder" style="font-size:28px;color:rgba(79,195,247,0.4);">📷</span>
+                            <div id="onboardingAvatarPreview" onclick="document.getElementById('onboardingAvatarInput').click()" style="width:84px;height:84px;border-radius:50%;margin:0 auto 10px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:rgba(212,181,138,0.04);transition:border-color var(--dur-fast) ease, background var(--dur-fast) ease;">
+                                <span id="onboardingAvatarPlaceholder" style="font-size:26px;color:var(--accent);opacity:0.7;">📷</span>
                             </div>
                             <input type="file" id="onboardingAvatarInput" accept="image/*" style="display:none;" onchange="previewOnboardingAvatar(this)">
-                            <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:0;">Add a photo (optional)</p>
+                            <p style="font-size:11px;color:var(--muter);margin:0;text-transform:uppercase;letter-spacing:2px;">Add a photo (optional)</p>
                         </div>
 
                         <div class="onboarding-form" style="text-align:left;">
-                            <div class="form-group" style="margin-bottom:12px;">
+                            <div class="form-group" style="margin-bottom:14px;">
                                 <label>First name</label>
-                                <input type="text" id="onboardingFirstName" placeholder="Your first name" autocomplete="given-name" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:white;font-size:14px;" oninput="autoFillSenderName()">
+                                <input type="text" id="onboardingFirstName" placeholder="Your first name" autocomplete="given-name" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.6);color:var(--text-bright);font-family:var(--sans);font-size:14px;" oninput="autoFillSenderName()">
                             </div>
-                            <div class="form-group" style="margin-bottom:12px;">
+                            <div class="form-group" style="margin-bottom:14px;">
                                 <label>Last name</label>
-                                <input type="text" id="onboardingLastName" placeholder="Your last name" autocomplete="family-name" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:white;font-size:14px;">
+                                <input type="text" id="onboardingLastName" placeholder="Your last name" autocomplete="family-name" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.6);color:var(--text-bright);font-family:var(--sans);font-size:14px;">
                             </div>
                             <div class="form-group" style="margin-bottom:4px;">
-                                <label>Sender name <span style="color:rgba(255,255,255,0.3);font-weight:400;">(shown on your messages)</span></label>
-                                <input type="text" id="onboardingSenderName" placeholder="Nickname or first name" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:white;font-size:14px;">
+                                <label>Sender name <span style="color:var(--muter);font-weight:400;letter-spacing:0;text-transform:none;font-style:italic;">(shown on your messages)</span></label>
+                                <input type="text" id="onboardingSenderName" placeholder="Nickname or first name" autocomplete="off" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.6);color:var(--text-bright);font-family:var(--sans);font-size:14px;">
                             </div>
                         </div>
 
-                        <div id="onboardingProfileError" style="color:var(--coral);font-size:12px;margin:8px 0;display:none;"></div>
+                        <div id="onboardingProfileError" style="color:#E89B73;font-size:12px;margin:8px 0;display:none;font-style:italic;"></div>
 
-                        <button class="onboarding-primary" id="saveProfileBtn" onclick="saveOnboardingProfile()" style="margin-top:16px;">
+                        <button class="onboarding-primary" id="saveProfileBtn" onclick="saveOnboardingProfile()" style="margin-top:18px;">
                             Start sending 🌙
                         </button>
                     </div>
@@ -931,8 +934,8 @@
             <!-- Manual location picker (hidden by default) -->
             <div id="driftManualPicker" style="display:none;margin-top:16px;">
                 <div style="position:relative;">
-                    <input type="text" id="driftManualInput" placeholder="Enter city name..." style="width:100%;padding:10px 14px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:10px;color:white;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" />
-                    <div id="driftManualDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card-bg);border:1px solid rgba(0,212,255,0.2);border-radius:0 0 10px 10px;max-height:200px;overflow-y:auto;z-index:10;"></div>
+                    <input type="text" id="driftManualInput" placeholder="Enter city name..." style="width:100%;padding:10px 14px;background:rgba(212,181,138,0.06);border:1px solid rgba(212,181,138,0.2);border-radius:10px;color:white;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" />
+                    <div id="driftManualDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card-bg);border:1px solid rgba(212,181,138,0.2);border-radius:0 0 10px 10px;max-height:200px;overflow-y:auto;z-index:10;"></div>
                 </div>
                 <button onclick="applyManualLocation()" class="onboarding-primary" style="width:100%;margin-top:8px;padding:10px;font-size:14px;">Set this as my sky</button>
             </div>
@@ -1001,7 +1004,7 @@
             <div class="shared-sky-row" onclick="openSharedSkyModal()">
                 <div class="shared-sky-row-icon"><img src="assests/shared-sky-icon.png" alt="Shared Sky" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"></div>
                 <div class="shared-sky-row-content">
-                    <div class="shared-sky-row-title">Shared Sky <span style="font-size:10px;font-weight:500;color:rgba(255,255,255,0.35);margin-left:4px;">PUBLIC</span></div>
+                    <div class="shared-sky-row-title">Shared Sky <span style="font-family:var(--sans);font-size:9px;font-weight:600;color:var(--accent);margin-left:6px;text-transform:uppercase;letter-spacing:2px;font-style:normal;">Public</span></div>
                     <div class="shared-sky-row-preview" id="sharedSkyPreview">Loading...</div>
                 </div>
                 <span class="shared-sky-row-badge" id="sharedSkyBadge" style="display:none;"></span>
@@ -1127,7 +1130,7 @@
             <div class="message-page-footer">
                 <!-- Shared Sky Lunar Note Panel -->
                 <div id="ssLunarPanel" style="display:none;padding:12px 16px;animation:lunarPanelIn 0.25s ease;">
-                    <p style="font-size:12px;color:rgba(255,255,255,0.4);margin:0 0 10px;">Give me three things. The moon does the rest.</p>
+                    <p style="font-family:var(--serif);font-style:italic;font-size:13px;color:var(--muted);margin:0 0 10px;">Give me three things. The moon does the rest.</p>
                     <div id="ssLunarStepContainer">
                         <div class="lunar-step-card active" id="ssLunarStep1">
                             <div class="lunar-step-dots"><span class="lunar-dot active"></span><span class="lunar-dot"></span><span class="lunar-dot"></span></div>
@@ -1154,17 +1157,17 @@
                             </div>
                         </div>
                     </div>
-                    <div id="ssLunarResultCard" style="display:none;background:rgba(79,195,247,0.08);border:1px solid rgba(79,195,247,0.2);border-radius:12px;padding:14px;margin-top:10px;">
-                        <div style="font-size:11px;font-weight:700;color:#4fc3f7;letter-spacing:1px;margin-bottom:6px;">LUNAR NOTE</div>
-                        <div id="ssLunarResultText" style="font-size:14px;color:rgba(255,255,255,0.9);line-height:1.6;font-style:italic;"></div>
-                        <div id="ssLunarResultClosing" style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:6px;"></div>
-                        <div style="display:flex;gap:8px;margin-top:10px;">
-                            <button onclick="regenerateSSLunarNote()" style="background:none;border:1px solid rgba(79,195,247,0.25);border-radius:16px;padding:6px 12px;color:#4fc3f7;font-size:12px;cursor:pointer;">↻ try another</button>
-                            <button onclick="goSSLunarStep(1);document.getElementById('ssLunarResultCard').style.display='none'" style="background:none;border:1px solid rgba(79,195,247,0.25);border-radius:16px;padding:6px 12px;color:#4fc3f7;font-size:12px;cursor:pointer;">✎ edit</button>
+                    <div id="ssLunarResultCard" style="display:none;background:rgba(212,181,138,0.06);border:1px solid var(--line-soft);border-radius:var(--radius-md);padding:16px;margin-top:10px;">
+                        <div style="font-family:var(--sans);font-size:11px;font-weight:600;color:var(--accent);letter-spacing:var(--tracking-label);text-transform:uppercase;margin-bottom:8px;">Lunar Note</div>
+                        <div id="ssLunarResultText" style="font-family:var(--serif);font-size:16px;color:var(--text-bright);line-height:1.55;font-style:italic;"></div>
+                        <div id="ssLunarResultClosing" style="font-family:var(--serif);font-style:italic;font-size:13px;color:var(--muted);margin-top:8px;"></div>
+                        <div style="display:flex;gap:8px;margin-top:12px;">
+                            <button onclick="regenerateSSLunarNote()" style="background:none;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 14px;color:var(--accent);font-family:var(--sans);font-size:12px;cursor:pointer;transition:background var(--dur-fast) ease,border-color var(--dur-fast) ease;">↻ try another</button>
+                            <button onclick="goSSLunarStep(1);document.getElementById('ssLunarResultCard').style.display='none'" style="background:none;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 14px;color:var(--accent);font-family:var(--sans);font-size:12px;cursor:pointer;transition:background var(--dur-fast) ease,border-color var(--dur-fast) ease;">✎ edit</button>
                         </div>
                     </div>
                     <div id="ssLunarSendRow" style="display:none;margin-top:10px;">
-                        <button onclick="sendSharedSkyMessage()" style="width:100%;padding:12px;border-radius:24px;background:var(--coral);border:none;color:white;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background 0.2s;">Send Lunar Note</button>
+                        <button onclick="sendSharedSkyMessage()" style="width:100%;padding:12px;border-radius:var(--radius-pill);background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);font-family:var(--sans);font-size:14px;font-weight:600;letter-spacing:0.4px;cursor:pointer;transition:background var(--dur-fast) ease;">Send Lunar Note</button>
                     </div>
                 </div>
                 <!-- Note type toggle — same pill as chat -->
@@ -1184,13 +1187,13 @@
                     </div>
                     <div class="reply-row">
                         <div style="position:relative;flex-shrink:0;">
-                            <button id="sharedSkyPlusBtn" onclick="event.stopPropagation();sharedSkyPlusAction()" style="cursor:pointer;padding:0;background:none;border:1px solid rgba(79,195,247,0.3);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:#4fc3f7;font-size:20px;font-weight:300;line-height:1;">+</button>
-                            <div id="sharedSkyPhotoMenu" style="position:absolute;bottom:40px;left:0;background:rgba(10,22,40,0.95);border:1px solid rgba(79,195,247,0.2);border-radius:10px;padding:4px 0;min-width:180px;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
-                                <label for="sharedSkyCameraInput" class="ss-photo-menu-item ss-camera-only" style="display:none;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;color:white;font-size:13px;font-weight:500;transition:background 0.15s;" onmouseover="this.style.background='rgba(79,195,247,0.1)'" onmouseout="this.style.background='transparent'">
+                            <button id="sharedSkyPlusBtn" onclick="event.stopPropagation();sharedSkyPlusAction()" style="cursor:pointer;padding:0;background:none;border:1px solid rgba(212,181,138,0.3);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:20px;font-weight:300;line-height:1;">+</button>
+                            <div id="sharedSkyPhotoMenu" style="position:absolute;bottom:40px;left:0;background:rgba(10,22,40,0.95);border:1px solid rgba(212,181,138,0.2);border-radius:10px;padding:4px 0;min-width:180px;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+                                <label for="sharedSkyCameraInput" class="ss-photo-menu-item ss-camera-only" style="display:none;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;color:white;font-size:13px;font-weight:500;transition:background 0.15s;" onmouseover="this.style.background='rgba(212,181,138,0.1)'" onmouseout="this.style.background='transparent'">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                                     📷 Snap the Moon
                                 </label>
-                                <label for="sharedSkyPhotoInput" class="ss-photo-menu-item" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;color:white;font-size:13px;font-weight:500;transition:background 0.15s;" onmouseover="this.style.background='rgba(79,195,247,0.1)'" onmouseout="this.style.background='transparent'">
+                                <label for="sharedSkyPhotoInput" class="ss-photo-menu-item" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;color:white;font-size:13px;font-weight:500;transition:background 0.15s;" onmouseover="this.style.background='rgba(212,181,138,0.1)'" onmouseout="this.style.background='transparent'">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                                     Upload Photo
                                 </label>
@@ -1208,22 +1211,22 @@
 
 
     <!-- Philosophy Page -->
-    <div id="philosophyPage" style="display:none;position:fixed;inset:0;z-index:99999;background:#080d18;overflow-y:auto;overflow-x:hidden;">
-        <div style="position:sticky;top:0;z-index:10;padding:16px 48px;height:108px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,13,24,0.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(79,195,247,0.1);">
+    <div id="philosophyPage" style="display:none;position:fixed;inset:0;z-index:99999;background:var(--bg);overflow-y:auto;overflow-x:hidden;">
+        <div style="position:sticky;top:0;z-index:10;padding:16px 48px;height:108px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,10,24,0.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line-soft);">
             <a onclick="closePhilosophyPage()" style="cursor:pointer;display:flex;align-items:center;gap:16px;text-decoration:none;">
-                <img class="logo" src="assests/logo2.png" alt="Moon Post Service" style="width:80px;height:80px;">
-                <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.55);">The World's Only Moon Postal Service</span>
+                <img class="logo" src="assests/logo2.png" alt="Moon Post Service" style="width:64px;height:64px;opacity:0.92;">
+                <span style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);">The World's Only Moon Postal Service</span>
             </a>
-            <button onclick="closePhilosophyPage()" style="background:none;border:2px solid rgba(79,195,247,0.3);border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.7);font-size:24px;font-weight:700;transition:border-color 0.2s,background 0.2s;" onmouseover="this.style.background='rgba(79,195,247,0.08)';this.style.borderColor='rgba(79,195,247,0.45)'" onmouseout="this.style.background='none';this.style.borderColor='rgba(79,195,247,0.3)'">✕</button>
+            <button onclick="closePhilosophyPage()" style="background:none;border:1px solid var(--line);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:20px;font-weight:400;transition:border-color var(--dur-fast) ease,background var(--dur-fast) ease,color var(--dur-fast) ease;" onmouseover="this.style.background='rgba(212,181,138,0.08)';this.style.borderColor='var(--accent)';this.style.color='var(--accent-bright)'" onmouseout="this.style.background='none';this.style.borderColor='var(--line)';this.style.color='var(--muted)'">✕</button>
         </div>
 
         <!-- Hero with orbital dots -->
         <section style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:40px 40px 0;text-align:center;position:relative;">
             <canvas id="philosophy-ring-canvas" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-48%);pointer-events:none;z-index:1;opacity:0.85;"></canvas>
-            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(ellipse at center,rgba(53,125,197,0.04) 0%,transparent 60%);pointer-events:none;"></div>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(ellipse at center,rgba(212,181,138,0.05) 0%,transparent 60%);pointer-events:none;"></div>
             <div style="position:relative;z-index:2;max-width:900px;">
-                <h1 style="font-size:clamp(42px,7vw,72px);font-weight:300;color:#fff;line-height:1.12;letter-spacing:-0.5px;margin-bottom:36px;text-align:center;">Not every message<br>should arrive <span style="font-weight:800;color:#4fc3f7;">immediately.</span></h1>
-                <p style="font-size:clamp(16px,3vw,32px);font-weight:300;color:rgba(255,255,255,0.85);line-height:1.5;letter-spacing:0.01em;margin:0;">Some words deserve distance. Anticipation. A sky.</p>
+                <h1 style="font-family:var(--serif);font-size:clamp(42px,7vw,72px);font-weight:500;color:var(--text-bright);line-height:1.05;letter-spacing:-0.6px;margin-bottom:32px;text-align:center;">Not every message<br>should arrive <span style="font-style:italic;font-weight:500;color:var(--accent);">immediately.</span></h1>
+                <p style="font-family:var(--serif);font-style:italic;font-size:clamp(18px,2.6vw,28px);font-weight:400;color:var(--muted);line-height:1.45;letter-spacing:0;margin:0;">Some words deserve distance. Anticipation. A sky.</p>
             </div>
         </section>
 
@@ -1246,11 +1249,11 @@
 
         <!-- CTA -->
         <section style="padding:100px 32px 60px;text-align:center;position:relative;">
-            <div class="phil-separator" style="margin-bottom:64px;">◑</div>
+            <div class="phil-separator" style="margin-bottom:64px;">◊</div>
             <p class="phil-text" style="margin-bottom:24px;">Let the moon keep you close.</p>
-            <h2 id="philMoonTitle" style="font-size:clamp(36px,7vw,58px);font-weight:300;color:#fff;line-height:1.2;letter-spacing:-0.3px;margin-bottom:8px;">Rising in</h2>
-            <p id="philCountdown" style="font-size:clamp(36px,6vw,56px);font-weight:800;color:#4fc3f7;margin:0 0 36px;letter-spacing:-0.5px;"></p>
-            <a onclick="closePhilosophyPage();setTimeout(()=>openModal(),300);" class="phil-cta-btn" style="display:inline-flex;align-items:center;gap:10px;background:var(--coral);color:#fff;border:none;border-radius:32px;padding:16px 48px;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer;text-decoration:none;letter-spacing:0.3px;transition:transform 0.2s,box-shadow 0.2s;">Send a Lunar Note &rarr;</a>
+            <h2 id="philMoonTitle" style="font-family:var(--serif);font-size:clamp(36px,6.4vw,54px);font-weight:500;color:var(--text-bright);line-height:1.1;letter-spacing:-0.4px;margin-bottom:6px;">Rising in</h2>
+            <p id="philCountdown" style="font-family:var(--serif);font-size:clamp(36px,5.4vw,52px);font-weight:500;color:var(--accent);margin:0 0 36px;letter-spacing:-0.4px;"></p>
+            <a onclick="closePhilosophyPage();setTimeout(()=>openModal(),300);" class="phil-cta-btn" style="display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:var(--on-accent);border:1px solid var(--accent);border-radius:var(--radius-pill);padding:14px 42px;font-family:var(--sans);font-size:14.5px;font-weight:600;cursor:pointer;text-decoration:none;letter-spacing:0.4px;transition:transform var(--dur-fast) ease,box-shadow var(--dur-fast) ease,background var(--dur-fast) ease;">Send a Lunar Note &rarr;</a>
         </section>
 
         <!-- Sign-off -->
@@ -1263,22 +1266,22 @@
     </div>
 
     <!-- Contacts Page -->
-    <div id="contactsPage" style="display:none;position:fixed;inset:0;z-index:99998;background:#080d18;overflow-y:auto;overflow-x:hidden;">
+    <div id="contactsPage" style="display:none;position:fixed;inset:0;z-index:99998;background:var(--bg);overflow-y:auto;overflow-x:hidden;">
         <!-- Header -->
-        <div style="position:sticky;top:0;z-index:10;padding:0 48px;height:88px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,13,24,0.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(79,195,247,0.1);">
+        <div style="position:sticky;top:0;z-index:10;padding:0 48px;height:88px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,10,24,0.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line-soft);">
             <a onclick="closeContactsPage()" style="cursor:pointer;display:flex;align-items:center;gap:16px;text-decoration:none;">
-                <img class="logo" src="assests/logo2.png" alt="Moon Post Service" style="width:80px;height:80px;">
-                <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.55);">The World's Only Moon Postal Service</span>
+                <img class="logo" src="assests/logo2.png" alt="Moon Post Service" style="width:64px;height:64px;opacity:0.92;">
+                <span style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);">The World's Only Moon Postal Service</span>
             </a>
-            <button onclick="closeContactsPage()" style="background:none;border:2px solid rgba(79,195,247,0.3);border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.7);font-size:24px;font-weight:700;transition:border-color 0.2s,background 0.2s;" onmouseover="this.style.background='rgba(79,195,247,0.08)';this.style.borderColor='rgba(79,195,247,0.45)'" onmouseout="this.style.background='none';this.style.borderColor='rgba(79,195,247,0.3)'">✕</button>
+            <button onclick="closeContactsPage()" style="background:none;border:1px solid var(--line);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:20px;font-weight:400;transition:border-color var(--dur-fast) ease,background var(--dur-fast) ease,color var(--dur-fast) ease;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(212,181,138,0.08)';this.style.color='var(--accent-bright)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='none';this.style.color='var(--muted)'">✕</button>
         </div>
         <!-- Content -->
         <div style="max-width:660px;margin:0 auto;padding:48px 40px;">
-            <p style="font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#4fc3f7;margin-bottom:12px;">Contacts</p>
-            <h2 style="font-size:clamp(28px,4.5vw,42px);font-weight:900;color:#fff;line-height:1.1;letter-spacing:0.3px;margin-bottom:32px;">My Contacts</h2>
+            <p style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Contacts</p>
+            <h2 style="font-family:var(--serif);font-size:clamp(34px,5vw,52px);font-weight:500;color:var(--text-bright);line-height:1.05;letter-spacing:-0.4px;margin-bottom:32px;">My Contacts</h2>
             <!-- Search bar -->
             <div style="margin-bottom:24px;">
-                <input type="text" id="contactSearchInput" placeholder="Search by name, username, or email..." autocomplete="off" oninput="debouncedContactSearch()" style="width:100%;box-sizing:border-box;padding:12px 16px;border:1px solid rgba(79,195,247,0.25);border-radius:12px;font-size:14px;background:rgba(5,10,20,0.6);color:white;font-family:inherit;">
+                <input type="text" id="contactSearchInput" placeholder="Search by name, username, or email..." autocomplete="off" oninput="debouncedContactSearch()" style="width:100%;box-sizing:border-box;padding:12px 16px;border:1px solid var(--line-soft);border-radius:var(--radius-sm);font-family:var(--sans);font-size:14px;background:rgba(3,10,24,0.6);color:var(--text-bright);">
                 <div id="contactSearchResults" style="max-height:300px;overflow-y:auto;margin-top:4px;"></div>
             </div>
             <div id="contactsListBody" style="padding:0;">
@@ -1292,11 +1295,11 @@
         <div class="message-page-inner">
             <div class="message-page-header" style="justify-content:space-between;">
                 <button class="message-page-back" onclick="closeNewMessagePicker()"><svg class="app-icon" style="width:20px;height:20px"><use href="#icon-back"/></svg></button>
-                <span style="font-weight:700;color:#4fc3f7;font-size:15px;">New Moon Message</span>
+                <span style="font-weight:700;color:var(--accent);font-size:15px;">New Moon Message</span>
                 <button class="message-page-close" onclick="closeNewMessagePicker()" style="display:none;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
-            <div style="padding:8px 16px;border-bottom:1px solid rgba(79,195,247,0.12);">
-                <input type="text" id="newMsgContactSearch" placeholder="Search MoonPop users or type an email..." autocomplete="off" oninput="filterNewMsgContacts(this.value)" style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid rgba(79,195,247,0.25);border-radius:10px;font-size:14px;background:rgba(5,10,20,0.6);color:white;">
+            <div style="padding:8px 16px;border-bottom:1px solid rgba(212,181,138,0.12);">
+                <input type="text" id="newMsgContactSearch" placeholder="Search MoonPop users or type an email..." autocomplete="off" oninput="filterNewMsgContacts(this.value)" style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid rgba(212,181,138,0.25);border-radius:10px;font-size:14px;background:rgba(5,10,20,0.6);color:white;">
             </div>
             <div class="message-page-body" id="newMsgContactList" style="padding:0;">
                 <!-- Populated by JS -->
@@ -1403,7 +1406,7 @@
                         <div class="lunar-note-inline" id="lunarNoteInline">
                             <div class="lunar-note-panel" id="lunarNotePanel" style="display:block;">
                                 <div class="lunar-panel-header">
-                                    <span class="lunar-panel-label"><svg class="app-icon sm" style="color:#4fc3f7"><use href="#icon-lunar-note"/></svg> Lunar Note</span>
+                                    <span class="lunar-panel-label"><svg class="app-icon sm" style="color:var(--accent)"><use href="#icon-lunar-note"/></svg> Lunar Note</span>
                                 </div>
                                 <p class="lunar-intro">Give me three things. The moon does the rest.</p>
 
@@ -1484,7 +1487,7 @@
                         </span>
                         <input type="text" id="songInput" placeholder="Search YouTube for a song..." oninput="onSongInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();if(!extractYouTubeId(this.value.trim()) && !extractSpotifyTrackId(this.value.trim()))searchYouTubeSong();}">
                     </div>
-                    <button onclick="searchYouTubeSong()" id="songSearchBtn" style="display:none;margin-top:8px;background:#4fc3f7;color:#0a1628;border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;">Search</button>
+                    <button onclick="searchYouTubeSong()" id="songSearchBtn" style="display:none;margin-top:8px;background:var(--accent);color:#0a1628;border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;">Search</button>
                     <div id="songSearchResults" style="max-height:180px;overflow-y:auto;display:none;margin-top:8px;"></div>
                     <div class="song-suggestions" id="songSuggestions">
                         <!-- Populated by JS on each compose open -->
@@ -1606,16 +1609,16 @@
     <!-- Moon Reveal Page (recipient view) -->
     <div class="moon-reveal-page" id="moonRevealPage">
         <button class="close-reveal-page" onclick="closeMoonRevealPage()">&times;</button>
-        
+
         <div class="moon-reveal-header">
             <svg class="moon-reveal-logo" viewBox="0 0 529.49 72.65" xmlns="http://www.w3.org/2000/svg">
-                <path fill="rgba(255,255,255,0.6)" d="M196.78,72.65h-10.63c-.57-1.25-1.89-1.37-3.52-1.85-18.75-5.51-29.64-24-25.22-43.08C161.43,10.41,178.37-1.89,197.26.25s32.95,17.82,32.4,37.06c-.52,18.14-14.48,32.13-32.89,35.34Z"/>
-                <path fill="rgba(255,255,255,0.6)" d="M425.49,72.65h-11.63c-.58-1.24-1.89-1.38-3.51-1.86-18.73-5.51-29.64-23.96-25.22-43.06,4-17.28,20.89-29.61,39.82-27.49,18.05,2.02,32.47,17.24,32.45,36.09-.02,18.32-13.64,32.32-31.91,36.32Z"/>
-                <path fill="rgba(255,255,255,0.6)" d="M118.88,72.65h-10.99c-.57-1.15-1.87-1.22-3.42-1.64-18.85-5.13-30.12-23.35-26.13-42.49C81.95,11.14,98.55-1.5,117.38.14c18.55,1.62,33.42,16.98,33.41,36.19-.01,18.31-13.66,32.32-31.91,36.32Z"/>
-                <polygon fill="rgba(255,255,255,0.6)" points="306.61 71.76 260.34 59.26 259.73 70.65 236.71 70.65 236.75 .38 283.01 13.03 283.64 1.62 306.66 1.61 306.61 71.76"/>
-                <polygon fill="rgba(255,255,255,0.6)" points="69.64 2.09 70.01 70.68 0 70.69 .05 1.92 34.97 21.62 69.64 2.09"/>
-                <path fill="rgba(255,255,255,0.6)" d="M495.04,59c-1.08,4.08-.07,7.51-.63,11.66h-28.97s0-69.08,0-69.08l35.96.14c16.98.07,29.35,15.19,27.99,31.03-1.44,16.8-16.49,28.68-34.35,26.25Z"/>
-                <path fill="rgba(255,255,255,0.6)" d="M346.23,59c-1.09,4.08-.07,7.5-.63,11.65h-28.97s0-69.08,0-69.08l35.96.15c17,.07,29.34,15.16,28,31.03-1.42,16.78-16.5,28.68-34.35,26.26Z"/>
+                <path fill="var(--accent)" d="M196.78,72.65h-10.63c-.57-1.25-1.89-1.37-3.52-1.85-18.75-5.51-29.64-24-25.22-43.08C161.43,10.41,178.37-1.89,197.26.25s32.95,17.82,32.4,37.06c-.52,18.14-14.48,32.13-32.89,35.34Z"/>
+                <path fill="var(--accent)" d="M425.49,72.65h-11.63c-.58-1.24-1.89-1.38-3.51-1.86-18.73-5.51-29.64-23.96-25.22-43.06,4-17.28,20.89-29.61,39.82-27.49,18.05,2.02,32.47,17.24,32.45,36.09-.02,18.32-13.64,32.32-31.91,36.32Z"/>
+                <path fill="var(--accent)" d="M118.88,72.65h-10.99c-.57-1.15-1.87-1.22-3.42-1.64-18.85-5.13-30.12-23.35-26.13-42.49C81.95,11.14,98.55-1.5,117.38.14c18.55,1.62,33.42,16.98,33.41,36.19-.01,18.31-13.66,32.32-31.91,36.32Z"/>
+                <polygon fill="var(--accent)" points="306.61 71.76 260.34 59.26 259.73 70.65 236.71 70.65 236.75 .38 283.01 13.03 283.64 1.62 306.66 1.61 306.61 71.76"/>
+                <polygon fill="var(--accent)" points="69.64 2.09 70.01 70.68 0 70.69 .05 1.92 34.97 21.62 69.64 2.09"/>
+                <path fill="var(--accent)" d="M495.04,59c-1.08,4.08-.07,7.51-.63,11.66h-28.97s0-69.08,0-69.08l35.96.14c16.98.07,29.35,15.19,27.99,31.03-1.44,16.8-16.49,28.68-34.35,26.25Z"/>
+                <path fill="var(--accent)" d="M346.23,59c-1.09,4.08-.07,7.5-.63,11.65h-28.97s0-69.08,0-69.08l35.96.15c17,.07,29.34,15.16,28,31.03-1.42,16.78-16.5,28.68-34.35,26.26Z"/>
             </svg>
             <div class="moon-reveal-visual" id="revealMoonVisual"></div>
             <p class="moon-reveal-tagline">This message was written for this moon.</p>
@@ -1623,22 +1626,22 @@
 
         <div class="moon-reveal-content">
             <!-- Loading state -->
-            <div id="revealLoading" style="text-align:center;padding:40px;color:rgba(255,255,255,0.6);">
+            <div id="revealLoading" style="text-align:center;padding:40px;color:var(--muted);font-family:var(--serif);font-style:italic;font-size:16px;">
                 Loading your moon message...
             </div>
 
             <!-- Error state / invite landing for non-users -->
             <div id="revealError" style="display:none;text-align:center;padding:40px;">
-                <div style="margin-bottom:16px;color:#FDF6E3;"><svg class="app-icon xxl"><use href="#icon-lunar-note"/></svg></div>
-                <p style="color:rgba(255,255,255,0.9);font-size:18px;font-weight:600;">Someone sent you a moon message</p>
-                <p style="color:rgba(255,255,255,0.5);font-size:14px;margin-top:12px;line-height:1.6;">
+                <div style="margin-bottom:16px;color:var(--accent);"><svg class="app-icon xxl"><use href="#icon-lunar-note"/></svg></div>
+                <p style="font-family:var(--serif);color:var(--text-bright);font-size:24px;font-weight:500;letter-spacing:-0.2px;">Someone sent you a moon message</p>
+                <p style="font-family:var(--serif);font-style:italic;color:var(--muted);font-size:15px;margin-top:12px;line-height:1.55;">
                     Messages on Moon Post Service travel with the moon.<br>
                     Sign up to reveal your message and reply.
                 </p>
-                <button class="cta-primary" onclick="revealSignupToReply()" style="font-size:15px;padding:12px 32px;margin-top:24px;">
-                    Join MoonPop to read your message
+                <button class="cta-primary" onclick="revealSignupToReply()" style="font-size:14.5px;padding:14px 32px;margin-top:24px;">
+                    Join Moon Post Service to read your message
                 </button>
-                <p style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:16px;">Free · No app download needed</p>
+                <p style="color:var(--muter);font-size:11px;margin-top:16px;text-transform:uppercase;letter-spacing:2.5px;">Free &middot; No app download needed</p>
             </div>
 
             <!-- Real content (hidden until loaded) -->
@@ -1650,9 +1653,9 @@
                     <div class="countdown-label-reveal">Your moon message arrives in</div>
                     <div class="countdown-time-reveal" id="revealCountdownTime">--:--:--</div>
                     <div class="countdown-note">The message will be revealed at moonrise over <span id="revealCity">your city</span></div>
-                    <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1);">
-                        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:12px;">While you wait — join MoonPop so you can reply when it arrives</p>
-                        <button class="cta-primary" onclick="revealSignupToReply()" style="font-size:14px;padding:10px 24px;">Sign up now</button>
+                    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--line-soft);">
+                        <p style="font-family:var(--serif);font-style:italic;color:var(--muted);font-size:14px;margin-bottom:14px;">While you wait — join Moon Post Service so you can reply when it arrives</p>
+                        <button class="cta-primary" onclick="revealSignupToReply()" style="font-size:13.5px;padding:11px 28px;">Sign up now</button>
                     </div>
                 </div>
 
@@ -1660,10 +1663,10 @@
                 <div class="moon-reveal-message" id="revealMessage" style="display:none;">
                     <p class="reveal-message-text" id="revealMessageText"></p>
                     <div id="revealLunarNote" style="display:none;">
-                        <div style="margin-top:20px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;border-left:3px solid rgba(255,255,255,0.2);">
-                            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:8px;display:flex;align-items:center;gap:4px;justify-content:center;"><svg class="app-icon sm"><use href="#icon-lunar-note"/></svg> Lunar Note</div>
-                            <p id="revealLunarText" style="white-space:pre-line;color:rgba(255,255,255,0.85);"></p>
-                            <p id="revealLunarClosing" style="color:rgba(255,255,255,0.5);font-style:italic;margin-top:8px;"></p>
+                        <div style="margin-top:20px;padding:18px 20px;background:rgba(120,95,65,0.08);border-radius:12px;border-left:2px solid rgba(120,95,65,0.5);">
+                            <div style="font-family:var(--sans);font-size:11px;color:rgba(26,26,46,0.55);margin-bottom:10px;display:flex;align-items:center;gap:6px;justify-content:center;text-transform:uppercase;letter-spacing:2.5px;"><svg class="app-icon sm"><use href="#icon-lunar-note"/></svg> Lunar Note</div>
+                            <p id="revealLunarText" style="font-family:var(--serif);white-space:pre-line;color:#1a1a2e;font-size:17px;line-height:1.55;"></p>
+                            <p id="revealLunarClosing" style="font-family:var(--serif);color:rgba(26,26,46,0.55);font-style:italic;margin-top:8px;font-size:14px;"></p>
                         </div>
                     </div>
                     <div class="reveal-message-meta">
@@ -1673,9 +1676,9 @@
 
                 <!-- CTA -->
                 <div class="moon-reveal-cta" id="revealCta">
-                    <p>This message traveled through lunar time.<br>Join MoonPop to reply and send your own.</p>
+                    <p>This message traveled through lunar time.<br>Join Moon Post Service to reply and send your own.</p>
                     <div class="moon-reveal-cta-buttons">
-                        <button class="cta-primary" id="revealReplyBtn" onclick="revealSignupToReply()">Join MoonPop to reply</button>
+                        <button class="cta-primary" id="revealReplyBtn" onclick="revealSignupToReply()">Join Moon Post Service to reply</button>
                     </div>
                 </div>
             </div>
@@ -1715,11 +1718,11 @@
 
     <!-- Chat Profile Popup (tap avatar in chat) -->
     <div class="modal-overlay" id="chatProfileModal" style="display:none;" onclick="if(event.target===this)closeChatProfile()">
-        <div style="background:#0d1b2a;border:1px solid rgba(79,195,247,0.15);border-radius:24px;width:min(340px,90vw);padding:32px 24px 24px;text-align:center;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+        <div style="background:#0d1b2a;border:1px solid rgba(212,181,138,0.15);border-radius:24px;width:min(340px,90vw);padding:32px 24px 24px;text-align:center;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
             <button onclick="closeChatProfile()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;color:rgba(255,255,255,0.4);cursor:pointer;">&times;</button>
 
             <!-- Large Avatar -->
-            <div id="chatProfileAvatar" style="width:96px;height:96px;border-radius:50%;background:rgba(79,195,247,0.15);border:2px solid rgba(79,195,247,0.25);color:white;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;margin:0 auto 16px;overflow:hidden;position:relative;">
+            <div id="chatProfileAvatar" style="width:96px;height:96px;border-radius:50%;background:rgba(212,181,138,0.15);border:2px solid rgba(212,181,138,0.25);color:white;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;margin:0 auto 16px;overflow:hidden;position:relative;">
                 <span id="chatProfileInitial"></span>
                 <img id="chatProfileImg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
             </div>
@@ -1736,10 +1739,10 @@
             </div>
 
             <!-- Stats -->
-            <div id="chatProfileStats" style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:24px;padding:12px;background:rgba(79,195,247,0.08);border-radius:12px;border:1px solid rgba(79,195,247,0.1);"></div>
+            <div id="chatProfileStats" style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:24px;padding:12px;background:rgba(212,181,138,0.08);border-radius:12px;border:1px solid rgba(212,181,138,0.1);"></div>
 
             <!-- Block Button -->
-            <button id="chatProfileBlockBtn" onclick="chatProfileBlock()" style="width:100%;background:rgba(255,85,88,0.1);color:#ff5558;border:1px solid rgba(255,85,88,0.25);border-radius:16px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;">
+            <button id="chatProfileBlockBtn" onclick="chatProfileBlock()" style="width:100%;background:transparent;color:#E89B73;border:1px solid var(--line-soft);border-radius:var(--radius-pill);padding:12px 20px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.4px;transition:all var(--dur-fast) ease;">
                 Block User
             </button>
         </div>
@@ -1764,7 +1767,7 @@
             </div>
             <div class="message-page-footer">
                 <!-- Reply context bar (shown when replying to a specific message) -->
-                <div id="replyContextBar" style="display:none;padding:8px 12px;border-left:3px solid #4fc3f7;margin:0 0 8px;background:rgba(18,35,58,0.5);border-radius:0 8px 8px 0;">
+                <div id="replyContextBar" style="display:none;padding:8px 12px;border-left:3px solid var(--accent);margin:0 0 8px;background:rgba(18,35,58,0.5);border-radius:0 8px 8px 0;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <span id="replyContextText" style="font-size:12px;color:rgba(255,255,255,0.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"></span>
                         <button onclick="clearReplyContext()" style="background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:14px;padding:0 0 0 8px;">✕</button>
@@ -1857,9 +1860,9 @@
                         <button class="thread-lunar-send" id="threadLunarSendBtn" onclick="sendThreadLunarNote()">Send Lunar Note</button>
                     </div>
                 </div>
-                <div id="replyMoonGate" style="display:none;text-align:center;padding:16px 16px 20px;background:rgba(0,40,80,0.4);border-radius:12px;margin:8px 16px;">
-                    <div style="margin-bottom:6px;font-size:15px;color:#4fc3f7;font-weight:500;">🌙 The moon is below your horizon</div>
-                    <div id="replyMoonGateTime" style="font-size:13px;color:rgba(255,255,255,0.6);"></div>
+                <div id="replyMoonGate" style="display:none;text-align:center;padding:16px 16px 20px;background:rgba(212,181,138,0.06);border:1px solid var(--line-soft);border-radius:var(--radius-md);margin:8px 16px;">
+                    <div style="margin-bottom:6px;font-family:var(--serif);font-style:italic;font-size:16px;color:var(--accent);font-weight:500;letter-spacing:-0.1px;">🌙 The moon is below your horizon</div>
+                    <div id="replyMoonGateTime" style="font-family:var(--serif);font-style:italic;font-size:13px;color:var(--muted);"></div>
                 </div>
             </div>
         </div>
