@@ -6024,6 +6024,22 @@ body.moon-down .inbox-new-msg-cta {
     flex-shrink: 0;
 }
 
+/* Editorial glow divider beneath the moon-data-bar — echoes the landing-page horizon line */
+.data-divider {
+    width: min(720px, 90%);
+    margin: clamp(10px, 1.6vh, 18px) auto 0;
+    height: 4px;
+    flex-shrink: 0;
+    pointer-events: none;
+    filter: drop-shadow(0 0 6px rgba(245, 210, 160, 0.32));
+}
+.data-divider svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
 /* Scale orbit ring for available space — account for title, data bar, gaps */
 .split-right .orbit-container {
     width: min(420px, calc(100vh - 320px));
@@ -6042,7 +6058,8 @@ body.moon-down .inbox-new-msg-cta {
     /* Hide ring elements when chat is open */
     body.chat-open .ring-title,
     body.chat-open .main-content,
-    body.chat-open .moon-data-bar {
+    body.chat-open .moon-data-bar,
+    body.chat-open .data-divider {
         display: none !important;
     }
     /* Horizontal connecting line from active inbox item to chat */
@@ -6301,14 +6318,19 @@ body.moon-down .inbox-new-msg-cta {
 
     /* Hero greeting text */
     .ring-title {
-        font-size: 16px !important;
-        margin-top: 28px !important;
-        margin-bottom: 16px !important;
-        padding: 0 12px !important;
+        font-size: 20px !important;
+        margin-top: 48px !important;
+        margin-bottom: 6px !important;
+        padding: 0 16px !important;
     }
 
     /* Moon data bar bigger on mobile */
     .moon-data-bar {
+        display: none !important;
+    }
+
+    /* Glow divider is desktop-only — sibling of the data bar */
+    .data-divider {
         display: none !important;
     }
 
@@ -6892,6 +6914,19 @@ body.moon-down .inbox-new-msg-cta {
     box-shadow: 0 0 35px rgba(212, 181, 138, 0.5);
 }
 .compose-send-btn:active { transform: scale(0.97); }
+.compose-send-btn:disabled,
+.compose-send-btn[disabled] {
+    background: rgba(212, 181, 138, 0.28);
+    color: rgba(255, 255, 255, 0.55);
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+.compose-send-btn:disabled:hover,
+.compose-send-btn[disabled]:hover {
+    background: rgba(212, 181, 138, 0.28);
+    box-shadow: none;
+}
 .compose-send-icons {
     display: flex;
     align-items: center;

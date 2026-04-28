@@ -308,6 +308,17 @@ function composeMainAction() {
     }
 }
 
+// Enable "Send to the Moon" only when there is content to send (text, lunar note, or photo).
+function updateComposeSendBtnState() {
+    const btn = document.getElementById('composeMainBtn');
+    if (!btn) return;
+    const text = (document.getElementById('messageText')?.value || '').trim();
+    const lunarCard = document.getElementById('lunarResultCard');
+    const lunarReady = !!(lunarCard && lunarCard.style.display !== 'none' && document.getElementById('lunarResultText')?.textContent);
+    const hasPhoto = !!window['_pendingPhotoFile_compose'];
+    btn.disabled = !(text || lunarReady || hasPhoto);
+}
+
 function goToRecipientStep() {
     const textMessage = document.getElementById('messageText').value.trim();
     const songVal = document.getElementById('songInput')?.value.trim() || '';
@@ -970,12 +981,14 @@ function revealLunarNote() {
     document.getElementById('lunarResultText').textContent = result.lines;
     document.getElementById('lunarResultClosing').textContent = result.closing;
     document.getElementById('lunarResultCard').style.display = 'block';
+    updateComposeSendBtnState();
 }
 
 function editLunarInputs() {
     // Go back to step 1 to edit
     document.getElementById('lunarResultCard').style.display = 'none';
     goLunarStep(1);
+    updateComposeSendBtnState();
 }
 
 function generateLunarNote(a, b, c, templateIdx) {
@@ -1150,6 +1163,9 @@ function resetForm() {
 
     // Reset moon photo
     clearMoonPhoto();
+
+    // Re-disable Send button now that inputs are empty
+    updateComposeSendBtnState();
 
     // Reset next buttons
     for (let i = 1; i <= 3; i++) {

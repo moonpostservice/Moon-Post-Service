@@ -1107,6 +1107,24 @@
                     <span class="moon-data-value" id="moonDistanceBar">— km</span>
                 </div>
             </div>
+
+            <!-- Glowing horizon divider beneath the data bar — desktop only -->
+            <div class="data-divider" aria-hidden="true">
+                <svg viewBox="0 0 1600 4" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="dataDividerLine" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%"   stop-color="rgba(245,210,160,0)"/>
+                            <stop offset="8%"   stop-color="rgba(245,210,160,0.18)"/>
+                            <stop offset="30%"  stop-color="rgba(245,210,160,0.55)"/>
+                            <stop offset="62%"  stop-color="rgba(255,232,185,1)"/>
+                            <stop offset="85%"  stop-color="rgba(245,210,160,0.45)"/>
+                            <stop offset="96%"  stop-color="rgba(245,210,160,0.10)"/>
+                            <stop offset="100%" stop-color="rgba(245,210,160,0)"/>
+                        </linearGradient>
+                    </defs>
+                    <line x1="0" y1="2" x2="1600" y2="2" stroke="url(#dataDividerLine)" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
         </div><!-- /split-right -->
 
     </div><!-- /split-layout -->
@@ -1397,7 +1415,7 @@
 
                     <!-- Open Note mode: freeform text -->
                     <div id="composeOpenNote">
-                        <textarea id="messageText" class="compose-textarea" placeholder="Whisper your message to the stars..."></textarea>
+                        <textarea id="messageText" class="compose-textarea" placeholder="Whisper your message to the stars..." oninput="updateComposeSendBtnState()"></textarea>
                         <!-- Removed: transmitting label -->
                     </div>
 
@@ -1511,7 +1529,7 @@
 
                 <!-- Send to the Moon button -->
                 <div class="compose-send-container">
-                    <button class="compose-send-btn" id="composeMainBtn" onclick="composeMainAction()">
+                    <button class="compose-send-btn" id="composeMainBtn" onclick="composeMainAction()" disabled>
                         Send to the Moon
                         <span class="compose-send-icons">
                             <svg width="22" height="22" style="color:white"><use href="#icon-rocket"/></svg>
