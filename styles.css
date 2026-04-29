@@ -6024,6 +6024,25 @@ body.moon-down .inbox-new-msg-cta {
     flex-shrink: 0;
 }
 
+/* Editorial glow divider beneath the moon-data-bar — echoes the landing-page horizon line */
+.data-divider {
+    width: min(720px, 90%);
+    margin: clamp(10px, 1.6vh, 18px) auto 0;
+    height: 1px;
+    flex-shrink: 0;
+    pointer-events: none;
+    background: linear-gradient(to right,
+        rgba(245,210,160,0) 0%,
+        rgba(245,210,160,0.18) 8%,
+        rgba(245,210,160,0.55) 30%,
+        rgba(255,232,185,0.9) 62%,
+        rgba(245,210,160,0.45) 85%,
+        rgba(245,210,160,0.10) 96%,
+        rgba(245,210,160,0) 100%
+    );
+    box-shadow: 0 0 10px rgba(245, 210, 160, 0.45);
+}
+
 /* Scale orbit ring for available space — account for title, data bar, gaps */
 .split-right .orbit-container {
     width: min(420px, calc(100vh - 320px));
@@ -6042,7 +6061,8 @@ body.moon-down .inbox-new-msg-cta {
     /* Hide ring elements when chat is open */
     body.chat-open .ring-title,
     body.chat-open .main-content,
-    body.chat-open .moon-data-bar {
+    body.chat-open .moon-data-bar,
+    body.chat-open .data-divider {
         display: none !important;
     }
     /* Horizontal connecting line from active inbox item to chat */
@@ -6301,14 +6321,19 @@ body.moon-down .inbox-new-msg-cta {
 
     /* Hero greeting text */
     .ring-title {
-        font-size: 16px !important;
-        margin-top: 28px !important;
-        margin-bottom: 16px !important;
-        padding: 0 12px !important;
+        font-size: 20px !important;
+        margin-top: 48px !important;
+        margin-bottom: 6px !important;
+        padding: 0 16px !important;
     }
 
     /* Moon data bar bigger on mobile */
     .moon-data-bar {
+        display: none !important;
+    }
+
+    /* Glow divider is desktop-only — sibling of the data bar */
+    .data-divider {
         display: none !important;
     }
 
@@ -6892,6 +6917,19 @@ body.moon-down .inbox-new-msg-cta {
     box-shadow: 0 0 35px rgba(212, 181, 138, 0.5);
 }
 .compose-send-btn:active { transform: scale(0.97); }
+.compose-send-btn:disabled,
+.compose-send-btn[disabled] {
+    background: rgba(212, 181, 138, 0.28);
+    color: rgba(255, 255, 255, 0.55);
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+.compose-send-btn:disabled:hover,
+.compose-send-btn[disabled]:hover {
+    background: rgba(212, 181, 138, 0.28);
+    box-shadow: none;
+}
 .compose-send-icons {
     display: flex;
     align-items: center;
@@ -8522,7 +8560,7 @@ body.moon-down .new-message-btn {
     position: relative;
     max-width: 1240px;
     margin: 0 auto;
-    padding: 56px 56px 80px;
+    padding: 56px 56px 32px;
 }
 .ed-hero-grid {
     display: grid;
@@ -8759,7 +8797,7 @@ body.moon-down .new-message-btn {
 .ed-horizon {
     width: 100%;
     line-height: 0;
-    margin-top: -60px;
+    margin-top: -200px;
     margin-bottom: -40px;
     pointer-events: none;
     position: relative;

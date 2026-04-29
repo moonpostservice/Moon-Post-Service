@@ -1107,6 +1107,9 @@
                     <span class="moon-data-value" id="moonDistanceBar">— km</span>
                 </div>
             </div>
+
+            <!-- Glowing horizon divider beneath the data bar — desktop only -->
+            <div class="data-divider" aria-hidden="true"></div>
         </div><!-- /split-right -->
 
     </div><!-- /split-layout -->
@@ -1397,7 +1400,7 @@
 
                     <!-- Open Note mode: freeform text -->
                     <div id="composeOpenNote">
-                        <textarea id="messageText" class="compose-textarea" placeholder="Whisper your message to the stars..."></textarea>
+                        <textarea id="messageText" class="compose-textarea" placeholder="Whisper your message to the stars..." oninput="updateComposeSendBtnState()"></textarea>
                         <!-- Removed: transmitting label -->
                     </div>
 
@@ -1511,7 +1514,7 @@
 
                 <!-- Send to the Moon button -->
                 <div class="compose-send-container">
-                    <button class="compose-send-btn" id="composeMainBtn" onclick="composeMainAction()">
+                    <button class="compose-send-btn" id="composeMainBtn" onclick="composeMainAction()" disabled>
                         Send to the Moon
                         <span class="compose-send-icons">
                             <svg width="22" height="22" style="color:white"><use href="#icon-rocket"/></svg>

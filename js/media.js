@@ -284,11 +284,13 @@ function handleMoonPhoto(input) {
         reader.onload = (e) => { pendingMoonPhoto = e.target.result; };
         reader.readAsDataURL(input.files[0]);
     }
+    if (typeof updateComposeSendBtnState === 'function') updateComposeSendBtnState();
 }
 
 function clearMoonPhoto() {
     pendingMoonPhoto = null;
     clearPhotoAttachment('moonPhotoInput', 'moonPhotoPreview', 'moonPhotoLabel', 'Tap to add a moon photo', 'compose');
+    if (typeof updateComposeSendBtnState === 'function') updateComposeSendBtnState();
 }
 
 

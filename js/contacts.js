@@ -1646,6 +1646,9 @@ function openModalForRecipient() {
     // Start in Open Note mode (default)
     composeToggleMode('open-note');
 
+    // Send button starts disabled until something is written/added
+    if (typeof updateComposeSendBtnState === 'function') updateComposeSendBtnState();
+
     // Show dark-themed header with recipient info
     if (selectedRecipient) {
         const header = document.getElementById('composeHeader');
@@ -1684,12 +1687,15 @@ function composeToggleMode(mode) {
     const goLunarContent = document.getElementById('composeGoLunar');
     if (!openNoteBtn || !goLunarBtn) return;
 
+    const syncSend = () => { if (typeof updateComposeSendBtnState === 'function') updateComposeSendBtnState(); };
+
     if (mode === 'open-note') {
         openNoteBtn.classList.add('active');
         goLunarBtn.classList.remove('active');
         openNoteContent.style.display = 'block';
         goLunarContent.style.display = 'none';
         lunarNoteActive = false;
+        syncSend();
     } else {
         openNoteBtn.classList.remove('active');
         goLunarBtn.classList.add('active');
@@ -1725,6 +1731,7 @@ function composeToggleMode(mode) {
 
             goLunarStep(1);
         }
+        syncSend();
     }
 }
 
