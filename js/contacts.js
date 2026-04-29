@@ -80,19 +80,37 @@ function initTransitIllustration() {
         canvas.style.width = ww + 'px';
         canvas.style.height = ww + 'px';
         cx = W / 2; cy = H / 2;
-        sc = W / 460; // base scale — illustration fills most of the canvas
+        sc = W / 460;
         earthR = 115 * sc;
         orbitR = 185 * sc;
     }
     resize();
     window.addEventListener('resize', resize);
 
-    // Pin angles on orbit
-    const YOU_ANGLE = -55 * Math.PI / 180;
-    const THEM_ANGLE = 155 * Math.PI / 180;
-    // Pin positions on Earth surface
-    function youPos() { return { x: cx + Math.cos(YOU_ANGLE) * earthR * 0.65, y: cy + Math.sin(YOU_ANGLE) * earthR * 0.65 }; }
-    function themPos() { return { x: cx + Math.cos(THEM_ANGLE) * earthR * 0.65, y: cy + Math.sin(THEM_ANGLE) * earthR * 0.65 }; }
+    // Globe world data
+    let worldLand = null;
+    let worldBorders = null;
+    let globeRotation = -30;
+    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+        .then(r => r.json())
+        .then(topo => {
+            worldLand = topojson.feature(topo, topo.objects.land);
+            worldBorders = topojson.mesh(topo, topo.objects.countries, (a, b) => a !== b);
+        })
+        .catch(() => {});
+
+    // Pin positions defined by real geographic coordinates — both on land
+    const YOU_GEO  = [52, 36];   // Iran / Caucasus
+    const THEM_GEO = [18, -26];  // Botswana / South Africa
+
+    function geoToScreen(lonlat) {
+        const proj = d3.geoOrthographic()
+            .scale(earthR).translate([cx, cy]).rotate([-30, -18, 0]).clipAngle(90);
+        const pt = proj(lonlat);
+        return pt ? { x: pt[0], y: pt[1] } : { x: cx, y: cy };
+    }
+    function youPos()  { return geoToScreen(YOU_GEO); }
+    function themPos() { return geoToScreen(THEM_GEO); }
     // Moon position on orbit
     function moonPos(angle) { return { x: cx + Math.cos(angle) * orbitR, y: cy + Math.sin(angle) * orbitR }; }
 
@@ -157,75 +175,117 @@ function initTransitIllustration() {
         ctx.restore();
     }
 
-    function drawEarth() {
+    function drawGlobe() {
         ctx.save();
-        // Earth body — matte dark navy disc
+
+        // Navy disc background
         ctx.beginPath();
         ctx.arc(cx, cy, earthR, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(7, 15, 30, 0.85)';
+        ctx.fillStyle = 'rgba(7, 15, 30, 0.92)';
         ctx.fill();
-        // Brass rim outline
+
+        if (worldLand && worldBorders && typeof d3 !== 'undefined') {
+            // Clip all geo drawing to the globe circle
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, earthR - 0.5, 0, Math.PI * 2);
+            ctx.clip();
+
+            const projection = d3.geoOrthographic()
+                .scale(earthR)
+                .translate([cx, cy])
+                .rotate([globeRotation, -18, 0])
+                .clipAngle(90);
+            const path = d3.geoPath(projection, ctx);
+
+            // Graticule grid — very faint
+            const graticule = d3.geoGraticule().step([20, 20])();
+            ctx.beginPath();
+            path(graticule);
+            ctx.strokeStyle = 'rgba(208, 180, 137, 0.07)';
+            ctx.lineWidth = 0.4 * sc;
+            ctx.stroke();
+
+            // Country borders — brass
+            ctx.beginPath();
+            path(worldBorders);
+            ctx.strokeStyle = 'rgba(208, 180, 137, 0.42)';
+            ctx.lineWidth = 0.7 * sc;
+            ctx.stroke();
+
+            // Land coastlines — slightly brighter
+            ctx.beginPath();
+            path(worldLand);
+            ctx.strokeStyle = 'rgba(208, 180, 137, 0.55)';
+            ctx.lineWidth = 0.8 * sc;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Brass rim
         ctx.beginPath();
         ctx.arc(cx, cy, earthR, 0, Math.PI * 2);
         ctx.strokeStyle = 'rgba(208, 180, 137, 0.55)';
         ctx.lineWidth = 1 * sc;
         ctx.stroke();
 
-        // Inner concentric brass dotted ring (decorative — celestial instrument feel)
-        ctx.beginPath();
-        ctx.arc(cx, cy, earthR * 0.62, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(208, 180, 137, 0.22)';
-        ctx.lineWidth = 0.6 * sc;
-        ctx.setLineDash([2 * sc, 4 * sc]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Equator + meridian thin brass crosshair
-        ctx.beginPath();
-        ctx.moveTo(cx - earthR, cy);
-        ctx.lineTo(cx + earthR, cy);
-        ctx.strokeStyle = 'rgba(208, 180, 137, 0.18)';
-        ctx.lineWidth = 0.5 * sc;
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(cx, cy - earthR);
-        ctx.lineTo(cx, cy + earthR);
-        ctx.stroke();
-
-        // Outer faint brass halo
+        // Outer halo
         ctx.beginPath();
         ctx.arc(cx, cy, earthR + 5 * sc, 0, Math.PI * 2);
         ctx.strokeStyle = 'rgba(208, 180, 137, 0.10)';
         ctx.lineWidth = 1 * sc;
         ctx.stroke();
+
+        // Subtle atmospheric limb gradient
+        const limb = ctx.createRadialGradient(cx, cy, earthR * 0.72, cx, cy, earthR);
+        limb.addColorStop(0, 'rgba(208,180,137,0)');
+        limb.addColorStop(1, 'rgba(208,180,137,0.06)');
+        ctx.beginPath();
+        ctx.arc(cx, cy, earthR, 0, Math.PI * 2);
+        ctx.fillStyle = limb;
+        ctx.fill();
+
         ctx.restore();
     }
 
     function drawMoon(x, y) {
         const moonR = 24 * sc;
-        // Soft brass glow
-        const glow = ctx.createRadialGradient(x, y, 0, x, y, moonR * 2.4);
-        glow.addColorStop(0, 'rgba(212, 181, 138, 0.20)');
-        glow.addColorStop(0.45, 'rgba(212, 181, 138, 0.04)');
-        glow.addColorStop(1, 'rgba(212, 181, 138, 0)');
+        // Outer brass glow
+        const glow = ctx.createRadialGradient(x, y, moonR * 0.8, x, y, moonR * 2.4);
+        glow.addColorStop(0, 'rgba(208, 180, 137, 0.14)');
+        glow.addColorStop(1, 'rgba(208, 180, 137, 0)');
         ctx.beginPath(); ctx.arc(x, y, moonR * 2.4, 0, Math.PI * 2);
         ctx.fillStyle = glow; ctx.fill();
-        // Body — ivory
+
+        // Navy disc (full body)
         ctx.beginPath(); ctx.arc(x, y, moonR, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(234, 216, 191, 0.96)';
+        ctx.fillStyle = 'rgba(7, 15, 30, 0.92)';
         ctx.fill();
-        // Brass rim
+
+        // Very faint dark-limb outline (full circle)
         ctx.beginPath(); ctx.arc(x, y, moonR, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(208, 180, 137, 0.45)';
-        ctx.lineWidth = 0.6 * sc;
+        ctx.strokeStyle = 'rgba(208, 180, 137, 0.18)';
+        ctx.lineWidth = 0.5 * sc;
         ctx.stroke();
-        // Subtle craters
-        ctx.fillStyle = 'rgba(120, 95, 65, 0.22)';
-        ctx.beginPath(); ctx.arc(x + 6 * sc, y - 4 * sc, 3.5 * sc, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = 'rgba(120, 95, 65, 0.18)';
-        ctx.beginPath(); ctx.arc(x - 7 * sc, y + 6 * sc, 3 * sc, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = 'rgba(120, 95, 65, 0.14)';
-        ctx.beginPath(); ctx.arc(x + 2 * sc, y + 9 * sc, 2 * sc, 0, Math.PI * 2); ctx.fill();
+
+        // Crescent: outer lit limb (right semicircle) + terminator ellipse arc
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.beginPath();
+        // Outer lit limb — right side of disc
+        ctx.arc(0, 0, moonR, -Math.PI / 2, Math.PI / 2, false);
+        // Inner terminator — same direction but x-squashed to 0.78,
+        // so both arcs curve right and the crescent is thin & iconic
+        ctx.save();
+        ctx.scale(0.78, 1);
+        ctx.arc(0, 0, moonR, Math.PI / 2, -Math.PI / 2, true);
+        ctx.restore();
+        ctx.closePath();
+        ctx.strokeStyle = 'rgba(208, 180, 137, 0.75)';
+        ctx.lineWidth = 1.0 * sc;
+        ctx.stroke();
+        ctx.restore();
     }
 
     function drawPin(px, py, color, label) {
@@ -316,13 +376,15 @@ function initTransitIllustration() {
 
         const you = youPos();
         const them = themPos();
+        const youAngle  = Math.atan2(you.y - cy, you.x - cx);
+        const themAngle = Math.atan2(them.y - cy, them.x - cx);
 
         // Moon angle based on phase
         let moonAngle;
-        if (phase.name === 'send_you' || phase.name === 'drop_you') moonAngle = YOU_ANGLE;
-        else if (phase.name === 'drop_them' || phase.name === 'send_them') moonAngle = THEM_ANGLE;
-        else if (phase.name === 'travel_to_them') moonAngle = lerpAngleCW(YOU_ANGLE, THEM_ANGLE, p);
-        else moonAngle = lerpAngleCW(THEM_ANGLE, YOU_ANGLE + Math.PI*2, p);
+        if (phase.name === 'send_you' || phase.name === 'drop_you') moonAngle = youAngle;
+        else if (phase.name === 'drop_them' || phase.name === 'send_them') moonAngle = themAngle;
+        else if (phase.name === 'travel_to_them') moonAngle = lerpAngleCW(youAngle, themAngle, p);
+        else moonAngle = lerpAngleCW(themAngle, youAngle + Math.PI*2, p);
 
         const moon = moonPos(moonAngle);
 
@@ -376,7 +438,7 @@ function initTransitIllustration() {
         // ---- RENDER ----
         ctx.clearRect(0, 0, W, H);
         drawOrbit();
-        drawEarth();
+        drawGlobe();
         const trailColor = (phase.name.includes('you') && !phase.name.includes('to_you')) || phase.name === 'travel_to_them' ? '#ff5558' : '#FFD54F';
         drawTrail(trailColor);
         drawPin(you.x, you.y, '#ff5558', 'YOU');
