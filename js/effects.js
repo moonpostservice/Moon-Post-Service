@@ -1658,3 +1658,33 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 // Update dot positions based on time-to-release
 // 270° = 12h away, 0° = 6h away, 90° = imminent
 // ============================================
+
+// ============================================
+// HORIZON GLOW — tracks moon azimuth
+// ============================================
+function updateHorizonGlow() {
+    const grad = document.getElementById('appHorizonLight');
+    if (!grad) return;
+
+    const az = moonData.azimuth;   // radians; 0=south, -π/2=east, +π/2=west
+    const alt = moonData.altitude; // radians
+
+    // Map azimuth east→west arc to 10%–90% screen width
+    const cx = az == null ? 50 : Math.min(90, Math.max(10,
+        ((az / Math.PI) + 0.5) * 80 + 10
+    ));
+
+    // Fade glow when moon is high (> ~45°); peak near horizon
+    const altDeg = alt == null ? 0 : alt * (180 / Math.PI);
+    const intensity = alt == null ? 0.6 : Math.max(0.15, 1 - Math.max(0, altDeg) / 55);
+
+    grad.setAttribute('cx', cx + '%');
+
+    // Adjust stop opacities by intensity
+    const stops = grad.querySelectorAll('stop');
+    const baseOpacities = [0.78, 0.62, 0.42, 0.24, 0.12, 0.05, 0.015, 0];
+    stops.forEach((s, i) => {
+        const base = baseOpacities[i] || 0;
+        s.style.stopOpacity = base * intensity;
+    });
+}

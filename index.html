@@ -1107,6 +1107,38 @@
                     <span class="moon-data-value" id="moonDistanceBar">— km</span>
                 </div>
             </div>
+
+            <!-- Horizon glow divider — mirrors landing page -->
+            <div class="app-horizon" aria-hidden="true">
+                <svg viewBox="0 0 1600 380" preserveAspectRatio="none">
+                    <defs>
+                        <radialGradient id="appHorizonLight" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%"   stop-color="rgba(255,228,175,0.78)"/>
+                            <stop offset="6%"   stop-color="rgba(250,212,160,0.62)"/>
+                            <stop offset="14%"  stop-color="rgba(235,190,140,0.42)"/>
+                            <stop offset="26%"  stop-color="rgba(215,170,120,0.24)"/>
+                            <stop offset="42%"  stop-color="rgba(195,155,108,0.12)"/>
+                            <stop offset="60%"  stop-color="rgba(180,140,98,0.05)"/>
+                            <stop offset="80%"  stop-color="rgba(170,130,90,0.015)"/>
+                            <stop offset="100%" stop-color="rgba(160,125,85,0)"/>
+                        </radialGradient>
+                        <linearGradient id="appHorizonLine" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%"   stop-color="rgba(245,210,160,0)"/>
+                            <stop offset="8%"   stop-color="rgba(245,210,160,0.18)"/>
+                            <stop offset="30%"  stop-color="rgba(245,210,160,0.55)"/>
+                            <stop offset="62%"  stop-color="rgba(255,232,185,1)"/>
+                            <stop offset="85%"  stop-color="rgba(245,210,160,0.45)"/>
+                            <stop offset="96%"  stop-color="rgba(245,210,160,0.10)"/>
+                            <stop offset="100%" stop-color="rgba(245,210,160,0)"/>
+                        </linearGradient>
+                    </defs>
+                    <ellipse cx="800" cy="270" rx="1050" ry="270" fill="url(#appHorizonLight)"/>
+                    <path d="M0,295 C90,265 180,310 280,283 C380,256 460,308 560,278 C660,250 760,300 850,270 C920,247 980,278 1060,260 C1140,275 1230,310 1320,288 C1410,266 1490,298 1560,280 C1580,274 1592,284 1600,282 L1600,380 L0,380 Z"
+                          fill="var(--bg, #030A18)"/>
+                    <path d="M0,295 C90,265 180,310 280,283 C380,256 460,308 560,278 C660,250 760,300 850,270 C920,247 980,278 1060,260 C1140,275 1230,310 1320,288 C1410,266 1490,298 1560,280 C1580,274 1592,284 1600,282"
+                          fill="none" stroke="url(#appHorizonLine)" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
         </div><!-- /split-right -->
 
     </div><!-- /split-layout -->

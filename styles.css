@@ -6042,7 +6042,8 @@ body.moon-down .inbox-new-msg-cta {
     /* Hide ring elements when chat is open */
     body.chat-open .ring-title,
     body.chat-open .main-content,
-    body.chat-open .moon-data-bar {
+    body.chat-open .moon-data-bar,
+    body.chat-open .app-horizon {
         display: none !important;
     }
     /* Horizontal connecting line from active inbox item to chat */
@@ -8522,7 +8523,7 @@ body.moon-down .new-message-btn {
     position: relative;
     max-width: 1240px;
     margin: 0 auto;
-    padding: 56px 56px 80px;
+    padding: 56px 56px 32px;
 }
 .ed-hero-grid {
     display: grid;
@@ -8759,7 +8760,7 @@ body.moon-down .new-message-btn {
 .ed-horizon {
     width: 100%;
     line-height: 0;
-    margin-top: -60px;
+    margin-top: -160px;
     margin-bottom: -40px;
     pointer-events: none;
     position: relative;
@@ -8767,7 +8768,7 @@ body.moon-down .new-message-btn {
 }
 .ed-horizon svg {
     width: 100%;
-    height: clamp(240px, 26vw, 340px);
+    height: clamp(200px, 22vw, 280px);
     display: block;
     /* Fade the very bottom into transparent so the hill silhouette never shows
        a hard edge against the page bg, even if anti-aliasing creates one. */
@@ -8777,6 +8778,27 @@ body.moon-down .new-message-btn {
 @media (max-width: 640px) {
     .ed-horizon { margin-top: -20px; margin-bottom: -20px; }
     .ed-horizon svg { height: 200px; }
+}
+
+/* ---- APP HORIZON DIVIDER (fixed to bottom of viewport) ---- */
+.app-horizon {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    line-height: 0;
+    pointer-events: none;
+    z-index: 3;
+}
+.app-horizon svg {
+    width: 100%;
+    height: 120px;
+    display: block;
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+}
+@media (max-width: 900px) {
+    .app-horizon { display: none; }
 }
 
 /* ---- HOW IT WORKS ---- */
