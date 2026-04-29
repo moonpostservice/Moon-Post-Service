@@ -88,6 +88,25 @@ function toggleMessageSounds() {
     updateSoundToggleBtn();
 }
 
+// Moon Roulette opt-in preference (stored in profiles table)
+let _rouletteOptIn = true;
+
+function toggleRouletteOptIn() {
+    _rouletteOptIn = !_rouletteOptIn;
+    updateRouletteOptInBtn();
+    if (currentAuthUser) {
+        sb.from('profiles').update({ receive_moon_roulette: _rouletteOptIn }).eq('id', currentAuthUser.id)
+            .then(({ error }) => { if (error) console.error('Failed to save roulette opt-in pref:', error); });
+    }
+}
+
+function updateRouletteOptInBtn() {
+    const btn = document.getElementById('rouletteOptInToggleBtn');
+    if (!btn) return;
+    btn.textContent = _rouletteOptIn ? 'On' : 'Off';
+    btn.style.opacity = _rouletteOptIn ? '1' : '0.5';
+}
+
 function updateSoundToggleBtn() {
     const btn = document.getElementById('soundToggleBtn');
     if (!btn) return;

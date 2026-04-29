@@ -577,7 +577,9 @@ async function initAuth(sessionOverride) {
                 // Load notification preferences
                 _notifyEmail = profile.notify_email !== false; // default true
                 _notifyPush = profile.notify_push !== false;
+                _rouletteOptIn = profile.receive_moon_roulette !== false; // default true
                 updateEmailNotifBtn();
+                updateRouletteOptInBtn();
 
                 if (profile.city) {
                     const city = cities.find(c => c.name === profile.city);
