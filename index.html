@@ -261,6 +261,12 @@
                     <svg class="app-icon" style="width:22px;height:22px;"><use href="#icon-contacts"/></svg>
                 </button>
 
+                <!-- Moon Roulette -->
+                <button class="header-roulette-btn" onclick="openRoulettePage()" aria-label="Moon Roulette" title="Moon Roulette — Send a message to a stranger">
+                    <svg class="app-icon" style="width:22px;height:22px;"><use href="#icon-full-moon"/></svg>
+                    <span class="header-roulette-label">Roulette</span>
+                </button>
+
                 <!-- User / Settings -->
                 <button class="user-btn" onclick="toggleSettings()" aria-label="Settings">
                     <span class="user-initials" id="userInitials">A</span>
@@ -423,6 +429,10 @@
             <button class="mobile-menu-item" onclick="closeMobileMenu();openContactsPage();">
                 <svg class="app-icon" style="width:20px;height:20px;flex-shrink:0;color:var(--accent);"><use href="#icon-contacts"/></svg>
                 <span>My Contacts</span>
+            </button>
+            <button class="mobile-menu-item" onclick="closeMobileMenu();openRoulettePage();">
+                <svg class="app-icon" style="width:20px;height:20px;flex-shrink:0;color:var(--accent);"><use href="#icon-full-moon"/></svg>
+                <span>Moon Roulette</span>
             </button>
             <button class="mobile-menu-item" onclick="closeMobileMenu();setTimeout(toggleSettings,200);">
                 <svg style="width:20px;height:20px;flex-shrink:0;color:var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1244,6 +1254,9 @@
     </div>
 
 
+    <!-- Moon Roulette Page -->
+    <div id="roulettePage" style="display:none;position:fixed;inset:0;z-index:99997;background:var(--bg);overflow-y:auto;overflow-x:hidden;flex-direction:column;"></div>
+
     <!-- Philosophy Page -->
     <div id="philosophyPage" style="display:none;position:fixed;inset:0;z-index:99999;background:var(--bg);overflow-y:auto;overflow-x:hidden;">
         <div style="position:sticky;top:0;z-index:10;padding:16px 48px;height:108px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,10,24,0.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line-soft);">
@@ -1916,5 +1929,6 @@
     <script src="/js/effects.js"></script>
     <script src="/js/reveal.js"></script>
     <script src="/js/circles-functions.js"></script>
+    <script src="/js/roulette.js"></script>
 </body>
 </html>

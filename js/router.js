@@ -9,9 +9,12 @@ window.addEventListener('popstate', async function(e) {
 
     // Close all overlays first
     document.getElementById('philosophyPage').style.display = 'none';
-    document.getElementById('contactsPage').style.display = 'none';
+    document.getElementById('contactsPage').style.display  = 'none';
+    document.getElementById('roulettePage').style.display  = 'none';
 
-    if (e.state?.page === 'philosophy' || path === '/philosophy') {
+    if (e.state?.page === 'roulette' || path === '/roulette') {
+        openRoulettePage(true);
+    } else if (e.state?.page === 'philosophy' || path === '/philosophy') {
         openPhilosophyPage(true);
     } else if (e.state?.page === 'contacts' || path === '/contacts') {
         openContactsPage(true);
