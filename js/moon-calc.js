@@ -259,6 +259,7 @@ function calculateMoonTimes(lat, lon) {
     updateMoonPosition();
     updateOrbitCenter();
     updateMoonDisplay();
+    if (typeof updateHorizonGlow === 'function') updateHorizonGlow();
 }
 
 // =============================================
