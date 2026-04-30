@@ -1742,6 +1742,7 @@ function openComposeForRoulette() {
 }
 
 function openModalForRecipient() {
+    window.composeIsRoulette = false;
     showDefaultCompose();
     _openComposePanel();
 
