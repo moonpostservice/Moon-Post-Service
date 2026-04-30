@@ -499,8 +499,10 @@ async function handleSendRouletteFromCompose() {
         console.log('[roulette] sent from compose:', data?.message?.id);
     } catch (err) {
         console.error('[roulette] send error:', err);
-        const msg = err?.message?.includes('no_eligible_recipients')
-            ? 'No recipients available right now. Try again later.'
+        let errorCode = '';
+        try { const body = await err.context?.json(); errorCode = body?.error ?? ''; } catch {}
+        const msg = errorCode === 'no_eligible_recipients'
+            ? 'No new recipients available right now. Try again after the next moon.'
             : 'Something went wrong. Please try again.';
         showNotificationToast(msg);
         sendBtn.disabled = false;
@@ -515,17 +517,20 @@ function switchInboxTab(tab) {
     const rouletteBtn = document.getElementById('rouletteTabBtn');
     if (!inboxContent || !rouletteContent) return;
 
+    const inboxCta = document.getElementById('inboxNewMsgCta');
     if (tab === 'roulette') {
         inboxContent.style.display = 'none';
         rouletteContent.style.display = 'block';
         inboxBtn?.classList.remove('active');
         rouletteBtn?.classList.add('active');
+        if (inboxCta) inboxCta.style.display = 'none';
         loadRouletteMessages().then(() => renderRouletteTab());
     } else {
         inboxContent.style.display = 'block';
         rouletteContent.style.display = 'none';
         inboxBtn?.classList.add('active');
         rouletteBtn?.classList.remove('active');
+        // CTA visibility is controlled by realtime.js based on moon state — let it restore naturally
     }
 }
 
