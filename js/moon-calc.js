@@ -721,6 +721,12 @@ function attachDotTooltips() {
                 dotTooltip.querySelector('.tooltip-meta').textContent = `Moonrise ${release} · ${eta}`;
                 dotTooltip.querySelector('.tooltip-phase').textContent = '↓ Incoming';
                 progressFill.className = 'tooltip-progress-fill';
+            } else if (dot.dataset.roulette === 'true') {
+                const location = dot.dataset.location || 'the world';
+                dotTooltip.querySelector('.tooltip-name').textContent = `Moon Roulette`;
+                dotTooltip.querySelector('.tooltip-meta').textContent = `🌕 To a stranger in ${location} · ${eta}`;
+                dotTooltip.querySelector('.tooltip-phase').textContent = '↑ Anonymous';
+                progressFill.className = 'tooltip-progress-fill';
             } else {
                 const to = dot.dataset.to || 'Someone';
                 const location = dot.dataset.location || '';
