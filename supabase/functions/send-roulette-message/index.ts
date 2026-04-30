@@ -63,7 +63,7 @@ interface Candidate {
   city: string;
   latitude: number | null;
   longitude: number | null;
-  last_sign_in_at: string | null;
+  last_active: string | null;
 }
 
 function weightedPick(candidates: Candidate[]): Candidate {
@@ -71,7 +71,7 @@ function weightedPick(candidates: Candidate[]): Candidate {
   const DAY_MS = 86_400_000;
 
   const weighted = candidates.map((c) => {
-    const lastSeen = c.last_sign_in_at ? Date.parse(c.last_sign_in_at) : 0;
+    const lastSeen = c.last_active ? Date.parse(c.last_active) : 0;
     const daysSince = (now - lastSeen) / DAY_MS;
     const weight = daysSince <= 30 ? 1.0 : daysSince <= 90 ? 0.5 : 0.2;
     return { candidate: c, weight };
@@ -173,13 +173,13 @@ Deno.serve(async (req: Request) => {
     // Step 5a: All opted-in users (excluding sender)
     const { data: allCandidates, error: candidatesErr } = await serviceClient
       .from("profiles")
-      .select("id, city, latitude, longitude, last_sign_in_at")
+      .select("id, city, latitude, longitude, last_active")
       .eq("receive_moon_roulette", true)
       .neq("id", user.id);
 
     if (candidatesErr || !allCandidates?.length) {
       return new Response(
-        JSON.stringify({ error: "No eligible recipients available" }),
+        JSON.stringify({ error: "no_eligible_recipients" }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
