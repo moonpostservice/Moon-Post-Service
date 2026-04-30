@@ -128,6 +128,7 @@ function _cleanupRouletteRealtime() {
 async function _onRouletteChange(payload) {
     console.log('[roulette] realtime event:', payload.eventType, payload.new?.status);
     await loadRouletteMessages();
+    if (typeof renderMessageDots === 'function') renderMessageDots();
 
     // If this was a mutual reveal completing, play a soft sound
     if (payload.new?.status === 'revealed' && payload.old?.status !== 'revealed') {
@@ -501,6 +502,7 @@ async function handleSendRouletteFromCompose() {
         if (error) throw error;
         closeModal();
         await loadRouletteMessages();
+        if (typeof renderMessageDots === 'function') renderMessageDots();
         // If roulette tab is active, refresh it; otherwise switch to it
         const rouletteTabContent = document.getElementById('rouletteTabContent');
         if (rouletteTabContent && rouletteTabContent.style.display !== 'none') {

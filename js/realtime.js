@@ -74,6 +74,8 @@ async function debouncedReloadMessages() {
         });
 
         await loadMessages();
+        // Load roulette messages in parallel so ring dots stay in sync
+        loadRouletteMessages().catch(() => {});
 
         // Restore replies, reactions, and releaseAt to the new message objects
         messages.forEach(m => {

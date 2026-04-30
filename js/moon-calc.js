@@ -649,6 +649,35 @@ function renderMessageDots() {
         container.appendChild(orbit);
     });
 
+    // Roulette sent messages in transit — show as anonymous outgoing dots
+    const rouletteSent = (typeof rouletteMessages !== 'undefined' ? rouletteMessages.sent : [])
+        .filter(m => m.status === 'queued' && m.release_at && new Date(m.release_at) > now);
+
+    rouletteSent.forEach(msg => {
+        const deliveryDate = new Date(msg.release_at);
+        const deg = deliveryTimeToRingDegrees(deliveryDate);
+        if (deg === null) return;
+
+        const hoursUntil = Math.max(0, (deliveryDate - now) / 3600000);
+        const timeStr = deliveryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const isReleasing = hoursUntil < 2;
+
+        const orbit = document.createElement('div');
+        orbit.className = 'dot-orbit';
+        orbit.style.transform = `rotate(${deg}deg)`;
+        const dot = document.createElement('div');
+        dot.className = 'message-dot roulette-dot' + (isReleasing ? ' releasing' : '');
+        dot.dataset.to = 'A Stranger';
+        dot.dataset.location = msg.recipient_city ?? 'the world';
+        dot.dataset.release = timeStr;
+        dot.dataset.hours = hoursUntil.toFixed(1);
+        dot.dataset.roulette = 'true';
+        dot.style.pointerEvents = 'auto';
+        orbit.appendChild(dot);
+        container.appendChild(orbit);
+        dotsRendered++;
+    });
+
     // Update stats display
     updateMessageStats();
 
