@@ -1380,6 +1380,22 @@ function renderNewMsgContactList(query) {
 
     let html = '';
 
+    // Moon Roulette — always shown at top as "send to a stranger" alternative
+    if (!query) {
+        html += `
+            <div style="display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid rgba(212,181,138,0.18);gap:14px;cursor:pointer;background:rgba(212,181,138,0.04);" onclick="closeNewMessagePicker();openComposeForRoulette();" onmouseover="this.style.background='rgba(212,181,138,0.09)'" onmouseout="this.style.background='rgba(212,181,138,0.04)'">
+                <div class="msg-avatar" style="margin-right:0;background:rgba(212,181,138,0.15);border:1px solid rgba(212,181,138,0.35);display:flex;align-items:center;justify-content:center;">
+                    <svg style="width:20px;height:20px;color:var(--accent);"><use href="#icon-full-moon"/></svg>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:14px;font-weight:700;color:var(--accent);">Moon Roulette</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.45);">Send a message to a stranger. Only the moon knows who.</div>
+                </div>
+                <svg style="width:16px;height:16px;color:rgba(212,181,138,0.5);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+        `;
+    }
+
     // If query looks like email, show email invite option
     if (query && query.includes('@') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query.trim())) {
         html += `
@@ -1698,6 +1714,33 @@ function openNewContactForMessage() {
 }
 
 // Open compose modal with a pre-selected recipient (WhatsApp-style: always recipient first)
+function openComposeForRoulette() {
+    window.composeIsRoulette = true;
+    showDefaultCompose();
+    _openComposePanel();
+    refreshSongSuggestions();
+    composeToggleMode('open-note');
+
+    const header = document.getElementById('composeHeader');
+    header.innerHTML = `
+        <button class="compose-header-btn" onclick="closeModal()">
+            <svg width="18" height="18" style="color:white"><use href="#icon-back"/></svg>
+        </button>
+        <div class="compose-header-content">
+            <div class="compose-avatar" style="background:rgba(212,181,138,0.15);border:1px solid rgba(212,181,138,0.4);display:flex;align-items:center;justify-content:center;">
+                <svg style="width:20px;height:20px;color:var(--accent);"><use href="#icon-full-moon"/></svg>
+            </div>
+            <div>
+                <div class="compose-recipient-name">Send to a Stranger <span class="compose-recipient-badge">Moon Roulette</span></div>
+                <div class="compose-arrival-time">The moon decides who receives this</div>
+            </div>
+        </div>
+        <button class="compose-header-btn" onclick="closeModal()">
+            <svg width="18" height="18" style="color:white"><use href="#icon-close"/></svg>
+        </button>
+    `;
+}
+
 function openModalForRecipient() {
     showDefaultCompose();
     _openComposePanel();
@@ -1742,18 +1785,9 @@ function openModalForRecipient() {
 function composeToggleMode(mode) {
     const openNoteBtn = document.getElementById('toggleOpenNote');
     const goLunarBtn = document.getElementById('toggleGoLunar');
-    const rouletteBtn = document.getElementById('toggleMoonRoulette');
     const openNoteContent = document.getElementById('composeOpenNote');
     const goLunarContent = document.getElementById('composeGoLunar');
     if (!openNoteBtn || !goLunarBtn) return;
-
-    if (mode === 'moon-roulette') {
-        closeNewMessagePicker();
-        openRoulettePage();
-        return;
-    }
-
-    if (rouletteBtn) rouletteBtn.classList.remove('active');
 
     if (mode === 'open-note') {
         openNoteBtn.classList.add('active');

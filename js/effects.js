@@ -318,7 +318,11 @@ function backFromNewContact() {
 
 // Compose action: recipient is always pre-selected (WhatsApp-style), send directly
 function composeMainAction() {
-    console.log('[SEND] composeMainAction called');
+    console.log('[SEND] composeMainAction called, rouletteMode:', !!window.composeIsRoulette);
+    if (window.composeIsRoulette) {
+        handleSendRouletteFromCompose();
+        return;
+    }
     try {
         handleComposeSend();
     } catch(e) {
@@ -1143,6 +1147,8 @@ function handleComposeSend() {
 }
 
 function resetForm() {
+    window.composeIsRoulette = false;
+
     // Reset recipient
     document.getElementById('recipient').value = '';
     selectedRecipient = null;

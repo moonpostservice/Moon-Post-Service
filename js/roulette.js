@@ -473,6 +473,84 @@ async function handleSendRoulette(parentId = '') {
     }
 }
 
+async function handleSendRouletteFromCompose() {
+    const messageText = document.getElementById('messageText')?.value.trim();
+    const sendBtn = document.getElementById('composeMainBtn');
+    if (!messageText) {
+        showNotificationToast('Write a message to a stranger first.');
+        return;
+    }
+    const origHTML = sendBtn.innerHTML;
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending…';
+    try {
+        const { data, error } = await sb.functions.invoke('send-roulette-message', { body: { message_text: messageText } });
+        if (error) throw error;
+        closeModal();
+        await loadRouletteMessages();
+        // If roulette tab is active, refresh it; otherwise switch to it
+        const rouletteTabContent = document.getElementById('rouletteTabContent');
+        if (rouletteTabContent && rouletteTabContent.style.display !== 'none') {
+            renderRouletteTab();
+        } else {
+            switchInboxTab('roulette');
+        }
+        showNotificationToast('🌕 Your message is on its way to a stranger');
+        console.log('[roulette] sent from compose:', data?.message?.id);
+    } catch (err) {
+        console.error('[roulette] send error:', err);
+        const msg = err?.message?.includes('no_eligible_recipients')
+            ? 'No recipients available right now. Try again later.'
+            : 'Something went wrong. Please try again.';
+        showNotificationToast(msg);
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = origHTML;
+    }
+}
+
+function switchInboxTab(tab) {
+    const inboxContent = document.getElementById('inboxTabContent');
+    const rouletteContent = document.getElementById('rouletteTabContent');
+    const inboxBtn = document.getElementById('inboxTabBtn');
+    const rouletteBtn = document.getElementById('rouletteTabBtn');
+    if (!inboxContent || !rouletteContent) return;
+
+    if (tab === 'roulette') {
+        inboxContent.style.display = 'none';
+        rouletteContent.style.display = 'block';
+        inboxBtn?.classList.remove('active');
+        rouletteBtn?.classList.add('active');
+        loadRouletteMessages().then(() => renderRouletteTab());
+    } else {
+        inboxContent.style.display = 'block';
+        rouletteContent.style.display = 'none';
+        inboxBtn?.classList.add('active');
+        rouletteBtn?.classList.remove('active');
+    }
+}
+
+function renderRouletteTab() {
+    const container = document.getElementById('rouletteTabContent');
+    if (!container) return;
+    const sent = rouletteMessages.sent;
+    const received = rouletteMessages.received;
+    container.innerHTML = `
+        <div class="roulette-tabs" role="tablist" style="border-bottom:1px solid rgba(212,181,138,0.12);padding:0 16px;">
+            <button class="roulette-tab ${rouletteActiveTab === 'sent' ? 'active' : ''}" role="tab"
+                onclick="setRouletteTab('sent')">
+                SENT <span class="roulette-tab-count">${sent.length}</span>
+            </button>
+            <button class="roulette-tab ${rouletteActiveTab === 'received' ? 'active' : ''}" role="tab"
+                onclick="setRouletteTab('received')">
+                RECEIVED <span class="roulette-tab-count">${received.length}</span>
+            </button>
+        </div>
+        <div class="roulette-list" id="rouletteList">
+            ${_renderRouletteList()}
+        </div>
+    `;
+}
+
 async function handleDecline(messageId) {
     await _returnMessage(messageId, 'decline');
 }

@@ -133,7 +133,7 @@ function calculateMoonTimes(lat, lon) {
     const visible = isMoonVisible(now, lat, lon);
     const visibilityChanged = _prevMoonVisible !== null && _prevMoonVisible !== visible;
     _prevMoonVisible = visible;
-    moonData.isVisible = visible;
+    moonData.isVisible = new URLSearchParams(location.search).has('moonup') ? true : visible;
 
     // When moon visibility changes (rise or set), reload messages
     // so contentVisible gets recalculated for all received messages
