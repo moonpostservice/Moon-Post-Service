@@ -5745,6 +5745,15 @@ body.moon-down .inbox-new-msg-cta {
     flex-direction: column;
 }
 
+/* inboxTabContent must grow so CTA is pinned at bottom of card */
+.split-left #inboxTabContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .split-left .message-list {
     flex: 1;
     overflow-y: auto;
@@ -5753,6 +5762,7 @@ body.moon-down .inbox-new-msg-cta {
 
 .split-right {
     width: 67%;
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -8808,7 +8818,7 @@ body.moon-down .new-message-btn {
 
 /* ---- APP HORIZON DIVIDER (fixed to bottom of viewport) ---- */
 .app-horizon {
-    position: fixed;
+    position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
