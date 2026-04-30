@@ -2249,6 +2249,22 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 .inbox-tab-btn:not(.active):hover {
     color: rgba(255,255,255,0.6);
 }
+.roulette-tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    margin-left: 5px;
+    background: var(--accent);
+    color: var(--bg);
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1;
+    vertical-align: middle;
+}
 
 .inbox-title {
     font-size: 16px;

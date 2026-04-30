@@ -38,6 +38,19 @@ async function loadRouletteMessages() {
     } catch (err) {
         console.error('[roulette] loadRouletteMessages exception:', err);
     }
+    _updateRouletteTabBadge();
+}
+
+function _updateRouletteTabBadge() {
+    const badge = document.getElementById('rouletteTabBadge');
+    if (!badge) return;
+    const count = rouletteMessages.received.filter(m => m.status === 'delivered').length;
+    if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = '';
+    } else {
+        badge.style.display = 'none';
+    }
 }
 
 // ============================================
