@@ -377,6 +377,10 @@
                             <label style="font-size:11px;margin:0;">Message sounds</label>
                             <button id="soundToggleBtn" onclick="toggleMessageSounds()" style="font-size:12px;padding:4px 12px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;">On</button>
                         </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+                            <label style="font-size:11px;margin:0;">Receive Moon Roulette messages</label>
+                            <button id="rouletteOptInToggleBtn" onclick="toggleRouletteOptIn()" style="font-size:12px;padding:4px 12px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;">On</button>
+                        </div>
                     </div>
                 </div>
 
@@ -423,6 +427,10 @@
             <button class="mobile-menu-item" onclick="closeMobileMenu();openContactsPage();">
                 <svg class="app-icon" style="width:20px;height:20px;flex-shrink:0;color:var(--accent);"><use href="#icon-contacts"/></svg>
                 <span>My Contacts</span>
+            </button>
+            <button class="mobile-menu-item" onclick="closeMobileMenu();openRoulettePage();">
+                <svg class="app-icon" style="width:20px;height:20px;flex-shrink:0;color:var(--accent);"><use href="#icon-full-moon"/></svg>
+                <span>Moon Roulette</span>
             </button>
             <button class="mobile-menu-item" onclick="closeMobileMenu();setTimeout(toggleSettings,200);">
                 <svg style="width:20px;height:20px;flex-shrink:0;color:var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -997,28 +1005,36 @@
                 <button class="inbox-wipe-banner-dismiss" onclick="dismissInboxWipeBanner()" aria-label="Dismiss">&#10005;</button>
             </div>
             <div class="inbox-header">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <span class="inbox-title">INBOX</span>
+                <div class="inbox-tabs">
+                    <button class="inbox-tab-btn active" id="inboxTabBtn" onclick="switchInboxTab('inbox')">INBOX</button>
+                    <button class="inbox-tab-btn" id="rouletteTabBtn" onclick="switchInboxTab('roulette')">
+                        <svg class="app-icon" style="width:13px;height:13px;vertical-align:-1px;margin-right:4px;"><use href="#icon-full-moon"/></svg>ROULETTE
+                    </button>
                 </div>
                 <button class="new-message-btn" onclick="openNewMessagePicker()"><svg class="app-icon lg"><use href="#icon-compose"/></svg></button>
             </div>
-            <!-- Shared Sky as first row (public chat) -->
-            <div class="shared-sky-row" onclick="openSharedSkyModal()">
-                <div class="shared-sky-row-icon"><img src="assests/shared-sky-icon.png" alt="Shared Sky" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"></div>
-                <div class="shared-sky-row-content">
-                    <div class="shared-sky-row-title">Shared Sky <span style="font-family:var(--sans);font-size:9px;font-weight:600;color:var(--accent);margin-left:6px;text-transform:uppercase;letter-spacing:2px;font-style:normal;">Public</span></div>
-                    <div class="shared-sky-row-preview" id="sharedSkyPreview">Loading...</div>
+            <!-- Inbox tab content -->
+            <div id="inboxTabContent">
+                <!-- Shared Sky as first row (public chat) -->
+                <div class="shared-sky-row" onclick="openSharedSkyModal()">
+                    <div class="shared-sky-row-icon"><img src="assests/shared-sky-icon.png" alt="Shared Sky" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"></div>
+                    <div class="shared-sky-row-content">
+                        <div class="shared-sky-row-title">Shared Sky <span style="font-family:var(--sans);font-size:9px;font-weight:600;color:var(--accent);margin-left:6px;text-transform:uppercase;letter-spacing:2px;font-style:normal;">Public</span></div>
+                        <div class="shared-sky-row-preview" id="sharedSkyPreview">Loading...</div>
+                    </div>
+                    <span class="shared-sky-row-badge" id="sharedSkyBadge" style="display:none;"></span>
                 </div>
-                <span class="shared-sky-row-badge" id="sharedSkyBadge" style="display:none;"></span>
+                <!-- Moon Circles (disabled for MVP — see memory/project_moon_circles.md) -->
+                <ul class="message-list" id="messageList">
+                    <!-- Populated by JS -->
+                </ul>
+                <!-- New Moon Message CTA inside inbox -->
+                <div id="inboxNewMsgCta" class="inbox-new-msg-cta" style="display:none;">
+                    <button class="cta-button inbox-cta-btn" onclick="openModal()"><svg class="app-icon md" style="vertical-align:-3px;margin-right:4px;"><use href="#icon-compose"/></svg> New Moon Message</button>
+                </div>
             </div>
-            <!-- Moon Circles (disabled for MVP — see memory/project_moon_circles.md) -->
-            <ul class="message-list" id="messageList">
-                <!-- Populated by JS -->
-            </ul>
-            <!-- New Moon Message CTA inside inbox -->
-            <div id="inboxNewMsgCta" class="inbox-new-msg-cta" style="display:none;">
-                <button class="cta-button inbox-cta-btn" onclick="openModal()"><svg class="app-icon md" style="vertical-align:-3px;margin-right:4px;"><use href="#icon-compose"/></svg> New Moon Message</button>
-            </div>
+            <!-- Roulette tab content -->
+            <div id="rouletteTabContent" style="display:none;"></div>
         </div>
     </section>
             <!-- New Transmission button removed — CTA now inside inbox card -->
@@ -1243,6 +1259,9 @@
         </div>
     </div>
 
+
+    <!-- Moon Roulette Page -->
+    <div id="roulettePage" style="display:none;position:fixed;inset:0;z-index:99997;background:var(--bg);overflow-y:auto;overflow-x:hidden;flex-direction:column;"></div>
 
     <!-- Philosophy Page -->
     <div id="philosophyPage" style="display:none;position:fixed;inset:0;z-index:99999;background:var(--bg);overflow-y:auto;overflow-x:hidden;">
@@ -1916,5 +1935,6 @@
     <script src="/js/effects.js"></script>
     <script src="/js/reveal.js"></script>
     <script src="/js/circles-functions.js"></script>
+    <script src="/js/roulette.js"></script>
 </body>
 </html>
