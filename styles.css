@@ -7758,6 +7758,30 @@ body::before {
 .message-dot.incoming { box-shadow: 0 0 8px rgba(234, 216, 191, 0.45); }
 .message-dot.incoming:hover { box-shadow: 0 0 16px rgba(234, 216, 191, 0.65); }
 
+/* Roulette dots — diamond shape, moonlight blue-white */
+.message-dot.roulette-dot {
+    background-color: rgba(210, 228, 255, 0.95);
+    border-radius: 2px;
+    width: 10px;
+    height: 10px;
+    top: -3.5px;
+    transform: translateX(-50%) rotate(45deg);
+    box-shadow: 0 0 8px rgba(160, 200, 255, 0.55);
+}
+.message-dot.roulette-dot::after { display: none; }
+.message-dot.roulette-dot:hover {
+    transform: translateX(-50%) rotate(45deg) scale(1.35);
+    box-shadow: 0 0 18px rgba(160, 200, 255, 0.80);
+}
+.message-dot.roulette-dot.releasing {
+    transform: translateX(-50%) rotate(45deg) scale(1.1);
+    animation: rouletteGlow 2s ease-in-out infinite;
+}
+@keyframes rouletteGlow {
+    0%, 100% { opacity: 0.8; box-shadow: 0 0 8px rgba(160, 200, 255, 0.45); }
+    50%       { opacity: 1;   box-shadow: 0 0 20px rgba(160, 200, 255, 0.85); }
+}
+
 /* Moon data bar — brass-bordered glass pill */
 .moon-data-bar {
     background: var(--panel);
