@@ -1742,9 +1742,18 @@ function openModalForRecipient() {
 function composeToggleMode(mode) {
     const openNoteBtn = document.getElementById('toggleOpenNote');
     const goLunarBtn = document.getElementById('toggleGoLunar');
+    const rouletteBtn = document.getElementById('toggleMoonRoulette');
     const openNoteContent = document.getElementById('composeOpenNote');
     const goLunarContent = document.getElementById('composeGoLunar');
     if (!openNoteBtn || !goLunarBtn) return;
+
+    if (mode === 'moon-roulette') {
+        closeNewMessagePicker();
+        openRoulettePage();
+        return;
+    }
+
+    if (rouletteBtn) rouletteBtn.classList.remove('active');
 
     if (mode === 'open-note') {
         openNoteBtn.classList.add('active');

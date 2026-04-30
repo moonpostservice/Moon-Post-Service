@@ -8748,12 +8748,13 @@ body.moon-down .new-message-btn {
 }
 
 @media (max-width: 880px) {
-    .ed-hero { padding: 40px 24px 48px; }
-    .ed-hero-grid { grid-template-columns: 1fr; gap: 36px; min-height: auto; }
-    .ed-hero-art { min-height: 260px; order: -1; }
-    .ed-hero-moon-svg { width: 220px; }
-    .ed-hero-title { font-size: clamp(46px, 11vw, 64px); line-height: 1.04; }
-    .ed-hero-sub { font-size: 19px; line-height: 1.55; }
+    .ed-hero { padding: 24px 24px 48px; }
+    .ed-hero-grid { grid-template-columns: 1fr; gap: 0; min-height: auto; text-align: center; }
+    .ed-hero-art { min-height: 200px; order: -1; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 0; }
+    .ed-hero-moon-svg { width: 180px; }
+    .ed-hero-title { font-size: clamp(32px, 10vw, 64px); line-height: 1.04; }
+    .ed-hero-sub { font-size: clamp(15px, 4vw, 19px); line-height: 1.55; max-width: 100%; }
+    .ed-hero-cta { align-items: center; }
 }
 
 /* ---- HORIZON / ROLLING-HILL DIVIDER ---- */
@@ -9148,30 +9149,6 @@ body.moon-down .new-message-btn {
    MOON ROULETTE
    ============================================ */
 
-/* Nav button */
-.header-roulette-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: none;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-pill);
-    padding: 7px 16px 7px 10px;
-    cursor: pointer;
-    color: var(--accent-bright);
-    transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
-}
-.header-roulette-btn:hover {
-    border-color: var(--accent);
-    background: rgba(212,181,138,0.08);
-}
-.header-roulette-label {
-    font-family: var(--sans);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    color: var(--accent-bright);
-}
 
 /* Page shell */
 .roulette-page-inner {
@@ -9600,6 +9577,4 @@ body.moon-down .new-message-btn {
     .roulette-title { font-size: 18px; }
     .roulette-card { padding: 14px; gap: 12px; }
     .roulette-card-time { position: static; margin-top: 8px; }
-    .header-roulette-label { display: none; }
-    .header-roulette-btn { padding: 7px 10px; }
 }

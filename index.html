@@ -261,12 +261,6 @@
                     <svg class="app-icon" style="width:22px;height:22px;"><use href="#icon-contacts"/></svg>
                 </button>
 
-                <!-- Moon Roulette -->
-                <button class="header-roulette-btn" onclick="openRoulettePage()" aria-label="Moon Roulette" title="Moon Roulette — Send a message to a stranger">
-                    <svg class="app-icon" style="width:22px;height:22px;"><use href="#icon-full-moon"/></svg>
-                    <span class="header-roulette-label">Roulette</span>
-                </button>
-
                 <!-- User / Settings -->
                 <button class="user-btn" onclick="toggleSettings()" aria-label="Settings">
                     <span class="user-initials" id="userInitials">A</span>
@@ -434,7 +428,7 @@
                 <svg class="app-icon" style="width:20px;height:20px;flex-shrink:0;color:var(--accent);"><use href="#icon-contacts"/></svg>
                 <span>My Contacts</span>
             </button>
-            <button class="mobile-menu-item" onclick="closeMobileMenu();openRoulettePage();">
+            <button class="mobile-menu-item" onclick="closeMobileMenu();openNewMessagePicker();setTimeout(()=>composeToggleMode('moon-roulette'),150);">
                 <svg class="app-icon" style="width:20px;height:20px;flex-shrink:0;color:var(--accent);"><use href="#icon-full-moon"/></svg>
                 <span>Moon Roulette</span>
             </button>
@@ -1434,7 +1428,7 @@
             <div id="composeStep1">
                 <!-- Glass Card with Toggle + Content -->
                 <div class="compose-glass-card">
-                    <!-- Segmented Toggle: Open Note / Go Lunar -->
+                    <!-- Segmented Toggle: Open Note / Go Lunar / Moon Roulette -->
                     <div class="compose-toggle-wrap">
                         <div class="compose-toggle">
                             <button class="compose-toggle-btn active" id="toggleOpenNote" onclick="composeToggleMode('open-note')">
@@ -1442,6 +1436,9 @@
                             </button>
                             <button class="compose-toggle-btn" id="toggleGoLunar" onclick="composeToggleMode('go-lunar')">
                                 <svg class="app-icon sm" style="width:16px;height:16px"><use href="#icon-lunar-note"/></svg> Go Lunar
+                            </button>
+                            <button class="compose-toggle-btn" id="toggleMoonRoulette" onclick="composeToggleMode('moon-roulette')">
+                                <svg class="app-icon sm" style="width:16px;height:16px"><use href="#icon-full-moon"/></svg> Roulette
                             </button>
                         </div>
                     </div>
