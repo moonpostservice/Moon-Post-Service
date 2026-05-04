@@ -359,9 +359,6 @@ function _renderRecipientCard(msg, { statusLabel, statusClass, moonIcon, preview
                 <div class="roulette-card-footer">
                     ${revealBtn}
                     ${actions}
-                    <button class="roulette-optout-link" onclick="handleRouletteOptOut()">
-                        Stop receiving these
-                    </button>
                 </div>
             </div>
             <div class="roulette-card-time">${_relativeTime(msg.created_at)}</div>
@@ -545,6 +542,17 @@ function switchInboxTab(tab) {
 
     const inboxCta = document.getElementById('inboxNewMsgCta');
     if (tab === 'roulette') {
+        // Close any open regular chat panel (but not a roulette detail that's already open)
+        const _openPanel = document.getElementById('messagePageView');
+        if (_openPanel && _openPanel.classList.contains('active') && !_openPanel.dataset.rouletteMode) {
+            _openPanel.classList.remove('active', 'closing');
+            _openPanel.style.left = _openPanel.style.top = _openPanel.style.bottom = _openPanel.style.height = '';
+            document.body.classList.remove('chat-open');
+            document.body.style.overflow = '';
+            if (typeof currentConversation    !== 'undefined') currentConversation    = null;
+            if (typeof currentConversationIndex !== 'undefined') currentConversationIndex = -1;
+        }
+
         inboxContent.style.display = 'none';
         rouletteContent.style.display = 'block';
         inboxBtn?.classList.remove('active');
@@ -713,11 +721,17 @@ function openRouletteDetail(msgId, role) {
     _openRouletteDetailId   = msgId;
     _openRouletteDetailRole = role;
 
-    // Close any open regular conversation / other panels
-    if (typeof closeAllPanels === 'function') closeAllPanels();
-
     const page = document.getElementById('messagePageView');
     if (!page) return;
+
+    // Detach from any regular conversation without triggering its close animation —
+    // just force-reset inline styles and state so we can re-use the panel cleanly.
+    page.classList.remove('active', 'closing');
+    page.style.left = page.style.top = page.style.bottom = page.style.height = '';
+    document.body.classList.remove('chat-open');
+    // Null out regular conversation state so chat.js doesn't think a conv is still open
+    if (typeof currentConversation    !== 'undefined') currentConversation    = null;
+    if (typeof currentConversationIndex !== 'undefined') currentConversationIndex = -1;
 
     page.dataset.rouletteMode = '1';
 
@@ -755,24 +769,27 @@ function openRouletteDetail(msgId, role) {
     const footer = page.querySelector('.message-page-footer');
     if (footer) footer.style.display = 'none';
 
-    // ---- Activate ----
-    page.classList.add('active');
-    document.body.style.overflow = 'hidden';
+    // ---- Activate — use rAF so the browser processes the class removal above
+    //      before adding active, avoiding transition conflicts ----
+    requestAnimationFrame(() => {
+        page.classList.add('active');
+        document.body.style.overflow = 'hidden';
 
-    // Desktop: position in right panel (same logic as openConversation)
-    const _isMobile = window.matchMedia('(max-width: 900px)').matches;
-    if (!_isMobile) {
-        document.body.classList.add('chat-open');
-        const leftPanel   = document.querySelector('.split-left');
-        const splitLayout = document.querySelector('.split-layout');
-        if (leftPanel && splitLayout) {
-            const slRect = splitLayout.getBoundingClientRect();
-            page.style.left   = (leftPanel.getBoundingClientRect().right + 24) + 'px';
-            page.style.top    = slRect.top + 'px';
-            page.style.bottom = (window.innerHeight - slRect.bottom) + 'px';
-            page.style.height = 'auto';
+        // Desktop: position in right panel (same logic as openConversation)
+        const _isMobile = window.matchMedia('(max-width: 900px)').matches;
+        if (!_isMobile) {
+            document.body.classList.add('chat-open');
+            const leftPanel   = document.querySelector('.split-left');
+            const splitLayout = document.querySelector('.split-layout');
+            if (leftPanel && splitLayout) {
+                const slRect = splitLayout.getBoundingClientRect();
+                page.style.left   = (leftPanel.getBoundingClientRect().right + 24) + 'px';
+                page.style.top    = slRect.top + 'px';
+                page.style.bottom = (window.innerHeight - slRect.bottom) + 'px';
+                page.style.height = 'auto';
+            }
         }
-    }
+    });
 
     // Async: resolve revealed sender profile
     if (role === 'recipient' && msg.status === 'revealed' && msg.sender_id) {
@@ -916,6 +933,14 @@ function _buildRouletteActionBar(msg, role) {
         } else {
             actionBtns = `<span class="roulette-reveal-complete">✨ You're connected</span>`;
         }
+        // Opt-out link shown in detail view for recipients only
+        const optOut = `<button class="roulette-optout-link" onclick="handleRouletteOptOut()">Stop receiving these</button>`;
+        return `
+            <div class="roulette-detail-action-bar">
+                <span class="roulette-status ${statusClass}">${statusLabel}</span>
+                <div class="roulette-detail-action-btns">${actionBtns}</div>
+                ${optOut}
+            </div>`;
     } else { // sender
         if (msg.status === 'declined' || msg.status === 'blocked') {
             actionBtns = `
