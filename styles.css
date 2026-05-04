@@ -9349,6 +9349,7 @@ body.moon-down .new-message-btn {
     margin-bottom: 12px;
     background: rgba(255,255,255,0.02);
     position: relative;
+    cursor: pointer;
     transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 .roulette-card:hover { border-color: var(--line); background: rgba(255,255,255,0.04); }
@@ -9648,6 +9649,77 @@ body.moon-down .new-message-btn {
 .roulette-send-btn {
     font-size: 13px;
     padding: 10px 22px;
+}
+
+/* ---- Roulette detail view (inside messagePageView panel) ---- */
+
+/* Moon icon in the avatar slot */
+.roulette-detail-avatar-moon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 20px;
+}
+
+/* Action bar at the top of the chat body */
+.roulette-detail-action-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    background: rgba(212,181,138,0.06);
+    border: 1px solid rgba(212,181,138,0.18);
+    border-radius: var(--radius-md, 10px);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.roulette-detail-action-btns {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-left: auto;
+}
+
+/* Full message body in the detail panel */
+.roulette-detail-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 32px 24px 40px;
+    gap: 20px;
+}
+.roulette-detail-moon {
+    opacity: 0.85;
+}
+.roulette-detail-text {
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.65;
+    color: var(--text-bright);
+    max-width: 480px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.roulette-detail-photo {
+    max-width: 100%;
+    max-height: 360px;
+    border-radius: var(--radius-md, 10px);
+    border: 1px solid var(--line-soft);
+    object-fit: contain;
+}
+.roulette-detail-song {
+    font-size: 13px;
+    color: var(--muted);
+    padding: 8px 14px;
+    border: 1px solid var(--line-soft);
+    border-radius: 20px;
 }
 
 /* Mobile tweaks */

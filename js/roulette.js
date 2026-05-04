@@ -8,6 +8,8 @@
 let rouletteMessages = { sent: [], received: [] };
 let rouletteActiveTab = 'sent'; // 'sent' | 'received'
 let _rouletteRealtimeChannels = [];
+let _openRouletteDetailId   = null; // id of the message open in the chat panel
+let _openRouletteDetailRole = null; // 'sender' | 'recipient'
 
 // ============================================
 // DB HELPERS
@@ -151,6 +153,13 @@ async function _onRouletteChange(payload) {
     if (page && page.style.display !== 'none') {
         renderRouletteInbox();
     }
+
+    // If the detail panel is open for this message, refresh its action bar
+    if (_openRouletteDetailId) {
+        const msgs = _openRouletteDetailRole === 'sender' ? rouletteMessages.sent : rouletteMessages.received;
+        const updatedMsg = msgs.find(m => m.id === _openRouletteDetailId);
+        if (updatedMsg) _refreshRouletteDetailContent(updatedMsg);
+    }
 }
 
 // ============================================
@@ -285,7 +294,8 @@ function _renderSenderCard(msg, { statusLabel, statusClass, moonIcon, preview, r
     ` : '';
 
     return `
-        <div class="roulette-card roulette-card--sender roulette-card--${msg.status}" data-id="${msg.id}">
+        <div class="roulette-card roulette-card--sender roulette-card--${msg.status}" data-id="${msg.id}"
+             onclick="if(!event.target.closest('button'))openRouletteDetail('${msg.id}','sender')">
             <div class="roulette-card-moon">${moonIcon}</div>
             <div class="roulette-card-body">
                 <div class="roulette-card-meta">
@@ -335,7 +345,8 @@ function _renderRecipientCard(msg, { statusLabel, statusClass, moonIcon, preview
     ` : '';
 
     return `
-        <div class="roulette-card roulette-card--recipient roulette-card--${msg.status}" data-id="${msg.id}">
+        <div class="roulette-card roulette-card--recipient roulette-card--${msg.status}" data-id="${msg.id}"
+             onclick="if(!event.target.closest('button'))openRouletteDetail('${msg.id}','recipient')">
             <div class="roulette-card-moon">${moonIcon}</div>
             <div class="roulette-card-body">
                 <div class="roulette-card-meta">
@@ -348,9 +359,6 @@ function _renderRecipientCard(msg, { statusLabel, statusClass, moonIcon, preview
                 <div class="roulette-card-footer">
                     ${revealBtn}
                     ${actions}
-                    <button class="roulette-optout-link" onclick="handleRouletteOptOut()">
-                        Stop receiving these
-                    </button>
                 </div>
             </div>
             <div class="roulette-card-time">${_relativeTime(msg.created_at)}</div>
@@ -534,6 +542,17 @@ function switchInboxTab(tab) {
 
     const inboxCta = document.getElementById('inboxNewMsgCta');
     if (tab === 'roulette') {
+        // Close any open regular chat panel (but not a roulette detail that's already open)
+        const _openPanel = document.getElementById('messagePageView');
+        if (_openPanel && _openPanel.classList.contains('active') && !_openPanel.dataset.rouletteMode) {
+            _openPanel.classList.remove('active', 'closing');
+            _openPanel.style.left = _openPanel.style.top = _openPanel.style.bottom = _openPanel.style.height = '';
+            document.body.classList.remove('chat-open');
+            document.body.style.overflow = '';
+            if (typeof currentConversation    !== 'undefined') currentConversation    = null;
+            if (typeof currentConversationIndex !== 'undefined') currentConversationIndex = -1;
+        }
+
         inboxContent.style.display = 'none';
         rouletteContent.style.display = 'block';
         inboxBtn?.classList.remove('active');
@@ -687,6 +706,307 @@ async function handleRouletteOptIn() {
     } catch (err) {
         console.error('[roulette] opt-in error:', err);
         showNotificationToast('Something went wrong. Please try again.');
+    }
+}
+
+// ============================================
+// DETAIL VIEW (chat panel on the right)
+// ============================================
+
+function openRouletteDetail(msgId, role) {
+    const msgs = role === 'sender' ? rouletteMessages.sent : rouletteMessages.received;
+    const msg  = msgs.find(m => m.id === msgId);
+    if (!msg) return;
+
+    _openRouletteDetailId   = msgId;
+    _openRouletteDetailRole = role;
+
+    const page = document.getElementById('messagePageView');
+    if (!page) return;
+
+    // Detach from any regular conversation without triggering its close animation —
+    // just force-reset inline styles and state so we can re-use the panel cleanly.
+    page.classList.remove('active', 'closing');
+    page.style.left = page.style.top = page.style.bottom = page.style.height = '';
+    document.body.classList.remove('chat-open');
+    // Null out regular conversation state so chat.js doesn't think a conv is still open
+    if (typeof currentConversation    !== 'undefined') currentConversation    = null;
+    if (typeof currentConversationIndex !== 'undefined') currentConversationIndex = -1;
+
+    page.dataset.rouletteMode = '1';
+
+    // ---- Header ----
+    const moonIcon = phaseIconSvg(msg.moon_phase || 'full moon', 'md');
+    const avatarEl = document.getElementById('detailAvatar');
+    if (avatarEl) {
+        avatarEl.style.cursor = 'default';
+        avatarEl.onclick = null;
+        avatarEl.innerHTML = `<span class="roulette-detail-avatar-moon">${moonIcon}</span>`;
+    }
+    document.getElementById('detailSender').textContent = 'Moon Roulette';
+    const locEl = document.getElementById('detailLocation');
+    if (locEl) {
+        if (role === 'recipient') {
+            locEl.textContent = msg.status === 'revealed' && msg.sender_id
+                ? `Revealed · ${msg.sender_city ?? 'the world'}`
+                : `From somewhere in ${msg.sender_city ?? 'the world'}`;
+        } else {
+            const delivered = ['delivered','revealed','declined','blocked'].includes(msg.status);
+            locEl.textContent = delivered
+                ? `To someone in ${msg.recipient_city ?? 'the world'}`
+                : _rouletteStatusLabel(msg.status, 'sender');
+        }
+    }
+
+    // Wire close button to our close function (not history.back)
+    const closeBtn = page.querySelector('.message-page-close');
+    if (closeBtn) closeBtn.onclick = closeRouletteDetail;
+
+    // ---- Body ----
+    _refreshRouletteDetailContent(msg);
+
+    // ---- Footer: hide reply input ----
+    const footer = page.querySelector('.message-page-footer');
+    if (footer) footer.style.display = 'none';
+
+    // ---- Activate — use rAF so the browser processes the class removal above
+    //      before adding active, avoiding transition conflicts ----
+    requestAnimationFrame(() => {
+        page.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        // Desktop: position in right panel (same logic as openConversation)
+        const _isMobile = window.matchMedia('(max-width: 900px)').matches;
+        if (!_isMobile) {
+            document.body.classList.add('chat-open');
+            const leftPanel   = document.querySelector('.split-left');
+            const splitLayout = document.querySelector('.split-layout');
+            if (leftPanel && splitLayout) {
+                const slRect = splitLayout.getBoundingClientRect();
+                page.style.left   = (leftPanel.getBoundingClientRect().right + 24) + 'px';
+                page.style.top    = slRect.top + 'px';
+                page.style.bottom = (window.innerHeight - slRect.bottom) + 'px';
+                page.style.height = 'auto';
+            }
+        }
+    });
+
+    // Async: resolve revealed sender profile
+    if (role === 'recipient' && msg.status === 'revealed' && msg.sender_id) {
+        _resolveRouletteDetailSender(msg.sender_id);
+    }
+}
+
+// Detail-panel action wrappers (handle confirm dialogs before closing)
+async function _detailReveal(msgId) {
+    const btn = document.querySelector('.roulette-detail-action-bar .roulette-reveal-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Revealing…'; }
+    try {
+        const { data, error } = await sb.functions.invoke('reveal-roulette-identity', { body: { message_id: msgId } });
+        if (error) throw error;
+        if (data.mutual_reveal_complete) {
+            playMessageSound();
+            showNotificationToast('✨ You\'re connected — identities revealed!');
+            await loadRouletteMessages();
+            const msgs = _openRouletteDetailRole === 'sender' ? rouletteMessages.sent : rouletteMessages.received;
+            const updatedMsg = msgs.find(m => m.id === msgId);
+            if (updatedMsg) {
+                _refreshRouletteDetailContent(updatedMsg);
+                if (_openRouletteDetailRole === 'recipient' && updatedMsg.sender_id) {
+                    _resolveRouletteDetailSender(updatedMsg.sender_id);
+                }
+            }
+        } else {
+            showNotificationToast('🌙 Waiting for the other person to reveal…');
+            if (btn) { btn.disabled = true; btn.textContent = 'Waiting for them…'; }
+        }
+    } catch (err) {
+        console.error('[roulette] reveal error:', err);
+        if (btn) { btn.disabled = false; btn.textContent = 'Reveal yourself?'; }
+        showNotificationToast('Something went wrong. Please try again.');
+    }
+}
+
+async function _detailDecline(msgId) {
+    const bar = document.querySelector('.roulette-detail-action-bar');
+    if (bar) bar.style.opacity = '0.5';
+    try {
+        const { error } = await sb.functions.invoke('return-roulette-message', { body: { message_id: msgId, action: 'decline' } });
+        if (error) throw error;
+        closeRouletteDetail();
+        await loadRouletteMessages();
+        renderRouletteInbox();
+    } catch (err) {
+        console.error('[roulette] decline error:', err);
+        if (bar) bar.style.opacity = '1';
+        showNotificationToast('Something went wrong. Please try again.');
+    }
+}
+
+async function _detailBlock(msgId) {
+    const confirmed = confirm('Block this sender? You will not receive any more Moon Roulette messages from them.');
+    if (!confirmed) return;
+    const bar = document.querySelector('.roulette-detail-action-bar');
+    if (bar) bar.style.opacity = '0.5';
+    try {
+        const { error } = await sb.functions.invoke('return-roulette-message', { body: { message_id: msgId, action: 'block' } });
+        if (error) throw error;
+        closeRouletteDetail();
+        await loadRouletteMessages();
+        renderRouletteInbox();
+    } catch (err) {
+        console.error('[roulette] block error:', err);
+        if (bar) bar.style.opacity = '1';
+        showNotificationToast('Something went wrong. Please try again.');
+    }
+}
+
+async function _detailDelete(msgId) {
+    if (!confirm('Delete this message from your Moon Roulette?')) return;
+    try {
+        const { error } = await sb.from('moon_roulette_messages')
+            .update({ sender_deleted_at: new Date().toISOString() })
+            .eq('id', msgId)
+            .eq('sender_id', currentAuthUser.id);
+        if (error) throw error;
+        rouletteMessages.sent = rouletteMessages.sent.filter(m => m.id !== msgId);
+        closeRouletteDetail();
+        renderRouletteInbox();
+    } catch (err) {
+        console.error('[roulette] delete error:', err);
+        showNotificationToast('Something went wrong. Please try again.');
+    }
+}
+
+function closeRouletteDetail() {
+    const page = document.getElementById('messagePageView');
+    if (!page) return;
+
+    page.classList.remove('active', 'closing');
+    page.style.left   = '';
+    page.style.top    = '';
+    page.style.bottom = '';
+    page.style.height = '';
+    document.body.style.overflow = '';
+    document.body.classList.remove('chat-open');
+
+    // Restore footer for next regular chat open
+    const footer = page.querySelector('.message-page-footer');
+    if (footer) footer.style.display = '';
+
+    // Restore close button to the regular handler
+    const closeBtn = page.querySelector('.message-page-close');
+    if (closeBtn) closeBtn.onclick = function() { closeMessageDetail(); };
+
+    delete page.dataset.rouletteMode;
+    _openRouletteDetailId   = null;
+    _openRouletteDetailRole = null;
+}
+
+function _refreshRouletteDetailContent(msg) {
+    const content = document.getElementById('detailContent');
+    if (!content) return;
+    content.innerHTML =
+        _buildRouletteActionBar(msg, _openRouletteDetailRole) +
+        _buildRouletteMessageBody(msg);
+}
+
+function _buildRouletteActionBar(msg, role) {
+    const isRevealed  = msg.status === 'revealed';
+    const statusLabel = _rouletteStatusLabel(msg.status, role);
+    const statusClass = _rouletteStatusClass(msg.status);
+
+    let actionBtns = '';
+
+    if (role === 'recipient') {
+        if (!isRevealed) {
+            actionBtns = `
+                <button class="roulette-reveal-btn" onclick="_detailReveal('${msg.id}')">
+                    Reveal yourself?
+                </button>
+                <button class="roulette-btn roulette-btn-ghost" onclick="_detailDecline('${msg.id}')">
+                    Decline
+                </button>
+                <button class="roulette-btn roulette-btn-danger" onclick="_detailBlock('${msg.id}')">
+                    Block
+                </button>`;
+        } else {
+            actionBtns = `<span class="roulette-reveal-complete">✨ You're connected</span>`;
+        }
+        // Opt-out link shown in detail view for recipients only
+        const optOut = `<button class="roulette-optout-link" onclick="handleRouletteOptOut()">Stop receiving these</button>`;
+        return `
+            <div class="roulette-detail-action-bar">
+                <span class="roulette-status ${statusClass}">${statusLabel}</span>
+                <div class="roulette-detail-action-btns">${actionBtns}</div>
+                ${optOut}
+            </div>`;
+    } else { // sender
+        if (msg.status === 'declined' || msg.status === 'blocked') {
+            actionBtns = `
+                <button class="roulette-btn roulette-btn-primary"
+                        onclick="handleRelaunch('${msg.id}');closeRouletteDetail()">
+                    Re-launch
+                </button>
+                <button class="roulette-btn roulette-btn-ghost" onclick="_detailDelete('${msg.id}')">
+                    Delete
+                </button>`;
+        } else if (msg.status === 'delivered' || msg.status === 'revealed') {
+            actionBtns = `
+                <button class="roulette-reveal-btn ${isRevealed ? 'revealed' : ''}"
+                        onclick="_detailReveal('${msg.id}')"
+                        ${isRevealed ? 'disabled' : ''}>
+                    ${isRevealed ? '✨ Revealed' : 'Reveal yourself?'}
+                </button>`;
+        }
+    }
+
+    if (!actionBtns) return '';
+
+    return `
+        <div class="roulette-detail-action-bar">
+            <span class="roulette-status ${statusClass}">${statusLabel}</span>
+            <div class="roulette-detail-action-btns">${actionBtns}</div>
+        </div>`;
+}
+
+function _buildRouletteMessageBody(msg) {
+    const bigMoon = phaseIconSvg(msg.moon_phase || 'full moon', 'xl');
+    return `
+        <div class="roulette-detail-message">
+            <div class="roulette-detail-moon">${bigMoon}</div>
+            ${msg.message_text
+                ? `<p class="roulette-detail-text">${_escHtml(msg.message_text)}</p>`
+                : ''}
+            ${msg.photo_url
+                ? `<img class="roulette-detail-photo" src="${msg.photo_url}" alt="Photo" loading="lazy" />`
+                : ''}
+            ${msg.song_url
+                ? `<div class="roulette-detail-song">🎵 ${_escHtml(msg.song_title || msg.song_url)}</div>`
+                : ''}
+        </div>`;
+}
+
+async function _resolveRouletteDetailSender(senderId) {
+    const { data: profile } = await sb.from('public_profiles')
+        .select('id, username, first_name, last_name, city, avatar_url')
+        .eq('id', senderId)
+        .single();
+    if (!profile) return;
+
+    const name = profile.username
+        || [profile.first_name, profile.last_name].filter(Boolean).join(' ')
+        || 'Someone';
+
+    const locEl = document.getElementById('detailLocation');
+    if (locEl) locEl.textContent = `${name}${profile.city ? ' · ' + profile.city : ''}`;
+
+    const avatarEl = document.getElementById('detailAvatar');
+    if (!avatarEl) return;
+    if (profile.avatar_url) {
+        avatarEl.innerHTML = `<img style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" src="${profile.avatar_url}" alt="${_escHtml(name)}" />`;
+    } else {
+        avatarEl.innerHTML = `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:18px;font-weight:600;color:var(--text-bright);">${name.charAt(0).toUpperCase()}</span>`;
     }
 }
 
