@@ -9781,6 +9781,30 @@ body.moon-down .new-message-btn {
    ============================================ */
 
 /* Roulette detail panel body */
+/* Dark-theme overrides for the roulette detail panel */
+#rouletteMessagePage .message-page-inner {
+    background: var(--bg);
+    max-width: 100%;
+}
+#rouletteMessagePage .message-page-header {
+    border-bottom-color: var(--line-soft);
+    background: var(--bg);
+}
+#rouletteMessagePage .message-page-header h3,
+#rouletteMessagePage .message-page-header p {
+    color: var(--text-bright);
+}
+#rouletteMessagePage .message-page-close {
+    color: var(--muted);
+}
+#rouletteMessagePage .message-page-body {
+    background: var(--bg);
+}
+#rouletteMessagePage .message-page-footer {
+    background: var(--bg);
+    border-top-color: var(--line-soft);
+}
+
 .roulette-detail-content {
     padding: 24px 20px 16px;
     display: flex;
@@ -9828,3 +9852,49 @@ body.moon-down .new-message-btn {
     transition: color var(--dur-fast);
 }
 .roulette-block-link:hover { color: #E89B73; }
+
+/* Inline anonymous reply input */
+.roulette-inline-reply {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    margin-bottom: 4px;
+}
+.roulette-inline-textarea {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: var(--serif);
+    font-size: 15px;
+    color: var(--text-bright);
+    resize: none;
+    line-height: 1.4;
+    transition: border-color var(--dur-fast);
+}
+.roulette-inline-textarea::placeholder { color: var(--muted); }
+.roulette-inline-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+.roulette-inline-send {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    background: rgba(212,181,138,0.15);
+    border: 1px solid rgba(212,181,138,0.35);
+    border-radius: 50%;
+    color: var(--accent-bright);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--dur-fast), border-color var(--dur-fast);
+}
+.roulette-inline-send:hover {
+    background: rgba(212,181,138,0.28);
+    border-color: var(--accent);
+}
+.roulette-inline-send:disabled { opacity: 0.5; cursor: default; }
