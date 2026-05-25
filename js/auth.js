@@ -657,6 +657,8 @@ async function initAuth(sessionOverride) {
 
         console.log('[initAuth] Rendering UI...');
         await loadInTransitReplies();
+        // Load roulette messages on startup so they appear in the inbox immediately
+        if (typeof loadRouletteMessages === 'function') await loadRouletteMessages();
         renderMessages();
         renderMessageDots();
         renderCircleRows();
@@ -665,6 +667,7 @@ async function initAuth(sessionOverride) {
         _lastKnownReceivedCount = messages.filter(m => m.type === 'received').length;
         updateSoundToggleBtn();
         setupRealtimeMessages();
+        if (typeof subscribeRouletteRealtime === 'function') subscribeRouletteRealtime();
 
         // Mark data as loaded — prevents re-initialization
         _appDataLoaded = true;
