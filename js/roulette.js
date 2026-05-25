@@ -803,8 +803,9 @@ function openRouletteDetail(msgId, role) {
             ? 'Awaiting the moon…'
             : `To someone in ${_escHtml(msg.recipient_city ?? 'the world')}`;
     }
+    const timeStr = _relativeTime(msg.released_at || msg.created_at);
     document.getElementById('rouletteDetailSubtitle').textContent =
-        'Moon Roulette · ' + _rouletteStatusLabel(msg.status, role);
+        'Moon Roulette · ' + _rouletteStatusLabel(msg.status, role) + ' · ' + timeStr;
 
     // Body
     document.getElementById('rouletteDetailBody').innerHTML = _renderRouletteDetailBody(msg, role);
@@ -849,27 +850,16 @@ function closeRouletteDetail() {
 }
 
 function _renderRouletteDetailBody(msg, role) {
-    const isReceived = role === 'recipient';
-    let senderLine = '';
-    if (isReceived) {
-        const revealed = msg.status === 'revealed' && msg.sender_id;
-        senderLine = revealed
-            ? `<div class="roulette-anon-sender"><span class="roulette-revealed-sender" data-sender-id="${msg.sender_id}">Loading…</span></div>`
-            : `<div class="roulette-anon-sender">From somewhere in <strong>${_escHtml(msg.sender_city ?? 'the world')}</strong></div>`;
-    } else if (msg.status !== 'queued') {
-        senderLine = `<div class="roulette-anon-sender">To someone in <strong>${_escHtml(msg.recipient_city ?? 'the world')}</strong></div>`;
+    // Only show revealed sender name in body (when identity is known)
+    // Everything else (city, status, time) is already in the header — no duplication
+    let revealedLine = '';
+    if (role === 'recipient' && msg.status === 'revealed' && msg.sender_id) {
+        revealedLine = `<div class="roulette-anon-sender"><span class="roulette-revealed-sender" data-sender-id="${msg.sender_id}">Loading…</span></div>`;
     }
-
-    const timeStr = _relativeTime(msg.released_at || msg.created_at);
-    const moonIcon = phaseIconSvg(msg.moon_phase || 'full moon', 'lg');
 
     return `
         <div class="roulette-detail-content">
-            <div class="roulette-detail-moon-row">
-                ${moonIcon}
-                <span class="roulette-card-time">${timeStr}</span>
-            </div>
-            ${senderLine}
+            ${revealedLine}
             ${msg.message_text
                 ? `<div class="roulette-detail-message">${_escHtml(msg.message_text)}</div>`
                 : ''}
