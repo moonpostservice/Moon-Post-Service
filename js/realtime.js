@@ -8,6 +8,9 @@ let pollInterval = null;        // Fallback polling timer
 let realtimeWorking = false;    // Track if realtime events actually fire
 let isReloadingMessages = false; // Debounce guard
 
+// Inbox sort state — 'recent' | 'oldest' | 'unread'
+let inboxSortMode = 'recent';
+
 // Load in-transit replies from DB and add as synthetic dot entries
 async function loadInTransitReplies() {
     if (!currentAuthUser) return;
@@ -837,6 +840,100 @@ if ('serviceWorker' in navigator) {
         .catch(err => console.warn('Service Worker registration failed:', err));
 }
 
+// ============================================
+// INBOX SORT
+// ============================================
+
+function setInboxSort(mode) {
+    inboxSortMode = mode;
+    const labels = { recent: 'Recent', oldest: 'Oldest', unread: 'Unread' };
+    const label = document.getElementById('inboxSortLabel');
+    if (label) label.textContent = labels[mode] || 'Recent';
+    document.querySelectorAll('.inbox-sort-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.sort === mode);
+    });
+    document.getElementById('inboxSortMenu')?.classList.remove('open');
+    renderMessages();
+}
+
+function toggleInboxSortMenu() {
+    const menu = document.getElementById('inboxSortMenu');
+    if (!menu) return;
+    const isOpen = menu.classList.toggle('open');
+    if (isOpen) {
+        setTimeout(() => {
+            document.addEventListener('click', function _close(e) {
+                if (!e.target.closest('.inbox-sort-wrap')) {
+                    document.getElementById('inboxSortMenu')?.classList.remove('open');
+                }
+                document.removeEventListener('click', _close);
+            });
+        }, 0);
+    }
+}
+
+// ============================================
+// DEMO MODE — ?demo=1 skips auth and shows sample data
+// ============================================
+
+function initDemoMode() {
+    _appDataLoaded = true;
+    currentAuthUser = { id: 'demo-user-000', email: 'demo@moonpost.io' };
+
+    const now = Date.now();
+    conversations = [
+        {
+            otherName: 'Sofia Martinez', otherUsername: 'sofiam', otherAvatar: null,
+            otherProfileId: 'demo-p-001',
+            latestPreview: 'That message you sent really stayed with me.',
+            latestTime: '2h ago', latestCreatedAt: new Date(now - 2 * 3600000).toISOString(),
+            unreadCount: 2, hasInTransit: false, hasIncomingTransit: false,
+            location: 'Lisbon', messages: []
+        },
+        {
+            otherName: 'James Park', otherUsername: 'jpark', otherAvatar: null,
+            otherProfileId: 'demo-p-002',
+            latestPreview: 'You: The moon was so clear last night.',
+            latestTime: '1d ago', latestCreatedAt: new Date(now - 24 * 3600000).toISOString(),
+            unreadCount: 0, hasInTransit: true,
+            transitReleaseAt: new Date(now + 3 * 3600000).toISOString(),
+            transitCreatedAt: new Date(now - 1 * 3600000).toISOString(),
+            hasIncomingTransit: false, location: 'Tokyo', messages: []
+        },
+        {
+            otherName: 'Amara Osei', otherUsername: 'amara_o', otherAvatar: null,
+            otherProfileId: 'demo-p-003',
+            latestPreview: 'Write to me when the moon rises again.',
+            latestTime: '3d ago', latestCreatedAt: new Date(now - 3 * 86400000).toISOString(),
+            unreadCount: 0, hasInTransit: false, hasIncomingTransit: false,
+            location: 'Accra', messages: []
+        }
+    ];
+
+    if (typeof rouletteMessages !== 'undefined') {
+        rouletteMessages.received = [{
+            id: 'demo-r-recv-001', sender_city: 'Barcelona', status: 'delivered',
+            moon_phase: 'waxing gibbous',
+            message_text: 'I hope this finds you on a clear night. I wrote this watching the moon from my rooftop.',
+            created_at: new Date(now - 5 * 3600000).toISOString(),
+            released_at: new Date(now - 5 * 3600000).toISOString()
+        }];
+        rouletteMessages.sent = [{
+            id: 'demo-r-sent-001', sender_city: 'New York', recipient_city: 'Kyoto',
+            status: 'delivered', moon_phase: 'full moon',
+            message_text: 'Stranger, I wonder what your sky looks like tonight.',
+            created_at: new Date(now - 2 * 86400000).toISOString(),
+            released_at: new Date(now - 2 * 86400000).toISOString()
+        }];
+    }
+
+    hideOnboarding();
+    renderMessages();
+    if (typeof renderMessageDots === 'function') renderMessageDots();
+    const cta = document.getElementById('inboxNewMsgCta');
+    if (cta) cta.style.display = '';
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
     _domReady = true;
@@ -922,10 +1019,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         autoDetectFromTimezone();
     }
 
-    // Initialize auth (loads data and renders everything)
-    // If onAuthStateChange already fired INITIAL_SESSION before DOM was ready,
-    // initAuth would not have been called yet — call it now
-    if (!_appDataLoaded && !_isInitializing) {
+    // Demo mode: ?demo=1 bypasses auth and shows sample inbox data
+    if (new URLSearchParams(window.location.search).get('demo') === '1') {
+        initDemoMode();
+    } else if (!_appDataLoaded && !_isInitializing) {
+        // Initialize auth (loads data and renders everything)
+        // If onAuthStateChange already fired INITIAL_SESSION before DOM was ready,
+        // initAuth would not have been called yet — call it now
         console.log('[DOMContentLoaded] Calling initAuth');
         await initAuth();
     } else {
@@ -1799,8 +1899,8 @@ function formatRelativeEta(releaseAt) {
 function renderMessages() {
     const list = document.getElementById('messageList');
 
-    // Show one row per conversation (grouped by person)
-    list.innerHTML = conversations.map((conv, ci) => {
+    // Build conversation items with sort timestamps for merging with roulette rows
+    const convItems = conversations.map((conv, ci) => {
         const initial = (conv.otherName || '?').charAt(0).toUpperCase();
         let avatarUrl = conv.otherAvatar || null;
         // Final safety: never display current user's own avatar on someone else's row
@@ -1907,26 +2007,46 @@ function renderMessages() {
             `;
         }
 
-        return `
-            <li class="message-item msg-row${isUnread ? ' unread' : ''}${ci === currentConversationIndex ? ' active' : ''}" data-sender="${conv.otherName}" data-profile-id="${conv.otherProfileId || ''}" data-orbiting="${conv.hasInTransit}" data-location="${conv.location || ''}"
-                onclick="openConversation(${ci})"
-                onmouseenter="highlightOrbitDot('${conv.otherName}', true)"
-                onmouseleave="highlightOrbitDot('${conv.otherName}', false)">
-                ${avatar}
-                <div class="message-content">
-                    <div class="message-sender">${conv.otherUsername || conv.otherName}</div>
-                    ${badge}
-                    <div class="message-preview">${conv.latestPreview}</div>
-                    ${progressBar}
-                </div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-                    ${conv.latestTime ? `<span class="message-time">${conv.latestTime}</span>` : `<span class="message-time">Now</span>`}
-                    ${unreadBadge}
-                </div>
-                ${transitBar}
-            </li>
-        `;
-    }).join('');
+        const sortTime = conv.latestCreatedAt ? new Date(conv.latestCreatedAt).getTime() : 0;
+        return {
+            sortTime,
+            isUnread: conv.unreadCount > 0,
+            html: `
+                <li class="message-item msg-row${isUnread ? ' unread' : ''}${ci === currentConversationIndex ? ' active' : ''}" data-sender="${conv.otherName}" data-profile-id="${conv.otherProfileId || ''}" data-orbiting="${conv.hasInTransit}" data-location="${conv.location || ''}"
+                    onclick="openConversation(${ci})"
+                    onmouseenter="highlightOrbitDot('${conv.otherName}', true)"
+                    onmouseleave="highlightOrbitDot('${conv.otherName}', false)">
+                    ${avatar}
+                    <div class="message-content">
+                        <div class="message-sender">${conv.otherUsername || conv.otherName}</div>
+                        ${badge}
+                        <div class="message-preview">${conv.latestPreview}</div>
+                        ${progressBar}
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                        ${conv.latestTime ? `<span class="message-time">${conv.latestTime}</span>` : `<span class="message-time">Now</span>`}
+                        ${unreadBadge}
+                    </div>
+                    ${transitBar}
+                </li>
+            `
+        };
+    });
+
+    // Merge roulette rows and apply sort mode
+    const rouletteItems = (typeof getRouletteInboxItems === 'function') ? getRouletteInboxItems() : [];
+    const allItems = [...convItems, ...rouletteItems];
+    if (inboxSortMode === 'oldest') {
+        allItems.sort((a, b) => a.sortTime - b.sortTime);
+    } else if (inboxSortMode === 'unread') {
+        allItems.sort((a, b) => {
+            const au = a.isUnread ? 0 : 1, bu = b.isUnread ? 0 : 1;
+            return au !== bu ? au - bu : b.sortTime - a.sortTime;
+        });
+    } else {
+        allItems.sort((a, b) => b.sortTime - a.sortTime);
+    }
+    list.innerHTML = allItems.map(i => i.html).join('');
 }
 
 // ========================

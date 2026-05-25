@@ -127,6 +127,15 @@ function closeAllPanels() {
         msgPage.style.bottom = '';
         msgPage.style.height = '';
     }
+    // Close roulette message panel
+    const rouletteMsgPage = document.getElementById('rouletteMessagePage');
+    if (rouletteMsgPage && rouletteMsgPage.classList.contains('active')) {
+        rouletteMsgPage.classList.remove('active', 'closing');
+        rouletteMsgPage.style.left = '';
+        rouletteMsgPage.style.top = '';
+        rouletteMsgPage.style.bottom = '';
+        rouletteMsgPage.style.height = '';
+    }
     // Close shared sky
     const skyPage = document.getElementById('sharedSkyPage');
     if (skyPage && skyPage.classList.contains('active')) {

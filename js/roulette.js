@@ -42,15 +42,7 @@ async function loadRouletteMessages() {
 }
 
 function _updateRouletteTabBadge() {
-    const badge = document.getElementById('rouletteTabBadge');
-    if (!badge) return;
-    const count = rouletteMessages.received.filter(m => m.status === 'delivered').length;
-    if (count > 0) {
-        badge.textContent = count;
-        badge.style.display = '';
-    } else {
-        badge.style.display = 'none';
-    }
+    // Roulette messages are integrated into the main inbox — no separate tab badge needed.
 }
 
 // ============================================
@@ -58,32 +50,18 @@ function _updateRouletteTabBadge() {
 // ============================================
 
 async function openRoulettePage(fromPopstate = false) {
+    // Roulette is now integrated into the main inbox — redirect to home.
     if (!fromPopstate) {
-        history.pushState({ page: 'roulette' }, '', '/roulette');
+        history.replaceState({}, '', '/');
+    } else if (window.location.pathname === '/roulette') {
+        history.replaceState({}, '', '/');
     }
-    const page = document.getElementById('roulettePage');
-    if (!page) return;
-
-    // Close other overlays
-    document.getElementById('philosophyPage').style.display = 'none';
-    document.getElementById('contactsPage').style.display  = 'none';
-
-    page.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-
     await loadRouletteMessages();
-    renderRouletteInbox();
-    subscribeRouletteRealtime();
+    if (typeof renderMessages === 'function') renderMessages();
 }
 
 function closeRoulettePage() {
-    const page = document.getElementById('roulettePage');
-    if (page) page.style.display = 'none';
-    document.body.style.overflow = '';
-    _cleanupRouletteRealtime();
-    if (window.location.pathname === '/roulette') {
-        history.pushState({}, '', '/');
-    }
+    // No-op — roulette page no longer exists as a separate overlay.
 }
 
 // ============================================
@@ -147,10 +125,8 @@ async function _onRouletteChange(payload) {
         showNotificationToast('🌕 A mystery moon message has arrived');
     }
 
-    const page = document.getElementById('roulettePage');
-    if (page && page.style.display !== 'none') {
-        renderRouletteInbox();
-    }
+    // Re-render the unified inbox so roulette rows update inline.
+    if (typeof renderMessages === 'function') renderMessages();
 }
 
 // ============================================
@@ -473,7 +449,7 @@ async function handleSendRoulette(parentId = '') {
 
         closeRouletteCompose();
         await loadRouletteMessages();
-        renderRouletteInbox();
+        if (typeof renderMessages === 'function') renderMessages();
         showNotificationToast('🌕 Your message is on its way to a stranger');
         console.log('[roulette] sent:', data.message.id, '| release_at:', data.message.release_at);
     } catch (err) {
@@ -503,13 +479,7 @@ async function handleSendRouletteFromCompose() {
         closeModal();
         await loadRouletteMessages();
         if (typeof renderMessageDots === 'function') renderMessageDots();
-        // If roulette tab is active, refresh it; otherwise switch to it
-        const rouletteTabContent = document.getElementById('rouletteTabContent');
-        if (rouletteTabContent && rouletteTabContent.style.display !== 'none') {
-            renderRouletteTab();
-        } else {
-            switchInboxTab('roulette');
-        }
+        if (typeof renderMessages === 'function') renderMessages();
         showNotificationToast('🌕 Your message is on its way to a stranger');
         console.log('[roulette] sent from compose:', data?.message?.id);
     } catch (err) {
@@ -525,28 +495,8 @@ async function handleSendRouletteFromCompose() {
     }
 }
 
-function switchInboxTab(tab) {
-    const inboxContent = document.getElementById('inboxTabContent');
-    const rouletteContent = document.getElementById('rouletteTabContent');
-    const inboxBtn = document.getElementById('inboxTabBtn');
-    const rouletteBtn = document.getElementById('rouletteTabBtn');
-    if (!inboxContent || !rouletteContent) return;
-
-    const inboxCta = document.getElementById('inboxNewMsgCta');
-    if (tab === 'roulette') {
-        inboxContent.style.display = 'none';
-        rouletteContent.style.display = 'block';
-        inboxBtn?.classList.remove('active');
-        rouletteBtn?.classList.add('active');
-        if (inboxCta) inboxCta.style.display = 'none';
-        loadRouletteMessages().then(() => renderRouletteTab());
-    } else {
-        inboxContent.style.display = 'block';
-        rouletteContent.style.display = 'none';
-        inboxBtn?.classList.add('active');
-        rouletteBtn?.classList.remove('active');
-        // CTA visibility is controlled by realtime.js based on moon state — let it restore naturally
-    }
+function switchInboxTab(_tab) {
+    // Roulette is now integrated into the main inbox — no tab switching needed.
 }
 
 function renderRouletteTab() {
@@ -592,8 +542,9 @@ async function _returnMessage(messageId, action) {
 
         if (error) throw error;
 
+        closeRouletteDetail();
         await loadRouletteMessages();
-        renderRouletteInbox();
+        if (typeof renderMessages === 'function') renderMessages();
     } catch (err) {
         console.error('[roulette] return error:', err);
         if (card) card.style.opacity = '1';
@@ -615,9 +566,9 @@ async function handleReveal(messageId) {
         if (data.mutual_reveal_complete) {
             playMessageSound();
             showNotificationToast('✨ You\'re connected — identities revealed!');
+            closeRouletteDetail();
             await loadRouletteMessages();
-            renderRouletteInbox();
-            await _resolveRevealedSenders();
+            if (typeof renderMessages === 'function') renderMessages();
         } else {
             showNotificationToast('🌙 Waiting for the other person to reveal…');
             if (btn) { btn.disabled = true; btn.textContent = 'Waiting for them…'; }
@@ -648,7 +599,8 @@ async function handleSenderDelete(messageId) {
         if (error) throw error;
 
         rouletteMessages.sent = rouletteMessages.sent.filter(m => m.id !== messageId);
-        renderRouletteInbox();
+        closeRouletteDetail();
+        if (typeof renderMessages === 'function') renderMessages();
     } catch (err) {
         console.error('[roulette] delete error:', err);
         showNotificationToast('Something went wrong. Please try again.');
@@ -735,4 +687,229 @@ function _escHtml(str) {
     if (!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
               .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ============================================
+// INBOX INTEGRATION — rows for the unified inbox
+// ============================================
+
+function getRouletteInboxItems() {
+    const items = [];
+
+    const addRow = (msg, role) => {
+        const isReceived = role === 'recipient';
+        const statusLabel = _rouletteStatusLabel(msg.status, role);
+        const statusClass = _rouletteStatusClass(msg.status);
+
+        const moonIcon = phaseIconSvg(msg.moon_phase || 'full moon', 'sm');
+
+        let nameDisplay;
+        if (isReceived) {
+            const revealed = msg.status === 'revealed' && msg.sender_id;
+            nameDisplay = revealed
+                ? `<span class="roulette-revealed-sender" data-sender-id="${msg.sender_id}">Someone</span>`
+                : `From ${_escHtml(msg.sender_city ?? 'somewhere')}`;
+        } else {
+            nameDisplay = msg.status === 'queued'
+                ? 'Awaiting the moon…'
+                : `To someone in ${_escHtml(msg.recipient_city ?? 'the world')}`;
+        }
+
+        const preview = msg.message_text
+            ? _escHtml(msg.message_text.slice(0, 80) + (msg.message_text.length > 80 ? '…' : ''))
+            : msg.photo_url ? '📷 Photo' : '';
+
+        const isUnread = isReceived && msg.status === 'delivered';
+        const unreadBadge = isUnread ? `<span class="unread-badge pulse">!</span>` : '';
+
+        let statusBadge = '';
+        if (!isReceived && msg.status === 'queued') {
+            statusBadge = `<span class="message-status-badge orbiting">${iconSvg('orbiting', 'sm')} Orbiting</span>`;
+        } else if (!isReceived && (msg.status === 'declined' || msg.status === 'blocked')) {
+            statusBadge = `<span class="message-status-badge" style="color:#E89B73;">Returned</span>`;
+        } else if (isReceived && msg.status === 'delivered') {
+            statusBadge = `<span class="message-status-badge arriving">${iconSvg('on-its-way', 'sm')} New</span>`;
+        }
+
+        const sortTime = new Date(msg.released_at || msg.created_at).getTime();
+
+        items.push({
+            sortTime,
+            isUnread,
+            html: `
+                <li class="message-item msg-row message-item--roulette${isUnread ? ' unread' : ''}"
+                    onclick="openRouletteDetail('${msg.id}', '${role}')">
+                    <div class="msg-avatar msg-avatar--roulette">
+                        ${moonIcon}
+                    </div>
+                    <div class="message-content">
+                        <div class="message-sender">
+                            ${nameDisplay}<span class="roulette-inbox-tag">ROULETTE</span>
+                        </div>
+                        ${statusBadge}
+                        <div class="message-preview">${preview}</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                        <span class="message-time">${_relativeTime(msg.released_at || msg.created_at)}</span>
+                        ${unreadBadge}
+                    </div>
+                </li>
+            `
+        });
+    };
+
+    rouletteMessages.received.forEach(m => addRow(m, 'recipient'));
+    rouletteMessages.sent.forEach(m => addRow(m, 'sender'));
+
+    return items;
+}
+
+// ============================================
+// DETAIL PANEL — open a single roulette message (same panel system as regular chats)
+// ============================================
+
+function openRouletteDetail(msgId, role) {
+    const msgs = role === 'sender' ? rouletteMessages.sent : rouletteMessages.received;
+    const msg = msgs.find(m => m.id === msgId);
+    if (!msg) return;
+
+    if (typeof closeAllPanels === 'function') closeAllPanels();
+
+    const page = document.getElementById('rouletteMessagePage');
+    if (!page) return;
+
+    // Header
+    document.getElementById('rouletteDetailAvatar').innerHTML = phaseIconSvg(msg.moon_phase || 'full moon', 'md');
+    if (role === 'recipient') {
+        const revealed = msg.status === 'revealed' && msg.sender_id;
+        document.getElementById('rouletteDetailTitle').textContent = revealed ? 'Revealed sender' : `From ${_escHtml(msg.sender_city ?? 'somewhere')}`;
+    } else {
+        document.getElementById('rouletteDetailTitle').textContent = msg.status === 'queued'
+            ? 'Awaiting the moon…'
+            : `To someone in ${_escHtml(msg.recipient_city ?? 'the world')}`;
+    }
+    document.getElementById('rouletteDetailSubtitle').textContent =
+        'Moon Roulette · ' + _rouletteStatusLabel(msg.status, role);
+
+    // Body
+    document.getElementById('rouletteDetailBody').innerHTML = _renderRouletteDetailBody(msg, role);
+
+    // Footer actions
+    document.getElementById('rouletteDetailFooter').innerHTML = _renderRouletteDetailFooter(msg, role);
+
+    // Position + open (mirrors openConversation logic)
+    page.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    const isMobile = window.matchMedia('(max-width: 900px)').matches;
+    if (!isMobile) {
+        document.body.classList.add('chat-open');
+        const leftPanel = document.querySelector('.split-left');
+        const splitLayout = document.querySelector('.split-layout');
+        if (leftPanel && splitLayout) {
+            const slRect = splitLayout.getBoundingClientRect();
+            page.style.left = (leftPanel.getBoundingClientRect().right + 24) + 'px';
+            page.style.top = slRect.top + 'px';
+            page.style.bottom = (window.innerHeight - slRect.bottom) + 'px';
+            page.style.height = 'auto';
+        }
+        if (typeof renderMessages === 'function') renderMessages();
+    }
+
+    if (msg.status === 'revealed') {
+        requestAnimationFrame(() => _resolveRevealedSenders());
+    }
+}
+
+function closeRouletteDetail() {
+    const page = document.getElementById('rouletteMessagePage');
+    if (!page) return;
+    page.classList.remove('active', 'closing');
+    page.style.left = '';
+    page.style.top = '';
+    page.style.bottom = '';
+    page.style.height = '';
+    document.body.style.overflow = '';
+    document.body.classList.remove('chat-open');
+}
+
+function _renderRouletteDetailBody(msg, role) {
+    const isReceived = role === 'recipient';
+    let senderLine = '';
+    if (isReceived) {
+        const revealed = msg.status === 'revealed' && msg.sender_id;
+        senderLine = revealed
+            ? `<div class="roulette-anon-sender"><span class="roulette-revealed-sender" data-sender-id="${msg.sender_id}">Loading…</span></div>`
+            : `<div class="roulette-anon-sender">From somewhere in <strong>${_escHtml(msg.sender_city ?? 'the world')}</strong></div>`;
+    } else if (msg.status !== 'queued') {
+        senderLine = `<div class="roulette-anon-sender">To someone in <strong>${_escHtml(msg.recipient_city ?? 'the world')}</strong></div>`;
+    }
+
+    const timeStr = _relativeTime(msg.released_at || msg.created_at);
+    const moonIcon = phaseIconSvg(msg.moon_phase || 'full moon', 'lg');
+
+    return `
+        <div class="roulette-detail-content">
+            <div class="roulette-detail-moon-row">
+                ${moonIcon}
+                <span class="roulette-card-time">${timeStr}</span>
+            </div>
+            ${senderLine}
+            ${msg.message_text
+                ? `<div class="roulette-detail-message">${_escHtml(msg.message_text)}</div>`
+                : ''}
+            ${msg.photo_url
+                ? `<img class="roulette-photo" src="${_escHtml(msg.photo_url)}" alt="Photo" loading="lazy" />`
+                : ''}
+        </div>
+    `;
+}
+
+function _renderRouletteDetailFooter(msg, role) {
+    const isReceived = role === 'recipient';
+
+    if (isReceived && msg.status === 'delivered') {
+        return `
+            <div class="roulette-detail-actions">
+                <button class="btn btn--primary btn--block" onclick="handleReveal('${msg.id}')">
+                    Reveal yourself?
+                </button>
+                <button class="btn btn--ghost btn--block" onclick="handleDecline('${msg.id}')">
+                    Pass
+                </button>
+                <button class="roulette-block-link" onclick="handleBlock('${msg.id}')">
+                    Block this sender
+                </button>
+            </div>
+        `;
+    }
+
+    if (isReceived && msg.status === 'revealed') {
+        return `<div class="roulette-detail-actions"><p class="roulette-reveal-complete">✨ You're connected</p></div>`;
+    }
+
+    if (!isReceived && (msg.status === 'declined' || msg.status === 'blocked')) {
+        return `
+            <div class="roulette-detail-actions">
+                <button class="btn btn--primary btn--block" onclick="handleRelaunch('${msg.id}')">
+                    Re-launch to a new stranger
+                </button>
+                <button class="btn btn--ghost btn--block" style="color:#E89B73;border-color:rgba(232,155,115,0.4);" onclick="handleSenderDelete('${msg.id}')">
+                    Delete
+                </button>
+            </div>
+        `;
+    }
+
+    if (!isReceived && msg.status === 'delivered') {
+        return `
+            <div class="roulette-detail-actions">
+                <button class="btn btn--ghost btn--block" onclick="handleReveal('${msg.id}')">
+                    Reveal yourself?
+                </button>
+            </div>
+        `;
+    }
+
+    return '';
 }
