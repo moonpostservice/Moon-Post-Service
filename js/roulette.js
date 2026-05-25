@@ -18,7 +18,7 @@ const _myRevealedMessages = new Set();
 async function loadRouletteMessages() {
     if (!currentAuthUser) return;
     try {
-        const [sentRes, receivedRes] = await Promise.all([
+        const [sentRes, receivedRes, revealsRes] = await Promise.all([
             // Sent: query the raw table — sender_id RLS policy applies
             sb.from('moon_roulette_messages')
                 .select('id, sender_city, status, release_at, released_at, moon_phase, moon_illumination, message_text, photo_url, song_url, song_title, parent_id, send_attempt, created_at, updated_at')
@@ -30,6 +30,11 @@ async function loadRouletteMessages() {
             sb.from('roulette_recipient_view')
                 .select('*')
                 .order('created_at', { ascending: false }),
+
+            // My reveal intents — so the button shows "Waiting for them…" after a page refresh
+            sb.from('moon_roulette_reveals')
+                .select('roulette_message_id')
+                .eq('user_id', currentAuthUser.id),
         ]);
 
         if (sentRes.error) console.error('[roulette] sent fetch error:', sentRes.error);
@@ -37,6 +42,11 @@ async function loadRouletteMessages() {
 
         rouletteMessages.sent     = sentRes.data     ?? [];
         rouletteMessages.received = receivedRes.data ?? [];
+
+        // Re-hydrate the reveal Set so the button state survives page refresh
+        if (revealsRes.data) {
+            revealsRes.data.forEach(r => _myRevealedMessages.add(r.roulette_message_id));
+        }
     } catch (err) {
         console.error('[roulette] loadRouletteMessages exception:', err);
     }
