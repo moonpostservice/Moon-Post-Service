@@ -8,6 +8,8 @@
 let rouletteMessages = { sent: [], received: [] };
 let rouletteActiveTab = 'sent'; // 'sent' | 'received'
 let _rouletteRealtimeChannels = [];
+// Track messages where the current user has tapped reveal (persists until mutual or page reload)
+const _myRevealedMessages = new Set();
 
 // ============================================
 // DB HELPERS
@@ -556,8 +558,9 @@ async function _returnMessage(messageId, action) {
 }
 
 async function handleReveal(messageId) {
-    const btn = document.querySelector(`.roulette-card[data-id="${messageId}"] .roulette-reveal-btn`);
-    if (btn) { btn.disabled = true; btn.textContent = 'Revealing…'; }
+    // Disable reveal button immediately to prevent double-tap
+    const revealBtns = document.querySelectorAll(`[data-reveal-id="${messageId}"]`);
+    revealBtns.forEach(b => { b.disabled = true; b.textContent = 'Revealing…'; });
 
     try {
         const { data, error } = await sb.functions.invoke('reveal-roulette-identity', {
@@ -569,16 +572,25 @@ async function handleReveal(messageId) {
         if (data.mutual_reveal_complete) {
             playMessageSound();
             showNotificationToast('✨ You\'re connected — identities revealed!');
+            _myRevealedMessages.delete(messageId);
             closeRouletteDetail();
             await loadRouletteMessages();
             if (typeof renderMessages === 'function') renderMessages();
         } else {
-            showNotificationToast('🌙 Waiting for the other person to reveal…');
-            if (btn) { btn.disabled = true; btn.textContent = 'Waiting for them…'; }
+            // Mark that I've revealed — footer will render "Waiting for them…" state
+            _myRevealedMessages.add(messageId);
+            showNotificationToast('🌙 Your reveal is registered. Waiting for the other person…');
+            // Refresh just the detail footer to reflect the new state
+            const msg = rouletteMessages.received.find(m => m.id === messageId)
+                     || rouletteMessages.sent.find(m => m.id === messageId);
+            const role = rouletteMessages.received.find(m => m.id === messageId) ? 'recipient' : 'sender';
+            const footer = document.getElementById('rouletteDetailFooter');
+            if (footer && msg) footer.innerHTML = _renderRouletteDetailFooter(msg, role);
         }
     } catch (err) {
         console.error('[roulette] reveal error:', err);
-        if (btn) { btn.disabled = false; btn.textContent = 'Reveal yourself?'; }
+        _myRevealedMessages.delete(messageId);
+        revealBtns.forEach(b => { b.disabled = false; b.textContent = 'Reveal yourself?'; });
         showNotificationToast('Something went wrong. Please try again.');
     }
 }
@@ -869,13 +881,31 @@ function _renderRouletteDetailBody(msg, role) {
 }
 
 function _renderRouletteDetailFooter(msg, role) {
-    const isReceived = role === 'recipient';
+    const isReceived  = role === 'recipient';
+    const iRevealed   = _myRevealedMessages.has(msg.id);
+    const canChat     = msg.status === 'delivered' || msg.status === 'revealed';
+
+    // Inline anonymous reply input — shown whenever the conversation is active
+    const replyInput = canChat ? `
+        <div class="roulette-inline-reply">
+            <textarea id="rouletteInlineText_${msg.id}"
+                      class="roulette-inline-textarea"
+                      placeholder="Reply anonymously…"
+                      rows="2"
+                      maxlength="1000"
+                      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();handleInlineRouletteReply('${msg.id}');}"></textarea>
+            <button class="roulette-inline-send" onclick="handleInlineRouletteReply('${msg.id}')">↩</button>
+        </div>
+    ` : '';
 
     if (isReceived && msg.status === 'delivered') {
+        const revealLabel = iRevealed ? 'Waiting for them…' : 'Reveal yourself?';
         return `
             <div class="roulette-detail-actions">
-                <button class="btn btn--primary btn--block" onclick="handleReveal('${msg.id}')">
-                    Reveal yourself?
+                ${replyInput}
+                <button class="btn btn--primary btn--block" data-reveal-id="${msg.id}"
+                        onclick="handleReveal('${msg.id}')" ${iRevealed ? 'disabled' : ''}>
+                    ${revealLabel}
                 </button>
                 <button class="btn btn--ghost btn--block" onclick="handleDecline('${msg.id}')">
                     Pass
@@ -888,7 +918,12 @@ function _renderRouletteDetailFooter(msg, role) {
     }
 
     if (isReceived && msg.status === 'revealed') {
-        return `<div class="roulette-detail-actions"><p class="roulette-reveal-complete">✨ You're connected</p></div>`;
+        return `
+            <div class="roulette-detail-actions">
+                ${replyInput}
+                <p class="roulette-reveal-complete">✨ You're connected</p>
+            </div>
+        `;
     }
 
     if (!isReceived && (msg.status === 'declined' || msg.status === 'blocked')) {
@@ -905,14 +940,47 @@ function _renderRouletteDetailFooter(msg, role) {
     }
 
     if (!isReceived && msg.status === 'delivered') {
+        const revealLabel = iRevealed ? 'Waiting for them…' : 'Reveal yourself?';
         return `
             <div class="roulette-detail-actions">
-                <button class="btn btn--ghost btn--block" onclick="handleReveal('${msg.id}')">
-                    Reveal yourself?
+                ${replyInput}
+                <button class="btn btn--ghost btn--block" data-reveal-id="${msg.id}"
+                        onclick="handleReveal('${msg.id}')" ${iRevealed ? 'disabled' : ''}>
+                    ${revealLabel}
                 </button>
             </div>
         `;
     }
 
-    return '';
+    return replyInput ? `<div class="roulette-detail-actions">${replyInput}</div>` : '';
+}
+
+async function handleInlineRouletteReply(messageId) {
+    const textarea = document.getElementById(`rouletteInlineText_${messageId}`);
+    const sendBtn  = document.querySelector(`.roulette-inline-send`);
+    if (!textarea) return;
+
+    const text = textarea.value.trim();
+    if (!text) { textarea.focus(); return; }
+
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = '…'; }
+    textarea.disabled = true;
+
+    try {
+        const { error } = await sb.functions.invoke('send-roulette-message', {
+            body: { message_text: text, reply_to_id: messageId }
+        });
+        if (error) throw error;
+
+        textarea.value = '';
+        showNotificationToast('🌙 Anonymous reply sent');
+        await loadRouletteMessages();
+    } catch (err) {
+        console.error('[roulette] inline reply error:', err);
+        showNotificationToast('Something went wrong. Please try again.');
+    } finally {
+        textarea.disabled = false;
+        if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '↩'; }
+        textarea.focus();
+    }
 }
