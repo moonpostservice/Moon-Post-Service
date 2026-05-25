@@ -284,6 +284,12 @@ function _renderSenderCard(msg, { statusLabel, statusClass, moonIcon, preview, r
         </button>
     ` : '';
 
+    const senderReplyBtn = (msg.status === 'delivered') ? `
+        <button class="roulette-reply-btn" onclick="openRouletteCompose(null, {}, '${msg.id}')">
+            ↩ Reply anonymously
+        </button>
+    ` : '';
+
     return `
         <div class="roulette-card roulette-card--sender roulette-card--${msg.status}" data-id="${msg.id}">
             <div class="roulette-card-moon">${moonIcon}</div>
@@ -299,6 +305,7 @@ function _renderSenderCard(msg, { statusLabel, statusClass, moonIcon, preview, r
                 ${preview ? `<p class="roulette-preview">${_escHtml(preview)}</p>` : ''}
                 ${isRelaunched ? `<p class="roulette-attempt">Attempt ${msg.send_attempt}</p>` : ''}
                 ${revealBtn}
+                ${senderReplyBtn}
                 ${actions}
             </div>
             <div class="roulette-card-time">${_relativeTime(msg.created_at)}</div>
@@ -314,6 +321,8 @@ function _renderRecipientCard(msg, { statusLabel, statusClass, moonIcon, preview
     const senderDisplay = isRevealed && msg.sender_id
         ? `<span class="roulette-revealed-sender" data-sender-id="${msg.sender_id}">Loading…</span>`
         : `<span class="roulette-anon-sender">From somewhere in <strong>${_escHtml(msg.sender_city ?? 'the world')}</strong></span>`;
+
+    const canReply = msg.status === 'delivered' || msg.status === 'revealed';
 
     const revealBtn = !isRevealed ? `
         <button class="roulette-reveal-btn" onclick="handleReveal('${msg.id}')">
@@ -334,6 +343,12 @@ function _renderRecipientCard(msg, { statusLabel, statusClass, moonIcon, preview
         </div>
     ` : '';
 
+    const replyBtn = canReply ? `
+        <button class="roulette-reply-btn" onclick="openRouletteCompose(null, {}, '${msg.id}')">
+            ↩ Reply anonymously
+        </button>
+    ` : '';
+
     return `
         <div class="roulette-card roulette-card--recipient roulette-card--${msg.status}" data-id="${msg.id}">
             <div class="roulette-card-moon">${moonIcon}</div>
@@ -347,6 +362,7 @@ function _renderRecipientCard(msg, { statusLabel, statusClass, moonIcon, preview
                 ${msg.photo_url ? `<img class="roulette-photo" src="${msg.photo_url}" alt="Photo" loading="lazy" />` : ''}
                 <div class="roulette-card-footer">
                     ${revealBtn}
+                    ${replyBtn}
                     ${actions}
                     <button class="roulette-optout-link" onclick="handleRouletteOptOut()">
                         Stop receiving these
@@ -387,9 +403,22 @@ async function _resolveRevealedSenders() {
 // COMPOSE
 // ============================================
 
-function openRouletteCompose(parentId = null, prefill = {}) {
+function openRouletteCompose(parentId = null, prefill = {}, replyToId = null) {
     const existing = document.getElementById('rouletteComposeModal');
     if (existing) existing.remove();
+
+    const isReply   = !!replyToId;
+    const isRelaunch = !!parentId;
+
+    const title = isReply   ? 'Reply anonymously'
+                : isRelaunch ? 'Re-launch your message'
+                : 'Send a Moon Roulette';
+    const hint  = isReply   ? 'Write back to your mystery stranger. They won\'t know who you are until you both reveal.'
+                : isRelaunch ? 'Edit your message (optional) and send it to a new stranger.'
+                : 'Write a message. The moon will carry it to a stranger.';
+    const btnLabel = isReply   ? '↩ Send anonymous reply'
+                   : isRelaunch ? 'Re-launch'
+                   : 'Send into the moon';
 
     const modal = document.createElement('div');
     modal.id = 'rouletteComposeModal';
@@ -397,16 +426,12 @@ function openRouletteCompose(parentId = null, prefill = {}) {
     modal.innerHTML = `
         <div class="roulette-compose-inner">
             <div class="roulette-compose-header">
-                <h3>${parentId ? 'Re-launch your message' : 'Send a Moon Roulette'}</h3>
+                <h3>${title}</h3>
                 <button class="roulette-close-btn" onclick="closeRouletteCompose()" aria-label="Close">
                     ${iconSvg('close', 'sm')}
                 </button>
             </div>
-            <p class="roulette-compose-hint">
-                ${parentId
-                    ? 'Edit your message (optional) and send it to a new stranger.'
-                    : 'Write a message. The moon will carry it to a stranger.'}
-            </p>
+            <p class="roulette-compose-hint">${hint}</p>
             <textarea
                 id="rouletteComposeText"
                 class="roulette-compose-textarea"
@@ -417,8 +442,8 @@ function openRouletteCompose(parentId = null, prefill = {}) {
             <div class="roulette-compose-footer">
                 <span class="roulette-char-count" id="rouletteCharCount">0 / 1000</span>
                 <button class="btn-primary roulette-send-btn" id="rouletteSendBtn"
-                        onclick="handleSendRoulette('${parentId ?? ''}')">
-                    ${parentId ? 'Re-launch' : 'Send into the moon'}
+                        onclick="handleSendRoulette('${parentId ?? ''}', '${replyToId ?? ''}')">
+                    ${btnLabel}
                 </button>
             </div>
         </div>
@@ -448,7 +473,7 @@ function closeRouletteCompose() {
 // ACTIONS
 // ============================================
 
-async function handleSendRoulette(parentId = '') {
+async function handleSendRoulette(parentId = '', replyToId = '') {
     const textarea = document.getElementById('rouletteComposeText');
     const sendBtn  = document.getElementById('rouletteSendBtn');
     if (!textarea || !sendBtn) return;
@@ -465,7 +490,8 @@ async function handleSendRoulette(parentId = '') {
 
     try {
         const body = { message_text: messageText };
-        if (parentId) body.parent_id = parentId;
+        if (replyToId)      body.reply_to_id = replyToId;
+        else if (parentId)  body.parent_id   = parentId;
 
         const { data, error } = await sb.functions.invoke('send-roulette-message', { body });
 
@@ -474,7 +500,10 @@ async function handleSendRoulette(parentId = '') {
         closeRouletteCompose();
         await loadRouletteMessages();
         renderRouletteInbox();
-        showNotificationToast('🌕 Your message is on its way to a stranger');
+        const toast = replyToId
+            ? '🌙 Anonymous reply sent'
+            : '🌕 Your message is on its way to a stranger';
+        showNotificationToast(toast);
         console.log('[roulette] sent:', data.message.id, '| release_at:', data.message.release_at);
     } catch (err) {
         console.error('[roulette] send error:', err);
