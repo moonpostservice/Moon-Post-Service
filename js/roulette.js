@@ -39,6 +39,9 @@ async function loadRouletteMessages() {
         console.error('[roulette] loadRouletteMessages exception:', err);
     }
     _updateRouletteTabBadge();
+    // Re-render the inbox so roulette rows appear (load is not awaited in debouncedReloadMessages)
+    if (typeof renderMessages === 'function') renderMessages();
+    if (typeof renderMessageDots === 'function') renderMessageDots();
 }
 
 function _updateRouletteTabBadge() {
