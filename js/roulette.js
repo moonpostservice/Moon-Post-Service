@@ -903,13 +903,15 @@ function _renderRouletteDetailFooter(msg, role) {
         return `
             <div class="roulette-detail-actions">
                 ${replyInput}
-                <button class="btn btn--primary btn--block" data-reveal-id="${msg.id}"
-                        onclick="handleReveal('${msg.id}')" ${iRevealed ? 'disabled' : ''}>
-                    ${revealLabel}
-                </button>
-                <button class="btn btn--ghost btn--block" onclick="handleDecline('${msg.id}')">
-                    Pass
-                </button>
+                <div class="roulette-action-row">
+                    <button class="btn btn--primary roulette-action-btn" data-reveal-id="${msg.id}"
+                            onclick="handleReveal('${msg.id}')" ${iRevealed ? 'disabled' : ''}>
+                        ${revealLabel}
+                    </button>
+                    <button class="btn btn--ghost roulette-action-btn" onclick="handleDecline('${msg.id}')">
+                        Pass
+                    </button>
+                </div>
                 <button class="roulette-block-link" onclick="handleBlock('${msg.id}')">
                     Block this sender
                 </button>
@@ -944,7 +946,7 @@ function _renderRouletteDetailFooter(msg, role) {
         return `
             <div class="roulette-detail-actions">
                 ${replyInput}
-                <button class="btn btn--ghost btn--block" data-reveal-id="${msg.id}"
+                <button class="btn btn--ghost roulette-action-btn" data-reveal-id="${msg.id}"
                         onclick="handleReveal('${msg.id}')" ${iRevealed ? 'disabled' : ''}>
                     ${revealLabel}
                 </button>

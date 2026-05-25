@@ -9840,6 +9840,18 @@ body.moon-down .new-message-btn {
     padding: 16px 20px 20px;
 }
 
+/* Reveal + Pass on one row; wraps to 2 rows only when space is tight */
+.roulette-action-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.roulette-action-btn {
+    flex: 1;
+    min-width: 120px;
+    white-space: nowrap;
+}
+
 .roulette-block-link {
     background: none;
     border: none;
