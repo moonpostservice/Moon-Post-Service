@@ -143,7 +143,9 @@ Deno.serve(async (req: Request) => {
     }
 
     // parent_id is present when this is a re-launch of a returned message
-    const parentId = typeof body.parent_id === "string" ? body.parent_id : null;
+    const parentId  = typeof body.parent_id  === "string" ? body.parent_id  : null;
+    // reply_to_id is present when this is an anonymous reply to a specific roulette message
+    const replyToId = typeof body.reply_to_id === "string" ? body.reply_to_id : null;
 
     // --- 3. Rate limit ---
     if (isRateLimited(user.id)) {
@@ -166,6 +168,78 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: "Sender profile incomplete" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // --- 4b. Anonymous reply path (directed to the same stranger, delivered immediately) ---
+    if (replyToId) {
+      const { data: original, error: origErr } = await serviceClient
+        .from("moon_roulette_messages")
+        .select("id, sender_id, recipient_id, sender_city, recipient_city")
+        .eq("id", replyToId)
+        .single();
+
+      if (origErr || !original) {
+        return new Response(
+          JSON.stringify({ error: "Original message not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const isParticipant = original.sender_id === user.id || original.recipient_id === user.id;
+      if (!isParticipant) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Route reply to the OTHER participant
+      const recipientId   = original.sender_id === user.id ? original.recipient_id : original.sender_id;
+      const recipientCity = original.sender_id === user.id ? original.recipient_city : original.sender_city;
+
+      // Guard: prevent self-delivery (edge case if a message somehow loops back)
+      if (recipientId === user.id) {
+        return new Response(
+          JSON.stringify({ error: "Cannot send a roulette message to yourself" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const illum = SunCalc.getMoonIllumination(new Date());
+      const replyMoonPhase = moonPhaseName(illum.phase);
+      const replyMoonIllum = Math.round(illum.fraction * 100) / 100;
+
+      const { data: replyMessage, error: replyInsertErr } = await serviceClient
+        .from("moon_roulette_messages")
+        .insert({
+          sender_id:          user.id,
+          recipient_id:       recipientId,
+          sender_city:        senderProfile.city,
+          recipient_city:     recipientCity,
+          message_text:       body.message_text ?? null,
+          photo_url:          body.photo_url    ?? null,
+          status:             "delivered",          // immediate — no moon-phase delay for back-and-forth
+          release_at:         new Date().toISOString(),
+          moon_phase:         replyMoonPhase,
+          moon_illumination:  replyMoonIllum,
+          parent_id:          replyToId,
+          send_attempt:       1,
+        })
+        .select("id, status, release_at, moon_phase")
+        .single();
+
+      if (replyInsertErr) {
+        console.error("Reply insert error:", replyInsertErr);
+        return new Response(
+          JSON.stringify({ error: "Internal server error" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ message: replyMessage, is_reply: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

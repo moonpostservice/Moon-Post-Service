@@ -846,7 +846,7 @@ if ('serviceWorker' in navigator) {
 
 function setInboxSort(mode) {
     inboxSortMode = mode;
-    const labels = { recent: 'Recent', oldest: 'Oldest', unread: 'Unread' };
+    const labels = { recent: 'Recent', oldest: 'Oldest', unread: 'Unread', roulette: 'Roulette' };
     const label = document.getElementById('inboxSortLabel');
     if (label) label.textContent = labels[mode] || 'Recent';
     document.querySelectorAll('.inbox-sort-option').forEach(btn => {
@@ -2042,6 +2042,11 @@ function renderMessages() {
         allItems.sort((a, b) => {
             const au = a.isUnread ? 0 : 1, bu = b.isUnread ? 0 : 1;
             return au !== bu ? au - bu : b.sortTime - a.sortTime;
+        });
+    } else if (inboxSortMode === 'roulette') {
+        allItems.sort((a, b) => {
+            const ar = a.isRoulette ? 0 : 1, br = b.isRoulette ? 0 : 1;
+            return ar !== br ? ar - br : b.sortTime - a.sortTime;
         });
     } else {
         allItems.sort((a, b) => b.sortTime - a.sortTime);
