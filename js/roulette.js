@@ -21,7 +21,7 @@ async function loadRouletteMessages() {
         const [sentRes, receivedRes, revealsRes] = await Promise.all([
             // Sent: query the raw table — sender_id RLS policy applies
             sb.from('moon_roulette_messages')
-                .select('id, sender_city, status, release_at, released_at, moon_phase, moon_illumination, message_text, photo_url, song_url, song_title, parent_id, send_attempt, created_at, updated_at')
+                .select('id, sender_city, recipient_id, recipient_city, status, release_at, released_at, moon_phase, moon_illumination, message_text, photo_url, song_url, song_title, parent_id, send_attempt, created_at, updated_at')
                 .eq('sender_id', currentAuthUser.id)
                 .is('sender_deleted_at', null)
                 .order('created_at', { ascending: false }),
@@ -372,6 +372,34 @@ async function _resolveRevealedSenders() {
             <span class="roulette-revealed-city">${_escHtml(p.city ?? '')}</span>
         `;
     });
+}
+
+// Fetch one profile and update the detail panel header with the real name + avatar
+async function _resolveRevealedHeader(otherId) {
+    if (!otherId) return;
+    const { data: p } = await sb.from('public_profiles')
+        .select('id, username, first_name, last_name, avatar_url')
+        .eq('id', otherId)
+        .single();
+    if (!p) return;
+
+    const name = p.username || [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Someone';
+
+    // Avatar — swap moon icon for real photo or initial
+    const avatarEl = document.getElementById('rouletteDetailAvatar');
+    if (avatarEl) {
+        if (p.avatar_url) {
+            avatarEl.innerHTML = `<img src="${_escHtml(p.avatar_url)}" alt="${_escHtml(name)}"
+                style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" />`;
+        } else {
+            avatarEl.textContent = name.charAt(0).toUpperCase();
+            avatarEl.style.cssText = 'display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:var(--accent);';
+        }
+    }
+
+    // Title — real name instead of "…"
+    const titleEl = document.getElementById('rouletteDetailTitle');
+    if (titleEl) titleEl.textContent = name;
 }
 
 // ============================================
@@ -809,15 +837,21 @@ function openRouletteDetail(msgId, role) {
     const page = document.getElementById('rouletteMessagePage');
     if (!page) return;
 
-    // Header
+    // Header — revealed state shows real name/avatar; everything else shows moon + city
+    const isRevealed = msg.status === 'revealed';
+    const otherId = isRevealed
+        ? (role === 'recipient' ? msg.sender_id : msg.recipient_id)
+        : null;
+
     document.getElementById('rouletteDetailAvatar').innerHTML = phaseIconSvg(msg.moon_phase || 'full moon', 'md');
+
     if (role === 'recipient') {
-        const revealed = msg.status === 'revealed' && msg.sender_id;
-        document.getElementById('rouletteDetailTitle').textContent = revealed ? 'Revealed sender' : `From ${_escHtml(msg.sender_city ?? 'somewhere')}`;
+        document.getElementById('rouletteDetailTitle').textContent =
+            isRevealed ? '…' : `From ${_escHtml(msg.sender_city ?? 'somewhere')}`;
     } else {
         document.getElementById('rouletteDetailTitle').textContent = msg.status === 'queued'
             ? 'Awaiting the moon…'
-            : `To someone in ${_escHtml(msg.recipient_city ?? 'the world')}`;
+            : isRevealed ? '…' : `To someone in ${_escHtml(msg.recipient_city ?? 'the world')}`;
     }
     const timeStr = _relativeTime(msg.released_at || msg.created_at);
     document.getElementById('rouletteDetailSubtitle').textContent =
@@ -848,8 +882,11 @@ function openRouletteDetail(msgId, role) {
         if (typeof renderMessages === 'function') renderMessages();
     }
 
-    if (msg.status === 'revealed') {
-        requestAnimationFrame(() => _resolveRevealedSenders());
+    if (isRevealed) {
+        requestAnimationFrame(() => {
+            _resolveRevealedSenders();          // body name
+            if (otherId) _resolveRevealedHeader(otherId); // header avatar + title
+        });
     }
 }
 
