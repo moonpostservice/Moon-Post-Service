@@ -10063,10 +10063,10 @@ body.moon-down .new-message-btn {
     top: calc(100% + 6px);
     right: 0;
     min-width: 210px;
-    background: var(--bg-card);
+    background: #0d1829;
     border: 1px solid rgba(212, 181, 138, 0.2);
     border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
     z-index: 200;
     overflow: hidden;
     flex-direction: column;
