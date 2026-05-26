@@ -258,17 +258,12 @@ function clearPhotoAttachment(inputId, previewContainerId, labelId, labelText, s
     if (label) label.textContent = labelText || 'Attach a moon photo';
 }
 
-// Compress + upload in one step, returns URL or null
+// Compress + upload in one step, returns URL or throws on failure
 async function compressAndUpload(stateKey, context) {
     const file = window['_pendingPhotoFile_' + stateKey];
     if (!file) return null;
-    try {
-        const blob = await compressMoonPhoto(file);
-        return await uploadMoonPhoto(blob, context);
-    } catch (err) {
-        console.error('Moon photo upload failed:', err);
-        return null;
-    }
+    const blob = await compressMoonPhoto(file);
+    return await uploadMoonPhoto(blob, context);
 }
 
 // ========================

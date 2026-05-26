@@ -1370,7 +1370,14 @@ async function completeSend(isNewRecipient) {
     // Upload moon photo if attached
     let messagePhotoUrl = null;
     if (window['_pendingPhotoFile_compose']) {
-        messagePhotoUrl = await compressAndUpload('compose', 'messages');
+        try {
+            messagePhotoUrl = await compressAndUpload('compose', 'messages');
+        } catch (err) {
+            console.error('Photo upload failed:', err);
+            alert('Your photo could not be uploaded. Please try again, or remove the photo to send your message without it.');
+            pendingMessage = null;
+            return;
+        }
     }
 
     // Save to Supabase via Edge Function (server-side validation + rate limiting)

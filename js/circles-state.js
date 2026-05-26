@@ -317,8 +317,11 @@ function buildConversations() {
         const contactUsername = contact?.username || null;
         conv.otherUsername = (contactUsername && contactUsername.toLowerCase() !== myNameLC)
             ? contactUsername : null;
-        // Always prefer contact name if available (most reliable source)
-        if (contact && contact.name) {
+        // Prefer profile-resolved name (fresh from DB); only use contact name
+        // as fallback for non-MPS contacts or when we have no name at all
+        const hasProfileName = conv.otherProfileId && conv.otherName
+            && conv.otherName !== 'Unknown' && conv.otherName !== 'Someone';
+        if (contact && contact.name && !hasProfileName) {
             conv.otherName = contact.name;
         }
         // Fallback: if otherName still equals current user's name/email, clear it
@@ -902,7 +905,7 @@ async function loadMessages(retryCount = 0) {
                     dbId: m.id,
                     senderId: currentAuthUser.id,
                     recipientId: m.recipient_id || null,
-                    sender: m.recipient_name || rp?.username || 'Unknown',
+                    sender: rp?.username || m.recipient_name || 'Unknown',
                     senderAvatar: rp?.avatar_url || null,
                     recipientEmail: m.recipient_email,
                     preview: '',
@@ -1116,6 +1119,81 @@ async function loadMessages(retryCount = 0) {
         // Build conversations (grouped by person)
         buildConversations();
 
+        // Inject wiped conversations that have no surviving messages.
+        // After a new-moon wipe all messages are deleted, so buildConversations()
+        // produces an empty list. We query conversation_participants to find every
+        // conversation the user has been in, then add placeholder entries for
+        // any that are missing (because they were wiped) so the inbox stays populated.
+        try {
+            const existingConvIds = new Set(conversations.map(c => c.dbConversationId).filter(Boolean));
+
+            const { data: myParticipations } = await sb.from('conversation_participants')
+                .select('conversation_id')
+                .eq('profile_id', currentAuthUser.id);
+
+            if (myParticipations && myParticipations.length > 0) {
+                const missingIds = myParticipations
+                    .map(p => p.conversation_id)
+                    .filter(id => !existingConvIds.has(id));
+
+                if (missingIds.length > 0) {
+                    const { data: wipedConvs } = await sb.from('conversations')
+                        .select('id, wiped_at, last_message_at')
+                        .in('id', missingIds)
+                        .not('wiped_at', 'is', null);
+
+                    if (wipedConvs && wipedConvs.length > 0) {
+                        const wipedIds = wipedConvs.map(c => c.id);
+
+                        const { data: otherParts } = await sb.from('conversation_participants')
+                            .select('conversation_id, profile_id, email')
+                            .in('conversation_id', wipedIds)
+                            .neq('profile_id', currentAuthUser.id);
+
+                        const otherProfileIds = (otherParts || []).map(p => p.profile_id).filter(Boolean);
+                        const otherProfileMap = {};
+                        if (otherProfileIds.length > 0) {
+                            const { data: otherProfiles } = await sb.from('profiles')
+                                .select('id, username, first_name, last_name, avatar_url, city')
+                                .in('id', otherProfileIds);
+                            (otherProfiles || []).forEach(p => { otherProfileMap[p.id] = p; });
+                        }
+
+                        wipedConvs.forEach(conv => {
+                            const other = (otherParts || []).find(p => p.conversation_id === conv.id);
+                            if (!other) return;
+                            const profile = other.profile_id ? otherProfileMap[other.profile_id] : null;
+                            const otherName = profile
+                                ? (profile.first_name || profile.username || other.email || 'Unknown')
+                                : (other.email || 'Unknown');
+                            const wipedDate = new Date(conv.wiped_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                            conversations.push({
+                                otherKey: other.profile_id || other.email,
+                                otherName,
+                                otherUsername: profile?.username || null,
+                                otherAvatar: profile?.avatar_url || null,
+                                otherProfileId: other.profile_id || null,
+                                otherEmail: other.email || null,
+                                location: profile?.city || null,
+                                messages: [],
+                                latestCreatedAt: conv.wiped_at,
+                                latestPreview: 'New moon erased this conversation',
+                                latestTime: wipedDate,
+                                dbConversationId: conv.id,
+                                wipedAt: conv.wiped_at,
+                                unreadCount: 0,
+                                hasInTransit: false,
+                                hasIncomingTransit: false,
+                            });
+                        });
+                        console.log('[loadMessages] Injected', wipedConvs.length, 'wiped conversation(s) into inbox');
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('[loadMessages] Failed to inject wiped conversations:', e);
+        }
+
         // Load unread counts + read receipt metadata from DB
         await loadConversationMetadata();
 
@@ -1145,8 +1223,8 @@ async function loadMessages(retryCount = 0) {
 
         console.log('loadMessages: SUCCESS -', messages.length, 'messages (sent:', (sent||[]).length, ', received:', received.length, '), conversations:', conversations.length);
 
-        // If zero messages and this is first attempt, retry with fresh session
-        if (messages.length === 0 && retryCount === 0) {
+        // If zero messages AND no wiped conversations, retry with fresh session (auth may have been stale)
+        if (messages.length === 0 && conversations.length === 0 && retryCount === 0) {
             console.log('loadMessages: 0 messages loaded, retrying with fresh session...');
             const { data } = await sb.auth.getSession();
             if (data?.session) {

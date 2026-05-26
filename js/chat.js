@@ -646,7 +646,7 @@ function renderConversationThread() {
         const itemDate = new Date(item.createdAt);
         const dateStr = itemDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         if (dateStr !== lastDate && item.createdAt) {
-            html += `<div style="text-align:center;padding:12px 0 8px;"><span class="chat-date-sep" style="font-size:11px;color:rgba(255,255,255,0.35);background:rgba(18,35,58,0.7);padding:4px 12px;border-radius:12px;">${dateStr}</span></div>`;
+            html += `<div style="text-align:center;padding:12px 0 8px;"><span class="chat-date-sep">${dateStr}</span></div>`;
             lastDate = dateStr;
         }
 
@@ -790,7 +790,7 @@ function renderConversationThread() {
             }
             html += `
                 <div class="chat-transit-msg chat-transit-countdown" data-release="${item.releaseAt || ''}" style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(18,35,58,0.5);border:1px dashed rgba(212,181,138,0.25);margin-bottom:8px;">
-                    <div class="chat-transit-note" style="font-size:13px;color:rgba(212,181,138,0.7);font-style:italic;">${arrivalNote}</div>
+                    <div class="chat-transit-note" style="font-size:15px;color:rgba(212,181,138,0.7);font-style:italic;">${arrivalNote}</div>
                     <div class="message-bubble-time">${item.time}</div>
                     <div class="msg-actions-row">
                         ${actionsHtml(item.msgDbId)}

@@ -770,7 +770,7 @@ function renderContactsList() {
                 <div style="margin-bottom:12px;color:var(--blue);"><svg class="app-icon xxl"><use href="#icon-contacts"/></svg></div>
                 <h4 style="color:var(--blue);margin-bottom:8px;">No contacts yet</h4>
                 <p style="font-size:13px;margin-bottom:16px;">Search for MoonPop users or invite someone new.</p>
-                <button onclick="document.getElementById('contactSearchInput').focus()" style="background:var(--blue);color:white;border:none;border-radius:20px;padding:8px 20px;font-size:13px;cursor:pointer;">+ Add a contact</button>
+                <button onclick="(function(){const el=document.getElementById('contactSearchInput');el.scrollIntoView({behavior:'smooth',block:'center'});el.focus();el.style.transition='box-shadow 0.2s';el.style.boxShadow='0 0 0 3px var(--accent)';setTimeout(()=>{el.style.boxShadow='';},1200);})()" style="background:var(--accent);color:var(--bg);border:none;border-radius:20px;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:600;">+ Add a contact</button>
             </div>
         `;
         return;

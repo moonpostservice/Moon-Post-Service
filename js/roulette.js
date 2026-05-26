@@ -10,6 +10,9 @@ let rouletteActiveTab = 'sent'; // 'sent' | 'received'
 let _rouletteRealtimeChannels = [];
 // Track messages where the current user has tapped reveal (persists until mutual or page reload)
 const _myRevealedMessages = new Set();
+// Track the message currently open in the detail panel (for menu actions)
+let _currentRouletteMsg  = null;
+let _currentRouletteRole = null;
 
 // ============================================
 // DB HELPERS
@@ -832,6 +835,10 @@ function openRouletteDetail(msgId, role) {
     const msg = msgs.find(m => m.id === msgId);
     if (!msg) return;
 
+    _currentRouletteMsg  = msg;
+    _currentRouletteRole = role;
+    closeRouletteMenu();
+
     if (typeof closeAllPanels === 'function') closeAllPanels();
 
     const page = document.getElementById('rouletteMessagePage');
@@ -893,6 +900,9 @@ function openRouletteDetail(msgId, role) {
 function closeRouletteDetail() {
     const page = document.getElementById('rouletteMessagePage');
     if (!page) return;
+    closeRouletteMenu();
+    _currentRouletteMsg  = null;
+    _currentRouletteRole = null;
     page.classList.remove('active', 'closing');
     page.style.left = '';
     page.style.top = '';
@@ -902,19 +912,72 @@ function closeRouletteDetail() {
     document.body.classList.remove('chat-open');
 }
 
+function toggleRouletteMenu() {
+    const dd = document.getElementById('rouletteDropdown');
+    if (!dd) return;
+    dd.classList.toggle('open');
+}
+
+function closeRouletteMenu() {
+    const dd = document.getElementById('rouletteDropdown');
+    if (dd) dd.classList.remove('open');
+}
+
+async function _rouletteMenuDelete() {
+    closeRouletteMenu();
+    if (!_currentRouletteMsg) return;
+    const msgId = _currentRouletteMsg.id;
+    const role  = _currentRouletteRole;
+    if (!confirm('Delete this roulette message?')) return;
+    if (role === 'sender') {
+        await handleSenderDelete(msgId);
+    } else {
+        // recipient delete — mark declined then remove locally
+        await handleDecline(msgId);
+    }
+}
+
+async function _rouletteMenuBlock() {
+    closeRouletteMenu();
+    if (!_currentRouletteMsg) return;
+    const msgId = _currentRouletteMsg.id;
+    const role  = _currentRouletteRole;
+    if (role === 'recipient') {
+        await handleBlock(msgId);
+    } else {
+        // sender blocking a recipient is unusual — treat as delete
+        await handleSenderDelete(msgId);
+    }
+}
+
+async function _rouletteMenuOptOut() {
+    closeRouletteMenu();
+    await handleRouletteOptOut();
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    const wrap = document.querySelector('.roulette-menu-wrap');
+    const dd   = document.getElementById('rouletteDropdown');
+    if (dd && dd.classList.contains('open') && wrap && !wrap.contains(e.target)) {
+        dd.classList.remove('open');
+    }
+});
+
 function _renderRouletteDetailBody(msg, role) {
-    // Status is already shown in the panel subtitle — no need to repeat it in the body.
-    // Only show revealed sender name here (recipient only, when identity is known).
+    const isReceived = role === 'recipient';
     let revealedLine = '';
-    if (role === 'recipient' && msg.status === 'revealed' && msg.sender_id) {
+    if (isReceived && msg.status === 'revealed' && msg.sender_id) {
         revealedLine = `<div class="roulette-anon-sender"><span class="roulette-revealed-sender" data-sender-id="${msg.sender_id}">Loading…</span></div>`;
     }
+
+    const bubbleClass = `message-bubble roulette-bubble${isReceived ? '' : ' sent'}`;
 
     return `
         <div class="roulette-detail-content">
             ${revealedLine}
             ${msg.message_text
-                ? `<div class="roulette-detail-message">${_escHtml(msg.message_text)}</div>`
+                ? `<div class="${bubbleClass}"><p>${_escHtml(msg.message_text)}</p></div>`
                 : ''}
             ${msg.photo_url
                 ? `<img class="roulette-photo" src="${_escHtml(msg.photo_url)}" alt="Photo" loading="lazy" />`
@@ -951,13 +1014,7 @@ function _renderRouletteDetailFooter(msg, role) {
                             onclick="handleReveal('${msg.id}')" ${iRevealed ? 'disabled' : ''}>
                         ${revealLabel}
                     </button>
-                    <button class="btn btn--ghost roulette-action-btn" onclick="handleDecline('${msg.id}')">
-                        Pass
-                    </button>
                 </div>
-                <button class="roulette-block-link" onclick="handleBlock('${msg.id}')">
-                    Block this sender
-                </button>
             </div>
         `;
     }
@@ -993,10 +1050,6 @@ function _renderRouletteDetailFooter(msg, role) {
                     <button class="btn btn--ghost roulette-action-btn" data-reveal-id="${msg.id}"
                             onclick="handleReveal('${msg.id}')" ${iRevealed ? 'disabled' : ''}>
                         ${revealLabel}
-                    </button>
-                    <button class="btn btn--ghost roulette-action-btn roulette-action-btn--danger"
-                            onclick="handleSenderPass('${msg.id}')">
-                        Pass on this
                     </button>
                 </div>
             </div>

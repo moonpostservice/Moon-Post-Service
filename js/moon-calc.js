@@ -134,6 +134,7 @@ function calculateMoonTimes(lat, lon) {
     const visibilityChanged = _prevMoonVisible !== null && _prevMoonVisible !== visible;
     _prevMoonVisible = visible;
     moonData.isVisible = new URLSearchParams(location.search).has('moonup') ? true : visible;
+    updateRouletteButtonState();
 
     // When moon visibility changes (rise or set), reload messages
     // so contentVisible gets recalculated for all received messages
@@ -855,6 +856,16 @@ function updateLocationDisplay(cityName, countryName) {
     if (locSummary) {
         locSummary.textContent = countryName ? `${cityName}, ${countryName}` : cityName;
     }
+}
+
+function updateRouletteButtonState() {
+    const btn = document.querySelector('.new-roulette-btn');
+    if (!btn) return;
+    const up = moonData.isVisible;
+    btn.disabled = !up;
+    btn.title = up
+        ? 'Send a Moon Roulette message'
+        : 'Moon Roulette is only available when the moon is in your sky';
 }
 
 function onLocationObtained(lat, lon, tz) {

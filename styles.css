@@ -1268,6 +1268,44 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
     border-bottom: 1px solid var(--line-soft);
 }
 
+/* Lunar notes in Shared Sky — dark theme to match message page */
+#sharedSkyPage .bubble-lunar-note {
+    background: var(--panel-strong);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    box-shadow:
+        inset 0 0 12px rgba(212, 181, 138, 0.06),
+        0 0 24px rgba(212, 181, 138, 0.10);
+}
+#sharedSkyPage .bubble-lunar-note::before {
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.65;
+    height: 1.5px;
+}
+#sharedSkyPage .bubble-lunar-label {
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
+}
+#sharedSkyPage .bubble-lunar-text {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text-bright);
+    font-size: 17px;
+    line-height: 1.65;
+    letter-spacing: -0.005em;
+}
+#sharedSkyPage .bubble-lunar-closing {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+    font-size: 14px;
+}
+
 /* Note-mode toggle (Open / Lunar) inside shared-sky footer */
 #sharedSkyPage .note-mode-toggle {
     background: rgba(3, 10, 24, 0.55);
@@ -2467,6 +2505,37 @@ body.moon-down .new-message-btn {
     opacity: 0.3;
     cursor: not-allowed;
     pointer-events: none;
+}
+
+.new-roulette-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(212, 181, 138, 0.15);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    color: var(--accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+}
+.new-roulette-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: 0 0 12px rgba(212, 181, 138, 0.35);
+}
+.new-roulette-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: rgba(212, 181, 138, 0.35);
+    background: transparent;
+}
+.new-roulette-btn:disabled:hover {
+    background: transparent;
+    color: var(--accent);
+    box-shadow: none;
 }
 
 .inbox-new-msg-cta {
@@ -3750,7 +3819,7 @@ body.moon-down .inbox-new-msg-cta {
     flex-direction: column;
     background: var(--white);
     box-shadow: 0 0 40px rgba(0,0,0,0.08);
-    overflow-y: auto;
+    overflow: hidden;
 }
 
 .message-page-header {
@@ -6151,6 +6220,8 @@ body.moon-down .inbox-new-msg-cta {
 .split-right .moon-data-bar {
     margin: clamp(8px, 2vh, 36px) auto 0;
     flex-shrink: 0;
+    position: relative;
+    z-index: 4;
 }
 
 /* Scale orbit ring for available space — account for title, data bar, gaps */
@@ -6568,7 +6639,33 @@ body.moon-down .inbox-new-msg-cta {
     padding: 16px 20px;
 }
 #messageModal .message-page-body {
-    padding: 0 20px 40px;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#messageModal #composeStep1 {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+#messageModal #composeStep1 .compose-glass-card {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+#messageModal .compose-add-row {
+    flex-shrink: 0;
+}
+
+#messageModal .compose-send-container {
+    flex-shrink: 0;
+    margin-top: 16px;
+    padding-bottom: 20px;
 }
 @media (min-width: 901px) {
     body.chat-open #messageModal.active {
@@ -7684,6 +7781,27 @@ body::before {
     border-color: var(--accent);
     color: var(--accent-bright);
 }
+.new-roulette-btn {
+    background: rgba(212, 181, 138, 0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.new-roulette-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: 0 0 14px rgba(212, 181, 138, 0.4);
+}
+.new-roulette-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: rgba(212, 181, 138, 0.35);
+    background: transparent;
+}
+.new-roulette-btn:disabled:hover {
+    background: transparent;
+    color: var(--accent);
+    box-shadow: none;
+}
 
 /* Shared-sky row in inbox — top of the conversation list */
 .shared-sky-row {
@@ -8057,7 +8175,7 @@ body.moon-down .new-message-btn {
     color: var(--accent);
     background: rgba(212, 181, 138, 0.08);
     font-family: var(--sans);
-    font-size: 10px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: var(--tracking-label);
     font-weight: 600;
@@ -8073,15 +8191,15 @@ body.moon-down .new-message-btn {
 }
 #messagePageView .message-bubble p {
     font-family: var(--serif);
-    font-size: 16px;
-    line-height: 1.5;
+    font-size: 18px;
+    line-height: 1.6;
     color: var(--text-bright);
     letter-spacing: -0.005em;
 }
 #messagePageView .message-bubble-time {
     color: var(--muter);
     font-family: var(--sans);
-    font-size: 10px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 1.5px;
 }
@@ -8723,7 +8841,7 @@ body.moon-down .new-message-btn {
     min-height: 360px;
 }
 .ed-hero-moon-svg {
-    width: min(460px, 48vw);
+    width: min(460px, 48vw, 46vh);
     height: auto;
     filter: drop-shadow(0 0 80px rgba(212,181,138,0.10));
     overflow: visible;
@@ -9823,13 +9941,29 @@ body.moon-down .new-message-btn {
     color: var(--accent);
 }
 
-.roulette-detail-message {
-    font-family: var(--serif);
+/* Roulette bubble — same shape as regular chat bubble, brass-tinted color */
+.message-bubble.roulette-bubble {
+    background: rgba(212, 181, 138, 0.12);
+    border: 1px solid rgba(212, 181, 138, 0.28);
+    border-bottom-left-radius: 4px;
+}
+.message-bubble.roulette-bubble p {
+    color: var(--text-bright);
     font-size: 17px;
     line-height: var(--lh-body);
-    color: var(--text-bright);
     white-space: pre-wrap;
     word-break: break-word;
+}
+.message-bubble.roulette-bubble.sent {
+    background: rgba(212, 181, 138, 0.22);
+    border-color: rgba(212, 181, 138, 0.42);
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 16px;
+    margin-left: auto;
+    max-width: 80%;
+}
+.message-bubble.roulette-bubble.sent p {
+    color: var(--text-bright);
 }
 
 /* Roulette detail panel footer */
@@ -9900,18 +10034,67 @@ body.moon-down .new-message-btn {
     line-height: 1.4;
 }
 
-.roulette-block-link {
+/* Roulette 3-dot menu */
+.roulette-menu-wrap {
+    position: relative;
+}
+
+.roulette-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background var(--dur-fast), color var(--dur-fast);
+}
+.roulette-menu-btn:hover {
+    background: rgba(212, 181, 138, 0.1);
+    color: var(--accent);
+}
+
+.roulette-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 210px;
+    background: var(--bg-card);
+    border: 1px solid rgba(212, 181, 138, 0.2);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    z-index: 200;
+    overflow: hidden;
+    flex-direction: column;
+}
+.roulette-dropdown.open {
+    display: flex;
+}
+
+.roulette-dropdown-item {
     background: none;
     border: none;
+    text-align: left;
     font-family: var(--sans);
-    font-size: 12px;
-    color: rgba(232, 155, 115, 0.7);
+    font-size: 14px;
+    color: var(--text-bright);
+    padding: 12px 16px;
     cursor: pointer;
-    text-align: center;
-    padding: 4px;
-    transition: color var(--dur-fast);
+    transition: background var(--dur-fast);
 }
-.roulette-block-link:hover { color: #E89B73; }
+.roulette-dropdown-item:hover {
+    background: rgba(212, 181, 138, 0.08);
+}
+.roulette-dropdown-item--danger {
+    color: #E89B73;
+}
+.roulette-dropdown-item--danger:hover {
+    background: rgba(232, 155, 115, 0.08);
+}
 
 /* Inline anonymous reply input */
 .roulette-inline-reply {

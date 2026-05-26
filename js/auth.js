@@ -347,15 +347,26 @@ function showProfileStep() {
 function autoFillSenderName() {
     const first = document.getElementById('onboardingFirstName').value.trim();
     const senderField = document.getElementById('onboardingSenderName');
-    // Only auto-fill if sender name is empty or was previously auto-filled
     if (!senderField._userEdited) {
         senderField.value = first;
     }
+    checkOnboardingReady();
 }
-// Track if user manually edited sender name
+
+function checkOnboardingReady() {
+    const first = document.getElementById('onboardingFirstName')?.value.trim();
+    const last = document.getElementById('onboardingLastName')?.value.trim();
+    const sender = document.getElementById('onboardingSenderName')?.value.trim();
+    const btn = document.getElementById('saveProfileBtn');
+    if (btn) btn.disabled = !(first && last && sender);
+}
+
+// Track if user manually edited sender name; re-check readiness on every keystroke
 document.addEventListener('DOMContentLoaded', () => {
     const sn = document.getElementById('onboardingSenderName');
-    if (sn) sn.addEventListener('input', () => { sn._userEdited = true; });
+    if (sn) sn.addEventListener('input', () => { sn._userEdited = true; checkOnboardingReady(); });
+    const ln = document.getElementById('onboardingLastName');
+    if (ln) ln.addEventListener('input', checkOnboardingReady);
 });
 
 let _onboardingAvatarFile = null;
@@ -380,11 +391,19 @@ async function saveOnboardingProfile() {
     if (!firstName) {
         errorEl.textContent = 'First name is required';
         errorEl.style.display = 'block';
+        document.getElementById('onboardingFirstName').focus();
+        return;
+    }
+    if (!lastName) {
+        errorEl.textContent = 'Last name is required';
+        errorEl.style.display = 'block';
+        document.getElementById('onboardingLastName').focus();
         return;
     }
     if (!senderName) {
         errorEl.textContent = 'Sender name is required — this is what people see on your messages';
         errorEl.style.display = 'block';
+        document.getElementById('onboardingSenderName').focus();
         return;
     }
 
