@@ -9851,6 +9851,54 @@ body.moon-down .new-message-btn {
     min-width: 120px;
     white-space: nowrap;
 }
+.roulette-action-btn--danger {
+    color: rgba(232, 155, 115, 0.85) !important;
+    border-color: rgba(232, 155, 115, 0.35) !important;
+}
+.roulette-action-btn--danger:hover {
+    color: #E89B73 !important;
+    border-color: rgba(232, 155, 115, 0.6) !important;
+}
+
+/* Status delivery banner — shown in sender's detail view */
+.roulette-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    background: rgba(212, 181, 138, 0.08);
+    border: 1px solid rgba(212, 181, 138, 0.18);
+    margin-bottom: 16px;
+}
+.roulette-status-banner--queued {
+    background: rgba(180, 160, 220, 0.08);
+    border-color: rgba(180, 160, 220, 0.2);
+}
+.roulette-status-banner--delivered {
+    background: rgba(100, 180, 120, 0.08);
+    border-color: rgba(100, 180, 120, 0.2);
+}
+.roulette-status-banner--revealed {
+    background: rgba(212, 181, 138, 0.12);
+    border-color: rgba(212, 181, 138, 0.3);
+}
+.roulette-status-banner--declined,
+.roulette-status-banner--blocked {
+    background: rgba(232, 155, 115, 0.08);
+    border-color: rgba(232, 155, 115, 0.2);
+}
+.roulette-status-banner-emoji {
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.roulette-status-banner-text {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.4;
+}
 
 .roulette-block-link {
     background: none;

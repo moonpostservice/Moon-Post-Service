@@ -632,6 +632,11 @@ async function handleSenderDelete(messageId) {
     }
 }
 
+async function handleSenderPass(messageId) {
+    if (!confirm('Pass on this conversation? The message stays delivered to the other person, but it will be removed from your sent roulette.')) return;
+    await handleSenderDelete(messageId);
+}
+
 // ============================================
 // OPT-OUT
 // ============================================
@@ -761,6 +766,7 @@ function getRouletteInboxItems() {
         items.push({
             sortTime,
             isUnread,
+            isRoulette: true,
             html: `
                 <li class="message-item msg-row message-item--roulette${isUnread ? ' unread' : ''}"
                     onclick="openRouletteDetail('${msg.id}', '${role}')">
@@ -860,8 +866,26 @@ function closeRouletteDetail() {
 }
 
 function _renderRouletteDetailBody(msg, role) {
-    // Only show revealed sender name in body (when identity is known)
-    // Everything else (city, status, time) is already in the header — no duplication
+    // Status banner for sender — shows delivery progress prominently
+    let statusBanner = '';
+    if (role === 'sender') {
+        const bannerCfg = {
+            queued:         { emoji: '🌕', text: 'Orbiting — waiting for the moon to deliver' },
+            delivered:      { emoji: '✉️', text: 'Got to destination — awaiting their response' },
+            revealed:       { emoji: '✨', text: 'Revealed — you are now connected' },
+            declined:       { emoji: '↩️', text: 'Returned — the recipient passed' },
+            blocked:        { emoji: '↩️', text: 'Returned — the recipient declined' },
+            're-launched':  { emoji: '🚀', text: 'Re-launched to a new stranger' },
+        };
+        const cfg = bannerCfg[msg.status] ?? { emoji: '🌙', text: msg.status };
+        statusBanner = `
+            <div class="roulette-status-banner roulette-status-banner--${msg.status}">
+                <span class="roulette-status-banner-emoji">${cfg.emoji}</span>
+                <span class="roulette-status-banner-text">${cfg.text}</span>
+            </div>`;
+    }
+
+    // Revealed sender name (recipient only)
     let revealedLine = '';
     if (role === 'recipient' && msg.status === 'revealed' && msg.sender_id) {
         revealedLine = `<div class="roulette-anon-sender"><span class="roulette-revealed-sender" data-sender-id="${msg.sender_id}">Loading…</span></div>`;
@@ -869,6 +893,7 @@ function _renderRouletteDetailBody(msg, role) {
 
     return `
         <div class="roulette-detail-content">
+            ${statusBanner}
             ${revealedLine}
             ${msg.message_text
                 ? `<div class="roulette-detail-message">${_escHtml(msg.message_text)}</div>`
@@ -946,10 +971,16 @@ function _renderRouletteDetailFooter(msg, role) {
         return `
             <div class="roulette-detail-actions">
                 ${replyInput}
-                <button class="btn btn--ghost roulette-action-btn" data-reveal-id="${msg.id}"
-                        onclick="handleReveal('${msg.id}')" ${iRevealed ? 'disabled' : ''}>
-                    ${revealLabel}
-                </button>
+                <div class="roulette-action-row">
+                    <button class="btn btn--ghost roulette-action-btn" data-reveal-id="${msg.id}"
+                            onclick="handleReveal('${msg.id}')" ${iRevealed ? 'disabled' : ''}>
+                        ${revealLabel}
+                    </button>
+                    <button class="btn btn--ghost roulette-action-btn roulette-action-btn--danger"
+                            onclick="handleSenderPass('${msg.id}')">
+                        Pass on this
+                    </button>
+                </div>
             </div>
         `;
     }
