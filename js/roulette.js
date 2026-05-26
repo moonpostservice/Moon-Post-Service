@@ -866,26 +866,8 @@ function closeRouletteDetail() {
 }
 
 function _renderRouletteDetailBody(msg, role) {
-    // Status banner for sender — shows delivery progress prominently
-    let statusBanner = '';
-    if (role === 'sender') {
-        const bannerCfg = {
-            queued:         { emoji: '🌕', text: 'Orbiting — waiting for the moon to deliver' },
-            delivered:      { emoji: '✉️', text: 'Got to destination — awaiting their response' },
-            revealed:       { emoji: '✨', text: 'Revealed — you are now connected' },
-            declined:       { emoji: '↩️', text: 'Returned — the recipient passed' },
-            blocked:        { emoji: '↩️', text: 'Returned — the recipient declined' },
-            're-launched':  { emoji: '🚀', text: 'Re-launched to a new stranger' },
-        };
-        const cfg = bannerCfg[msg.status] ?? { emoji: '🌙', text: msg.status };
-        statusBanner = `
-            <div class="roulette-status-banner roulette-status-banner--${msg.status}">
-                <span class="roulette-status-banner-emoji">${cfg.emoji}</span>
-                <span class="roulette-status-banner-text">${cfg.text}</span>
-            </div>`;
-    }
-
-    // Revealed sender name (recipient only)
+    // Status is already shown in the panel subtitle — no need to repeat it in the body.
+    // Only show revealed sender name here (recipient only, when identity is known).
     let revealedLine = '';
     if (role === 'recipient' && msg.status === 'revealed' && msg.sender_id) {
         revealedLine = `<div class="roulette-anon-sender"><span class="roulette-revealed-sender" data-sender-id="${msg.sender_id}">Loading…</span></div>`;
@@ -893,7 +875,6 @@ function _renderRouletteDetailBody(msg, role) {
 
     return `
         <div class="roulette-detail-content">
-            ${statusBanner}
             ${revealedLine}
             ${msg.message_text
                 ? `<div class="roulette-detail-message">${_escHtml(msg.message_text)}</div>`
