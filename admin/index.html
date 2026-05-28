@@ -391,7 +391,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     if (!ADMIN_EMAILS.includes(email)) { setLoginMsg('That email is not authorised.', 'error'); return; }
     btn.disabled = true;
     setLoginMsg('Sending code…');
-    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
     btn.disabled = false;
     if (error) {
       setLoginMsg(error.message, 'error');
