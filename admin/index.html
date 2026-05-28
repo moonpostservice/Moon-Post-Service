@@ -703,13 +703,32 @@ function fmtDateFull(iso) {
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 // Create email input via JS so browsers have nothing to autofill in the markup
+const honeypot = document.createElement('input');
+honeypot.type = 'email';
+honeypot.style.cssText = 'position:absolute;opacity:0;pointer-events:none;height:0;';
+honeypot.tabIndex = -1;
+honeypot.autocomplete = 'email';
+
 const emailInput = document.createElement('input');
 emailInput.id = 'loginEmail';
-emailInput.type = 'email';
+emailInput.type = 'text';
 emailInput.className = 'login-field';
 emailInput.placeholder = 'enter email';
-emailInput.autocomplete = 'off';
-document.getElementById('loginEmailWrap').appendChild(emailInput);
+emailInput.setAttribute('autocomplete', 'off');
+emailInput.setAttribute('data-lpignore', 'true');
+emailInput.setAttribute('data-1p-ignore', '');
+
+const wrap = document.getElementById('loginEmailWrap');
+wrap.appendChild(honeypot);
+wrap.appendChild(emailInput);
+
+// Keep clearing until user actually types something
+let userHasTyped = false;
+emailInput.addEventListener('input', () => { userHasTyped = true; });
+const clearLoop = setInterval(() => {
+  if (userHasTyped) { clearInterval(clearLoop); return; }
+  if (emailInput.value) emailInput.value = '';
+}, 30);
 
 init();
 </script>
