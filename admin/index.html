@@ -702,6 +702,9 @@ function fmtDateFull(iso) {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  setTimeout(() => { document.getElementById('loginEmail').value = ''; }, 50);
+});
 init();
 </script>
 </body>
