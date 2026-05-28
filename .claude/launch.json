@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "moonpop",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-l", "3000", "/Users/manko/Documents/moon post service/.claude/worktrees/hardcore-bhaskara"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.js"],
       "port": 3000
     }
   ]

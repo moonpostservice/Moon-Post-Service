@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moon Roulette · Backstage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #030A18;
+      --bg-2:         #071327;
+      --bg-3:         #0C1E38;
+      --line:         rgba(208, 180, 137, 0.46);
+      --line-soft:    rgba(208, 180, 137, 0.20);
+      --text:         #EAD8BF;
+      --text-bright:  #F0DFC2;
+      --muted:        rgba(234, 216, 191, 0.72);
+      --muter:        rgba(234, 216, 191, 0.46);
+      --accent:       #D4B58A;
+      --accent-bright:#E5C9A0;
+      --accent-deep:  #C99D57;
+      --on-accent:    #0A1422;
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans:  -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+
+      --s-queued:     rgba(120, 150, 200, 0.18);
+      --s-delivered:  rgba(100, 190, 130, 0.18);
+      --s-declined:   rgba(200, 120, 70, 0.18);
+      --s-blocked:    rgba(190, 70, 70, 0.18);
+      --s-relaunched: rgba(150, 110, 210, 0.18);
+      --s-revealed:   rgba(212, 181, 90, 0.22);
+
+      --t-queued:     #90B0E0;
+      --t-delivered:  #7CD4A0;
+      --t-declined:   #E09060;
+      --t-blocked:    #E07070;
+      --t-relaunched: #B898E8;
+      --t-revealed:   #E8C840;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.5; }
+
+    /* ── Login ── */
+    #loginScreen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px;
+    }
+    .login-card {
+      background: var(--bg-2); border: 1px solid var(--line-soft);
+      border-radius: 16px; padding: 40px 36px; max-width: 380px; width: 100%;
+      text-align: center;
+    }
+    .login-card h1 {
+      font-family: var(--serif); font-size: 28px; font-weight: 400;
+      color: var(--text-bright); margin-bottom: 6px;
+    }
+    .login-card p { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+    .login-field {
+      width: 100%; padding: 11px 14px; background: var(--bg-3);
+      border: 1px solid var(--line-soft); border-radius: 8px;
+      color: var(--text); font-size: 14px; margin-bottom: 12px;
+      outline: none; transition: border-color 0.2s;
+    }
+    .login-field:focus { border-color: var(--accent); }
+    .btn-primary {
+      width: 100%; padding: 12px; background: var(--accent); color: var(--on-accent);
+      border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s; letter-spacing: 0.5px;
+    }
+    .btn-primary:hover { background: var(--accent-bright); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .login-msg { margin-top: 14px; font-size: 13px; color: var(--muted); min-height: 20px; }
+    .login-msg.error { color: var(--t-blocked); }
+    .login-msg.success { color: var(--t-delivered); }
+
+    /* ── App Shell ── */
+    #appShell { display: none; flex-direction: column; min-height: 100vh; }
+
+    /* ── Top bar ── */
+    .topbar {
+      display: flex; align-items: center; gap: 16px;
+      padding: 14px 24px; border-bottom: 1px solid var(--line-soft);
+      background: var(--bg-2); position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-title {
+      font-family: var(--serif); font-size: 22px; font-weight: 400;
+      color: var(--text-bright); letter-spacing: 0.3px; flex: 1;
+    }
+    .topbar-title span { color: var(--accent); }
+    .btn-icon {
+      padding: 7px 14px; border-radius: 6px; border: 1px solid var(--line-soft);
+      background: transparent; color: var(--muted); font-size: 12px;
+      cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px;
+    }
+    .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+    #refreshBtn.spinning { animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Body ── */
+    .admin-body { flex: 1; padding: 20px 24px; max-width: 1600px; margin: 0 auto; width: 100%; }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .stat-chip {
+      padding: 8px 16px; border-radius: 20px; font-size: 12px;
+      border: 1px solid var(--line-soft); background: var(--bg-2);
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .stat-chip:hover { border-color: var(--accent); }
+    .stat-chip.active { border-color: var(--accent); background: rgba(212, 181, 138, 0.08); }
+    .stat-chip .count {
+      font-weight: 700; font-size: 15px; color: var(--text-bright);
+    }
+    .stat-chip .label { color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-size: 10px; }
+    .stat-chip.all .count { color: var(--accent); }
+    .stat-chip.queued    .count { color: var(--t-queued); }
+    .stat-chip.delivered .count { color: var(--t-delivered); }
+    .stat-chip.declined  .count { color: var(--t-declined); }
+    .stat-chip.blocked   .count { color: var(--t-blocked); }
+    .stat-chip.relaunched .count { color: var(--t-relaunched); }
+    .stat-chip.revealed  .count { color: var(--t-revealed); }
+
+    /* ── Search ── */
+    .search-row { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; }
+    .search-input {
+      flex: 1; max-width: 360px; padding: 9px 14px;
+      background: var(--bg-2); border: 1px solid var(--line-soft);
+      border-radius: 8px; color: var(--text); font-size: 13px;
+      outline: none; transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--muter); }
+    .count-label { color: var(--muter); font-size: 12px; margin-left: auto; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--line-soft); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      padding: 11px 14px; text-align: left; color: var(--muter);
+      font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+      border-bottom: 1px solid var(--line-soft); background: var(--bg-2);
+      white-space: nowrap; font-weight: 500;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--line-soft); cursor: pointer;
+      transition: background 0.12s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(212, 181, 138, 0.04); }
+    tbody tr.expanded { background: rgba(212, 181, 138, 0.06); }
+    td { padding: 11px 14px; vertical-align: top; color: var(--text); }
+
+    /* ── Status badge ── */
+    .badge {
+      display: inline-block; padding: 2px 9px; border-radius: 12px;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.8px;
+      text-transform: uppercase; white-space: nowrap;
+    }
+    .badge-queued     { background: var(--s-queued);     color: var(--t-queued); }
+    .badge-delivered  { background: var(--s-delivered);  color: var(--t-delivered); }
+    .badge-declined   { background: var(--s-declined);   color: var(--t-declined); }
+    .badge-blocked    { background: var(--s-blocked);    color: var(--t-blocked); }
+    .badge-relaunched { background: var(--s-relaunched); color: var(--t-relaunched); }
+    .badge-revealed   { background: var(--s-revealed);   color: var(--t-revealed); }
+
+    /* ── Person cell ── */
+    .person { display: flex; flex-direction: column; gap: 1px; min-width: 140px; }
+    .person-name { color: var(--text-bright); font-weight: 500; }
+    .person-email { color: var(--muter); font-size: 11px; }
+    .person-city { color: var(--muted); font-size: 11px; }
+    .deleted-flag {
+      display: inline-block; font-size: 9px; padding: 1px 5px;
+      background: rgba(190, 70, 70, 0.2); color: var(--t-blocked);
+      border-radius: 4px; margin-top: 2px; letter-spacing: 0.5px;
+    }
+
+    /* ── Message preview ── */
+    .msg-preview { color: var(--muted); font-size: 12px; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .msg-preview.has-photo { color: var(--t-relaunched); font-style: italic; }
+
+    /* ── Timestamps ── */
+    .ts-cell { display: flex; flex-direction: column; gap: 2px; font-size: 11px; white-space: nowrap; }
+    .ts-row { display: flex; gap: 5px; align-items: center; }
+    .ts-label { color: var(--muter); font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; width: 24px; }
+    .ts-val { color: var(--muted); }
+    .ts-val.done { color: var(--t-delivered); }
+    .ts-val.pending { color: var(--t-queued); }
+
+    /* ── Chain cell ── */
+    .chain-cell { white-space: nowrap; font-size: 11px; }
+    .chain-num { color: var(--accent); font-weight: 600; }
+    .chain-parent { color: var(--t-relaunched); font-size: 10px; display: block; margin-top: 2px; }
+
+    /* ── Reveal cell ── */
+    .reveal-cell { font-size: 11px; color: var(--muted); }
+    .reveal-full { color: var(--t-revealed); font-weight: 600; }
+
+    /* ── Expand row ── */
+    .expand-row td {
+      padding: 0; cursor: default;
+    }
+    .expand-inner {
+      padding: 18px 20px 18px 36px;
+      background: rgba(7, 19, 39, 0.8);
+      border-top: 1px solid var(--line-soft);
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;
+    }
+    .expand-section h4 {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--muter); margin-bottom: 8px; font-weight: 500;
+    }
+    .expand-section p {
+      font-size: 13px; color: var(--text); line-height: 1.6;
+      word-break: break-word;
+    }
+    .expand-ts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+    .expand-ts-row { display: flex; flex-direction: column; gap: 1px; }
+    .expand-ts-row .label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--muter); }
+    .expand-ts-row .val { font-size: 12px; color: var(--muted); }
+    .expand-ts-row .val.done { color: var(--t-delivered); }
+    .expand-ts-row .val.null { color: var(--muter); font-style: italic; }
+    .id-chip {
+      font-family: monospace; font-size: 11px; color: var(--muted);
+      background: var(--bg-3); padding: 2px 7px; border-radius: 4px;
+      cursor: pointer; transition: color 0.15s;
+    }
+    .id-chip:hover { color: var(--accent); }
+    .id-chip.copied { color: var(--t-delivered); }
+
+    /* ── Loading / Empty ── */
+    .state-msg {
+      text-align: center; padding: 60px 20px;
+      color: var(--muter); font-size: 14px;
+    }
+    .state-msg .icon { font-size: 32px; margin-bottom: 10px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: rgba(212, 181, 138, 0.25); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(212, 181, 138, 0.45); }
+  </style>
+</head>
+<body>
+
+<!-- ── Login ── -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>Moon Roulette</h1>
+    <p>Backstage access · admin only</p>
+    <input id="loginEmail" type="email" class="login-field" placeholder="email" value="mymanko@gmail.com">
+    <input id="loginOtp" type="text" class="login-field" placeholder="one-time code" style="display:none" maxlength="6" inputmode="numeric">
+    <button id="loginBtn" class="btn-primary">Send magic link</button>
+    <div id="loginMsg" class="login-msg"></div>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="appShell">
+  <header class="topbar">
+    <div class="topbar-title">Moon Roulette <span>✦</span> Backstage</div>
+    <button class="btn-icon" id="refreshBtn" title="Refresh data">↻ Refresh</button>
+    <button class="btn-icon" id="logoutBtn">Sign out</button>
+  </header>
+
+  <main class="admin-body">
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-chip all active" data-filter="all">
+        <span class="count" id="cnt-all">—</span>
+        <span class="label">Total</span>
+      </div>
+      <div class="stat-chip queued" data-filter="queued">
+        <span class="count" id="cnt-queued">0</span>
+        <span class="label">Queued</span>
+      </div>
+      <div class="stat-chip delivered" data-filter="delivered">
+        <span class="count" id="cnt-delivered">0</span>
+        <span class="label">Delivered</span>
+      </div>
+      <div class="stat-chip declined" data-filter="declined">
+        <span class="count" id="cnt-declined">0</span>
+        <span class="label">Declined</span>
+      </div>
+      <div class="stat-chip blocked" data-filter="blocked">
+        <span class="count" id="cnt-blocked">0</span>
+        <span class="label">Blocked</span>
+      </div>
+      <div class="stat-chip relaunched" data-filter="re-launched">
+        <span class="count" id="cnt-relaunched">0</span>
+        <span class="label">Re-launched</span>
+      </div>
+      <div class="stat-chip revealed" data-filter="revealed">
+        <span class="count" id="cnt-revealed">0</span>
+        <span class="label">Revealed</span>
+      </div>
+    </div>
+
+    <div class="search-row">
+      <input id="searchInput" class="search-input" type="text" placeholder="Search by name, email, city, message…">
+      <span class="count-label" id="rowCountLabel"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Sender</th>
+            <th>Recipient</th>
+            <th>Message</th>
+            <th>Timestamps</th>
+            <th>Chain</th>
+            <th>Reveal</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="8"><div class="state-msg"><div class="icon">◌</div>Loading…</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://znfqqehthxcrizcixzpu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuZnFxZWh0aHhjcml6Y2l4enB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MzMyMDgsImV4cCI6MjA4NjAwOTIwOH0.Twf3d9QEhVq6j9yVKaS9QNhnvygYgxPj0zg6Ug5pAq0';
+const ADMIN_EMAIL = 'mymanko@gmail.com';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let allRows = [];
+let activeFilter = 'all';
+let expandedId = null;
+let otpPending = false;
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user?.email === ADMIN_EMAIL) {
+    showApp();
+    loadData();
+  } else if (session) {
+    showLogin('This account is not authorised for backstage access.');
+  } else {
+    showLogin('');
+  }
+}
+
+sb.auth.onAuthStateChange((_event, session) => {
+  if (session?.user?.email === ADMIN_EMAIL) {
+    showApp();
+    loadData();
+  }
+});
+
+function showLogin(msg) {
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appShell').style.display = 'none';
+  if (msg) setLoginMsg(msg, 'error');
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+}
+
+function setLoginMsg(msg, type = '') {
+  const el = document.getElementById('loginMsg');
+  el.textContent = msg;
+  el.className = 'login-msg ' + type;
+}
+
+// Login flow: send OTP, then verify
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('loginBtn');
+  const emailEl = document.getElementById('loginEmail');
+  const otpEl = document.getElementById('loginOtp');
+
+  if (!otpPending) {
+    const email = emailEl.value.trim();
+    if (!email) { setLoginMsg('Enter your email.', 'error'); return; }
+    btn.disabled = true;
+    setLoginMsg('Sending code…');
+    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    btn.disabled = false;
+    if (error) {
+      setLoginMsg(error.message, 'error');
+    } else {
+      otpPending = true;
+      emailEl.style.display = 'none';
+      otpEl.style.display = 'block';
+      otpEl.focus();
+      btn.textContent = 'Verify code';
+      setLoginMsg('Check your email for a 6-digit code.', 'success');
+    }
+  } else {
+    const otp = otpEl.value.trim();
+    const email = ADMIN_EMAIL;
+    if (otp.length < 6) { setLoginMsg('Enter the 6-digit code.', 'error'); return; }
+    btn.disabled = true;
+    setLoginMsg('Verifying…');
+    const { error } = await sb.auth.verifyOtp({ email, token: otp, type: 'email' });
+    btn.disabled = false;
+    if (error) {
+      setLoginMsg(error.message, 'error');
+    } else {
+      setLoginMsg('Verified!', 'success');
+    }
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  otpPending = false;
+  document.getElementById('loginEmail').style.display = 'block';
+  document.getElementById('loginOtp').style.display = 'none';
+  document.getElementById('loginBtn').textContent = 'Send magic link';
+  showLogin('Signed out.');
+});
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+async function loadData() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+
+  const { data, error } = await sb.rpc('get_admin_roulette_data');
+
+  btn.classList.remove('spinning');
+
+  if (error) {
+    document.getElementById('tableBody').innerHTML =
+      `<tr><td colspan="8"><div class="state-msg"><div class="icon">⚠</div>${escHtml(error.message)}</div></td></tr>`;
+    return;
+  }
+
+  allRows = data || [];
+  updateStats();
+  renderTable();
+}
+
+document.getElementById('refreshBtn').addEventListener('click', loadData);
+
+document.getElementById('searchInput').addEventListener('input', renderTable);
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+function updateStats() {
+  const counts = { queued: 0, delivered: 0, declined: 0, blocked: 0, 're-launched': 0, revealed: 0 };
+  for (const r of allRows) counts[r.status] = (counts[r.status] || 0) + 1;
+  document.getElementById('cnt-all').textContent = allRows.length;
+  document.getElementById('cnt-queued').textContent = counts.queued;
+  document.getElementById('cnt-delivered').textContent = counts.delivered;
+  document.getElementById('cnt-declined').textContent = counts.declined;
+  document.getElementById('cnt-blocked').textContent = counts.blocked;
+  document.getElementById('cnt-relaunched').textContent = counts['re-launched'];
+  document.getElementById('cnt-revealed').textContent = counts.revealed;
+}
+
+// ── Filters ───────────────────────────────────────────────────────────────────
+
+document.getElementById('statsBar').addEventListener('click', e => {
+  const chip = e.target.closest('[data-filter]');
+  if (!chip) return;
+  document.querySelectorAll('.stat-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  activeFilter = chip.dataset.filter;
+  expandedId = null;
+  renderTable();
+});
+
+// ── Render ────────────────────────────────────────────────────────────────────
+
+function renderTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = allRows.filter(r => {
+    if (activeFilter !== 'all' && r.status !== activeFilter) return false;
+    if (!q) return true;
+    return [r.sender_username, r.sender_email, r.sender_city, r.sender_city_profile,
+            r.recipient_username, r.recipient_email, r.recipient_city, r.recipient_city_profile,
+            r.message_text, r.moon_phase, r.id]
+      .some(v => v && v.toLowerCase().includes(q));
+  });
+
+  document.getElementById('rowCountLabel').textContent =
+    filtered.length === allRows.length
+      ? `${allRows.length} messages`
+      : `${filtered.length} of ${allRows.length}`;
+
+  if (!filtered.length) {
+    document.getElementById('tableBody').innerHTML =
+      `<tr><td colspan="8"><div class="state-msg"><div class="icon">◌</div>No messages match.</div></td></tr>`;
+    return;
+  }
+
+  const tbody = document.getElementById('tableBody');
+  let html = '';
+  for (const r of filtered) {
+    const statusClass = r.status === 're-launched' ? 'relaunched' : r.status;
+    const senderDel = r.sender_deleted_at ? '<span class="deleted-flag">DELETED</span>' : '';
+    const recipDel  = r.recipient_deleted_at ? '<span class="deleted-flag">DELETED</span>' : '';
+
+    html += `<tr data-id="${r.id}" class="${expandedId === r.id ? 'expanded' : ''}">
+      <td><span class="badge badge-${statusClass}">${r.status}</span></td>
+      <td>
+        <div class="person">
+          <span class="person-name">${escHtml(r.sender_username || '—')}</span>
+          <span class="person-email">${escHtml(r.sender_email || '—')}</span>
+          <span class="person-city">${escHtml(r.sender_city || r.sender_city_profile || '—')}</span>
+          ${senderDel}
+        </div>
+      </td>
+      <td>
+        <div class="person">
+          <span class="person-name">${escHtml(r.recipient_username || '—')}</span>
+          <span class="person-email">${escHtml(r.recipient_email || '—')}</span>
+          <span class="person-city">${escHtml(r.recipient_city || r.recipient_city_profile || '—')}</span>
+          ${recipDel}
+          ${r.receive_moon_roulette === false ? '<span class="deleted-flag">OPT-OUT</span>' : ''}
+        </div>
+      </td>
+      <td>
+        ${r.message_text
+          ? `<div class="msg-preview">${escHtml(r.message_text.slice(0, 80))}${r.message_text.length > 80 ? '…' : ''}</div>`
+          : r.photo_url
+          ? `<div class="msg-preview has-photo">📷 photo</div>`
+          : '<span style="color:var(--muter)">—</span>'}
+      </td>
+      <td>
+        <div class="ts-cell">
+          <div class="ts-row">
+            <span class="ts-label">sent</span>
+            <span class="ts-val">${fmtDate(r.created_at)}</span>
+          </div>
+          <div class="ts-row">
+            <span class="ts-label">rel</span>
+            <span class="ts-val ${r.released_at ? 'done' : 'pending'}">${r.released_at ? fmtDate(r.released_at) : '—'}</span>
+          </div>
+          ${r.recipient_read_at ? `<div class="ts-row">
+            <span class="ts-label">read</span>
+            <span class="ts-val done">${fmtDate(r.recipient_read_at)}</span>
+          </div>` : ''}
+        </div>
+      </td>
+      <td class="chain-cell">
+        <span class="chain-num">#${r.send_attempt}</span>
+        ${r.parent_id ? `<span class="chain-parent">↳ re-launch</span>` : ''}
+      </td>
+      <td class="reveal-cell">
+        ${r.reveal_count >= 2
+          ? '<span class="reveal-full">✦ Both revealed</span>'
+          : r.reveal_count === 1
+          ? '1 of 2'
+          : r.status === 'revealed' ? '<span class="reveal-full">✦ Revealed</span>' : '—'}
+      </td>
+      <td>
+        <span class="id-chip" data-copy="${r.id}" title="Click to copy">${r.id.slice(0, 8)}</span>
+      </td>
+    </tr>`;
+
+    if (expandedId === r.id) {
+      html += `<tr class="expand-row" data-expand-for="${r.id}">
+        <td colspan="8">
+          <div class="expand-inner">
+            <div class="expand-section">
+              <h4>Message content</h4>
+              ${r.message_text
+                ? `<p>${escHtml(r.message_text)}</p>`
+                : r.photo_url
+                ? `<p style="color:var(--t-relaunched)">📷 Photo attachment</p>`
+                : '<p style="color:var(--muter)">—</p>'}
+              ${r.song_title ? `<p style="margin-top:6px;font-size:12px;color:var(--muted)">🎵 ${escHtml(r.song_title)}</p>` : ''}
+              ${r.moon_phase ? `<p style="margin-top:6px;font-size:11px;color:var(--muter)">${escHtml(r.moon_phase)}${r.moon_illumination ? ` · ${Math.round(r.moon_illumination * 100)}%` : ''}</p>` : ''}
+            </div>
+            <div class="expand-section">
+              <h4>Timestamps</h4>
+              <div class="expand-ts-grid">
+                ${expandTs('Created', r.created_at, true)}
+                ${expandTs('Release at', r.release_at, !!r.release_at)}
+                ${expandTs('Released', r.released_at, !!r.released_at)}
+                ${expandTs('Notified', r.notified_at, !!r.notified_at)}
+                ${expandTs('Recipient read', r.recipient_read_at, !!r.recipient_read_at)}
+                ${expandTs('Sender deleted', r.sender_deleted_at, false)}
+                ${expandTs('Recipient deleted', r.recipient_deleted_at, false)}
+              </div>
+            </div>
+            <div class="expand-section">
+              <h4>IDs &amp; chain</h4>
+              <div class="expand-ts-grid">
+                <div class="expand-ts-row">
+                  <span class="label">Message ID</span>
+                  <span class="id-chip" data-copy="${r.id}" style="display:inline-block">${r.id.slice(0, 16)}…</span>
+                </div>
+                <div class="expand-ts-row">
+                  <span class="label">Sender ID</span>
+                  <span class="id-chip" data-copy="${r.sender_id}" style="display:inline-block">${r.sender_id ? r.sender_id.slice(0, 8) : '—'}…</span>
+                </div>
+                <div class="expand-ts-row">
+                  <span class="label">Recipient ID</span>
+                  <span class="id-chip" data-copy="${r.recipient_id}" style="display:inline-block">${r.recipient_id ? r.recipient_id.slice(0, 8) : '—'}…</span>
+                </div>
+                ${r.parent_id ? `<div class="expand-ts-row">
+                  <span class="label">Parent msg</span>
+                  <span class="id-chip" data-copy="${r.parent_id}" style="display:inline-block">${r.parent_id.slice(0, 8)}…</span>
+                </div>` : ''}
+                <div class="expand-ts-row">
+                  <span class="label">Attempt #</span>
+                  <span class="val done">${r.send_attempt}</span>
+                </div>
+                <div class="expand-ts-row">
+                  <span class="label">Reveals</span>
+                  <span class="val ${r.reveal_count >= 2 ? 'done' : ''}">${r.reveal_count} / 2</span>
+                </div>
+                <div class="expand-ts-row">
+                  <span class="label">Recip. opt-in</span>
+                  <span class="val ${r.receive_moon_roulette === false ? '' : 'done'}">${r.receive_moon_roulette === false ? 'Opted out' : 'Active'}</span>
+                </div>
+                <div class="expand-ts-row">
+                  <span class="label">Sender active</span>
+                  <span class="val">${r.sender_last_active ? fmtDate(r.sender_last_active) : '—'}</span>
+                </div>
+                <div class="expand-ts-row">
+                  <span class="label">Recip. active</span>
+                  <span class="val">${r.recipient_last_active ? fmtDate(r.recipient_last_active) : '—'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+    }
+  }
+
+  tbody.innerHTML = html;
+}
+
+function expandTs(label, val, isDone) {
+  return `<div class="expand-ts-row">
+    <span class="label">${label}</span>
+    <span class="val ${val ? (isDone ? 'done' : '') : 'null'}">${val ? fmtDateFull(val) : '—'}</span>
+  </div>`;
+}
+
+// ── Interactions ──────────────────────────────────────────────────────────────
+
+document.getElementById('tableBody').addEventListener('click', e => {
+  const idChip = e.target.closest('[data-copy]');
+  if (idChip) {
+    e.stopPropagation();
+    navigator.clipboard.writeText(idChip.dataset.copy).catch(() => {});
+    idChip.classList.add('copied');
+    setTimeout(() => idChip.classList.remove('copied'), 1200);
+    return;
+  }
+
+  const expandRow = e.target.closest('[data-expand-for]');
+  if (expandRow) return;
+
+  const row = e.target.closest('tr[data-id]');
+  if (!row) return;
+
+  const id = row.dataset.id;
+  expandedId = expandedId === id ? null : id;
+  renderTable();
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function escHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffH = diffMs / 3600000;
+  if (diffH < 1) return `${Math.round(diffMs / 60000)}m ago`;
+  if (diffH < 24) return `${Math.round(diffH)}h ago`;
+  if (diffH < 48) return 'yesterday';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: diffH > 8760 ? 'numeric' : undefined });
+}
+
+function fmtDateFull(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  });
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
