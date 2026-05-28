@@ -40,7 +40,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF (SELECT email FROM profiles WHERE id = auth.uid()) != 'mymanko@gmail.com' THEN
+  IF (SELECT email FROM profiles WHERE id = auth.uid()) NOT IN ('mymanko@gmail.com', 'yoashf@gmail.com') THEN
     RAISE EXCEPTION 'Access denied';
   END IF;
 

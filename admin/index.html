@@ -332,7 +332,7 @@
 <script>
 const SUPABASE_URL = 'https://znfqqehthxcrizcixzpu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuZnFxZWh0aHhjcml6Y2l4enB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MzMyMDgsImV4cCI6MjA4NjAwOTIwOH0.Twf3d9QEhVq6j9yVKaS9QNhnvygYgxPj0zg6Ug5pAq0';
-const ADMIN_EMAIL = 'mymanko@gmail.com';
+const ADMIN_EMAILS = ['mymanko@gmail.com', 'yoashf@gmail.com'];
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -345,7 +345,7 @@ let otpPending = false;
 
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
-  if (session?.user?.email === ADMIN_EMAIL) {
+  if (ADMIN_EMAILS.includes(session?.user?.email)) {
     showApp();
     loadData();
   } else if (session) {
@@ -356,7 +356,7 @@ async function init() {
 }
 
 sb.auth.onAuthStateChange((_event, session) => {
-  if (session?.user?.email === ADMIN_EMAIL) {
+  if (ADMIN_EMAILS.includes(session?.user?.email)) {
     showApp();
     loadData();
   }
@@ -386,8 +386,9 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   const otpEl = document.getElementById('loginOtp');
 
   if (!otpPending) {
-    const email = emailEl.value.trim();
+    const email = emailEl.value.trim().toLowerCase();
     if (!email) { setLoginMsg('Enter your email.', 'error'); return; }
+    if (!ADMIN_EMAILS.includes(email)) { setLoginMsg('That email is not authorised.', 'error'); return; }
     btn.disabled = true;
     setLoginMsg('Sending code…');
     const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
@@ -404,7 +405,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     }
   } else {
     const otp = otpEl.value.trim();
-    const email = ADMIN_EMAIL;
+    const email = emailEl.value.trim().toLowerCase();
     if (otp.length < 6) { setLoginMsg('Enter the 6-digit code.', 'error'); return; }
     btn.disabled = true;
     setLoginMsg('Verifying…');
