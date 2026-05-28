@@ -255,7 +255,7 @@
   <div class="login-card">
     <h1>Moon Roulette</h1>
     <p>Backstage access · admin only</p>
-    <input id="loginEmail" type="email" class="login-field" placeholder="enter email" autocomplete="off">
+    <div id="loginEmailWrap"></div>
     <input id="loginOtp" type="text" class="login-field" placeholder="one-time code" style="display:none" maxlength="6" inputmode="numeric">
     <button id="loginBtn" class="btn-primary">Send magic link</button>
     <div id="loginMsg" class="login-msg"></div>
@@ -702,9 +702,15 @@ function fmtDateFull(iso) {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-window.addEventListener('load', () => {
-  setTimeout(() => { document.getElementById('loginEmail').value = ''; }, 50);
-});
+// Create email input via JS so browsers have nothing to autofill in the markup
+const emailInput = document.createElement('input');
+emailInput.id = 'loginEmail';
+emailInput.type = 'email';
+emailInput.className = 'login-field';
+emailInput.placeholder = 'enter email';
+emailInput.autocomplete = 'off';
+document.getElementById('loginEmailWrap').appendChild(emailInput);
+
 init();
 </script>
 </body>
