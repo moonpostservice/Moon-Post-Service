@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.test
+.vercel/
+
+# Playwright
+tests/setup/.auth/
+playwright-report/
+test-results/

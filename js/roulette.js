@@ -24,7 +24,7 @@ async function loadRouletteMessages() {
         const [sentRes, receivedRes, revealsRes] = await Promise.all([
             // Sent: query the raw table — sender_id RLS policy applies
             sb.from('moon_roulette_messages')
-                .select('id, sender_city, recipient_id, recipient_city, status, release_at, released_at, moon_phase, moon_illumination, message_text, photo_url, song_url, song_title, parent_id, send_attempt, created_at, updated_at')
+                .select('id, sender_city, recipient_id, recipient_city, status, release_at, released_at, moon_phase, moon_illumination, message_text, photo_url, song_url, song_title, parent_id, send_attempt, recipient_read_at, created_at, updated_at')
                 .eq('sender_id', currentAuthUser.id)
                 .is('sender_deleted_at', null)
                 .order('created_at', { ascending: false }),
@@ -854,11 +854,30 @@ function openRouletteDetail(msgId, role) {
 
     if (role === 'recipient') {
         document.getElementById('rouletteDetailTitle').textContent =
-            isRevealed ? '…' : `From ${_escHtml(msg.sender_city ?? 'somewhere')}`;
+            isRevealed ? '…' : `From a stranger in ${_escHtml(msg.sender_city ?? 'the world')}`;
+        // Mark as read (fire-and-forget — sender sees title flip to "Read in [city]" via realtime)
+        if (!msg.recipient_read_at && (msg.status === 'delivered' || msg.status === 'revealed')) {
+            const readAt = new Date().toISOString();
+            sb.from('moon_roulette_messages')
+                .update({ recipient_read_at: readAt })
+                .eq('id', msg.id)
+                .then(({ error }) => { if (!error) msg.recipient_read_at = readAt; });
+        }
     } else {
-        document.getElementById('rouletteDetailTitle').textContent = msg.status === 'queued'
-            ? 'Awaiting the moon…'
-            : isRevealed ? '…' : `To someone in ${_escHtml(msg.recipient_city ?? 'the world')}`;
+        const city = _escHtml(msg.recipient_city ?? 'the world');
+        let senderTitle;
+        if (isRevealed) {
+            senderTitle = '…';
+        } else if (msg.status === 'queued' || msg.status === 're-launched') {
+            senderTitle = 'Adrift toward an unknown sky';
+        } else if (msg.status === 'delivered' || msg.status === 'revealed') {
+            senderTitle = msg.recipient_read_at ? `Read in ${city}` : `Landed in ${city}`;
+        } else if (msg.status === 'declined' || msg.status === 'blocked') {
+            senderTitle = `Returned from ${city}`;
+        } else {
+            senderTitle = `To someone in ${city}`;
+        }
+        document.getElementById('rouletteDetailTitle').textContent = senderTitle;
     }
     const timeStr = _relativeTime(msg.released_at || msg.created_at);
     document.getElementById('rouletteDetailSubtitle').textContent =

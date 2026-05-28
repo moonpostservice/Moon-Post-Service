@@ -7949,28 +7949,52 @@ body::before {
 .message-dot.incoming { box-shadow: 0 0 8px rgba(234, 216, 191, 0.45); }
 .message-dot.incoming:hover { box-shadow: 0 0 16px rgba(234, 216, 191, 0.65); }
 
-/* Roulette dots — diamond shape, moonlight blue-white */
+/* Roulette dots — diamond shape, moonlit blue-white, always pulsing */
 .message-dot.roulette-dot {
-    background-color: rgba(210, 228, 255, 0.95);
-    border-radius: 2px;
-    width: 10px;
-    height: 10px;
-    top: -3.5px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(160,200,255,0.9) 100%);
+    border: 1px solid rgba(200, 225, 255, 0.6);
+    border-radius: 3px;
+    width: 14px;
+    height: 14px;
+    top: -5.5px;
     transform: translateX(-50%) rotate(45deg);
-    box-shadow: 0 0 8px rgba(160, 200, 255, 0.55);
+    box-shadow:
+        0 0 8px  rgba(160, 200, 255, 0.65),
+        0 0 22px rgba(160, 200, 255, 0.30);
+    animation: roulettePulse 2.5s ease-in-out infinite;
 }
 .message-dot.roulette-dot::after { display: none; }
 .message-dot.roulette-dot:hover {
-    transform: translateX(-50%) rotate(45deg) scale(1.35);
-    box-shadow: 0 0 18px rgba(160, 200, 255, 0.80);
+    transform: translateX(-50%) rotate(45deg) scale(1.4);
+    box-shadow:
+        0 0 14px rgba(160, 200, 255, 0.90),
+        0 0 36px rgba(160, 200, 255, 0.55);
+    animation: none;
 }
 .message-dot.roulette-dot.releasing {
-    transform: translateX(-50%) rotate(45deg) scale(1.1);
-    animation: rouletteGlow 2s ease-in-out infinite;
+    animation: rouletteReleasePulse 1.4s ease-in-out infinite;
 }
-@keyframes rouletteGlow {
-    0%, 100% { opacity: 0.8; box-shadow: 0 0 8px rgba(160, 200, 255, 0.45); }
-    50%       { opacity: 1;   box-shadow: 0 0 20px rgba(160, 200, 255, 0.85); }
+@keyframes roulettePulse {
+    0%, 100% {
+        opacity: 0.72;
+        box-shadow: 0 0 7px rgba(160,200,255,0.55), 0 0 18px rgba(160,200,255,0.22);
+    }
+    50% {
+        opacity: 1;
+        box-shadow: 0 0 13px rgba(160,200,255,0.88), 0 0 30px rgba(160,200,255,0.45);
+    }
+}
+@keyframes rouletteReleasePulse {
+    0%, 100% {
+        opacity: 0.85;
+        transform: translateX(-50%) rotate(45deg) scale(1.05);
+        box-shadow: 0 0 12px rgba(160,200,255,0.75), 0 0 28px rgba(160,200,255,0.40);
+    }
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) rotate(45deg) scale(1.2);
+        box-shadow: 0 0 20px rgba(160,200,255,0.95), 0 0 42px rgba(160,200,255,0.60);
+    }
 }
 
 /* Moon data bar — brass-bordered glass pill */
@@ -8168,6 +8192,25 @@ body.moon-down .new-message-btn {
     padding-bottom: 20px;
     color: var(--text);
     font-family: var(--sans);
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+}
+#messagePageView .message-page-body:hover {
+    scrollbar-color: rgba(212, 181, 138, 0.25) transparent;
+}
+#messagePageView .message-page-body::-webkit-scrollbar {
+    width: 4px;
+}
+#messagePageView .message-page-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+#messagePageView .message-page-body::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+#messagePageView .message-page-body:hover::-webkit-scrollbar-thumb {
+    background: rgba(212, 181, 138, 0.25);
 }
 
 /* Date separators in chat — brass tracked uppercase */
@@ -8187,7 +8230,7 @@ body.moon-down .new-message-btn {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--line-soft);
-    max-width: 80%;
+    max-width: 88%;
 }
 #messagePageView .message-bubble p {
     font-family: var(--serif);
@@ -8208,6 +8251,7 @@ body.moon-down .new-message-btn {
 #messagePageView .message-bubble.sent {
     background: rgba(212, 181, 138, 0.16);
     border: 1px solid var(--line);
+    max-width: 88%;
 }
 #messagePageView .message-bubble.sent p {
     color: var(--text-bright);
