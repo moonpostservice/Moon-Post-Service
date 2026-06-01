@@ -262,8 +262,8 @@
     <!-- Header -->
     <header class="header">
         <div class="header-brand">
-            <img class="logo" src="assests/logo2.png" alt="MoonPop">
-            <span class="header-tagline">The World's Only Moon Postal Service</span>
+            <img class="logo" src="assests/logo.svg" alt="MoonPop">
+            <span class="header-tagline">Moon Post Service</span>
         </div>
         <!-- Mini moon phase (disabled for MVP) -->
         <div class="header-moon" id="headerMoon" style="display:none;">
@@ -275,14 +275,20 @@
 
             <!-- Desktop nav items -->
             <div class="header-desktop-nav">
+                <!-- FAQ -->
+                <button onclick="openFaqPage()" aria-label="FAQ" title="FAQ" style="background:none;border:1px solid var(--line);border-radius:var(--radius-pill);cursor:pointer;padding:8px 22px;transition:border-color var(--dur-fast) ease,background var(--dur-fast) ease,color var(--dur-fast) ease;display:flex;align-items:center;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(212,181,138,0.08)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='none'">
+                    <span style="font-family:var(--serif);font-style:italic;font-size:15px;font-weight:500;letter-spacing:0;color:var(--accent-bright);">FAQ</span>
+                </button>
+
                 <!-- Philosophy -->
                 <button class="header-philosophy-btn" onclick="openPhilosophyPage()" aria-label="Our Philosophy" title="Our Philosophy" style="background:none;border:1px solid var(--line);border-radius:var(--radius-pill);cursor:pointer;padding:8px 22px;transition:border-color var(--dur-fast) ease,background var(--dur-fast) ease,color var(--dur-fast) ease;display:flex;align-items:center;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(212,181,138,0.08)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='none'">
                     <span style="font-family:var(--serif);font-style:italic;font-size:15px;font-weight:500;letter-spacing:0;color:var(--accent-bright);">Our Philosophy</span>
                 </button>
 
                 <!-- Contacts -->
-                <button class="header-contacts-btn" onclick="openContactsPage()" aria-label="Contacts" title="Contacts">
+                <button class="header-contacts-btn" onclick="openContactsPage()" aria-label="Contacts" title="Contacts" style="display:flex;align-items:center;gap:7px;">
                     <svg class="app-icon" style="width:22px;height:22px;"><use href="#icon-contacts"/></svg>
+                    <span style="font-family:var(--serif);font-style:italic;font-size:15px;font-weight:500;color:var(--accent-bright);">Contacts</span>
                 </button>
 
                 <!-- User / Settings -->
@@ -425,12 +431,14 @@
                 </div>
 
                 <!-- Sign out (outside accordion) -->
-                <div style="padding:12px 16px 8px;border-top:1px solid rgba(128,128,128,0.12);">
+                <div style="padding:4px 16px 8px;border-top:1px solid rgba(128,128,128,0.12);">
                     <button onclick="logOut()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.8);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;">Sign out</button>
                 </div>
 
-                <div style="text-align:center;padding:6px 0;border-top:1px solid rgba(128,128,128,0.08);">
-                    <span style="font-size:10px;color:var(--text-muted);">MoonPop v1.3.0</span>
+                <!-- Terms & Contact links -->
+                <div style="padding:4px 16px 8px;border-top:1px solid rgba(128,128,128,0.08);">
+                    <button onclick="toggleSettings();openTermsPage()" style="width:100%;padding:10px;border-radius:10px;border:none;background:none;color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer;text-align:center;transition:color 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">Terms, Privacy &amp; Community Guidelines</button>
+                    <button onclick="toggleSettings();openContactUsPage()" style="width:100%;padding:10px;border-radius:10px;border:none;background:none;color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer;text-align:center;transition:color 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">Contact Us</button>
                 </div>
     </div><!-- end settings dropdown -->
 
@@ -444,6 +452,10 @@
             </button>
         </div>
         <div class="mobile-menu-items">
+            <button class="mobile-menu-item" onclick="closeMobileMenu();openFaqPage();">
+                <svg style="width:20px;height:20px;flex-shrink:0;color:var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 17v.01M12 13.5a2 2 0 10-2-2 2 2 0 002 2"/></svg>
+                <span>FAQ</span>
+            </button>
             <button class="mobile-menu-item" onclick="closeMobileMenu();openPhilosophyPage();">
                 <svg style="width:20px;height:20px;flex-shrink:0;color:var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                 <span>Our Philosophy</span>
@@ -466,6 +478,7 @@
         <!-- Sticky header -->
         <nav class="landing-nav">
             <div class="landing-nav-brand">
+                <img src="assests/logo.svg" alt="Moon Post Service" style="height:36px;width:auto;display:block;">
                 <span class="landing-wordmark">Moon Post Service</span>
             </div>
             <div class="landing-nav-actions">
@@ -484,7 +497,7 @@
         <div id="authModalOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(3,10,24,0.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;" onclick="if(event.target===this)closeAuthModal()">
             <div class="onboarding-card" style="position:relative;max-width:440px;width:90%;margin:auto;">
                 <button onclick="closeAuthModal()" style="position:absolute;top:14px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;">✕</button>
-                <img class="onboarding-logo" src="assests/logo2.png" alt="Moon Post Service">
+                <img class="onboarding-logo" src="assests/logo.svg" alt="Moon Post Service">
                 <h1 id="authModalTitle">Messages released by the moon</h1>
                 <p class="onboarding-tagline">Write now. It unlocks when the moon rises where they are.</p>
 
@@ -588,6 +601,11 @@
                         </div>
 
                         <div id="onboardingProfileError" style="color:#E89B73;font-size:12px;margin:8px 0;display:none;font-style:italic;"></div>
+
+                        <label style="display:flex;align-items:flex-start;gap:10px;margin-top:20px;cursor:pointer;text-align:left;">
+                            <input type="checkbox" id="onboardingTermsCheck" onchange="document.getElementById('saveProfileBtn').disabled=!(this.checked&&document.getElementById('onboardingFirstName').value.trim()&&document.getElementById('onboardingLastName').value.trim()&&document.getElementById('onboardingSenderName').value.trim())" style="margin-top:3px;accent-color:var(--accent);width:16px;height:16px;flex-shrink:0;cursor:pointer;">
+                            <span style="font-size:13px;color:var(--muted);line-height:1.5;">I agree to the <a onclick="event.preventDefault();openTermsPage()" href="/terms" style="color:var(--accent);text-decoration:underline;cursor:pointer;">Terms, Privacy &amp; Community Guidelines</a>. I am at least 16 years old.</span>
+                        </label>
 
                         <button class="onboarding-primary" id="saveProfileBtn" onclick="saveOnboardingProfile()" style="margin-top:18px;" disabled>
                             Start sending 🌙
@@ -942,6 +960,24 @@
         </div>
     </div>
 
+    <!-- Moon Roulette First-Use Intro Modal -->
+    <div id="rouletteIntroModal" style="display:none;position:fixed;inset:0;z-index:100010;background:rgba(3,10,24,0.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center;">
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);max-width:400px;width:90%;padding:36px 28px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,0.5);">
+            <div style="font-size:36px;text-align:center;margin-bottom:16px;">🌙</div>
+            <h2 style="font-family:var(--serif);font-size:22px;font-weight:500;color:var(--text-bright);text-align:center;margin:0 0 16px;letter-spacing:-0.2px;">Moon Roulette</h2>
+            <p style="color:var(--text);font-size:14px;line-height:1.65;margin:0 0 12px;">Moon Roulette connects you with another user. The moon carries your message to a stranger.</p>
+            <ul style="color:var(--muted);font-size:13px;line-height:1.7;margin:0 0 20px;padding-left:18px;">
+                <li>Do not share sensitive personal information</li>
+                <li>No harassment, sexual content, scams, or abuse</li>
+                <li>You must be at least 18 years old to use this feature</li>
+                <li>You can delete, block, or report at any time from the message menu</li>
+            </ul>
+            <p style="font-size:12px;color:var(--muted);margin:0 0 24px;">By continuing you agree to the <a onclick="document.getElementById('rouletteIntroModal').style.display='none';openTermsPage()" href="/terms" style="color:var(--accent);text-decoration:underline;cursor:pointer;">Terms &amp; Community Guidelines</a>.</p>
+            <button onclick="acceptRouletteIntro()" style="width:100%;padding:13px;border-radius:var(--radius-sm);border:none;background:var(--accent);color:var(--on-accent);font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">I understand</button>
+            <button onclick="document.getElementById('rouletteIntroModal').style.display='none'" style="width:100%;padding:10px;margin-top:8px;border-radius:var(--radius-sm);border:1px solid var(--line);background:none;color:var(--muted);font-family:var(--sans);font-size:13px;cursor:pointer;transition:color 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Cancel</button>
+        </div>
+    </div>
+
     <!-- Location Drift Modal (timezone changed since last visit) -->
     <div id="locationDriftModal" class="drift-modal-overlay" style="display:none;">
         <div class="drift-modal-card">
@@ -1146,8 +1182,8 @@
                     <span class="moon-data-value" id="moonsetTime">23:45</span>
                 </div>
                 <div class="moon-data-item">
-                    <span class="moon-data-label">MOON AGE:</span>
-                    <span class="moon-data-value" id="moonAgeBar">— days</span>
+                    <span class="moon-data-label">NEW MOON:</span>
+                    <span class="moon-data-value" id="moonAgeBar">—</span>
                 </div>
                 <div class="moon-data-item">
                     <span class="moon-data-label">DISTANCE:</span>
@@ -1293,10 +1329,289 @@
     <div id="roulettePage" style="display:none;position:fixed;inset:0;z-index:99997;background:var(--bg);overflow-y:auto;overflow-x:hidden;flex-direction:column;"></div>
 
     <!-- Philosophy Page -->
+    <!-- FAQ Page -->
+    <div id="faqPage" style="display:none;position:fixed;inset:0;z-index:99997;background:var(--bg);overflow-y:auto;overflow-x:hidden;">
+        <div style="position:sticky;top:0;z-index:10;padding:0 48px;height:88px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,10,24,0.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line-soft);">
+            <a onclick="closeFaqPage()" style="cursor:pointer;display:flex;align-items:center;gap:16px;text-decoration:none;">
+                <img class="logo" src="assests/logo.svg" alt="Moon Post Service" style="width:64px;height:64px;opacity:0.92;">
+                <span style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);">The World's Only Moon Postal Service</span>
+            </a>
+            <button onclick="closeFaqPage()" style="background:none;border:1px solid var(--line);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:20px;font-weight:400;transition:border-color var(--dur-fast) ease,background var(--dur-fast) ease,color var(--dur-fast) ease;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(212,181,138,0.08)';this.style.color='var(--accent-bright)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='none';this.style.color='var(--muted)'">✕</button>
+        </div>
+        <div style="max-width:720px;margin:0 auto;padding:64px 40px 120px;">
+            <p style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);margin-bottom:12px;">FAQ</p>
+            <h1 style="font-family:var(--serif);font-size:clamp(34px,5vw,52px);font-weight:500;color:var(--text-bright);line-height:1.05;letter-spacing:-0.4px;margin-bottom:56px;">Frequently Asked<br><span style="font-style:italic;">Questions</span></h1>
+
+            <style>
+                .faq-section { margin-bottom: 48px; }
+                .faq-section-title { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+                .faq-item { border-top: 1px solid var(--line-soft); }
+                .faq-item:last-child { border-bottom: 1px solid var(--line-soft); }
+                .faq-question { width: 100%; background: none; border: none; text-align: left; cursor: pointer; padding: 20px 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; color: var(--text-bright); font-family: var(--serif); font-size: 17px; font-weight: 500; line-height: 1.3; transition: color var(--dur-fast) ease; }
+                .faq-question:hover { color: var(--accent-bright); }
+                .faq-chevron { flex-shrink: 0; width: 20px; height: 20px; color: var(--muted); transition: transform 0.25s ease, color var(--dur-fast) ease; margin-top: 2px; }
+                .faq-item.open .faq-chevron { transform: rotate(180deg); color: var(--accent); }
+                .faq-item.open .faq-question { color: var(--accent-bright); }
+                .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.25s ease; padding-bottom: 0; }
+                .faq-item.open .faq-answer { max-height: 600px; padding-bottom: 24px; }
+                .faq-answer p { font-family: var(--sans); font-size: 14.5px; line-height: 1.65; color: var(--muted); margin: 0 0 10px; }
+                .faq-answer p:last-child { margin-bottom: 0; }
+            </style>
+
+            <div class="faq-section">
+                <div class="faq-section-title">Basics</div>
+                <div class="faq-item open">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>What is Moon Post Service?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Moon Post Service is the world's only moon postal service.</p>
+                        <p>You can send a message only when the moon is above you, and it arrives when the moon rises for the person you sent it to.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>How does it work?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Moon Post Service opens at moonrise and closes at moonset. During that time, you can send and receive messages.</p>
+                        <p>If you send a message to someone in another part of the world, it travels with the moon and arrives when the moon rises for them.</p>
+                        <p>If you share the same sky, Moon Post Service becomes instant messaging for as long as the moon is above you both.</p>
+                        <p>Messages live for one lunar cycle. At every new moon, all messages are deleted.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Does it still work if I cannot see the moon?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes.</p>
+                        <p>Moon Post Service opens and closes according to moonrise and moonset at your location, even if clouds, buildings, or city lights hide the moon from view.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <div class="faq-section-title">Why use it?</div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>What is Moon Post Service good for?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p><strong style="color:var(--text-bright);font-weight:600;">The moon becomes your daily ritual.</strong> When the moon appears, that is your moment to pause, look up, and check in on the people who matter to you.</p>
+                        <p><strong style="color:var(--text-bright);font-weight:600;">Good things come slower.</strong> Moon messages do not arrive instantly. They travel with the moon, giving surprise, anticipation, and longing a little time to build.</p>
+                        <p><strong style="color:var(--text-bright);font-weight:600;">Some relationships deserve a different place.</strong> Some conversations do not belong in the stream of updates, logistics, and digital noise. Some relationships deserve a different light, a different rhythm, and a different place.</p>
+                        <p><strong style="color:var(--text-bright);font-weight:600;">A better signal for personal messages.</strong> Instead of another notification, the moon tells you when it is time to check in.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <div class="faq-section-title">Shared Sky &amp; Moon Roulette</div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>What is Shared Sky?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Shared Sky is the public chat open to everyone who is under the moon at that moment.</p>
+                        <p>It carries messages and photos from people around the world who are currently in moonlight.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>What is Moon Roulette?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Moon Roulette lets you send a moon message to a random stranger.</p>
+                        <p>It is a way to place a small message in the world and let the moon choose who receives it.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <div class="faq-section-title">Messages</div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>What can be sent on Moon Post Service?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Text, links, small thoughts, photos, and especially moon pictures all belong here.</p>
+                        <p>Want a little help from the moon? Try a Lunar Note.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>What is a Lunar Note?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>A Lunar Note is a message created with a little help from the moon.</p>
+                        <p>It appears in the chat as a button at the bottom of the screen. Tap it, answer three simple questions, and Moon Post Service turns them into a note you can edit, regenerate, or send.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>How long do messages stay?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Messages live for one lunar cycle.</p>
+                        <p>At every new moon, all messages are deleted.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I delete a conversation?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Open the menu inside the message box and choose Delete Conversation.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I block a user?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Open the menu inside the message box and choose Block User.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Where can I see blocked users?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Your blocked users list is in the main menu.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <div class="faq-section-title">Notifications</div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I know if I got messages?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>The moon is your main signal.</p>
+                        <p>To check for mail, open Moon Post Service when the moon is above you. You can also turn on email notifications in Settings.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I turn off notifications?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Go to Settings.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <div class="faq-section-title">Troubleshooting</div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Why can't I send a message?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Moon Post Service opens only when the moon is above you.</p>
+                        <p>If the moon is not up yet, sending will open at moonrise.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Why has my message not arrived yet?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Moon messages do not arrive instantly.</p>
+                        <p>They arrive when the moon rises for the person they were sent to. The chat shows when delivery is expected.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Why did my messages disappear?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Messages live for one lunar cycle.</p>
+                        <p>At every new moon, all messages are deleted automatically.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Why do my moon times look wrong?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Moon Post Service depends on accurate time and location.</p>
+                        <p>If the times look wrong, check your device time, time zone, and location settings.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <div class="faq-section-title">Account &amp; Settings</div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I create an account or log in?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Moon Post Service uses your email address for both sign-up and login. Just enter your email address and follow the sign-in steps.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I delete my account?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Open the main menu on the right side, go to Settings, and choose Delete Account.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Where are Settings?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Open the main menu on the right side.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <div class="faq-section-title">About</div>
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Who made Moon Post Service?</span>
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Moon Post Service was made by Manko and Yoash from Doozy Lab.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="philosophyPage" style="display:none;position:fixed;inset:0;z-index:99999;background:var(--bg);overflow-y:auto;overflow-x:hidden;">
         <div style="position:sticky;top:0;z-index:10;padding:16px 48px;height:108px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,10,24,0.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line-soft);">
             <a onclick="closePhilosophyPage()" style="cursor:pointer;display:flex;align-items:center;gap:16px;text-decoration:none;">
-                <img class="logo" src="assests/logo2.png" alt="Moon Post Service" style="width:64px;height:64px;opacity:0.92;">
+                <img class="logo" src="assests/logo.svg" alt="Moon Post Service" style="width:64px;height:64px;opacity:0.92;">
                 <span style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);">The World's Only Moon Postal Service</span>
             </a>
             <button onclick="closePhilosophyPage()" style="background:none;border:1px solid var(--line);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:20px;font-weight:400;transition:border-color var(--dur-fast) ease,background var(--dur-fast) ease,color var(--dur-fast) ease;" onmouseover="this.style.background='rgba(212,181,138,0.08)';this.style.borderColor='var(--accent)';this.style.color='var(--accent-bright)'" onmouseout="this.style.background='none';this.style.borderColor='var(--line)';this.style.color='var(--muted)'">✕</button>
@@ -1341,10 +1656,114 @@
         <!-- Sign-off -->
         <div class="phil-signoff">
             <p class="phil-signoff-line">Yours, under the same moon,</p>
-            <p class="phil-signoff-names">Manko & Yoash</p>
+            <p class="phil-signoff-names"><a href="https://www.doozylab.com/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">Manko & Yoash</a></p>
         </div>
 
         <!-- Footer removed -->
+    </div>
+
+    <!-- Terms & Privacy Page -->
+    <div id="termsPage" style="display:none;position:fixed;inset:0;z-index:99999;background:var(--bg);overflow-y:auto;overflow-x:hidden;">
+        <div style="position:sticky;top:0;z-index:10;padding:0 48px;height:88px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,10,24,0.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line-soft);">
+            <a onclick="closeTermsPage()" style="cursor:pointer;display:flex;align-items:center;gap:16px;text-decoration:none;">
+                <img class="logo" src="assests/logo.svg" alt="Moon Post Service" style="width:64px;height:64px;opacity:0.92;">
+                <span style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);">The World's Only Moon Postal Service</span>
+            </a>
+            <button onclick="closeTermsPage()" style="background:none;border:1px solid var(--line);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:20px;font-weight:400;transition:border-color var(--dur-fast) ease,background var(--dur-fast) ease,color var(--dur-fast) ease;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(212,181,138,0.08)';this.style.color='var(--accent-bright)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='none';this.style.color='var(--muted)'">✕</button>
+        </div>
+        <div style="max-width:720px;margin:0 auto;padding:64px 32px 96px;">
+            <h1 style="font-family:var(--serif);font-size:clamp(28px,5vw,44px);font-weight:500;color:var(--text-bright);margin:0 0 8px;letter-spacing:-0.5px;">Terms, Privacy &amp; Community Guidelines</h1>
+            <p style="font-size:13px;color:var(--muted);margin:0 0 48px;font-style:italic;">Last updated: 29/5/2026</p>
+
+            <p style="color:var(--text);line-height:1.75;margin:0 0 24px;">Moon Post Service is a free experimental project created to help humans connect with each other, and with the moon. It is not a professional communication service, not an emergency service, and not a guaranteed messaging platform. By using Moon Post Service, you agree to use it gently, responsibly, and at your own risk.</p>
+
+            <h2 style="font-family:var(--serif);font-size:22px;font-weight:500;color:var(--text-bright);margin:40px 0 12px;">What to expect</h2>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">We try our best to make Moon Post Service work beautifully. But you should not expect any guaranteed service, uptime, delivery, message storage, message recovery, lunar accuracy, technical support, or compensation of any kind.</p>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">Messages may be delayed, lost, unavailable, deleted, or undeliverable.</p>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 24px;">Do not use Moon Post Service for urgent, important, legal, medical, financial, safety-related, or time-sensitive communication.</p>
+
+            <h2 style="font-family:var(--serif);font-size:22px;font-weight:500;color:var(--text-bright);margin:40px 0 12px;">Message lifetime</h2>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">Messages are designed to live for one lunar cycle. At every new moon, messages are scheduled to disappear from active inboxes.</p>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 24px;">Some technical copies may remain temporarily in backups, logs, security systems, abuse reports, or where we need to keep them for safety, legal, or technical reasons.</p>
+
+            <h2 style="font-family:var(--serif);font-size:22px;font-weight:500;color:var(--text-bright);margin:40px 0 12px;">Privacy and data</h2>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">Moon Post Service may collect and process basic information needed to operate the service, such as account details, messages, approximate location or timezone, blocked users, reports, browser/device information, IP address, and technical logs.</p>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">We use this information to operate the service, calculate moon timing, deliver messages, maintain accounts, prevent abuse, improve the product, and protect users.</p>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">We do not sell your personal data.</p>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 24px;">The platform was built with the help of AI coding tools, including Claude Code. We did our best to build it responsibly and to protect the service and user data. Still, no online system is perfectly secure, and we cannot guarantee that data will always be protected from bugs, unauthorized access, technical failure, or loss.</p>
+
+            <h2 style="font-family:var(--serif);font-size:22px;font-weight:500;color:var(--text-bright);margin:40px 0 12px;">Location</h2>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">Moon Post Service uses location or approximate location to calculate when the moon is above you. We do not need your exact address, and we do not show your precise location to other users.</p>
+
+            <h2 style="font-family:var(--serif);font-size:22px;font-weight:500;color:var(--text-bright);margin:40px 0 12px;">Account deletion</h2>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 24px;">You can delete your account from the main menu. Deleting your account removes or disables your active account, but some information may remain temporarily in backups, logs, abuse reports, or where needed for safety, security, technical, or legal reasons.</p>
+
+            <h2 style="font-family:var(--serif);font-size:22px;font-weight:500;color:var(--text-bright);margin:40px 0 12px;">Moon Roulette</h2>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">Moon Roulette is an optional feature that lets you send a moon message to another user selected by the service. You should not share sensitive personal information with strangers. You can delete the conversation, block the user, or report abuse from the message menu.</p>
+
+            <h2 style="font-family:var(--serif);font-size:22px;font-weight:500;color:var(--text-bright);margin:40px 0 12px;">Community rules</h2>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">Do not use Moon Post Service to harass, threaten, intimidate, shame, deceive, spam, stalk, scam, impersonate, or harm anyone.</p>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">Do not send sexual content to strangers.</p>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">Do not share another person's private information without permission.</p>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">Do not use Moon Post Service for illegal activity.</p>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">Do not try to contact someone who blocked you.</p>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 24px;">We may remove content, block users, suspend accounts, delete accounts, or report serious abuse if needed to protect users or operate the service.</p>
+
+            <h2 style="font-family:var(--serif);font-size:22px;font-weight:500;color:var(--text-bright);margin:40px 0 12px;">Age</h2>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 16px;">Moon Post Service is not intended for children. You must be at least 16 years old to use Moon Post Service.</p>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 24px;">Moon Roulette is intended for users who are at least 18 years old.</p>
+
+            <h2 style="font-family:var(--serif);font-size:22px;font-weight:500;color:var(--text-bright);margin:40px 0 12px;">Contact</h2>
+            <p style="color:var(--text);line-height:1.75;margin:0 0 24px;">For questions, privacy requests, abuse reports, or safety concerns, contact the team through the app.</p>
+        </div>
+    </div>
+
+    <!-- Contact Us Page -->
+    <div id="contactUsPage" style="display:none;position:fixed;inset:0;z-index:99999;background:var(--bg);overflow-y:auto;overflow-x:hidden;">
+        <div style="position:sticky;top:0;z-index:10;padding:0 48px;height:88px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,10,24,0.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line-soft);">
+            <a onclick="closeContactUsPage()" style="cursor:pointer;display:flex;align-items:center;gap:16px;text-decoration:none;">
+                <img class="logo" src="assests/logo.svg" alt="Moon Post Service" style="width:64px;height:64px;opacity:0.92;">
+                <span style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);">The World's Only Moon Postal Service</span>
+            </a>
+            <button onclick="closeContactUsPage()" style="background:none;border:1px solid var(--line);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:20px;font-weight:400;transition:border-color var(--dur-fast) ease,background var(--dur-fast) ease,color var(--dur-fast) ease;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(212,181,138,0.08)';this.style.color='var(--accent-bright)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='none';this.style.color='var(--muted)'">✕</button>
+        </div>
+        <div style="max-width:640px;margin:0 auto;padding:64px 32px 96px;">
+            <h1 style="font-family:var(--serif);font-size:clamp(28px,5vw,44px);font-weight:500;color:var(--text-bright);margin:0 0 8px;letter-spacing:-0.5px;">Contact Us</h1>
+            <p style="font-family:var(--sans);font-size:15px;color:var(--muted);margin:0 0 48px;line-height:1.6;">Have a question, a bug to report, or something on your mind? We'd love to hear from you.</p>
+
+            <form id="contactUsForm" onsubmit="submitContactUsForm(event)" style="display:flex;flex-direction:column;gap:20px;">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <label style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);">Your Name</label>
+                    <input id="contactUsName" type="text" placeholder="How should we call you?" required style="width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid var(--line-soft);border-radius:var(--radius-sm);font-family:var(--sans);font-size:14px;background:rgba(3,10,24,0.6);color:var(--text-bright);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line-soft)'">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <label style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);">Your Email</label>
+                    <input id="contactUsEmail" type="email" placeholder="So we can write back" required style="width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid var(--line-soft);border-radius:var(--radius-sm);font-family:var(--sans);font-size:14px;background:rgba(3,10,24,0.6);color:var(--text-bright);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line-soft)'">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <label style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);">Subject</label>
+                    <select id="contactUsSubject" required style="width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid var(--line-soft);border-radius:var(--radius-sm);font-family:var(--sans);font-size:14px;background:rgba(3,10,24,0.6);color:var(--text-bright);outline:none;cursor:pointer;transition:border-color 0.2s;appearance:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line-soft)'">
+                        <option value="" disabled selected style="color:var(--muted);">Choose a topic…</option>
+                        <option value="General Question">General Question</option>
+                        <option value="Bug Report">Bug Report</option>
+                        <option value="Feature Request">Feature Request</option>
+                        <option value="Privacy or Safety Concern">Privacy or Safety Concern</option>
+                        <option value="Account Issue">Account Issue</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <label style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);">Message</label>
+                    <textarea id="contactUsMessage" placeholder="Tell us what's on your mind…" required rows="6" style="width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid var(--line-soft);border-radius:var(--radius-sm);font-family:var(--sans);font-size:14px;background:rgba(3,10,24,0.6);color:var(--text-bright);outline:none;resize:vertical;transition:border-color 0.2s;line-height:1.6;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--line-soft)'"></textarea>
+                </div>
+                <div>
+                    <button type="submit" id="contactUsSubmitBtn" style="padding:14px 32px;border-radius:var(--radius-sm);border:none;background:var(--accent);color:var(--bg);font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Send Message</button>
+                </div>
+                <div id="contactUsConfirmation" style="display:none;padding:16px;border-radius:var(--radius-sm);background:rgba(212,181,138,0.1);border:1px solid rgba(212,181,138,0.3);color:var(--accent);font-family:var(--sans);font-size:14px;line-height:1.5;">
+                    Your message is on its way. We'll get back to you soon. 🌙
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Contacts Page -->
@@ -1352,7 +1771,7 @@
         <!-- Header -->
         <div style="position:sticky;top:0;z-index:10;padding:0 48px;height:88px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,10,24,0.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line-soft);">
             <a onclick="closeContactsPage()" style="cursor:pointer;display:flex;align-items:center;gap:16px;text-decoration:none;">
-                <img class="logo" src="assests/logo2.png" alt="Moon Post Service" style="width:64px;height:64px;opacity:0.92;">
+                <img class="logo" src="assests/logo.svg" alt="Moon Post Service" style="width:64px;height:64px;opacity:0.92;">
                 <span style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--accent);">The World's Only Moon Postal Service</span>
             </a>
             <button onclick="closeContactsPage()" style="background:none;border:1px solid var(--line);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:20px;font-weight:400;transition:border-color var(--dur-fast) ease,background var(--dur-fast) ease,color var(--dur-fast) ease;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(212,181,138,0.08)';this.style.color='var(--accent-bright)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='none';this.style.color='var(--muted)'">✕</button>
@@ -1978,6 +2397,7 @@
         </div>
     </div>
 
+    <script src="/js/utils.js"></script>
     <script src="/js/config.js"></script>
     <script src="/js/notifications.js"></script>
     <script src="/js/moon-calc.js"></script>

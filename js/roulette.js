@@ -409,7 +409,30 @@ async function _resolveRevealedHeader(otherId) {
 // COMPOSE
 // ============================================
 
+let _rouletteIntroPending = null;
+
 function openRouletteCompose(parentId = null, prefill = {}) {
+    if (parentId || localStorage.getItem('moonpop_roulette_intro_seen')) {
+        _doOpenRouletteCompose(parentId, prefill);
+        return;
+    }
+    // First-time use — show intro modal, then open compose on accept
+    _rouletteIntroPending = { parentId, prefill };
+    const modal = document.getElementById('rouletteIntroModal');
+    modal.style.display = 'flex';
+}
+
+function acceptRouletteIntro() {
+    localStorage.setItem('moonpop_roulette_intro_seen', 'true');
+    document.getElementById('rouletteIntroModal').style.display = 'none';
+    if (_rouletteIntroPending) {
+        const { parentId, prefill } = _rouletteIntroPending;
+        _rouletteIntroPending = null;
+        _doOpenRouletteCompose(parentId, prefill);
+    }
+}
+
+function _doOpenRouletteCompose(parentId = null, prefill = {}) {
     const existing = document.getElementById('rouletteComposeModal');
     if (existing) existing.remove();
 
@@ -497,7 +520,7 @@ async function handleSendRoulette(parentId = '') {
         await loadRouletteMessages();
         if (typeof renderMessages === 'function') renderMessages();
         showNotificationToast('🌕 Your message is on its way to a stranger');
-        console.log('[roulette] sent:', data.message.id, '| release_at:', data.message.release_at);
+        console.log('[roulette] sent:', data?.message?.id, '| release_at:', data?.message?.release_at);
     } catch (err) {
         console.error('[roulette] send error:', err);
         const msg = err?.message?.includes('no_eligible_recipients')
@@ -1080,8 +1103,8 @@ function _renderRouletteDetailFooter(msg, role) {
 
 async function handleInlineRouletteReply(messageId) {
     const textarea = document.getElementById(`rouletteInlineText_${messageId}`);
-    const sendBtn  = document.querySelector(`.roulette-inline-send`);
     if (!textarea) return;
+    const sendBtn = textarea.closest('.roulette-inline-reply')?.querySelector('.roulette-inline-send') || null;
 
     const text = textarea.value.trim();
     if (!text) { textarea.focus(); return; }

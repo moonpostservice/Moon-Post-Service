@@ -181,7 +181,11 @@ async function openConversation(convIndex) {
         await loadFullConversationThread(conv);
     }
     // Set currentMessageIndex to the latest message for reply attachment
-    currentMessageIndex = messages.indexOf(conv.messages[0]);
+    // Use dbId lookup instead of object identity — indexOf fails after array replacement in loadFullConversationThread
+    const firstMsg = conv.messages[0];
+    currentMessageIndex = firstMsg?.dbId
+        ? messages.findIndex(m => m.dbId === firstMsg.dbId)
+        : messages.indexOf(firstMsg);
 
     const page = document.getElementById('messagePageView');
     document.getElementById('detailAvatarInitial').textContent = (conv.otherName || '?').charAt(0);
@@ -790,7 +794,7 @@ function renderConversationThread() {
             }
             html += `
                 <div class="chat-transit-msg chat-transit-countdown" data-release="${item.releaseAt || ''}" style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(18,35,58,0.5);border:1px dashed rgba(212,181,138,0.25);margin-bottom:8px;">
-                    <div class="chat-transit-note" style="font-size:15px;color:rgba(212,181,138,0.7);font-style:italic;">${arrivalNote}</div>
+                    <div class="chat-transit-note" style="font-size:17px;color:rgba(212,181,138,0.7);font-style:italic;">${arrivalNote}</div>
                     <div class="message-bubble-time">${item.time}</div>
                     <div class="msg-actions-row">
                         ${actionsHtml(item.msgDbId)}
@@ -1332,7 +1336,8 @@ async function sendThreadLunarNote() {
     // Find the target message (latest in conversation or current)
     let msg = null;
     if (currentConversation) {
-        msg = currentConversation.messages[0];
+        const msgs = currentConversation.messages;
+        msg = msgs[msgs.length - 1] || null;
     } else if (currentMessageIndex >= 0) {
         msg = messages[currentMessageIndex];
     }
@@ -1450,11 +1455,7 @@ async function sendSharedSkyMessage() {
     if (!text && !hasPhoto && !hasLunar) return;
 
     const userName = localStorage.getItem('moonpop_username') || 'Anonymous';
-    const userLoc = localStorage.getItem('moonpop_location');
-    let locName = 'Unknown';
-    if (userLoc) {
-        try { locName = JSON.parse(userLoc).name || 'Unknown'; } catch(e) {}
-    }
+    const locName = getSavedCityName('Unknown');
 
     // Optimistic local entry
     const transmission = {
@@ -1798,7 +1799,7 @@ async function sendReply() {
                 window._lastSendDiag = {
                     location: recipientCity,
                     recipientMoonUp: replyMoonUp,
-                    hoursUntilRise: replyHoursUntilRise?.toFixed(2) || 'N/A',
+                    hoursUntilRise: finalReleaseAt ? ((new Date(finalReleaseAt).getTime() - Date.now()) / 3600000).toFixed(2) : 'N/A',
                     instantDeliver: replyInstantDeliver,
                     releaseAt: finalReleaseAt,
                     messageStatus: replyStatus,

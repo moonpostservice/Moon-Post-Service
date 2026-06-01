@@ -533,6 +533,80 @@ function closeContactsPage() {
     if (window.location.pathname === '/contacts') history.replaceState(null, '', '/');
 }
 
+// FAQ PAGE
+// ========================
+function openFaqPage(noPush) {
+    const page = document.getElementById('faqPage');
+    page.style.display = 'block';
+    page.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+    if (!noPush) history.pushState({ page: 'faq' }, '', '/faq');
+}
+function closeFaqPage() {
+    document.getElementById('faqPage').style.display = 'none';
+    document.body.style.overflow = '';
+    if (window.location.pathname === '/faq') history.replaceState(null, '', '/');
+}
+
+// TERMS PAGE
+// ========================
+function openTermsPage(noPush) {
+    const page = document.getElementById('termsPage');
+    page.style.display = 'block';
+    page.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+    if (!noPush) history.pushState({ page: 'terms' }, '', '/terms');
+}
+function closeTermsPage() {
+    document.getElementById('termsPage').style.display = 'none';
+    document.body.style.overflow = '';
+    if (window.location.pathname === '/terms') history.replaceState(null, '', '/');
+}
+function openContactUsPage() {
+    const page = document.getElementById('contactUsPage');
+    page.style.display = 'block';
+    page.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+    // Reset form state
+    const form = document.getElementById('contactUsForm');
+    if (form) form.reset();
+    const confirmation = document.getElementById('contactUsConfirmation');
+    if (confirmation) confirmation.style.display = 'none';
+    const btn = document.getElementById('contactUsSubmitBtn');
+    if (btn) { btn.disabled = false; btn.textContent = 'Send Message'; }
+}
+function closeContactUsPage() {
+    document.getElementById('contactUsPage').style.display = 'none';
+    document.body.style.overflow = '';
+}
+function submitContactUsForm(e) {
+    e.preventDefault();
+    const name    = document.getElementById('contactUsName').value.trim();
+    const email   = document.getElementById('contactUsEmail').value.trim();
+    const subject = document.getElementById('contactUsSubject').value;
+    const message = document.getElementById('contactUsMessage').value.trim();
+
+    const to = 'themoonpostservice@gmail.com,yoashf@gmail.com,mymanko@gmail.com';
+    const body = `Name: ${name}\nEmail: ${email}\n\n${message}`;
+    const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoUrl;
+
+    const btn = document.getElementById('contactUsSubmitBtn');
+    const confirmation = document.getElementById('contactUsConfirmation');
+    btn.disabled = true;
+    btn.textContent = 'Sent';
+    confirmation.style.display = 'block';
+}
+
+function toggleFaq(btn) {
+    const item = btn.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    // Close all open items in the same section
+    const section = item.closest('.faq-section');
+    section.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+}
+
 function toggleContactsAddView() {
     document.getElementById('contactSearchInput').focus();
 }
@@ -866,6 +940,11 @@ async function deleteContact(contactName) {
     
     if (currentAuthUser && contact?.id) {
         await sb.from('contacts').delete().eq('id', contact.id).eq('owner_id', currentAuthUser.id);
+    } else if (currentAuthUser && contact?.linkedProfileId) {
+        // Fall back to matching by linked profile so we don't delete all contacts with the same name
+        await sb.from('contacts').delete().eq('linked_profile_id', contact.linkedProfileId).eq('owner_id', currentAuthUser.id);
+    } else if (currentAuthUser && contact?.email) {
+        await sb.from('contacts').delete().eq('email', contact.email).eq('owner_id', currentAuthUser.id);
     } else if (currentAuthUser) {
         await sb.from('contacts').delete().eq('name', contactName).eq('owner_id', currentAuthUser.id);
     }
@@ -1152,9 +1231,10 @@ function hideRecipientDropdown() {
 }
 
 function filterRecipients(query) {
-    const filtered = contacts.filter(c => 
-        c.name.toLowerCase().includes(query.toLowerCase()) ||
-        c.location.toLowerCase().includes(query.toLowerCase())
+    const q = query.toLowerCase();
+    const filtered = contacts.filter(c =>
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.location || '').toLowerCase().includes(q)
     );
     renderRecipientOptions(filtered, query);
 }

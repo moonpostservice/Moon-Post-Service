@@ -71,19 +71,22 @@ function setupOtpInputs() {
     for (let i = 1; i <= 8; i++) {
         const input = document.getElementById('otpDigit' + i);
         input.value = '';
-        input.addEventListener('input', (e) => {
+        // Clone the node to strip any previously attached listeners before re-adding
+        const fresh = input.cloneNode(true);
+        input.parentNode.replaceChild(fresh, input);
+        fresh.addEventListener('input', (e) => {
             const val = e.target.value.replace(/\D/g, '');
             e.target.value = val;
             if (val && i < 8) document.getElementById('otpDigit' + (i + 1)).focus();
             checkOtpComplete();
         });
-        input.addEventListener('keydown', (e) => {
+        fresh.addEventListener('keydown', (e) => {
             if (e.key === 'Backspace' && !e.target.value && i > 1) {
                 document.getElementById('otpDigit' + (i - 1)).focus();
             }
             if (e.key === 'Enter') verifyMoonKey();
         });
-        input.addEventListener('paste', (e) => {
+        fresh.addEventListener('paste', (e) => {
             e.preventDefault();
             const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 8);
             for (let j = 0; j < paste.length; j++) {
@@ -241,8 +244,11 @@ function showManualLocationPicker() {
         picker.style.display = '';
         const input = document.getElementById('driftManualInput');
         if (input) input.focus();
-        // Set up autocomplete
-        input.addEventListener('input', function() {
+        // Replace node to strip any previously stacked listeners before re-adding
+        const freshInput = input.cloneNode(true);
+        input.parentNode.replaceChild(freshInput, input);
+        freshInput.focus();
+        freshInput.addEventListener('input', function() {
             const q = this.value.trim().toLowerCase();
             const dropdown = document.getElementById('driftManualDropdown');
             if (!dropdown) return;
@@ -320,6 +326,7 @@ async function saveOnboardingCity(city) {
     onLocationObtained(city.lat, city.lon, city.tz);
 
     // Check if this is a new user (no username set yet) — show profile setup
+    if (!currentAuthUser) { console.warn('[saveOnboardingCity] No auth user yet, skipping profile check'); return; }
     const { data: checkProfile } = await sb.from('profiles').select('username').eq('id', currentAuthUser.id).single();
     if (!checkProfile || !checkProfile.username) {
         // New user — show profile step
@@ -357,8 +364,9 @@ function checkOnboardingReady() {
     const first = document.getElementById('onboardingFirstName')?.value.trim();
     const last = document.getElementById('onboardingLastName')?.value.trim();
     const sender = document.getElementById('onboardingSenderName')?.value.trim();
+    const terms = document.getElementById('onboardingTermsCheck')?.checked;
     const btn = document.getElementById('saveProfileBtn');
-    if (btn) btn.disabled = !(first && last && sender);
+    if (btn) btn.disabled = !(first && last && sender && terms);
 }
 
 // Track if user manually edited sender name; re-check readiness on every keystroke

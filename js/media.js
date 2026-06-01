@@ -214,9 +214,7 @@ async function uploadMoonPhoto(blob, context) {
     const path = `${context}/${currentAuthUser.id}/${ts}.jpg`;
 
     const userName = localStorage.getItem('moonpop_username') || 'Anonymous';
-    const userLoc = localStorage.getItem('moonpop_location');
-    let locName = 'Unknown';
-    if (userLoc) { try { locName = JSON.parse(userLoc).name || 'Unknown'; } catch(e) {} }
+    const locName = getSavedCityName('Unknown');
     const phase = moonData.phase ? moonData.phase.phaseName : getMoonPhase().phaseName;
 
     const { data, error } = await sb.storage.from('moon-photos').upload(path, blob, {
@@ -405,8 +403,7 @@ function openSharedSkyModal() {
     // Update subtitle with user's city
     const subtitle = document.getElementById('sharedSkySubtitle');
     if (subtitle) {
-        const savedLoc = localStorage.getItem('moonpop_location');
-        const cityName = savedLoc ? (JSON.parse(savedLoc).name || 'Your sky') : 'Your sky';
+        const cityName = getSavedCityName('Your sky');
         subtitle.textContent = `Public thread · Everyone under the moon · ${cityName}`;
     }
     renderSharedSkySignals();

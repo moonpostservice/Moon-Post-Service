@@ -194,39 +194,39 @@ async function debouncedReloadMessages() {
                 // Also load reactions for all messages AND replies
                 // Skip if a reaction was just added (cooldown prevents overwriting fresh data)
                 if (!_reactionCooldown) {
-                const allReactionIds = [...msgIds];
-                currentConversation.messages.forEach(msg => {
-                    if (msg.replies) msg.replies.forEach(r => { if (r.dbId) allReactionIds.push(r.dbId); });
-                });
-                const { data: freshReactions } = await sb.from('reactions')
-                    .select('*')
-                    .in('message_id', allReactionIds);
-                if (freshReactions) {
-                    const rxnMap = {};
-                    freshReactions.forEach(r => {
-                        if (!rxnMap[r.message_id]) rxnMap[r.message_id] = {};
-                        if (!rxnMap[r.message_id][r.emoji]) rxnMap[r.message_id][r.emoji] = { emoji: r.emoji, count: 0, mine: false };
-                        rxnMap[r.message_id][r.emoji].count++;
-                        if (r.user_id === currentAuthUser.id) rxnMap[r.message_id][r.emoji].mine = true;
-                    });
-                    // Assign reactions to top-level messages
+                    const allReactionIds = [...msgIds];
                     currentConversation.messages.forEach(msg => {
-                        if (msg.dbId && rxnMap[msg.dbId]) {
-                            msg.reactions = Object.values(rxnMap[msg.dbId]);
-                        }
-                        // Assign reactions to individual replies
-                        if (msg.replies) {
-                            msg.replies.forEach(r => {
-                                if (r.dbId && rxnMap[r.dbId]) {
-                                    r.reactions = Object.values(rxnMap[r.dbId]);
-                                }
-                            });
-                        }
+                        if (msg.replies) msg.replies.forEach(r => { if (r.dbId) allReactionIds.push(r.dbId); });
                     });
-                }
-            }
-            } else { console.log('[reload] Skipping reaction reload — cooldown active'); }
+                    const { data: freshReactions } = await sb.from('reactions')
+                        .select('*')
+                        .in('message_id', allReactionIds);
+                    if (freshReactions) {
+                        const rxnMap = {};
+                        freshReactions.forEach(r => {
+                            if (!rxnMap[r.message_id]) rxnMap[r.message_id] = {};
+                            if (!rxnMap[r.message_id][r.emoji]) rxnMap[r.message_id][r.emoji] = { emoji: r.emoji, count: 0, mine: false };
+                            rxnMap[r.message_id][r.emoji].count++;
+                            if (r.user_id === currentAuthUser.id) rxnMap[r.message_id][r.emoji].mine = true;
+                        });
+                        // Assign reactions to top-level messages
+                        currentConversation.messages.forEach(msg => {
+                            if (msg.dbId && rxnMap[msg.dbId]) {
+                                msg.reactions = Object.values(rxnMap[msg.dbId]);
+                            }
+                            // Assign reactions to individual replies
+                            if (msg.replies) {
+                                msg.replies.forEach(r => {
+                                    if (r.dbId && rxnMap[r.dbId]) {
+                                        r.reactions = Object.values(rxnMap[r.dbId]);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                } else { console.log('[reload] Skipping reaction reload — cooldown active'); }
             renderConversationThread();
+        }
         }
     } finally {
         setTimeout(() => {
@@ -1003,17 +1003,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     })();
 
     // Check for saved location first
-    const savedLocation = localStorage.getItem('moonpop_location');
-    if (savedLocation) {
-        try {
-            const loc = JSON.parse(savedLocation);
-            const city = cities.find(c => c.name === loc.name);
-            if (city) {
-                updateLocationDisplay(city.name, city.country);
-                onLocationObtained(city.lat, city.lon, city.tz);
-            }
-        } catch (e) {
-            autoDetectFromTimezone();
+    const loc = getSavedLocation();
+    if (loc) {
+        const city = cities.find(c => c.name === loc.name);
+        if (city) {
+            updateLocationDisplay(city.name, city.country);
+            onLocationObtained(city.lat, city.lon, city.tz);
         }
     } else {
         autoDetectFromTimezone();
@@ -1080,9 +1075,10 @@ function autoDetectFromTimezone() {
 let headerMoonDrawn = false;
 window.addEventListener('scroll', () => {
     const header = document.querySelector('.header');
+    if (!header) return;
     const scrolled = window.scrollY > 80;
     header.classList.toggle('scrolled', scrolled);
-    
+
     if (scrolled && !headerMoonDrawn && moonData.phase) {
         const svg = document.getElementById('headerMoonSvg');
         if (svg) {
@@ -1095,6 +1091,7 @@ window.addEventListener('scroll', () => {
 // Split-layout: toggle header class and body overflow based on viewport
 (function initSplitLayout() {
     const header = document.querySelector('.header');
+    if (!header) return;
     const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
 
     function applySplit() {
@@ -1568,7 +1565,7 @@ async function completeOnboarding() {
     // Save profile to Supabase
     if (currentAuthUser && city) {
         const { error: profileError } = await sb.from('profiles').update({
-            username: name || currentAuthUser.email.split('@')[0],
+            username: name || usernameFromEmail(currentAuthUser.email),
             city: city.name,
             latitude: city.lat,
             longitude: city.lon,
@@ -1591,7 +1588,7 @@ function skipOnboarding() {
     // Save minimal profile to Supabase
     if (currentAuthUser) {
         sb.from('profiles').update({
-            username: currentAuthUser.email.split('@')[0]
+            username: usernameFromEmail(currentAuthUser.email)
         }).eq('id', currentAuthUser.id);
     }
     localStorage.setItem('moonpop_seen', 'true');
@@ -1670,9 +1667,9 @@ function updateOrbitCenter() {
             const greeting = userName ? `Hello ${userName}.` : 'Hello.';
             const moonsetStr = moonData.moonset && moonData.moonset !== '--:--' ? moonData.moonset : '';
             if (moonsetStr) {
-                heroTitle.textContent = `${greeting} The Moon Post Service is now open! Closing at moonset at ${moonsetStr}.`;
+                heroTitle.innerHTML = `${greeting}<br>The Moon Post Service is now open! Closing at moonset at ${moonsetStr}.`;
             } else {
-                heroTitle.textContent = `${greeting} The Moon Post Service is now open!`;
+                heroTitle.innerHTML = `${greeting}<br>The Moon Post Service is now open!`;
             }
         }
         if (inboxCta) inboxCta.style.display = '';
@@ -1708,15 +1705,15 @@ function updateOrbitCenter() {
         // "Carrying" = only in-transit messages (not unread — those are already delivered)
         const totalCarrying = incomingInTransit;
         if (heroTitle) {
-            const greeting = userName ? `Hello ${userName}, ` : '';
+            const greetingPrefix = userName ? `Hello ${userName}.<br>` : '';
             if (totalCarrying > 0 && safeWaiting > 0) {
-                heroTitle.textContent = `${greeting}the moon carries ${totalCarrying} ${totalCarrying === 1 ? 'message' : 'messages'} for you. You also have ${safeWaiting} unread ${safeWaiting === 1 ? 'message' : 'messages'} waiting.`;
+                heroTitle.innerHTML = `${greetingPrefix}The moon carries ${totalCarrying} ${totalCarrying === 1 ? 'message' : 'messages'} for you. You also have ${safeWaiting} unread ${safeWaiting === 1 ? 'message' : 'messages'} waiting.`;
             } else if (totalCarrying > 0) {
-                heroTitle.textContent = `${greeting}the moon carries ${totalCarrying} ${totalCarrying === 1 ? 'message' : 'messages'} for you. You'll receive them when the moon reaches your sky.`;
+                heroTitle.innerHTML = `${greetingPrefix}The moon carries ${totalCarrying} ${totalCarrying === 1 ? 'message' : 'messages'} for you. You'll receive them when the moon reaches your sky.`;
             } else if (safeWaiting > 0) {
-                heroTitle.textContent = `${greeting}you have ${safeWaiting} unread ${safeWaiting === 1 ? 'message' : 'messages'}. The Moon Post Service opens when the moon rises.`;
+                heroTitle.innerHTML = `${greetingPrefix}You have ${safeWaiting} unread ${safeWaiting === 1 ? 'message' : 'messages'}. The Moon Post Service opens when the moon rises.`;
             } else {
-                heroTitle.textContent = `${greeting}the Moon Post Service opens when the moon rises.`;
+                heroTitle.innerHTML = `${greetingPrefix}The Moon Post Service opens when the moon rises.`;
             }
         }
 

@@ -112,16 +112,17 @@ function getCityDayStart(now, tz) {
         return d;
     }
     // Format current time in the city's timezone
-    const str = new Intl.DateTimeFormat('en-GB', {
+    // Use formatToParts to avoid locale-dependent string formats that break HH:MM:SS splitting
+    const parts = new Intl.DateTimeFormat('en-GB', {
         timeZone: tz,
         hour: 'numeric', minute: 'numeric', second: 'numeric',
         hour12: false
-    }).format(now);
-    
-    let [h, m, s] = str.split(':').map(Number);
+    }).formatToParts(now);
+    const get = type => parseInt(parts.find(p => p.type === type)?.value || '0', 10);
+    let h = get('hour'), m = get('minute'), s = get('second');
     if (h === 24) h = 0; // midnight edge case
-    
-    const citySecondsIntoDay = h * 3600 + m * 60 + (s || 0);
+
+    const citySecondsIntoDay = h * 3600 + m * 60 + s;
     return new Date(now.getTime() - citySecondsIntoDay * 1000);
 }
 
@@ -943,6 +944,15 @@ function getCountdown() {
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
     
     return { hours, minutes, seconds };
+}
+
+
+// Dual export: stays a browser global (non-module <script>), and also exposes
+// the pure, dependency-free time helpers for unit testing in plain Node.
+// Only safe-to-isolate functions are exported here; functions that depend on
+// SunCalc or the DOM are intentionally left out.
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { getCityDayStart, formatTimeInZone };
 }
 
 

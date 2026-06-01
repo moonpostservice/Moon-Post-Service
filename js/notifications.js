@@ -79,6 +79,9 @@ function getMoonPhase(date = new Date()) {
         phaseName = 'Waning Crescent';
     }
 
+    // Days until next new moon
+    const daysToNew = Math.round((1 - cyclePosition) * synodicMonth);
+
     // Calculate next full moon
     let daysToFull = (0.5 - cyclePosition) * synodicMonth;
     if (daysToFull < 0) daysToFull += synodicMonth;
@@ -98,6 +101,7 @@ function getMoonPhase(date = new Date()) {
         illumination,
         phaseName,
         moonAge,
+        daysToNew,
         nextFullMoon,
         distance,
         isWaxing: cyclePosition < 0.5
@@ -229,7 +233,10 @@ function updateMoonDisplay() {
     // Populate moon data bar
     const ageBarEl = document.getElementById('moonAgeBar');
     const distBarEl = document.getElementById('moonDistanceBar');
-    if (ageBarEl) ageBarEl.textContent = phase.moonAge + ' days';
+    if (ageBarEl) {
+        const d = phase.daysToNew;
+        ageBarEl.textContent = d <= 1 ? 'tomorrow' : 'in ' + d + ' days';
+    }
     if (distBarEl) distBarEl.textContent = phase.distance.toLocaleString() + ' km';
     
     // Draw in sticky header
@@ -286,12 +293,9 @@ function updateSettingsSummaries() {
     // Location summary — read-only, pulled from stored location
     const locSummary = document.getElementById('sectionLocationSummary');
     if (locSummary) {
-        const savedLoc = localStorage.getItem('moonpop_location');
-        if (savedLoc) {
-            try {
-                const loc = JSON.parse(savedLoc);
-                locSummary.textContent = loc.country ? `${loc.name}, ${loc.country}` : loc.name;
-            } catch(e) { locSummary.textContent = 'Your location'; }
+        const loc = getSavedLocation();
+        if (loc) {
+            locSummary.textContent = loc.country ? `${loc.name}, ${loc.country}` : loc.name;
         } else {
             locSummary.textContent = 'Your location';
         }
@@ -311,11 +315,12 @@ function updateSettingsSummaries() {
 function toggleMobileMenu() {
     const overlay = document.getElementById('mobileMenuOverlay');
     const drawer = document.getElementById('mobileMenuDrawer');
+    if (!drawer) return;
     const isOpen = drawer.classList.contains('open');
     if (isOpen) {
         closeMobileMenu();
     } else {
-        overlay.classList.add('open');
+        overlay?.classList.add('open');
         drawer.classList.add('open');
     }
 }
@@ -327,11 +332,12 @@ function closeMobileMenu() {
 function toggleSettings() {
     const dd = document.getElementById('settingsDropdown');
     const arrow = document.getElementById('settingsArrow');
+    if (!dd) return;
     const isOpen = dd.classList.contains('active');
 
     if (isOpen) {
         dd.classList.remove('active');
-        arrow.classList.remove('open');
+        arrow?.classList.remove('open');
     } else {
         // Close any open chat/shared sky panels first
         const msgPage = document.getElementById('messagePageView');
@@ -340,7 +346,7 @@ function toggleSettings() {
         if (ssPage && ssPage.classList.contains('active')) closeSharedSkyModal();
 
         dd.classList.add('active');
-        arrow.classList.add('open');
+        arrow?.classList.add('open');
 
         // Collapse all sections on open
         document.querySelectorAll('.settings-section.open').forEach(s => s.classList.remove('open'));
@@ -542,7 +548,6 @@ async function logOut() {
     closeSettings();
     await sb.auth.signOut();
     localStorage.clear();
-    window.location.reload();
 }
 
 async function deleteAccount() {
@@ -608,7 +613,8 @@ async function saveSettings() {
     
     // Update user initials
     if (userName) {
-        document.getElementById('userInitials').textContent = userName.charAt(0).toUpperCase();
+        const initialsEl = document.getElementById('userInitials');
+        if (initialsEl) initialsEl.textContent = userName.charAt(0).toUpperCase();
         localStorage.setItem('moonpop_username', userName);
     }
 
@@ -621,18 +627,15 @@ async function saveSettings() {
         };
         
         // Also save location if set
-        const savedLoc = localStorage.getItem('moonpop_location');
-        if (savedLoc) {
-            try {
-                const loc = JSON.parse(savedLoc);
-                const city = cities.find(c => c.name === loc.name);
-                if (city) {
-                    updateData.city = city.name;
-                    updateData.latitude = city.lat;
-                    updateData.longitude = city.lon;
-                    updateData.timezone = city.tz;
-                }
-            } catch(e) {}
+        const loc = getSavedLocation();
+        if (loc) {
+            const city = cities.find(c => c.name === loc.name);
+            if (city) {
+                updateData.city = city.name;
+                updateData.latitude = city.lat;
+                updateData.longitude = city.lon;
+                updateData.timezone = city.tz;
+            }
         }
         
         const { error } = await sb.from('profiles').update(updateData).eq('id', currentAuthUser.id);

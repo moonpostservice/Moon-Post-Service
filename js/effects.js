@@ -532,7 +532,7 @@ async function confirmNewContact() {
     if (!contacts.find(c => c.email === email)) {
         contacts.push(newContact);
         if (currentAuthUser) {
-            sb.from('contacts').insert({
+            const { error: insertErr } = await sb.from('contacts').insert({
                 owner_id: currentAuthUser.id,
                 name: name,
                 email: email,
@@ -540,6 +540,7 @@ async function confirmNewContact() {
                 is_on_moonpop: isOnMps,
                 linked_profile_id: linkedProfileId
             });
+            if (insertErr) console.error('[confirmNewContact] Failed to save contact:', insertErr);
         }
     }
 
@@ -1165,7 +1166,8 @@ function resetForm() {
     document.getElementById('lunarResultCard').style.display = 'none';
     lunarNoteActive = false;
     currentLunarTemplate = -1;
-    document.getElementById('lunarNotePanel').style.display = 'block';
+    const lunarNotePanel = document.getElementById('lunarNotePanel');
+    if (lunarNotePanel) lunarNotePanel.style.display = 'block';
 
     // Reset song
     if (document.getElementById('songInput')) document.getElementById('songInput').value = '';

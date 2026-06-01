@@ -1075,7 +1075,7 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 #sharedSkyPage .bubble-lunar-label {
     color: var(--accent);
     font-family: var(--sans);
-    font-size: 10px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: var(--tracking-label);
     font-weight: 600;
@@ -2130,15 +2130,15 @@ body.moon-down .cta-button[data-tooltip]:hover::before {
 }
 
 .shared-sky-row-title {
-    font-size: 14px;
+    font-size: 17px;
     font-weight: 700;
     color: var(--blue);
 }
 
 .shared-sky-row-preview {
-    font-size: 12px;
+    font-size: 15px;
     color: var(--text-muted);
-    margin-top: 1px;
+    margin-top: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2351,15 +2351,15 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .message-sender {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
     color: var(--blue);
-    margin-bottom: 1px;
+    margin-bottom: 2px;
     text-transform: capitalize;
 }
 
 .message-preview {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 400;
     color: var(--blue);
     text-transform: capitalize;
@@ -2367,7 +2367,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .message-status {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 400;
     color: var(--blue);
     text-transform: capitalize;
@@ -2375,7 +2375,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .message-time {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 400;
     color: var(--blue);
     text-transform: capitalize;
@@ -3697,14 +3697,14 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .message-page-info h3 {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
     color: var(--blue);
-    margin-bottom: 1px;
+    margin-bottom: 2px;
 }
 
 .message-page-info p {
-    font-size: 11px;
+    font-size: 13px;
     color: var(--text-muted);
 }
 
@@ -3734,7 +3734,7 @@ body.moon-down .inbox-new-msg-cta {
     background: none;
     border: none;
     font-family: 'Satoshi', sans-serif;
-    font-size: 12px;
+    font-size: 14px;
     color: var(--blue);
     cursor: pointer;
     padding: 6px 0 2px;
@@ -3772,7 +3772,7 @@ body.moon-down .inbox-new-msg-cta {
     border: 2px solid #e0dcd4;
     border-radius: 24px;
     font-family: 'Satoshi', sans-serif;
-    font-size: 14px;
+    font-size: 16px;
 }
 
 .message-page-input:focus {
@@ -4028,7 +4028,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .message-bubble p {
-    font-size: 15px;
+    font-size: 17px;
     line-height: 1.5;
     color: var(--blue);
 }
@@ -4038,7 +4038,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .message-bubble-time {
-    font-size: 11px;
+    font-size: 13px;
     color: var(--text-muted);
     margin-top: 8px;
 }
@@ -4993,7 +4993,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .bubble-lunar-label {
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -5002,7 +5002,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .bubble-lunar-text {
-    font-size: 15px;
+    font-size: 17px;
     line-height: 1.7;
     color: var(--text-dark);
     font-weight: 500;
@@ -5011,7 +5011,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .bubble-lunar-closing {
-    font-size: 11px;
+    font-size: 13px;
     color: var(--text-muted);
     font-style: italic;
 }
@@ -5388,7 +5388,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .header.split-active .logo {
-    height: clamp(56px, 7vw, 88px);
+    height: clamp(45px, 5.6vw, 70px);
 }
 
 .split-layout {
@@ -5455,8 +5455,7 @@ body.moon-down .inbox-new-msg-cta {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     gap: 8px;
     padding: 8px;
 }
@@ -5740,6 +5739,9 @@ body.moon-down .inbox-new-msg-cta {
     padding: 0;
     width: 100%;
     align-items: center;
+    flex: 1 1 0;
+    min-height: 0;
+    justify-content: center;
 }
 
 .split-right .moon-data-bar {
@@ -5749,12 +5751,13 @@ body.moon-down .inbox-new-msg-cta {
     z-index: 4;
 }
 
-/* Scale orbit ring for available space — account for title, data bar, gaps */
+/* Scale orbit ring for available space — fills remaining flex space, shrinks with title */
 .split-right .orbit-container {
-    width: min(420px, calc(100vh - 320px));
-    height: min(420px, calc(100vh - 320px));
-    min-width: 220px;
-    min-height: 220px;
+    width: min(420px, 100%, calc(100vh - 340px));
+    height: min(420px, 100%, calc(100vh - 340px));
+    aspect-ratio: 1;
+    min-width: 180px;
+    min-height: 180px;
     flex-shrink: 1;
 }
 
@@ -6981,12 +6984,12 @@ body::before {
     gap: 14px;
 }
 .header-brand .logo {
-    height: 100px;
+    height: 40px;
     width: auto;
     display: block;
 }
 .header.scrolled .header-brand .logo {
-    height: 68px;
+    height: 32px;
 }
 .header-tagline {
     font-family: var(--sans);
@@ -7102,19 +7105,16 @@ body::before {
 
 /* Header contacts button */
 .header-contacts-btn {
-    width: 40px;
-    height: 40px;
     background: transparent;
     border: 1px solid var(--line);
     cursor: pointer;
     color: var(--accent);
-    padding: 0;
-    border-radius: 50%;
+    padding: 8px 16px 8px 14px;
+    border-radius: var(--radius-pill);
     transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease, transform var(--dur-fast) ease, color var(--dur-fast) ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
 }
 .header-contacts-btn:hover {
     border-color: var(--accent);
@@ -7669,12 +7669,14 @@ body.moon-down .new-message-btn {
 }
 #messagePageView .message-page-info h3 {
     font-family: var(--serif);
+    font-size: 17px;
     font-weight: 500;
     color: var(--text-bright);
     letter-spacing: -0.2px;
 }
 #messagePageView .message-page-info p {
     font-family: var(--serif);
+    font-size: 13px;
     font-style: italic;
     color: var(--muted);
 }
@@ -7771,7 +7773,7 @@ body.moon-down .new-message-btn {
 #messagePageView .bubble-lunar-label {
     color: var(--accent);
     font-family: var(--sans);
-    font-size: 10px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: var(--tracking-label);
     font-weight: 600;
@@ -8229,6 +8231,7 @@ body.moon-down .new-message-btn {
 .landing-nav-brand {
     display: flex;
     align-items: center;
+    gap: 12px;
 }
 .landing-wordmark {
     font-family: var(--serif);

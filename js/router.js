@@ -11,11 +11,17 @@ window.addEventListener('popstate', async function(e) {
     document.getElementById('philosophyPage').style.display = 'none';
     document.getElementById('contactsPage').style.display  = 'none';
     document.getElementById('roulettePage').style.display  = 'none';
+    document.getElementById('faqPage').style.display       = 'none';
+    document.getElementById('termsPage').style.display     = 'none';
 
     if (e.state?.page === 'roulette' || path === '/roulette') {
         openRoulettePage(true);
+    } else if (e.state?.page === 'faq' || path === '/faq') {
+        openFaqPage(true);
     } else if (e.state?.page === 'philosophy' || path === '/philosophy') {
         openPhilosophyPage(true);
+    } else if (e.state?.page === 'terms' || path === '/terms') {
+        openTermsPage(true);
     } else if (e.state?.page === 'contacts' || path === '/contacts') {
         openContactsPage(true);
     } else if (e.state?.page === 'shared-sky' || path === '/shared-sky') {

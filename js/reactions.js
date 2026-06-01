@@ -196,7 +196,7 @@ async function handleReaction(msgDbId, emoji) {
             msg.reactions = msg.reactions.filter(r => r !== myExisting);
         }
         _reactionCache[msgDbId] = { reactions: JSON.parse(JSON.stringify(msg.reactions)), cachedAt: Date.now() };
-        if (currentConversation) renderConversationThread(); renderSharedSkySignals();
+        if (currentConversation) { renderConversationThread(); } renderSharedSkySignals();
         if (currentAuthUser && msg.dbId) {
             try {
                 const { error } = await sb.from('reactions').delete()
@@ -209,7 +209,7 @@ async function handleReaction(msgDbId, emoji) {
                     if (ex2) { ex2.count++; ex2.mine = true; }
                     else { msg.reactions.push({ emoji, count: 1, mine: true }); }
                     _reactionCache[msgDbId] = { reactions: JSON.parse(JSON.stringify(msg.reactions)), cachedAt: Date.now() };
-                    if (currentConversation) renderConversationThread(); renderSharedSkySignals();
+                    if (currentConversation) { renderConversationThread(); } renderSharedSkySignals();
                 }
             } catch (e) { rxLog(`DB DELETE EXCEPTION: ${e.message}`); }
         }
@@ -235,7 +235,7 @@ async function handleReaction(msgDbId, emoji) {
             msg.reactions.push({ emoji, count: 1, mine: true });
         }
         _reactionCache[msgDbId] = { reactions: JSON.parse(JSON.stringify(msg.reactions)), cachedAt: Date.now() };
-        if (currentConversation) renderConversationThread(); renderSharedSkySignals();
+        if (currentConversation) { renderConversationThread(); } renderSharedSkySignals();
         if (currentAuthUser && msg.dbId) {
             try {
                 // Delete old reaction first (if replacing)
@@ -262,7 +262,7 @@ async function handleReaction(msgDbId, emoji) {
                         else { msg.reactions.push({ emoji: oldEmoji, count: 1, mine: true }); }
                     }
                     _reactionCache[msgDbId] = { reactions: JSON.parse(JSON.stringify(msg.reactions)), cachedAt: Date.now() };
-                    if (currentConversation) renderConversationThread(); renderSharedSkySignals();
+                    if (currentConversation) { renderConversationThread(); } renderSharedSkySignals();
                 }
             } catch (e) { rxLog(`DB REACTION EXCEPTION: ${e.message}`); }
         }
