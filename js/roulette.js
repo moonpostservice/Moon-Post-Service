@@ -10,6 +10,23 @@ let rouletteActiveTab = 'sent'; // 'sent' | 'received'
 let _rouletteRealtimeChannels = [];
 // Track messages where the current user has tapped reveal (persists until mutual or page reload)
 const _myRevealedMessages = new Set();
+
+// ---- Client-side read receipt cache (localStorage) ----
+// Used as source of truth for the unread badge because the DB update
+// can be silently blocked by RLS in certain Supabase client configurations.
+function _getLocallyReadIds() {
+    try { return new Set(JSON.parse(localStorage.getItem('moonpop_roulette_read') || '[]')); }
+    catch { return new Set(); }
+}
+function _addLocallyReadIds(ids) {
+    try {
+        const s = _getLocallyReadIds();
+        ids.forEach(id => s.add(id));
+        const arr = [...s];
+        // Keep only the last 500 to prevent unbounded growth
+        localStorage.setItem('moonpop_roulette_read', JSON.stringify(arr.slice(-500)));
+    } catch {}
+}
 // Track the message currently open in the detail panel (for menu actions)
 let _currentRouletteMsg  = null;
 let _currentRouletteRole = null;
@@ -840,7 +857,13 @@ function getRouletteInboxItems() {
             : lm.photo_url ? '📷 Photo' : '';
 
         // Unread if any received message in the thread is delivered and not yet read.
-        const isUnread = entries.some(e => e.role === 'recipient' && e.m.status === 'delivered' && !e.m.recipient_read_at);
+        // Check localStorage first — it's the reliable source of truth for read state.
+        const locallyRead = _getLocallyReadIds();
+        const isUnread = entries.some(e =>
+            e.role === 'recipient' &&
+            e.m.status === 'delivered' &&
+            !e.m.recipient_read_at &&
+            !locallyRead.has(e.m.id));
         const unreadBadge = isUnread ? `<span class="unread-badge pulse">!</span>` : '';
 
         let statusBadge = '';
@@ -1078,28 +1101,34 @@ function _collectRouletteThread(msg) {
 }
 
 // Mark every received, delivered-but-unread message in msg's thread as read.
-// Fire-and-forget; the sender sees their title flip to "Read in [city]" via realtime.
+// Uses localStorage as primary read-state (survives refresh regardless of DB outcome).
+// Also attempts a DB update so the sender can see "Read in [city]".
 function _markRouletteThreadRead(msg) {
     const thread = _collectRouletteThread(msg);
+    const locallyRead = _getLocallyReadIds();
     const unread = thread.filter(({ m, role: r }) =>
-        r === 'recipient' && !m.recipient_read_at &&
-        (m.status === 'delivered' || m.status === 'revealed'));
-    console.log('[roulette] markRead thread:', thread.map(e => `${e.role}:${e.m.id.slice(0,8)}:${e.m.status}`));
-    console.log('[roulette] markRead unread:', unread.map(e => e.m.id));
+        r === 'recipient' &&
+        (m.status === 'delivered' || m.status === 'revealed') &&
+        !m.recipient_read_at &&
+        !locallyRead.has(m.id));
     if (!unread.length) return;
 
-    const readAt = new Date().toISOString();
     const ids = unread.map(({ m }) => m.id);
+
+    // Persist to localStorage immediately — this is what the badge checks on refresh.
+    _addLocallyReadIds(ids);
+
+    // Update in-memory objects and re-render the inbox badge away now.
+    const readAt = new Date().toISOString();
+    unread.forEach(({ m }) => { m.recipient_read_at = readAt; });
+    if (typeof renderMessages === 'function') renderMessages();
+
+    // Best-effort DB update so the sender sees "Read in [city]".
     sb.from('moon_roulette_messages')
         .update({ recipient_read_at: readAt })
         .in('id', ids)
-        .select('id, recipient_read_at')
-        .then(({ data, error }) => {
-            console.log('[roulette] markRead result — data:', data, 'error:', error);
-            if (!error) {
-                unread.forEach(({ m }) => { m.recipient_read_at = readAt; });
-                if (typeof renderMessages === 'function') renderMessages();
-            }
+        .then(({ error }) => {
+            if (error) console.warn('[roulette] markRead DB update failed:', error);
         });
 }
 
