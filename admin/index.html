@@ -490,7 +490,17 @@ const SUPABASE_URL = 'https://znfqqehthxcrizcixzpu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuZnFxZWh0aHhjcml6Y2l4enB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MzMyMDgsImV4cCI6MjA4NjAwOTIwOH0.Twf3d9QEhVq6j9yVKaS9QNhnvygYgxPj0zg6Ug5pAq0';
 const ADMIN_EMAILS = ['mymanko@gmail.com', 'yoashf@gmail.com'];
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Isolated auth storage so the admin panel never shares/rotates the main app's
+// refresh token. Sharing the default storageKey caused both GoTrue clients to
+// rotate each other's refresh token, producing "Invalid Refresh Token: Refresh
+// Token Not Found" and logging users out on refresh when both tabs were open.
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+        storageKey: 'moonpop-admin-auth',
+        persistSession: true,
+        autoRefreshToken: true,
+    },
+});
 
 let allRows = [];
 let activeFilter = 'all';
