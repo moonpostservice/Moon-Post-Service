@@ -1,5 +1,48 @@
 // Chat — Message Detail, Typing, Replies
 
+function linkifyText(text) {
+    if (!text) return '';
+    const urlRegex = /(https?:\/\/[^\s<>"]+)/g;
+    return text.replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;word-break:break-all;">${url}</a>`);
+}
+
+function extractMediaFromText(text) {
+    if (!text) return { embed: '', cleanText: text };
+    const mediaRegex = /(https?:\/\/((?:www\.)?youtube\.com\/watch[^\s]*|youtu\.be\/[^\s]+|open\.spotify\.com\/track\/[^\s]+))/;
+    const match = text.match(mediaRegex);
+    if (!match) return { embed: '', cleanText: text };
+    const url = match[1];
+    const cleanText = text.replace(url, '').trim();
+    return { embed: mediaEmbedHtml(url, ''), cleanText };
+}
+
+function mediaEmbedHtml(url, title) {
+    if (!url) return '';
+    const ytPatterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+        /^([a-zA-Z0-9_-]{11})$/
+    ];
+    for (const p of ytPatterns) {
+        const m = url.match(p);
+        if (m) {
+            return `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;margin-bottom:6px;">
+                <iframe src="https://www.youtube.com/embed/${m[1]}?rel=0" allow="autoplay; encrypted-media" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:10px;"></iframe>
+            </div>`;
+        }
+    }
+    const spotifyId = url.match(/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/)?.[1];
+    if (spotifyId) {
+        return `<div style="margin-bottom:6px;border-radius:12px;overflow:hidden;">
+            <iframe src="https://open.spotify.com/embed/track/${spotifyId}?utm_source=generator&theme=0" width="100%" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="border-radius:12px;border:none;display:block;"></iframe>
+        </div>`;
+    }
+    return '';
+}
+
+function spotifyEmbedHtml(songUrl, songTitle) {
+    return mediaEmbedHtml(songUrl, songTitle);
+}
+
 // ORBIT DOT HIGHLIGHT
 // ========================
 function highlightOrbitDot(senderName, show) {
@@ -245,6 +288,8 @@ async function openConversation(convIndex) {
                         senderId: r.sender_id,
                         isLunarNote: r.is_lunar_note || false,
                         photoUrl: r.photo_url || null,
+                        songUrl: r.song_url || null,
+                        songTitle: r.song_title || null,
                         status: r.sender_id === currentAuthUser.id ? (r.status === 'in_transit' ? 'In Transit' : 'Released') : '',
                         releaseAt: r.release_at || null,
                         recipientCity: r.recipient_city || null,
@@ -524,11 +569,13 @@ function renderConversationThread() {
                 isMessage: true
             });
         }
-        if (msg.messageText || msg.photoUrl) {
+        if (msg.messageText || msg.photoUrl || msg.songUrl) {
             timeline.push({
                 type: 'text',
                 text: msg.messageText,
                 photoUrl: msg.photoUrl || null,
+                songUrl: msg.songUrl || null,
+                songTitle: msg.songTitle || null,
                 time: msg.time,
                 createdAt: msg.createdAt,
                 sent: msg.type === 'sent',
@@ -540,7 +587,7 @@ function renderConversationThread() {
                 location: msg.location
             });
         }
-        if (msg.status === 'In Transit' && !msg.messageText && !msg.lunarNote && !msg.photoUrl) {
+        if (msg.status === 'In Transit' && !msg.messageText && !msg.lunarNote && !msg.photoUrl && !msg.songUrl) {
             timeline.push({
                 type: 'transit',
                 time: msg.time,
@@ -563,6 +610,8 @@ function renderConversationThread() {
                     type: r.isLunarNote ? 'lunar-reply' : 'reply',
                     text: r.text,
                     photoUrl: r.photoUrl || null,
+                    songUrl: r.songUrl || null,
+                    songTitle: r.songTitle || null,
                     time: r.time,
                     createdAt: r.createdAt || msg.createdAt,
                     sent: r.sent,
@@ -619,7 +668,11 @@ function renderConversationThread() {
             const dots = Array.from({ length: 7 }, (_, i) =>
                 `<span class="wiped-particle" style="--i:${i}"></span>`
             ).join('');
-            html = `<div class="new-cycle-empty wiped">
+            // First-view: play the full dissolve animation; subsequent visits show static state
+            const seenKey = 'moonpop_wiped_seen_' + (conv.dbConversationId || conv.otherKey);
+            const isFirstView = !localStorage.getItem(seenKey);
+            if (isFirstView) localStorage.setItem(seenKey, '1');
+            html = `<div class="new-cycle-empty wiped${isFirstView ? ' wiped-first-view' : ''}">
                 <div class="wiped-silhouettes">
                     <div class="wiped-silhouette-row right"><span></span></div>
                     <div class="wiped-silhouette-row left"><span></span></div>
@@ -741,10 +794,14 @@ function renderConversationThread() {
                     </div>
                 `;
             } else {
+                const { embed: textEmbed, cleanText } = item.songUrl ? { embed: '', cleanText: item.text } : extractMediaFromText(item.text);
+                const embedHtml = item.songUrl ? spotifyEmbedHtml(item.songUrl, item.songTitle) : textEmbed;
+                const displayText = item.songUrl ? item.text : cleanText;
                 html += `
                     <div class="message-bubble ${item.sent ? 'sent' : ''}">
-                        ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
-                        ${item.text ? `<p>${item.text}</p>` : ''}
+                        ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${(displayText || embedHtml) ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
+                        ${embedHtml}
+                        ${displayText ? `<p>${linkifyText(displayText)}</p>` : ''}
                         <div class="message-bubble-time">${item.time || 'Recently'} ${textReceipt}</div>
                         <div class="msg-actions-row">
                             ${actionsHtml(item.msgDbId)}
@@ -844,10 +901,14 @@ function renderConversationThread() {
                     </div>
                 `;
             } else {
+                const { embed: rEmbed, cleanText: rClean } = item.songUrl ? { embed: '', cleanText: item.text } : extractMediaFromText(item.text);
+                const rEmbedHtml = item.songUrl ? spotifyEmbedHtml(item.songUrl, item.songTitle) : rEmbed;
+                const rDisplayText = item.songUrl ? item.text : rClean;
                 html += `
                     <div class="message-bubble ${item.sent ? 'sent' : ''}">
-                        ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
-                        ${item.text ? `<p>${item.text}</p>` : ''}
+                        ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${(rDisplayText || rEmbedHtml) ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
+                        ${rEmbedHtml}
+                        ${rDisplayText ? `<p>${linkifyText(rDisplayText)}</p>` : ''}
                         <div class="message-bubble-time">${item.time}</div>
                         <div class="msg-actions-row">
                             ${actionsHtml(item.msgDbId)}
@@ -1204,14 +1265,44 @@ function triggerPhotoAttach() {
     document.getElementById('attachMenu').style.display = 'none';
 }
 
-function triggerYoutubeAttach() {
-    const url = prompt('Paste YouTube link:');
-    if (url && url.includes('youtu')) {
-        const input = document.getElementById('replyInput');
-        input.value = (input.value ? input.value + ' ' : '') + url;
-        input.focus();
+function onReplyInputMedia(val) {
+    const embedDiv = document.getElementById('replySongEmbed');
+    if (!embedDiv) return;
+    const { embed } = extractMediaFromText(val);
+    if (embed) {
+        embedDiv.style.display = 'block';
+        embedDiv.innerHTML = embed;
+    } else {
+        embedDiv.style.display = 'none';
+        embedDiv.innerHTML = '';
     }
+}
+
+function triggerSongAttach() {
     document.getElementById('attachMenu').style.display = 'none';
+    const row = document.getElementById('replySongRow');
+    row.style.display = 'flex';
+    document.getElementById('replySongInput').focus();
+}
+
+function onReplySongInput(val) {
+    const spotifyId = val.match(/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/)?.[1];
+    const embedDiv = document.getElementById('replySongEmbed');
+    if (spotifyId) {
+        embedDiv.style.display = 'block';
+        embedDiv.innerHTML = `<iframe src="https://open.spotify.com/embed/track/${spotifyId}?utm_source=generator&theme=0" width="100%" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="border-radius:12px;border:none;display:block;"></iframe>`;
+    } else {
+        embedDiv.style.display = 'none';
+        embedDiv.innerHTML = '';
+    }
+}
+
+function clearReplySong() {
+    document.getElementById('replySongRow').style.display = 'none';
+    document.getElementById('replySongInput').value = '';
+    const embedDiv = document.getElementById('replySongEmbed');
+    embedDiv.style.display = 'none';
+    embedDiv.innerHTML = '';
 }
 
 function updateThreadLunarNextBtn(step) {
@@ -1639,7 +1730,8 @@ async function sendReply() {
 
     const input = document.getElementById('replyInput');
     const hasPhoto = !!window['_pendingPhotoFile_reply'];
-    if (!input.value.trim() && !hasPhoto) return;
+    const hasSong = !!(document.getElementById('replySongInput')?.value.trim());
+    if (!input.value.trim() && !hasPhoto && !hasSong) return;
 
     // Save conversation key BEFORE any mutations
     const prevKey = currentConversation?.otherKey;
@@ -1750,6 +1842,7 @@ async function sendReply() {
             const finalReleaseAt = replyInstantDeliver ? new Date().toISOString() : replyReleaseAt;
             console.log('[sendReply] city:', recipientCity, 'moonUp:', replyMoonUp, 'instant:', replyInstantDeliver);
 
+            const replySongUrl = document.getElementById('replySongInput')?.value.trim() || null;
             const insertData = {
                 message_id: targetMsg.dbId,
                 sender_id: currentAuthUser.id,
@@ -1759,6 +1852,8 @@ async function sendReply() {
                 recipient_city: recipientCity
             };
             if (replyPhotoUrl) insertData.photo_url = replyPhotoUrl;
+            if (replySongUrl) { insertData.song_url = replySongUrl; insertData.song_title = replySongUrl; }
+            clearReplySong();
             const { data: replyData, error } = await sb.from('replies').insert(insertData).select().single();
             if (error) {
                 console.error('Reply save failed:', error);

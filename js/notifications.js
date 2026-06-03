@@ -683,3 +683,56 @@ document.addEventListener('click', (e) => {
 // Dot tooltips are now attached dynamically by attachDotTooltips()
 
 // ============================================
+// Inbox wipe warning banner
+// ============================================
+
+function showInboxWipeBanner() {
+    const banner = document.getElementById('inboxWipeBanner');
+    if (!banner) return;
+
+    const phase = getMoonPhase();
+    const daysToNew = phase.daysToNew;
+
+    // Only show within 7 days of the next new moon
+    if (daysToNew > 7) {
+        banner.classList.add('hidden');
+        return;
+    }
+
+    // Compute a stable key for the upcoming new moon (day-resolution)
+    const nextNewMoonMs = Date.now() + daysToNew * 24 * 60 * 60 * 1000;
+    const nextNewMoonDay = new Date(nextNewMoonMs).toISOString().slice(0, 10);
+    const dismissKey = 'moonpop_wipe_banner_dismissed_' + nextNewMoonDay;
+
+    if (localStorage.getItem(dismissKey)) {
+        banner.classList.add('hidden');
+        return;
+    }
+
+    // Populate text
+    const titleEl = document.getElementById('inboxWipeBannerTitle');
+    const subEl   = document.getElementById('inboxWipeBannerSub');
+
+    if (daysToNew <= 1) {
+        if (titleEl) titleEl.textContent = 'The new moon is here';
+        if (subEl)   subEl.textContent   = 'Your messages will dissolve tonight. They'll be gone when the dark moon passes.';
+    } else {
+        if (titleEl) titleEl.textContent = `New moon in ${daysToNew} day${daysToNew === 1 ? '' : 's'}`;
+        if (subEl)   subEl.textContent   = 'Your messages and shared sky posts will dissolve at the new moon.';
+    }
+
+    // Store the dismiss key on the banner so the dismiss handler can read it
+    banner.dataset.dismissKey = dismissKey;
+    banner.classList.remove('hidden');
+}
+
+function dismissInboxWipeBanner() {
+    const banner = document.getElementById('inboxWipeBanner');
+    if (!banner) return;
+    if (banner.dataset.dismissKey) {
+        localStorage.setItem(banner.dataset.dismissKey, '1');
+    }
+    banner.classList.add('hidden');
+}
+
+// ============================================

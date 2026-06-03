@@ -270,6 +270,7 @@ body {
 .logo {
     height: 24px;
     width: auto;
+    flex-shrink: 0;
 }
 
 .header-right {
@@ -3680,6 +3681,17 @@ body.moon-down .inbox-new-msg-cta {
     color: white;
 }
 
+.reply-song-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(212, 181, 138, 0.06);
+    border: 1px solid rgba(212, 181, 138, 0.2);
+    border-radius: 10px;
+    margin: 4px 0 4px;
+}
+
 .message-page-avatar {
     width: 38px;
     height: 38px;
@@ -5735,6 +5747,16 @@ body.moon-down .inbox-new-msg-cta {
     line-height: 1.5;
 }
 
+/* First-view: whole panel fades in slowly, as if materializing from nothing */
+@keyframes wiped-entrance {
+    0%   { opacity: 0; transform: translateY(12px) scale(0.97); filter: blur(6px); }
+    40%  { opacity: 0.6; filter: blur(2px); }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.new-cycle-empty.wiped.wiped-first-view {
+    animation: wiped-entrance 2.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 .split-right .main-content {
     padding: 0;
     width: 100%;
@@ -5912,16 +5934,21 @@ body.moon-down .inbox-new-msg-cta {
         width: 100%;
         overflow: visible;
         order: 1; /* orbit on top on mobile */
-        padding: 0;
+        padding: 0 0 24px;
+        min-height: 320px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
 
     .split-right .main-content {
-        padding: 32px 16px 10px;
+        padding: 16px 16px 8px;
     }
 
     .split-right .orbit-container {
-        width: min(220px, 60vw);
-        height: min(220px, 60vw);
+        width: min(200px, 55vw);
+        height: min(200px, 55vw);
     }
 
     /* Shrink countdown inside ring on mobile */
@@ -6166,12 +6193,11 @@ body.moon-down .inbox-new-msg-cta {
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    overflow-y: auto;
 }
 
 #messageModal #composeStep1 .compose-glass-card {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
+    flex-shrink: 0;
 }
 
 #messageModal .compose-add-row {
@@ -6180,8 +6206,12 @@ body.moon-down .inbox-new-msg-cta {
 
 #messageModal .compose-send-container {
     flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    background: var(--bg);
     margin-top: 16px;
-    padding-bottom: 20px;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+    z-index: 5;
 }
 @media (min-width: 901px) {
     body.chat-open #messageModal.active {
@@ -6787,7 +6817,7 @@ body {
     .message-sender { font-size: 17px !important; }
     .message-preview { font-size: 15px !important; }
     .message-time { font-size: 13px !important; }
-    .inbox-header .inbox-title, .inbox-header span { font-size: 20px !important; }
+    .inbox-header .inbox-title { font-size: 20px !important; }
     .unread-badge { font-size: 13px !important; min-width: 22px !important; height: 22px !important; }
     .message-item { padding: 14px 16px !important; }
     .shared-sky-row { padding: 14px 16px !important; }
@@ -7676,9 +7706,9 @@ body.moon-down .new-message-btn {
 }
 #messagePageView .message-page-info p {
     font-family: var(--serif);
-    font-size: 13px;
+    font-size: 15px;
     font-style: italic;
-    color: var(--muted);
+    color: var(--text-muted);
 }
 
 /* Chat body */
@@ -8232,13 +8262,22 @@ body.moon-down .new-message-btn {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
+    flex-shrink: 1;
 }
 .landing-wordmark {
     font-family: var(--serif);
     font-weight: 500;
-    font-size: 22px;
+    font-size: clamp(13px, 4vw, 22px);
     letter-spacing: 0.3px;
     color: var(--text-bright);
+    white-space: nowrap;
+    line-height: 1.25;
+}
+.landing-wordmark-break { display: none; }
+@media (max-width: 880px) {
+    .landing-wordmark { white-space: normal; font-size: clamp(11px, 3.5vw, 16px); }
+    .landing-wordmark-break { display: block; }
 }
 .landing-nav-actions {
     display: flex;
@@ -8293,23 +8332,25 @@ body.moon-down .new-message-btn {
     padding: 0;
     color: var(--text-bright);
     font-family: var(--sans);
-    font-size: 14px;
+    font-size: clamp(11px, 3.5vw, 14px);
     font-weight: 500;
     letter-spacing: 0.2px;
     cursor: pointer;
+    white-space: nowrap;
 }
 .landing-nav-mobile-login:hover { color: var(--accent-bright); }
 .landing-nav-mobile-btn {
     background: var(--accent);
     border: 1px solid var(--accent);
     border-radius: 999px;
-    padding: 8px 20px;
+    padding: clamp(5px, 1.5vw, 8px) clamp(10px, 4vw, 20px);
     color: #0A1422;
     font-family: var(--sans);
-    font-size: 13px;
+    font-size: clamp(11px, 3.2vw, 13px);
     font-weight: 600;
     letter-spacing: 0.4px;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 @media (max-width: 880px) {

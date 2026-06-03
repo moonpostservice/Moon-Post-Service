@@ -44,6 +44,21 @@ async function sendMoonKey() {
     btn.textContent = 'Sending...';
     btn.disabled = true;
 
+    // Check suspension before sending OTP so they get a clear explanation immediately
+    const { data: suspendCheck } = await sb
+        .from('profiles')
+        .select('suspended_at, suspended_reason')
+        .eq('email', email)
+        .maybeSingle();
+
+    if (suspendCheck?.suspended_at) {
+        errorEl.textContent = 'Your account has been suspended. Contact us at hello@moonpost.app if you think this is a mistake.';
+        errorEl.style.display = 'block';
+        btn.innerHTML = 'Send Moon Code <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
+        btn.disabled = false;
+        return;
+    }
+
     const { error } = await sb.auth.signInWithOtp({
         email,
         options: {
@@ -68,7 +83,7 @@ async function sendMoonKey() {
 }
 
 function setupOtpInputs() {
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 6; i++) {
         const input = document.getElementById('otpDigit' + i);
         input.value = '';
         // Clone the node to strip any previously attached listeners before re-adding
@@ -77,7 +92,7 @@ function setupOtpInputs() {
         fresh.addEventListener('input', (e) => {
             const val = e.target.value.replace(/\D/g, '');
             e.target.value = val;
-            if (val && i < 8) document.getElementById('otpDigit' + (i + 1)).focus();
+            if (val && i < 6) document.getElementById('otpDigit' + (i + 1)).focus();
             checkOtpComplete();
         });
         fresh.addEventListener('keydown', (e) => {
@@ -88,27 +103,27 @@ function setupOtpInputs() {
         });
         fresh.addEventListener('paste', (e) => {
             e.preventDefault();
-            const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 8);
+            const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
             for (let j = 0; j < paste.length; j++) {
                 const d = document.getElementById('otpDigit' + (j + 1));
                 if (d) d.value = paste[j];
             }
             checkOtpComplete();
-            if (paste.length === 8) verifyMoonKey();
+            if (paste.length === 6) verifyMoonKey();
         });
     }
 }
 
 function checkOtpComplete() {
     let code = '';
-    for (let i = 1; i <= 8; i++) code += document.getElementById('otpDigit' + i).value;
-    document.getElementById('verifyCodeBtn').disabled = code.length < 8;
+    for (let i = 1; i <= 6; i++) code += document.getElementById('otpDigit' + i).value;
+    document.getElementById('verifyCodeBtn').disabled = code.length < 6;
 }
 
 async function verifyMoonKey() {
     let code = '';
-    for (let i = 1; i <= 8; i++) code += document.getElementById('otpDigit' + i).value;
-    if (code.length < 8) return;
+    for (let i = 1; i <= 6; i++) code += document.getElementById('otpDigit' + i).value;
+    if (code.length < 6) return;
 
     const btn = document.getElementById('verifyCodeBtn');
     const errorEl = document.getElementById('otpError');
@@ -128,7 +143,7 @@ async function verifyMoonKey() {
         btn.textContent = 'Welcome!';
         btn.disabled = false;
         // Clear OTP inputs
-        for (let i = 1; i <= 8; i++) document.getElementById('otpDigit' + i).value = '';
+        for (let i = 1; i <= 6; i++) document.getElementById('otpDigit' + i).value = '';
         document.getElementById('otpDigit1').focus();
         return;
     }
@@ -687,6 +702,7 @@ async function initAuth(sessionOverride) {
         // Load roulette messages on startup so they appear in the inbox immediately
         if (typeof loadRouletteMessages === 'function') await loadRouletteMessages();
         renderMessages();
+        if (typeof showInboxWipeBanner === 'function') showInboxWipeBanner();
         renderMessageDots();
         renderCircleRows();
         renderContactsList();
