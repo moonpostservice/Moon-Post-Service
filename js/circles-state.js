@@ -393,7 +393,7 @@ function buildConversations() {
         } else if (replyIsNewer && !isSentReply) {
             // Latest is an incoming reply — only show text if moon is up
             // When moon is down, message content must stay hidden
-            conv.latestPreview = moonData.isVisible ? (latestReply.text || 'Moon message') : '';
+            conv.latestPreview = moonData.isVisible ? (latestReply.text || 'Moon message') : '🌙 Moon message';
         } else if (latest.stillInTransit && latest.type === 'received') {
             conv.latestPreview = '🌙 On its way';
         } else if (latest.status === 'In Transit') {
