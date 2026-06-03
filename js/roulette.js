@@ -792,42 +792,67 @@ function _escHtml(str) {
 function getRouletteInboxItems() {
     const items = [];
 
-    const addRow = (msg, role) => {
-        const isReceived = role === 'recipient';
-        const statusLabel = _rouletteStatusLabel(msg.status, role);
-        const statusClass = _rouletteStatusClass(msg.status);
+    // Build a combined map of every loaded message, tagged with the viewer's role.
+    const all = new Map(); // id -> { m, role }
+    rouletteMessages.sent.forEach(m => all.set(m.id, { m, role: 'sender' }));
+    rouletteMessages.received.forEach(m => { if (!all.has(m.id)) all.set(m.id, { m, role: 'recipient' }); });
 
-        const moonIcon = phaseIconSvg(msg.moon_phase || 'full moon', 'sm');
+    const byId = (id) => all.get(id)?.m;
+    const rootIdOf = (m) => {
+        let r = m;
+        const guard = new Set();
+        while (r.parent_id && byId(r.parent_id) && !guard.has(r.id)) { guard.add(r.id); r = byId(r.parent_id); }
+        return r.id;
+    };
 
+    // Group all messages into threads keyed by their root message id.
+    const threads = new Map(); // rootId -> [{ m, role }]
+    for (const entry of all.values()) {
+        const rid = rootIdOf(entry.m);
+        if (!threads.has(rid)) threads.set(rid, []);
+        threads.get(rid).push(entry);
+    }
+
+    for (const [rootId, entries] of threads) {
+        entries.sort((a, b) => new Date(a.m.created_at) - new Date(b.m.created_at));
+        const rootEntry = all.get(rootId) || entries[0];
+        const root = rootEntry.m;
+        const latest = entries[entries.length - 1];
+        const lm = latest.m;
+
+        const moonIcon = phaseIconSvg(lm.moon_phase || root.moon_phase || 'full moon', 'sm');
+
+        // Who the conversation is with — anchored to whoever started the thread.
+        const revealedRecv = entries.find(e => e.role === 'recipient' && e.m.status === 'revealed' && e.m.sender_id);
         let nameDisplay;
-        if (isReceived) {
-            const revealed = msg.status === 'revealed' && msg.sender_id;
-            nameDisplay = revealed
-                ? `<span class="roulette-revealed-sender" data-sender-id="${msg.sender_id}">Someone</span>`
-                : `From ${_escHtml(msg.sender_city ?? 'somewhere')}`;
+        if (revealedRecv) {
+            nameDisplay = `<span class="roulette-revealed-sender" data-sender-id="${revealedRecv.m.sender_id}">Someone</span>`;
+        } else if (rootEntry.role === 'recipient') {
+            nameDisplay = `From ${_escHtml(root.sender_city ?? 'somewhere')}`;
         } else {
-            nameDisplay = msg.status === 'queued'
+            nameDisplay = root.status === 'queued'
                 ? 'Awaiting the moon…'
-                : `To someone in ${_escHtml(msg.recipient_city ?? 'the world')}`;
+                : `To someone in ${_escHtml(root.recipient_city ?? 'the world')}`;
         }
 
-        const preview = msg.message_text
-            ? _escHtml(msg.message_text.slice(0, 80) + (msg.message_text.length > 80 ? '…' : ''))
-            : msg.photo_url ? '📷 Photo' : '';
+        const preview = lm.message_text
+            ? _escHtml(lm.message_text.slice(0, 80) + (lm.message_text.length > 80 ? '…' : ''))
+            : lm.photo_url ? '📷 Photo' : '';
 
-        const isUnread = isReceived && msg.status === 'delivered';
+        // Unread if any received message in the thread is delivered and not yet read.
+        const isUnread = entries.some(e => e.role === 'recipient' && e.m.status === 'delivered' && !e.m.recipient_read_at);
         const unreadBadge = isUnread ? `<span class="unread-badge pulse">!</span>` : '';
 
         let statusBadge = '';
-        if (!isReceived && msg.status === 'queued') {
+        if (rootEntry.role === 'sender' && root.status === 'queued') {
             statusBadge = `<span class="message-status-badge orbiting">${iconSvg('orbiting', 'sm')} Orbiting</span>`;
-        } else if (!isReceived && (msg.status === 'declined' || msg.status === 'blocked')) {
+        } else if (rootEntry.role === 'sender' && (root.status === 'declined' || root.status === 'blocked')) {
             statusBadge = `<span class="message-status-badge" style="color:#E89B73;">Returned</span>`;
-        } else if (isReceived && msg.status === 'delivered') {
+        } else if (isUnread) {
             statusBadge = `<span class="message-status-badge arriving">${iconSvg('on-its-way', 'sm')} New</span>`;
         }
 
-        const sortTime = new Date(msg.released_at || msg.created_at).getTime();
+        const sortTime = new Date(lm.released_at || lm.created_at).getTime();
 
         items.push({
             sortTime,
@@ -835,7 +860,7 @@ function getRouletteInboxItems() {
             isRoulette: true,
             html: `
                 <li class="message-item msg-row message-item--roulette${isUnread ? ' unread' : ''}"
-                    onclick="openRouletteDetail('${msg.id}', '${role}')">
+                    onclick="openRouletteDetail('${lm.id}', '${latest.role}')">
                     <div class="msg-avatar msg-avatar--roulette">
                         ${moonIcon}
                     </div>
@@ -847,18 +872,13 @@ function getRouletteInboxItems() {
                         <div class="message-preview">${preview}</div>
                     </div>
                     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-                        <span class="message-time">${_relativeTime(msg.released_at || msg.created_at)}</span>
+                        <span class="message-time">${_relativeTime(lm.released_at || lm.created_at)}</span>
                         ${unreadBadge}
                     </div>
                 </li>
             `
         });
-    };
-
-    // Show all received messages (including replies) — each is its own inbox entry.
-    // Filter sent messages to top-level only to avoid duplicate entries for replies you sent.
-    rouletteMessages.received.forEach(m => addRow(m, 'recipient'));
-    rouletteMessages.sent.filter(m => !m.parent_id).forEach(m => addRow(m, 'sender'));
+    }
 
     return items;
 }
@@ -889,17 +909,13 @@ function openRouletteDetail(msgId, role) {
 
     document.getElementById('rouletteDetailAvatar').innerHTML = phaseIconSvg(msg.moon_phase || 'full moon', 'md');
 
+    // Clear unread state for every received message in this thread (the inbox row
+    // opens the latest message, which may be one you sent).
+    _markRouletteThreadRead(msg);
+
     if (role === 'recipient') {
         document.getElementById('rouletteDetailTitle').textContent =
             isRevealed ? '…' : `From a stranger in ${_escHtml(msg.sender_city ?? 'the world')}`;
-        // Mark as read (fire-and-forget — sender sees title flip to "Read in [city]" via realtime)
-        if (!msg.recipient_read_at && (msg.status === 'delivered' || msg.status === 'revealed')) {
-            const readAt = new Date().toISOString();
-            sb.from('moon_roulette_messages')
-                .update({ recipient_read_at: readAt })
-                .eq('id', msg.id)
-                .then(({ error }) => { if (!error) msg.recipient_read_at = readAt; });
-        }
     } else {
         const city = _escHtml(msg.recipient_city ?? 'the world');
         let senderTitle;
@@ -1059,6 +1075,25 @@ function _collectRouletteThread(msg) {
     return [...collected.values()].sort(
         (a, b) => new Date(a.m.created_at) - new Date(b.m.created_at)
     );
+}
+
+// Mark every received, delivered-but-unread message in msg's thread as read.
+// Fire-and-forget; the sender sees their title flip to "Read in [city]" via realtime.
+function _markRouletteThreadRead(msg) {
+    const thread = _collectRouletteThread(msg);
+    const unread = thread.filter(({ m, role: r }) =>
+        r === 'recipient' && !m.recipient_read_at &&
+        (m.status === 'delivered' || m.status === 'revealed'));
+    if (!unread.length) return;
+
+    const readAt = new Date().toISOString();
+    const ids = unread.map(({ m }) => m.id);
+    sb.from('moon_roulette_messages')
+        .update({ recipient_read_at: readAt })
+        .in('id', ids)
+        .then(({ error }) => {
+            if (!error) unread.forEach(({ m }) => { m.recipient_read_at = readAt; });
+        });
 }
 
 function _renderRouletteDetailBody(msg, role) {
