@@ -361,7 +361,7 @@ function _renderRecipientCard(msg, { statusLabel, statusClass, moonIcon, preview
                 </div>
                 ${senderDisplay}
                 ${preview ? `<p class="roulette-preview">${_escHtml(preview)}</p>` : ''}
-                ${msg.photo_url ? `<img class="roulette-photo" src="${msg.photo_url}" alt="Photo" loading="lazy" />` : ''}
+                ${msg.photo_url ? `<img class="roulette-photo" data-photo-path="${msg.photo_url}" alt="Photo" loading="lazy" />` : ''}
                 <div class="roulette-card-footer">
                     ${revealBtn}
                     ${actions}
@@ -1164,7 +1164,7 @@ function _renderRouletteDetailBody(msg, role) {
                     ? `<div class="${bubbleClass}"><p>${_escHtml(m.message_text)}</p></div>`
                     : '')
              + (m.photo_url
-                    ? `<img class="roulette-photo" src="${_escHtml(m.photo_url)}" alt="Photo" loading="lazy" />`
+                    ? `<img class="roulette-photo" data-photo-path="${_escHtml(m.photo_url)}" alt="Photo" loading="lazy" />`
                     : '');
     }).join('');
 

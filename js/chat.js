@@ -782,7 +782,7 @@ function renderConversationThread() {
                 html += `
                     <div class="message-bubble-transit-wrap">
                         <div class="message-bubble sent">
-                            ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
+                            ${item.photoUrl ? `<img data-photo-path="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
                             ${item.text ? `<p>${item.text}</p>` : ''}
                             <div class="message-bubble-time">${item.time || 'Recently'} ${textReceipt}</div>
                             <div class="msg-actions-row">
@@ -799,7 +799,7 @@ function renderConversationThread() {
                 const displayText = item.songUrl ? item.text : cleanText;
                 html += `
                     <div class="message-bubble ${item.sent ? 'sent' : ''}">
-                        ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${(displayText || embedHtml) ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
+                        ${item.photoUrl ? `<img data-photo-path="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${(displayText || embedHtml) ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
                         ${embedHtml}
                         ${displayText ? `<p>${linkifyText(displayText)}</p>` : ''}
                         <div class="message-bubble-time">${item.time || 'Recently'} ${textReceipt}</div>
@@ -889,7 +889,7 @@ function renderConversationThread() {
                 html += `
                     <div class="message-bubble-transit-wrap">
                         <div class="message-bubble sent">
-                            ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
+                            ${item.photoUrl ? `<img data-photo-path="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${item.text ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
                             ${item.text ? `<p>${item.text}</p>` : ''}
                             <div class="message-bubble-time">${item.time}</div>
                             <div class="msg-actions-row">
@@ -906,7 +906,7 @@ function renderConversationThread() {
                 const rDisplayText = item.songUrl ? item.text : rClean;
                 html += `
                     <div class="message-bubble ${item.sent ? 'sent' : ''}">
-                        ${item.photoUrl ? `<img src="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${(rDisplayText || rEmbedHtml) ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
+                        ${item.photoUrl ? `<img data-photo-path="${item.photoUrl}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:8px;margin-bottom:${(rDisplayText || rEmbedHtml) ? '6px' : '0'};object-fit:cover;display:block;">` : ''}
                         ${rEmbedHtml}
                         ${rDisplayText ? `<p>${linkifyText(rDisplayText)}</p>` : ''}
                         <div class="message-bubble-time">${item.time}</div>
