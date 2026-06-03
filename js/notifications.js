@@ -715,7 +715,7 @@ function showInboxWipeBanner() {
 
     if (daysToNew <= 1) {
         if (titleEl) titleEl.textContent = 'The new moon is here';
-        if (subEl)   subEl.textContent   = 'Your messages will dissolve tonight. They'll be gone when the dark moon passes.';
+        if (subEl)   subEl.textContent   = "Your messages will dissolve tonight. They'll be gone when the dark moon passes.";
     } else {
         if (titleEl) titleEl.textContent = `New moon in ${daysToNew} day${daysToNew === 1 ? '' : 's'}`;
         if (subEl)   subEl.textContent   = 'Your messages and shared sky posts will dissolve at the new moon.';
