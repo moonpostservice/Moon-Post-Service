@@ -395,9 +395,9 @@ function buildConversations() {
             // When moon is down, message content must stay hidden
             conv.latestPreview = moonData.isVisible ? (latestReply.text || 'Moon message') : '';
         } else if (latest.stillInTransit && latest.type === 'received') {
-            conv.latestPreview = '';  // badge carries the transit info
+            conv.latestPreview = '🌙 On its way';
         } else if (latest.status === 'In Transit') {
-            conv.latestPreview = '';  // badge carries the transit info
+            conv.latestPreview = '🌙 On its way';
         } else if (latest.messageText) {
             conv.latestPreview = youPrefix + latest.messageText;
         } else if (latest.lunarNote) {
