@@ -509,24 +509,43 @@ let otpPending = false;
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
+let _adminBooted = false;
+function bootAdmin(session) {
+  if (_adminBooted) return;
+  if (!ADMIN_EMAILS.includes(session?.user?.email)) return;
+  _adminBooted = true;
+  showApp();
+  loadData();
+}
+
 async function init() {
-  const { data: { session } } = await sb.auth.getSession();
+  const { data: { session }, error } = await sb.auth.getSession();
+  // Diagnostic: tells us on refresh whether the session survived in storage.
+  console.log('[admin init] getSession =', session?.user?.email || 'null',
+              '| storedKey =', !!localStorage.getItem('moonpop-admin-auth'),
+              '| error =', error || 'none');
+
   if (ADMIN_EMAILS.includes(session?.user?.email)) {
-    showApp();
-    loadData();
-  } else {
-    // A leftover non-admin session (e.g. signed in on the main site) would
-    // otherwise block login — clear it silently and show a clean form.
-    if (session) await sb.auth.signOut();
+    bootAdmin(session);
+  } else if (session?.user?.email) {
+    // A CONFIRMED non-admin session (signed in on the main site) would block
+    // login — clear it. Only do this when we actually have an email, never on
+    // a transient/empty session (which would wrongly destroy a valid session).
+    await sb.auth.signOut();
     showLogin('');
+  } else {
+    // getSession returned no session. On Firefox the storage read can resolve
+    // AFTER this call — give the INITIAL_SESSION event a moment to boot the app
+    // before falling back to the login screen.
+    setTimeout(() => { if (!_adminBooted) showLogin(''); }, 1500);
   }
 }
 
-sb.auth.onAuthStateChange((_event, session) => {
-  if (ADMIN_EMAILS.includes(session?.user?.email)) {
-    showApp();
-    loadData();
-  }
+sb.auth.onAuthStateChange((event, session) => {
+  console.log('[admin auth event]', event, '|', session?.user?.email || 'no session');
+  // Boot the app as soon as a valid admin session appears (covers the Firefox
+  // race where init()'s getSession resolved null before storage was ready).
+  if (ADMIN_EMAILS.includes(session?.user?.email)) bootAdmin(session);
 });
 
 function showLogin(msg) {
