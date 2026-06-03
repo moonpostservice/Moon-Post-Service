@@ -1020,6 +1020,47 @@ document.addEventListener('click', function(e) {
     }
 });
 
+// Collect the full conversation thread that `msg` belongs to, in chronological
+// order, from the loaded sent + received messages. A thread is the chain linked
+// by parent_id: walk up to the root (parent_id = null), then gather every
+// descendant. Each entry is tagged with the viewer's role for that message
+// (sender = outgoing bubble, recipient = incoming bubble).
+function _collectRouletteThread(msg) {
+    const all = new Map(); // id -> { m, role }
+    rouletteMessages.sent.forEach(m => all.set(m.id, { m, role: 'sender' }));
+    rouletteMessages.received.forEach(m => { if (!all.has(m.id)) all.set(m.id, { m, role: 'recipient' }); });
+
+    // Make sure the opened message is in the set even if arrays are mid-refresh.
+    if (!all.has(msg.id)) all.set(msg.id, { m: msg, role: _currentRouletteRole || 'recipient' });
+
+    const byId = (id) => all.get(id)?.m;
+
+    // Walk up to the thread root.
+    let root = msg;
+    const guard = new Set();
+    while (root.parent_id && byId(root.parent_id) && !guard.has(root.id)) {
+        guard.add(root.id);
+        root = byId(root.parent_id);
+    }
+
+    // Gather the root + all transitive descendants.
+    const collected = new Map();
+    const stack = [root.id];
+    while (stack.length) {
+        const id = stack.pop();
+        if (collected.has(id)) continue;
+        const entry = all.get(id);
+        if (entry) collected.set(id, entry);
+        for (const { m } of all.values()) {
+            if (m.parent_id === id && !collected.has(m.id)) stack.push(m.id);
+        }
+    }
+
+    return [...collected.values()].sort(
+        (a, b) => new Date(a.m.created_at) - new Date(b.m.created_at)
+    );
+}
+
 function _renderRouletteDetailBody(msg, role) {
     const isReceived = role === 'recipient';
     let revealedLine = '';
@@ -1027,17 +1068,23 @@ function _renderRouletteDetailBody(msg, role) {
         revealedLine = `<div class="roulette-anon-sender"><span class="roulette-revealed-sender" data-sender-id="${msg.sender_id}">Loading…</span></div>`;
     }
 
-    const bubbleClass = `message-bubble roulette-bubble${isReceived ? '' : ' sent'}`;
+    const thread = _collectRouletteThread(msg);
+
+    const bubbles = thread.map(({ m, role: r }) => {
+        const incoming = r === 'recipient';
+        const bubbleClass = `message-bubble roulette-bubble${incoming ? '' : ' sent'}`;
+        return (m.message_text
+                    ? `<div class="${bubbleClass}"><p>${_escHtml(m.message_text)}</p></div>`
+                    : '')
+             + (m.photo_url
+                    ? `<img class="roulette-photo" src="${_escHtml(m.photo_url)}" alt="Photo" loading="lazy" />`
+                    : '');
+    }).join('');
 
     return `
         <div class="roulette-detail-content">
             ${revealedLine}
-            ${msg.message_text
-                ? `<div class="${bubbleClass}"><p>${_escHtml(msg.message_text)}</p></div>`
-                : ''}
-            ${msg.photo_url
-                ? `<img class="roulette-photo" src="${_escHtml(msg.photo_url)}" alt="Photo" loading="lazy" />`
-                : ''}
+            ${bubbles}
         </div>
     `;
 }
