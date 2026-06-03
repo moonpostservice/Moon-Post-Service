@@ -518,12 +518,40 @@ function bootAdmin(session) {
   loadData();
 }
 
+// Visible on-screen diagnostic so the cause is readable without dev tools.
+function _showAdminDiag(session, error) {
+  let storedRaw = null;
+  try { storedRaw = localStorage.getItem('moonpop-admin-auth'); } catch (_) {}
+  let storedExpiry = '';
+  try {
+    if (storedRaw) {
+      const exp = JSON.parse(storedRaw)?.expires_at;
+      if (exp) storedExpiry = new Date(exp * 1000).toISOString();
+    }
+  } catch (_) {}
+  const txt = `BUILD admin-diag-v1 · getSession=${session?.user?.email || 'null'}`
+            + ` · storedKey=${storedRaw ? 'YES' : 'NO'}`
+            + (storedExpiry ? ` · tokenExpiry=${storedExpiry}` : '')
+            + ` · error=${error ? (error.message || error) : 'none'}`;
+  let el = document.getElementById('adminDiag');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'adminDiag';
+    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;'
+      + 'background:#1a1a2e;color:#9fe;font:11px/1.4 monospace;padding:6px 10px;'
+      + 'word-break:break-all;border-top:1px solid #345;';
+    document.body.appendChild(el);
+  }
+  el.textContent = txt;
+}
+
 async function init() {
   const { data: { session }, error } = await sb.auth.getSession();
   // Diagnostic: tells us on refresh whether the session survived in storage.
   console.log('[admin init] getSession =', session?.user?.email || 'null',
               '| storedKey =', !!localStorage.getItem('moonpop-admin-auth'),
               '| error =', error || 'none');
+  _showAdminDiag(session, error);
 
   if (ADMIN_EMAILS.includes(session?.user?.email)) {
     bootAdmin(session);
