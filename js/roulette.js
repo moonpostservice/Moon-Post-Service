@@ -445,13 +445,29 @@ function openRouletteCompose(parentId = null, prefill = {}) {
     modal.style.display = 'flex';
 }
 
+// Inbox-nav entry point: gate on Terms once, then open the FAMILIAR composer
+// (the same UI as a regular moon message), not the standalone roulette modal.
+function openRouletteFromInbox() {
+    if (localStorage.getItem('moonpop_roulette_intro_seen')) {
+        openComposeForRoulette();
+        return;
+    }
+    _rouletteIntroPending = { familiar: true };
+    document.getElementById('rouletteIntroModal').style.display = 'flex';
+}
+
 function acceptRouletteIntro() {
     localStorage.setItem('moonpop_roulette_intro_seen', 'true');
     document.getElementById('rouletteIntroModal').style.display = 'none';
     if (_rouletteIntroPending) {
-        const { parentId, prefill } = _rouletteIntroPending;
+        const pending = _rouletteIntroPending;
         _rouletteIntroPending = null;
-        _doOpenRouletteCompose(parentId, prefill);
+        if (pending.familiar) {
+            // Familiar composer (regular moon-message UI in roulette mode)
+            openComposeForRoulette();
+        } else {
+            _doOpenRouletteCompose(pending.parentId, pending.prefill);
+        }
     }
 }
 
