@@ -504,9 +504,10 @@ async function init() {
   if (ADMIN_EMAILS.includes(session?.user?.email)) {
     showApp();
     loadData();
-  } else if (session) {
-    showLogin('This account is not authorised for backstage access.');
   } else {
+    // A leftover non-admin session (e.g. signed in on the main site) would
+    // otherwise block login — clear it silently and show a clean form.
+    if (session) await sb.auth.signOut();
     showLogin('');
   }
 }
