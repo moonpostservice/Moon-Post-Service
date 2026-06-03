@@ -5767,7 +5767,7 @@ body.moon-down .inbox-new-msg-cta {
 }
 
 .split-right .moon-data-bar {
-    margin: clamp(8px, 2vh, 36px) auto 0;
+    margin: clamp(8px, 2vh, 36px) auto 140px;
     flex-shrink: 0;
     position: relative;
     z-index: 4;
