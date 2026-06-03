@@ -44,12 +44,20 @@ async function sendMoonKey() {
     btn.textContent = 'Sending...';
     btn.disabled = true;
 
-    // Check suspension before sending OTP so they get a clear explanation immediately
+    // Check if the email exists in the system and whether the account is suspended
     const { data: suspendCheck } = await sb
         .from('profiles')
         .select('suspended_at, suspended_reason')
         .eq('email', email)
         .maybeSingle();
+
+    if (!suspendCheck) {
+        errorEl.textContent = 'This email isn\'t in our system. Double-check the address or contact us at hello@moonpost.app.';
+        errorEl.style.display = 'block';
+        btn.innerHTML = 'Send Moon Code <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
+        btn.disabled = false;
+        return;
+    }
 
     if (suspendCheck?.suspended_at) {
         errorEl.textContent = 'Your account has been suspended. Contact us at hello@moonpost.app if you think this is a mistake.';
@@ -62,7 +70,7 @@ async function sendMoonKey() {
     const { error } = await sb.auth.signInWithOtp({
         email,
         options: {
-            shouldCreateUser: true
+            shouldCreateUser: false
         }
     });
 

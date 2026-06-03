@@ -262,7 +262,19 @@
     <!-- Header -->
     <header class="header">
         <div class="header-brand">
-            <img class="logo" src="assests/logo.svg" alt="MoonPop">
+            <svg class="logo" viewBox="0 0 181.08 177.7" xmlns="http://www.w3.org/2000/svg" aria-label="MoonPop" role="img">
+                <g fill="#d4b58a">
+                    <path d="M37.61,116.54c.08-.74.83-2.19,2.18-2.11,10.79.63,19.45-2.97,28.66-6.24-1.17-2.92-2.24-6.03-3.12-9.33-.41.18-.81.36-1.22.55-5.05,2.37-27.06,7.38-26.5,2.17.08-.74.83-2.19,2.18-2.11,9.18.54,16.81-1.99,24.56-4.77-.73-3.47-1.25-7.11-1.45-10.89-5.95,2.37-12.32,4.4-23.08,4.2-1.44-.03-2.28-1.17-2.28-2.08,0-.73.97-2.2,2.23-2.14,8.4.39,15.61-1.97,23.05-4.63.05-3.71.39-7.53,1.14-11.44,0,0,0-.04,0-.09-7.32,2.57-14.73,4.83-24.07,4.42-1.46-.06-2.06-.95-2.19-1.72-.22-1.28.3-2.68,1.95-2.56,9.12.68,17.04-1.91,25.25-5.1,3.12-12.66,15.43-45.55,56.78-56.37,0,0-15.62-7.68-38.92-6.09-.79-.53-47.63.84-69.89,42.09-.53,0-17.47,30.71-11.65,61.68,0-.53,4.61,34.8,37.2,58.9,0,0,29.25,20.79,69.76,13.11.53-.53,22.77-6.35,29.65-13.24.26,0-32.3-2.38-54.8-29.91,0-.14-7.19-8.14-13-20.97-1.92.72-3.88,1.55-5.91,2.5-5.05,2.37-27.06,7.38-26.5,2.17Z"/>
+                    <path d="M129.34,67.42c1.21-.42,1.94-1.61,2.39-2.88-16.48-7.74-35.68-9.24-53.15-2.32-1.24.49-2.47.98-3.69,1.45-.68,2.76-.93,4.56-.94,4.96,14.3-5.03,28.23-11.27,55.39-1.21Z"/>
+                    <path d="M129.34,67.42c15.34,8.21,33.35,6.81,49.7.16,1.29-.53,1.89-1.32,1.85-2.27-.05-1.26-1.47-2.72-3.12-1.99-14.94,6.6-30.33,6.65-46.05,1.23,2.82,3.78,1.38,3.77-2.39,2.88Z"/>
+                    <path d="M133.12,100.31l.09-2.97c-28.21-13.45-43.74-7.05-58.85-1.63.3,1.41.62,2.8.98,4.16,21.44-9.66,36.23-5.87,57.78.44Z"/>
+                    <path d="M133.12,100.31c8.09,8.05,52.05,2.56,47.65-4.53-.34-.55-1.67-1.4-2.74-.92-14.49,6.46-29.19,6.52-44.83,2.48,3.48,1.17,3.45,1.79-.09,2.97Z"/>
+                    <path d="M78.46,109.19c.51,1.27,1.03,2.5,1.56,3.68,19-7.14,33.15-3.45,53.09,2.39l.09-2.97c-25.66-12.23-40.84-8.04-54.75-3.1Z"/>
+                    <path d="M178.03,109.81c-14.49,6.46-29.19,6.52-44.83,2.48,3.48,1.17,3.45,1.79-.09,2.97,8.09,8.05,52.05,2.56,47.65-4.53-.34-.55-1.67-1.4-2.74-.92Z"/>
+                    <path d="M72.9,84.82c5.78-2.3,11.16-4.91,19.79-6.12,5.97-1.16,11.89-1.16,17.77,0,8.29,1.27,15.62,3.49,22.65,6.17,1.42-.17,2.82-1.1,2.74-2.86-30.79-14.37-47.42-7.44-63.03-1.85-.02,1.57,0,3.13.08,4.65Z"/>
+                    <path d="M133.11,84.87c15.58,5.94,32.8,5.28,47.6-3.02,1.15-.65-2.29-3.27-3.71-2.63-13.5,6.15-27.56,6.02-41.15,2.79,3.59,3.63,1.38,3.54-2.74,2.86Z"/>
+                </g>
+            </svg>
             <span class="header-tagline">Moon Post Service</span>
         </div>
         <!-- Mini moon phase (disabled for MVP) -->
@@ -479,7 +491,7 @@
         <nav class="landing-nav">
             <div class="landing-nav-brand">
                 <img src="assests/logo.svg" alt="Moon Post Service" style="height:36px;width:auto;display:block;">
-                <span class="landing-wordmark">Moon Post Service</span>
+                <span class="landing-wordmark">Moon Post<br class="landing-wordmark-break"> Service</span>
             </div>
             <div class="landing-nav-actions">
                 <a class="landing-nav-link" href="#how-it-works">How it works</a>
@@ -513,7 +525,7 @@
                     <button class="onboarding-primary" id="authSendBtn" onclick="sendMoonKey()">
                         Send Moon Code <svg class="app-icon md" style="color:var(--on-accent)"><use href="#icon-moonkey"/></svg>
                     </button>
-                    <p class="auth-note">No password needed. We'll send an 8-digit code to your inbox.</p>
+                    <p class="auth-note">No password needed. We'll send a 6-digit code to your inbox.</p>
                 </div>
 
                 <!-- Step 2: Enter code -->
@@ -521,7 +533,7 @@
                     <div class="auth-check-inbox">
                         <div class="inbox-icon">🌙</div>
                         <h2>Enter your Moon Code</h2>
-                        <p>We sent an 8-digit code to</p>
+                        <p>We sent a 6-digit code to</p>
                         <p class="auth-email-highlight" id="authEmailSent"></p>
                         <div style="display:flex;justify-content:center;gap:8px;margin:20px 0;">
                             <input type="text" id="otpDigit1" class="otp-digit" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
@@ -530,8 +542,6 @@
                             <input type="text" id="otpDigit4" class="otp-digit" maxlength="1" inputmode="numeric">
                             <input type="text" id="otpDigit5" class="otp-digit" maxlength="1" inputmode="numeric">
                             <input type="text" id="otpDigit6" class="otp-digit" maxlength="1" inputmode="numeric">
-                            <input type="text" id="otpDigit7" class="otp-digit" maxlength="1" inputmode="numeric">
-                            <input type="text" id="otpDigit8" class="otp-digit" maxlength="1" inputmode="numeric">
                         </div>
                         <div class="auth-error" id="otpError" style="display:none;"></div>
                         <button class="onboarding-primary" id="verifyCodeBtn" onclick="verifyMoonKey()" disabled>
@@ -2292,15 +2302,20 @@
                     <div class="reply-row" id="replyRow">
                         <div class="reply-input-wrapper">
                             <button class="reply-attach-btn" id="attachBtn" onclick="toggleAttachMenu()">+</button>
-                            <input type="text" class="message-page-input" placeholder="Whisper your message to the stars..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()" oninput="emitTyping()">
+                            <input type="text" class="message-page-input" placeholder="Whisper your message to the stars..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()" oninput="emitTyping(); onReplyInputMedia(this.value)">
                         </div>
                         <button class="message-page-send" id="replySendBtn" onclick="sendReply()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
                         <input type="file" id="replyPhotoInput" accept="image/*" style="display:none;" onchange="handleReplyPhoto(this)">
                     </div>
                     <div class="attach-menu" id="attachMenu" style="display:none;">
                         <button class="attach-option" onclick="triggerPhotoAttach()">📷 Photo</button>
-                        <button class="attach-option" onclick="triggerYoutubeAttach()">🔗 YouTube Link</button>
+                        <button class="attach-option" onclick="triggerSongAttach()">🎵 Song Link</button>
                     </div>
+                    <div class="reply-song-row" id="replySongRow" style="display:none;">
+                        <input type="text" id="replySongInput" class="message-page-input" placeholder="Paste Spotify link..." style="flex:1;font-size:13px;" oninput="onReplySongInput(this.value)">
+                        <button onclick="clearReplySong()" style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:0 4px;">×</button>
+                    </div>
+                    <div id="replySongEmbed" style="display:none;margin:4px 0 8px;border-radius:12px;overflow:hidden;"></div>
                 </div>
                 <!-- Lunar Note: 3-step creative wizard (matches compose flow) -->
                 <div class="thread-lunar-panel" id="threadLunarPanel" style="display:none;">

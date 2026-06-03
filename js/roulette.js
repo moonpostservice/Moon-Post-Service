@@ -130,6 +130,12 @@ async function _onRouletteChange(payload) {
     if (payload.new?.status === 'revealed' && payload.old?.status !== 'revealed') {
         playMessageSound();
         showNotificationToast('✨ A moon roulette connection revealed themselves');
+        // If the detail panel is open for this message, refresh it so the real name appears
+        if (_currentRouletteMsg?.id === payload.new?.id && _currentRouletteRole) {
+            const msgs = _currentRouletteRole === 'sender' ? rouletteMessages.sent : rouletteMessages.received;
+            const updated = msgs.find(m => m.id === payload.new.id);
+            if (updated) openRouletteDetail(updated.id, _currentRouletteRole);
+        }
     }
 
     // If a sent message just came back as declined
@@ -637,9 +643,15 @@ async function handleReveal(messageId) {
             playMessageSound();
             showNotificationToast('✨ You\'re connected — identities revealed!');
             _myRevealedMessages.delete(messageId);
-            closeRouletteDetail();
             await loadRouletteMessages();
             if (typeof renderMessages === 'function') renderMessages();
+            // Refresh the open detail panel so the real name/avatar appears immediately
+            const role = _currentRouletteRole;
+            const msgs = role === 'sender' ? rouletteMessages.sent : rouletteMessages.received;
+            const updated = msgs.find(m => m.id === messageId);
+            if (updated && _currentRouletteMsg?.id === messageId) {
+                openRouletteDetail(messageId, role);
+            }
         } else {
             // Mark that I've revealed — footer will render "Waiting for them…" state
             _myRevealedMessages.add(messageId);
@@ -843,8 +855,10 @@ function getRouletteInboxItems() {
         });
     };
 
+    // Show all received messages (including replies) — each is its own inbox entry.
+    // Filter sent messages to top-level only to avoid duplicate entries for replies you sent.
     rouletteMessages.received.forEach(m => addRow(m, 'recipient'));
-    rouletteMessages.sent.forEach(m => addRow(m, 'sender'));
+    rouletteMessages.sent.filter(m => !m.parent_id).forEach(m => addRow(m, 'sender'));
 
     return items;
 }
@@ -1031,7 +1045,8 @@ function _renderRouletteDetailBody(msg, role) {
 function _renderRouletteDetailFooter(msg, role) {
     const isReceived  = role === 'recipient';
     const iRevealed   = _myRevealedMessages.has(msg.id);
-    const canChat     = msg.status === 'delivered' || msg.status === 'revealed';
+    const moonUp      = moonData?.isVisible === true;
+    const canChat     = (msg.status === 'delivered' || msg.status === 'revealed') && moonUp;
 
     // Inline anonymous reply input — shown whenever the conversation is active
     const replyInput = canChat ? `
@@ -1102,6 +1117,8 @@ function _renderRouletteDetailFooter(msg, role) {
 }
 
 async function handleInlineRouletteReply(messageId) {
+    if (!moonData?.isVisible) { openMoonDownModal(); return; }
+
     const textarea = document.getElementById(`rouletteInlineText_${messageId}`);
     if (!textarea) return;
     const sendBtn = textarea.closest('.roulette-inline-reply')?.querySelector('.roulette-inline-send') || null;

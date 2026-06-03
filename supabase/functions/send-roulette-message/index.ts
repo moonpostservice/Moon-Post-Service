@@ -230,6 +230,15 @@ Deno.serve(async (req: Request) => {
         .single();
 
       if (replyInsertErr) {
+        // 23505 = unique_violation — an identical reply already exists (double-submit
+        // or instance race). Treat as success; the reply is already delivered.
+        if (replyInsertErr.code === "23505") {
+          console.warn("[roulette] duplicate reply suppressed");
+          return new Response(
+            JSON.stringify({ message: null, is_reply: true, duplicate: true }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
         console.error("Reply insert error:", replyInsertErr);
         return new Response(
           JSON.stringify({ error: "Internal server error" }),
@@ -297,24 +306,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // --- 6. Weighted random pick ---
-    const recipient = weightedPick(eligibleCandidates);
-
-    // --- 7. Calculate moonrise at recipient's location ---
-    let releaseAt: string | null = null;
-    let moonPhase: string | null = null;
-    let moonIllumination: number | null = null;
-
-    if (recipient.latitude != null && recipient.longitude != null) {
-      const moonrise = nextMoonrise(recipient.latitude, recipient.longitude);
-      if (moonrise) releaseAt = moonrise.toISOString();
-
-      const illum = SunCalc.getMoonIllumination(new Date());
-      moonPhase = moonPhaseName(illum.phase);
-      moonIllumination = Math.round(illum.fraction * 100) / 100;
-    }
-    // If no coordinates: releaseAt stays null → pg_cron skips it → message sits as 'queued'
-    // until coordinates are backfilled. For MVP this is acceptable.
+    // --- 6. Weighted random pick + insert with retry on duplicate pair conflict ---
+    // Multiple edge function instances can race and pick the same recipient.
+    // The DB enforces uniqueness via idx_mrm_active_pair; we retry up to 3 times
+    // with a different pick rather than failing the request.
 
     // --- 8. Determine send_attempt (re-launch increments the chain) ---
     let sendAttempt = 1;
@@ -327,33 +322,75 @@ Deno.serve(async (req: Request) => {
       sendAttempt = (parent?.send_attempt ?? 0) + 1;
     }
 
-    // --- 9. Insert roulette message ---
-    const { data: rouletteMessage, error: insertErr } = await serviceClient
-      .from("moon_roulette_messages")
-      .insert({
-        sender_id: user.id,
-        recipient_id: recipient.id,
-        sender_city: senderProfile.city,
-        recipient_city: recipient.city,
-        message_text: body.message_text ?? null,
-        photo_url: body.photo_url ?? null,
-        song_url: body.song_url ?? null,
-        song_title: body.song_title ?? null,
-        status: "queued",
-        release_at: releaseAt,
-        moon_phase: moonPhase,
-        moon_illumination: moonIllumination,
-        parent_id: parentId,
-        send_attempt: sendAttempt,
-      })
-      .select("id, status, release_at, moon_phase")
-      .single();
+    const MAX_PICK_ATTEMPTS = 3;
+    let rouletteMessage: { id: string; status: string; release_at: string | null; moon_phase: string | null } | null = null;
+    const triedIds = new Set<string>();
 
-    if (insertErr) {
+    for (let attempt = 0; attempt < MAX_PICK_ATTEMPTS; attempt++) {
+      const pool = eligibleCandidates.filter((c) => !triedIds.has(c.id));
+      if (pool.length === 0) break;
+
+      const recipient = weightedPick(pool);
+      triedIds.add(recipient.id);
+
+      // --- 7. Calculate moonrise at recipient's location ---
+      let releaseAt: string | null = null;
+      let moonPhase: string | null = null;
+      let moonIllumination: number | null = null;
+
+      if (recipient.latitude != null && recipient.longitude != null) {
+        const moonrise = nextMoonrise(recipient.latitude, recipient.longitude);
+        if (moonrise) releaseAt = moonrise.toISOString();
+
+        const illum = SunCalc.getMoonIllumination(new Date());
+        moonPhase = moonPhaseName(illum.phase);
+        moonIllumination = Math.round(illum.fraction * 100) / 100;
+      }
+
+      // --- 9. Insert roulette message ---
+      const { data, error: insertErr } = await serviceClient
+        .from("moon_roulette_messages")
+        .insert({
+          sender_id: user.id,
+          recipient_id: recipient.id,
+          sender_city: senderProfile.city,
+          recipient_city: recipient.city,
+          message_text: body.message_text ?? null,
+          photo_url: body.photo_url ?? null,
+          song_url: body.song_url ?? null,
+          song_title: body.song_title ?? null,
+          status: "queued",
+          release_at: releaseAt,
+          moon_phase: moonPhase,
+          moon_illumination: moonIllumination,
+          parent_id: parentId,
+          send_attempt: sendAttempt,
+        })
+        .select("id, status, release_at, moon_phase")
+        .single();
+
+      if (!insertErr) {
+        rouletteMessage = data;
+        break;
+      }
+
+      // 23505 = unique_violation — another instance raced us to this recipient; try another
+      if (insertErr.code === "23505") {
+        console.warn(`[roulette] duplicate pair conflict on attempt ${attempt + 1}, retrying`);
+        continue;
+      }
+
       console.error("Insert error:", insertErr);
       return new Response(
         JSON.stringify({ error: "Internal server error" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!rouletteMessage) {
+      return new Response(
+        JSON.stringify({ error: "no_eligible_recipients" }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

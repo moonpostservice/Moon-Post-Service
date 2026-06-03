@@ -76,6 +76,9 @@
     .login-msg { margin-top: 14px; font-size: 13px; color: var(--muted); min-height: 20px; }
     .login-msg.error { color: var(--t-blocked); }
     .login-msg.success { color: var(--t-delivered); }
+    .login-link { margin-top: 10px; background: none; border: none; color: var(--muted); font-size: 13px; text-decoration: underline; cursor: pointer; }
+    .login-link:hover { color: var(--accent-bright); }
+    .login-link:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* ── App Shell ── */
     #appShell { display: none; flex-direction: column; min-height: 100vh; }
@@ -198,6 +201,35 @@
     .chain-num { color: var(--accent); font-weight: 600; }
     .chain-parent { color: var(--t-relaunched); font-size: 10px; display: block; margin-top: 2px; }
 
+    /* ── Thread grouping ── */
+    tbody tr.thread-root td:first-child { border-left: 2px solid var(--accent-deep); }
+    tbody tr.thread-reply { background: rgba(12, 30, 56, 0.6); }
+    tbody tr.thread-reply td:first-child { border-left: 2px solid rgba(208, 180, 137, 0.25); }
+    tbody tr.thread-reply:hover { background: rgba(212, 181, 138, 0.05); }
+    .thread-indent {
+      display: flex; align-items: flex-start; gap: 6px;
+    }
+    .thread-connector {
+      flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+      width: 14px; padding-top: 2px;
+    }
+    .thread-connector-line {
+      width: 1px; flex: 1; min-height: 12px;
+      background: rgba(208, 180, 137, 0.25);
+    }
+    .thread-connector-elbow {
+      width: 8px; height: 8px;
+      border-left: 1px solid rgba(208, 180, 137, 0.25);
+      border-bottom: 1px solid rgba(208, 180, 137, 0.25);
+      border-bottom-left-radius: 3px;
+      flex-shrink: 0;
+    }
+    .thread-reply-label {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--muter); margin-bottom: 2px;
+    }
+    tbody tr.thread-last-reply td { border-bottom: 2px solid rgba(208, 180, 137, 0.12); }
+
     /* ── Reveal cell ── */
     .reveal-cell { font-size: 11px; color: var(--muted); }
     .reveal-full { color: var(--t-revealed); font-weight: 600; }
@@ -241,6 +273,80 @@
     }
     .state-msg .icon { font-size: 32px; margin-bottom: 10px; }
 
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 2px; margin-bottom: 20px; border-bottom: 1px solid var(--line-soft); }
+    .tab-btn {
+      padding: 10px 20px; background: transparent; border: none;
+      color: var(--muter); font-size: 12px; text-transform: uppercase;
+      letter-spacing: 1.2px; cursor: pointer; transition: all 0.15s;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Users table ── */
+    .user-status { display: flex; flex-direction: column; gap: 2px; }
+    .badge-suspended { background: rgba(190,70,70,0.18); color: var(--t-blocked); }
+    .badge-active    { background: rgba(100,190,130,0.18); color: var(--t-delivered); }
+
+    /* ── Action buttons ── */
+    .btn-action {
+      padding: 4px 10px; border-radius: 5px; border: 1px solid; font-size: 11px;
+      cursor: pointer; transition: all 0.15s; background: transparent;
+      white-space: nowrap;
+    }
+    .btn-suspend  { border-color: rgba(224,112,112,0.4); color: var(--t-blocked); }
+    .btn-suspend:hover  { background: rgba(190,70,70,0.15); }
+    .btn-unsuspend { border-color: rgba(100,190,130,0.4); color: var(--t-delivered); }
+    .btn-unsuspend:hover { background: rgba(100,190,130,0.1); }
+    .btn-delete-msg { border-color: rgba(224,112,112,0.4); color: var(--t-blocked); }
+    .btn-delete-msg:hover { background: rgba(190,70,70,0.15); }
+
+    /* ── Reason modal ── */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(3,10,24,0.85); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      background: var(--bg-2); border: 1px solid var(--line-soft);
+      border-radius: 14px; padding: 32px 28px; max-width: 420px; width: 90%;
+    }
+    .modal-card h3 { font-family: var(--serif); font-size: 22px; font-weight: 400; color: var(--text-bright); margin-bottom: 6px; }
+    .modal-card p { color: var(--muted); font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
+    .modal-textarea {
+      width: 100%; padding: 10px 13px; background: var(--bg-3);
+      border: 1px solid var(--line-soft); border-radius: 8px;
+      color: var(--text); font-size: 13px; resize: vertical; min-height: 80px;
+      outline: none; transition: border-color 0.2s; margin-bottom: 16px;
+      font-family: var(--sans);
+    }
+    .modal-textarea:focus { border-color: var(--accent); }
+    .modal-textarea::placeholder { color: var(--muter); }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-modal-cancel {
+      padding: 9px 18px; border-radius: 7px; border: 1px solid var(--line-soft);
+      background: transparent; color: var(--muted); font-size: 13px; cursor: pointer;
+    }
+    .btn-modal-confirm {
+      padding: 9px 18px; border-radius: 7px; border: none;
+      background: var(--t-blocked); color: #fff; font-size: 13px;
+      font-weight: 600; cursor: pointer; opacity: 0.9; transition: opacity 0.15s;
+    }
+    .btn-modal-confirm:hover { opacity: 1; }
+    .btn-modal-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+    .modal-msg { font-size: 12px; color: var(--muted); margin-top: 10px; min-height: 18px; text-align: right; }
+
+    /* ── Admin-deleted badge ── */
+    .admin-del-flag {
+      display: inline-block; font-size: 9px; padding: 1px 5px;
+      background: rgba(190,70,70,0.2); color: var(--t-blocked);
+      border-radius: 4px; margin-top: 2px; letter-spacing: 0.5px;
+    }
+
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
@@ -256,8 +362,9 @@
     <h1>Moon Roulette</h1>
     <p>Backstage access · admin only</p>
     <div id="loginEmailWrap"></div>
-    <input id="loginOtp" type="text" class="login-field" placeholder="one-time code" style="display:none" maxlength="6" inputmode="numeric">
-    <button id="loginBtn" class="btn-primary">Send magic link</button>
+    <input id="loginOtp" type="text" class="login-field" placeholder="one-time code" style="display:none" maxlength="10" inputmode="numeric" autocomplete="one-time-code">
+    <button id="loginBtn" class="btn-primary">Send code</button>
+    <button id="resendBtn" class="login-link" style="display:none">Resend code</button>
     <div id="loginMsg" class="login-msg"></div>
   </div>
 </div>
@@ -271,6 +378,13 @@
   </header>
 
   <main class="admin-body">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="roulette">Moon Roulette</button>
+      <button class="tab-btn" data-tab="users">Users</button>
+    </div>
+
+    <!-- Roulette tab -->
+    <div class="tab-panel active" id="tab-roulette">
     <div class="stats-bar" id="statsBar">
       <div class="stat-chip all active" data-filter="all">
         <span class="count" id="cnt-all">—</span>
@@ -326,7 +440,49 @@
         </tbody>
       </table>
     </div>
+    </div> <!-- /tab-roulette -->
+
+    <!-- Users tab -->
+    <div class="tab-panel" id="tab-users">
+      <div class="search-row">
+        <input id="userSearchInput" class="search-input" type="text" placeholder="Search by name, email, city…">
+        <span class="count-label" id="userRowCountLabel"></span>
+      </div>
+      <div class="table-wrap">
+        <table id="usersTable">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>User</th>
+              <th>City</th>
+              <th>Joined</th>
+              <th>Last active</th>
+              <th>Roulette</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr><td colspan="7"><div class="state-msg"><div class="icon">◌</div>Loading…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div> <!-- /tab-users -->
+
   </main>
+</div>
+
+<!-- Reason modal -->
+<div class="modal-backdrop" id="actionModal">
+  <div class="modal-card">
+    <h3 id="modalTitle">Confirm action</h3>
+    <p id="modalDesc"></p>
+    <textarea class="modal-textarea" id="modalReason" placeholder="Reason (optional but recommended)…"></textarea>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" id="modalCancel">Cancel</button>
+      <button class="btn-modal-confirm" id="modalConfirm">Confirm</button>
+    </div>
+    <div class="modal-msg" id="modalMsg"></div>
+  </div>
 </div>
 
 <script>
@@ -365,6 +521,12 @@ sb.auth.onAuthStateChange((_event, session) => {
 function showLogin(msg) {
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('appShell').style.display = 'none';
+  // Reset to the email-entry state
+  otpPending = false;
+  document.getElementById('loginEmail').style.display = 'block';
+  document.getElementById('loginOtp').style.display = 'none';
+  document.getElementById('resendBtn').style.display = 'none';
+  document.getElementById('loginBtn').textContent = 'Send code';
   if (msg) setLoginMsg(msg, 'error');
 }
 
@@ -401,12 +563,13 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       otpEl.style.display = 'block';
       otpEl.focus();
       btn.textContent = 'Verify code';
-      setLoginMsg('Check your email for a 6-digit code.', 'success');
+      document.getElementById('resendBtn').style.display = 'block';
+      setLoginMsg('Check your email and enter the code below.', 'success');
     }
   } else {
     const otp = otpEl.value.trim();
     const email = emailEl.value.trim().toLowerCase();
-    if (otp.length < 6) { setLoginMsg('Enter the 6-digit code.', 'error'); return; }
+    if (otp.length < 6) { setLoginMsg('Enter the code from your email.', 'error'); return; }
     btn.disabled = true;
     setLoginMsg('Verifying…');
     const { error } = await sb.auth.verifyOtp({ email, token: otp, type: 'email' });
@@ -419,12 +582,32 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   }
 });
 
+// Resend code: request a fresh OTP, invalidating the previous one
+document.getElementById('resendBtn').addEventListener('click', async () => {
+  const resendBtn = document.getElementById('resendBtn');
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  if (!ADMIN_EMAILS.includes(email)) { setLoginMsg('That email is not authorised.', 'error'); return; }
+  resendBtn.disabled = true;
+  setLoginMsg('Sending a new code…');
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+  resendBtn.disabled = false;
+  if (error) {
+    setLoginMsg(error.message, 'error');
+  } else {
+    const otpEl = document.getElementById('loginOtp');
+    otpEl.value = '';
+    otpEl.focus();
+    setLoginMsg('New code sent — use the most recent email.', 'success');
+  }
+});
+
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await sb.auth.signOut();
   otpPending = false;
   document.getElementById('loginEmail').style.display = 'block';
   document.getElementById('loginOtp').style.display = 'none';
-  document.getElementById('loginBtn').textContent = 'Send magic link';
+  document.getElementById('resendBtn').style.display = 'none';
+  document.getElementById('loginBtn').textContent = 'Send code';
   showLogin('Signed out.');
 });
 
@@ -481,6 +664,197 @@ document.getElementById('statsBar').addEventListener('click', e => {
 
 // ── Render ────────────────────────────────────────────────────────────────────
 
+function buildThreadOrder(rows) {
+  // Build a map of id → row and parent → children
+  const byId = new Map(rows.map(r => [r.id, r]));
+  const children = new Map();
+  const roots = [];
+
+  for (const r of rows) {
+    if (r.parent_id && byId.has(r.parent_id)) {
+      if (!children.has(r.parent_id)) children.set(r.parent_id, []);
+      children.get(r.parent_id).push(r);
+    } else {
+      roots.push(r);
+    }
+  }
+
+  // Sort roots by created_at descending (newest thread first)
+  roots.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  // Flatten: root then its replies in chronological order, recursively
+  const result = [];
+  function flatten(r, depth) {
+    result.push({ row: r, depth });
+    const kids = (children.get(r.id) || []).slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    for (const kid of kids) flatten(kid, depth + 1);
+  }
+  for (const root of roots) flatten(root, 0);
+  return result;
+}
+
+function renderRow(r, depth, isLastSibling) {
+  const statusClass = r.status === 're-launched' ? 'relaunched' : r.status;
+  const senderDel = r.sender_deleted_at ? '<span class="deleted-flag">DELETED</span>' : '';
+  const recipDel  = r.recipient_deleted_at ? '<span class="deleted-flag">DELETED</span>' : '';
+  const isReply = depth > 0;
+  const threadClass = isReply
+    ? `thread-reply${isLastSibling ? ' thread-last-reply' : ''}`
+    : 'thread-root';
+
+  const senderCell = `
+    <div class="person">
+      <span class="person-name">${escHtml(r.sender_username || '—')}</span>
+      <span class="person-email">${escHtml(r.sender_email || '—')}</span>
+      <span class="person-city">${escHtml(r.sender_city || r.sender_city_profile || '—')}</span>
+      ${senderDel}
+    </div>`;
+
+  const recipientCell = `
+    <div class="person">
+      <span class="person-name">${escHtml(r.recipient_username || '—')}</span>
+      <span class="person-email">${escHtml(r.recipient_email || '—')}</span>
+      <span class="person-city">${escHtml(r.recipient_city || r.recipient_city_profile || '—')}</span>
+      ${recipDel}
+      ${r.receive_moon_roulette === false ? '<span class="deleted-flag">OPT-OUT</span>' : ''}
+    </div>`;
+
+  const msgCell = r.message_text
+    ? `<div class="msg-preview">${escHtml(r.message_text.slice(0, 80))}${r.message_text.length > 80 ? '…' : ''}</div>`
+    : r.photo_url
+    ? `<div class="msg-preview has-photo">📷 photo</div>`
+    : '<span style="color:var(--muter)">—</span>';
+
+  const indentedMsg = isReply
+    ? `<div class="thread-indent">
+        <div class="thread-connector">
+          <div class="thread-connector-elbow"></div>
+        </div>
+        <div>
+          <div class="thread-reply-label">reply</div>
+          ${msgCell}
+        </div>
+       </div>`
+    : msgCell;
+
+  return `<tr data-id="${r.id}" class="${threadClass}${expandedId === r.id ? ' expanded' : ''}">
+    <td><span class="badge badge-${statusClass}">${r.status}</span></td>
+    <td>${senderCell}</td>
+    <td>${recipientCell}</td>
+    <td>${indentedMsg}</td>
+    <td>
+      <div class="ts-cell">
+        <div class="ts-row">
+          <span class="ts-label">sent</span>
+          <span class="ts-val">${fmtDate(r.created_at)}</span>
+        </div>
+        <div class="ts-row">
+          <span class="ts-label">rel</span>
+          <span class="ts-val ${r.released_at ? 'done' : 'pending'}">${r.released_at ? fmtDate(r.released_at) : '—'}</span>
+        </div>
+        ${r.recipient_read_at ? `<div class="ts-row">
+          <span class="ts-label">read</span>
+          <span class="ts-val done">${fmtDate(r.recipient_read_at)}</span>
+        </div>` : ''}
+      </div>
+    </td>
+    <td class="chain-cell">
+      <span class="chain-num">#${r.send_attempt}</span>
+      ${isReply ? `<span class="chain-parent">↳ reply</span>` : ''}
+    </td>
+    <td class="reveal-cell">
+      ${r.reveal_count >= 2
+        ? '<span class="reveal-full">✦ Both revealed</span>'
+        : r.reveal_count === 1
+        ? '1 of 2'
+        : r.status === 'revealed' ? '<span class="reveal-full">✦ Revealed</span>' : '—'}
+    </td>
+    <td>
+      <span class="id-chip" data-copy="${r.id}" title="Click to copy">${r.id.slice(0, 8)}</span>
+    </td>
+  </tr>`;
+}
+
+function renderExpandRow(r) {
+  return `<tr class="expand-row" data-expand-for="${r.id}">
+    <td colspan="8">
+      <div class="expand-inner">
+        <div class="expand-section">
+          <h4>Message content</h4>
+          ${r.message_text
+            ? `<p>${escHtml(r.message_text)}</p>`
+            : r.photo_url
+            ? `<p style="color:var(--t-relaunched)">📷 Photo attachment</p>`
+            : '<p style="color:var(--muter)">—</p>'}
+          ${r.song_title ? `<p style="margin-top:6px;font-size:12px;color:var(--muted)">🎵 ${escHtml(r.song_title)}</p>` : ''}
+          ${r.moon_phase ? `<p style="margin-top:6px;font-size:11px;color:var(--muter)">${escHtml(r.moon_phase)}${r.moon_illumination ? ` · ${Math.round(r.moon_illumination * 100)}%` : ''}</p>` : ''}
+        </div>
+        <div class="expand-section">
+          <h4>Timestamps</h4>
+          <div class="expand-ts-grid">
+            ${expandTs('Created', r.created_at, true)}
+            ${expandTs('Release at', r.release_at, !!r.release_at)}
+            ${expandTs('Released', r.released_at, !!r.released_at)}
+            ${expandTs('Notified', r.notified_at, !!r.notified_at)}
+            ${expandTs('Recipient read', r.recipient_read_at, !!r.recipient_read_at)}
+            ${expandTs('Sender deleted', r.sender_deleted_at, false)}
+            ${expandTs('Recipient deleted', r.recipient_deleted_at, false)}
+          </div>
+        </div>
+        <div class="expand-section">
+          <h4>IDs &amp; chain</h4>
+          <div class="expand-ts-grid">
+            <div class="expand-ts-row">
+              <span class="label">Message ID</span>
+              <span class="id-chip" data-copy="${r.id}" style="display:inline-block">${r.id.slice(0, 16)}…</span>
+            </div>
+            <div class="expand-ts-row">
+              <span class="label">Sender ID</span>
+              <span class="id-chip" data-copy="${r.sender_id}" style="display:inline-block">${r.sender_id ? r.sender_id.slice(0, 8) : '—'}…</span>
+            </div>
+            <div class="expand-ts-row">
+              <span class="label">Recipient ID</span>
+              <span class="id-chip" data-copy="${r.recipient_id}" style="display:inline-block">${r.recipient_id ? r.recipient_id.slice(0, 8) : '—'}…</span>
+            </div>
+            ${r.parent_id ? `<div class="expand-ts-row">
+              <span class="label">Parent msg</span>
+              <span class="id-chip" data-copy="${r.parent_id}" style="display:inline-block">${r.parent_id.slice(0, 8)}…</span>
+            </div>` : ''}
+            <div class="expand-ts-row">
+              <span class="label">Attempt #</span>
+              <span class="val done">${r.send_attempt}</span>
+            </div>
+            <div class="expand-ts-row">
+              <span class="label">Reveals</span>
+              <span class="val ${r.reveal_count >= 2 ? 'done' : ''}">${r.reveal_count} / 2</span>
+            </div>
+            <div class="expand-ts-row">
+              <span class="label">Recip. opt-in</span>
+              <span class="val ${r.receive_moon_roulette === false ? '' : 'done'}">${r.receive_moon_roulette === false ? 'Opted out' : 'Active'}</span>
+            </div>
+            <div class="expand-ts-row">
+              <span class="label">Sender active</span>
+              <span class="val">${r.sender_last_active ? fmtDate(r.sender_last_active) : '—'}</span>
+            </div>
+            <div class="expand-ts-row">
+              <span class="label">Recip. active</span>
+              <span class="val">${r.recipient_last_active ? fmtDate(r.recipient_last_active) : '—'}</span>
+            </div>
+          </div>
+          ${!r.admin_deleted_at
+            ? `<div style="margin-top:16px;">
+                <button class="btn-action btn-delete-msg" data-action="delete_roulette_message" data-message-id="${r.id}">
+                  Delete message
+                </button>
+               </div>`
+            : `<div style="margin-top:16px;"><span class="admin-del-flag">ADMIN DELETED ${fmtDate(r.admin_deleted_at)}</span></div>`
+          }
+        </div>
+      </div>
+    </td>
+  </tr>`;
+}
+
 function renderTable() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const filtered = allRows.filter(r => {
@@ -503,142 +877,18 @@ function renderTable() {
     return;
   }
 
+  const ordered = buildThreadOrder(filtered);
   const tbody = document.getElementById('tableBody');
   let html = '';
-  for (const r of filtered) {
-    const statusClass = r.status === 're-launched' ? 'relaunched' : r.status;
-    const senderDel = r.sender_deleted_at ? '<span class="deleted-flag">DELETED</span>' : '';
-    const recipDel  = r.recipient_deleted_at ? '<span class="deleted-flag">DELETED</span>' : '';
 
-    html += `<tr data-id="${r.id}" class="${expandedId === r.id ? 'expanded' : ''}">
-      <td><span class="badge badge-${statusClass}">${r.status}</span></td>
-      <td>
-        <div class="person">
-          <span class="person-name">${escHtml(r.sender_username || '—')}</span>
-          <span class="person-email">${escHtml(r.sender_email || '—')}</span>
-          <span class="person-city">${escHtml(r.sender_city || r.sender_city_profile || '—')}</span>
-          ${senderDel}
-        </div>
-      </td>
-      <td>
-        <div class="person">
-          <span class="person-name">${escHtml(r.recipient_username || '—')}</span>
-          <span class="person-email">${escHtml(r.recipient_email || '—')}</span>
-          <span class="person-city">${escHtml(r.recipient_city || r.recipient_city_profile || '—')}</span>
-          ${recipDel}
-          ${r.receive_moon_roulette === false ? '<span class="deleted-flag">OPT-OUT</span>' : ''}
-        </div>
-      </td>
-      <td>
-        ${r.message_text
-          ? `<div class="msg-preview">${escHtml(r.message_text.slice(0, 80))}${r.message_text.length > 80 ? '…' : ''}</div>`
-          : r.photo_url
-          ? `<div class="msg-preview has-photo">📷 photo</div>`
-          : '<span style="color:var(--muter)">—</span>'}
-      </td>
-      <td>
-        <div class="ts-cell">
-          <div class="ts-row">
-            <span class="ts-label">sent</span>
-            <span class="ts-val">${fmtDate(r.created_at)}</span>
-          </div>
-          <div class="ts-row">
-            <span class="ts-label">rel</span>
-            <span class="ts-val ${r.released_at ? 'done' : 'pending'}">${r.released_at ? fmtDate(r.released_at) : '—'}</span>
-          </div>
-          ${r.recipient_read_at ? `<div class="ts-row">
-            <span class="ts-label">read</span>
-            <span class="ts-val done">${fmtDate(r.recipient_read_at)}</span>
-          </div>` : ''}
-        </div>
-      </td>
-      <td class="chain-cell">
-        <span class="chain-num">#${r.send_attempt}</span>
-        ${r.parent_id ? `<span class="chain-parent">↳ re-launch</span>` : ''}
-      </td>
-      <td class="reveal-cell">
-        ${r.reveal_count >= 2
-          ? '<span class="reveal-full">✦ Both revealed</span>'
-          : r.reveal_count === 1
-          ? '1 of 2'
-          : r.status === 'revealed' ? '<span class="reveal-full">✦ Revealed</span>' : '—'}
-      </td>
-      <td>
-        <span class="id-chip" data-copy="${r.id}" title="Click to copy">${r.id.slice(0, 8)}</span>
-      </td>
-    </tr>`;
+  for (let i = 0; i < ordered.length; i++) {
+    const { row: r, depth } = ordered[i];
+    // A reply is "last sibling" if the next item is at a shallower depth or doesn't exist
+    const nextDepth = ordered[i + 1]?.depth ?? 0;
+    const isLastSibling = depth > 0 && nextDepth < depth;
 
-    if (expandedId === r.id) {
-      html += `<tr class="expand-row" data-expand-for="${r.id}">
-        <td colspan="8">
-          <div class="expand-inner">
-            <div class="expand-section">
-              <h4>Message content</h4>
-              ${r.message_text
-                ? `<p>${escHtml(r.message_text)}</p>`
-                : r.photo_url
-                ? `<p style="color:var(--t-relaunched)">📷 Photo attachment</p>`
-                : '<p style="color:var(--muter)">—</p>'}
-              ${r.song_title ? `<p style="margin-top:6px;font-size:12px;color:var(--muted)">🎵 ${escHtml(r.song_title)}</p>` : ''}
-              ${r.moon_phase ? `<p style="margin-top:6px;font-size:11px;color:var(--muter)">${escHtml(r.moon_phase)}${r.moon_illumination ? ` · ${Math.round(r.moon_illumination * 100)}%` : ''}</p>` : ''}
-            </div>
-            <div class="expand-section">
-              <h4>Timestamps</h4>
-              <div class="expand-ts-grid">
-                ${expandTs('Created', r.created_at, true)}
-                ${expandTs('Release at', r.release_at, !!r.release_at)}
-                ${expandTs('Released', r.released_at, !!r.released_at)}
-                ${expandTs('Notified', r.notified_at, !!r.notified_at)}
-                ${expandTs('Recipient read', r.recipient_read_at, !!r.recipient_read_at)}
-                ${expandTs('Sender deleted', r.sender_deleted_at, false)}
-                ${expandTs('Recipient deleted', r.recipient_deleted_at, false)}
-              </div>
-            </div>
-            <div class="expand-section">
-              <h4>IDs &amp; chain</h4>
-              <div class="expand-ts-grid">
-                <div class="expand-ts-row">
-                  <span class="label">Message ID</span>
-                  <span class="id-chip" data-copy="${r.id}" style="display:inline-block">${r.id.slice(0, 16)}…</span>
-                </div>
-                <div class="expand-ts-row">
-                  <span class="label">Sender ID</span>
-                  <span class="id-chip" data-copy="${r.sender_id}" style="display:inline-block">${r.sender_id ? r.sender_id.slice(0, 8) : '—'}…</span>
-                </div>
-                <div class="expand-ts-row">
-                  <span class="label">Recipient ID</span>
-                  <span class="id-chip" data-copy="${r.recipient_id}" style="display:inline-block">${r.recipient_id ? r.recipient_id.slice(0, 8) : '—'}…</span>
-                </div>
-                ${r.parent_id ? `<div class="expand-ts-row">
-                  <span class="label">Parent msg</span>
-                  <span class="id-chip" data-copy="${r.parent_id}" style="display:inline-block">${r.parent_id.slice(0, 8)}…</span>
-                </div>` : ''}
-                <div class="expand-ts-row">
-                  <span class="label">Attempt #</span>
-                  <span class="val done">${r.send_attempt}</span>
-                </div>
-                <div class="expand-ts-row">
-                  <span class="label">Reveals</span>
-                  <span class="val ${r.reveal_count >= 2 ? 'done' : ''}">${r.reveal_count} / 2</span>
-                </div>
-                <div class="expand-ts-row">
-                  <span class="label">Recip. opt-in</span>
-                  <span class="val ${r.receive_moon_roulette === false ? '' : 'done'}">${r.receive_moon_roulette === false ? 'Opted out' : 'Active'}</span>
-                </div>
-                <div class="expand-ts-row">
-                  <span class="label">Sender active</span>
-                  <span class="val">${r.sender_last_active ? fmtDate(r.sender_last_active) : '—'}</span>
-                </div>
-                <div class="expand-ts-row">
-                  <span class="label">Recip. active</span>
-                  <span class="val">${r.recipient_last_active ? fmtDate(r.recipient_last_active) : '—'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </td>
-      </tr>`;
-    }
+    html += renderRow(r, depth, isLastSibling);
+    if (expandedId === r.id) html += renderExpandRow(r);
   }
 
   tbody.innerHTML = html;
@@ -700,6 +950,195 @@ function fmtDateFull(iso) {
     hour: '2-digit', minute: '2-digit', hour12: false
   });
 }
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'users' && !allUsers.length) loadUsers();
+  });
+});
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+
+let allUsers = [];
+
+async function loadUsers() {
+  document.getElementById('usersTableBody').innerHTML =
+    `<tr><td colspan="7"><div class="state-msg"><div class="icon">◌</div>Loading…</div></td></tr>`;
+
+  const { data, error } = await sb.rpc('get_admin_users_data');
+  if (error) {
+    document.getElementById('usersTableBody').innerHTML =
+      `<tr><td colspan="7"><div class="state-msg"><div class="icon">⚠</div>${escHtml(error.message)}</div></td></tr>`;
+    return;
+  }
+  allUsers = data || [];
+  renderUsers();
+}
+
+document.getElementById('userSearchInput').addEventListener('input', renderUsers);
+
+function renderUsers() {
+  const q = document.getElementById('userSearchInput').value.toLowerCase();
+  const filtered = allUsers.filter(u => {
+    if (!q) return true;
+    return [u.username, u.email, u.city].some(v => v && v.toLowerCase().includes(q));
+  });
+
+  document.getElementById('userRowCountLabel').textContent =
+    filtered.length === allUsers.length ? `${allUsers.length} users` : `${filtered.length} of ${allUsers.length}`;
+
+  if (!filtered.length) {
+    document.getElementById('usersTableBody').innerHTML =
+      `<tr><td colspan="7"><div class="state-msg"><div class="icon">◌</div>No users match.</div></td></tr>`;
+    return;
+  }
+
+  let html = '';
+  for (const u of filtered) {
+    const isSuspended = !!u.suspended_at;
+    html += `<tr>
+      <td>
+        <span class="badge ${isSuspended ? 'badge-suspended' : 'badge-active'}">
+          ${isSuspended ? 'Suspended' : 'Active'}
+        </span>
+      </td>
+      <td>
+        <div class="person">
+          <span class="person-name">${escHtml(u.username || '—')}</span>
+          <span class="person-email">${escHtml(u.email || '—')}</span>
+          ${u.has_push_sub ? '<span class="person-city" style="color:var(--t-delivered)">✓ push enabled</span>' : ''}
+          ${u.receive_roulette === false ? '<span class="deleted-flag">ROULETTE OPT-OUT</span>' : ''}
+        </div>
+      </td>
+      <td><span class="person-city">${escHtml(u.city || '—')}</span></td>
+      <td><span class="ts-val">${fmtDate(u.created_at)}</span></td>
+      <td><span class="ts-val ${u.last_active ? 'done' : ''}">${fmtDate(u.last_active)}</span></td>
+      <td>
+        <div style="font-size:11px;color:var(--muted);">
+          <div>↑ ${u.roulette_sent} sent</div>
+          <div>↓ ${u.roulette_received} received</div>
+          <div style="color:var(--muter)">${u.conversations} convos</div>
+        </div>
+      </td>
+      <td>
+        ${isSuspended
+          ? `<button class="btn-action btn-unsuspend" data-action="unsuspend" data-user-id="${u.id}" data-username="${escHtml(u.username || u.email)}">Unsuspend</button>`
+          : `<button class="btn-action btn-suspend" data-action="suspend" data-user-id="${u.id}" data-username="${escHtml(u.username || u.email)}">Suspend</button>`
+        }
+      </td>
+    </tr>`;
+  }
+  document.getElementById('usersTableBody').innerHTML = html;
+}
+
+document.getElementById('usersTableBody').addEventListener('click', e => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const userId = btn.dataset.userId;
+  const username = btn.dataset.username;
+  if (action === 'suspend') openModal('suspend', { userId, username });
+  if (action === 'unsuspend') openModal('unsuspend', { userId, username });
+});
+
+// Delete roulette message buttons
+document.getElementById('tableBody').addEventListener('click', e => {
+  const btn = e.target.closest('[data-action="delete_roulette_message"]');
+  if (!btn) return;
+  openModal('delete_roulette_message', { messageId: btn.dataset.messageId });
+}, true);
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+
+let modalContext = null;
+
+function openModal(action, ctx) {
+  modalContext = { action, ...ctx };
+  const titles = {
+    suspend: `Suspend ${ctx.username}?`,
+    unsuspend: `Unsuspend ${ctx.username}?`,
+    delete_roulette_message: 'Delete this roulette message?',
+  };
+  const descs = {
+    suspend: `This will immediately block ${ctx.username} from logging in. They will see an explanation on the login screen.`,
+    unsuspend: `This will restore ${ctx.username}'s access to Moon Post.`,
+    delete_roulette_message: 'This will silently remove the message from both users\' inboxes. The sender will not be notified.',
+  };
+  document.getElementById('modalTitle').textContent = titles[action];
+  document.getElementById('modalDesc').textContent = descs[action];
+  document.getElementById('modalReason').value = '';
+  document.getElementById('modalMsg').textContent = '';
+  document.getElementById('modalConfirm').disabled = false;
+  document.getElementById('modalConfirm').textContent = action === 'unsuspend' ? 'Unsuspend' : action === 'suspend' ? 'Suspend' : 'Delete';
+  document.getElementById('actionModal').classList.add('open');
+  document.getElementById('modalReason').focus();
+}
+
+document.getElementById('modalCancel').addEventListener('click', () => {
+  document.getElementById('actionModal').classList.remove('open');
+  modalContext = null;
+});
+
+document.getElementById('actionModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('actionModal')) {
+    document.getElementById('actionModal').classList.remove('open');
+    modalContext = null;
+  }
+});
+
+document.getElementById('modalConfirm').addEventListener('click', async () => {
+  if (!modalContext) return;
+  const { action, userId, messageId } = modalContext;
+  const reason = document.getElementById('modalReason').value.trim();
+  const confirmBtn = document.getElementById('modalConfirm');
+  const msgEl = document.getElementById('modalMsg');
+
+  confirmBtn.disabled = true;
+  msgEl.textContent = 'Working…';
+
+  const body = { action, reason: reason || null };
+  if (userId)    body.target_user_id    = userId;
+  if (messageId) body.target_message_id = messageId;
+
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-action`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const json = await res.json();
+  if (!res.ok) {
+    msgEl.style.color = 'var(--t-blocked)';
+    msgEl.textContent = json.error || 'Something went wrong.';
+    confirmBtn.disabled = false;
+    return;
+  }
+
+  msgEl.style.color = 'var(--t-delivered)';
+  msgEl.textContent = 'Done.';
+  setTimeout(() => {
+    document.getElementById('actionModal').classList.remove('open');
+    modalContext = null;
+    // Refresh the relevant tab data
+    if (action === 'suspend' || action === 'unsuspend') {
+      allUsers = [];
+      loadUsers();
+    }
+    if (action === 'delete_roulette_message') {
+      loadData();
+    }
+  }, 800);
+});
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 // Create email input via JS so browsers have nothing to autofill in the markup

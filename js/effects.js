@@ -1395,7 +1395,7 @@ async function completeSend(isNewRecipient) {
             lunar_note_text: pendingMessage.lunarNoteText || null,
             lunar_note_closing: pendingMessage.lunarClosing || null,
             song_url: pendingMessage.song || null,
-            song_title: pendingMessage.song ? pendingMessage.song : null,
+            song_title: pendingMessage.song ? (selectedSongTitle || pendingMessage.song) : null,
             moon_phase: phaseName,
             moon_illumination: moonData.illumination || null,
             status: messageStatus,
