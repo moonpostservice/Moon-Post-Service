@@ -546,8 +546,19 @@ function compressAvatar(dataUrl) {
 
 async function logOut() {
     closeSettings();
-    await sb.auth.signOut();
-    localStorage.clear();
+    // Don't depend on the SIGNED_OUT event to update the UI: its handler in
+    // realtime.js has a token-refresh race guard that can swallow the event,
+    // leaving the user looking signed-in until a manual refresh. Drive it
+    // deterministically here instead, and reload regardless of signOut outcome
+    // (network hangs/errors must not strand the user in a signed-in UI).
+    try {
+        await sb.auth.signOut();
+    } catch (e) {
+        console.warn('[auth] signOut error, clearing session locally:', e);
+    } finally {
+        try { localStorage.clear(); } catch (_) {}
+        window.location.reload();
+    }
 }
 
 async function deleteAccount() {
