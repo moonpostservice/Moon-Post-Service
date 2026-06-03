@@ -362,7 +362,7 @@
     <h1>Moon Roulette</h1>
     <p>Backstage access · admin only</p>
     <div id="loginEmailWrap"></div>
-    <input id="loginOtp" type="text" class="login-field" placeholder="one-time code" style="display:none" maxlength="10" inputmode="numeric" autocomplete="one-time-code">
+    <input id="loginOtp" type="text" class="login-field" placeholder="6-digit code" style="display:none" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
     <button id="loginBtn" class="btn-primary">Send code</button>
     <button id="resendBtn" class="login-link" style="display:none">Resend code</button>
     <div id="loginMsg" class="login-msg"></div>
@@ -565,12 +565,12 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       otpEl.focus();
       btn.textContent = 'Verify code';
       document.getElementById('resendBtn').style.display = 'block';
-      setLoginMsg('Check your email and enter the code below.', 'success');
+      setLoginMsg('Check your email for a 6-digit code.', 'success');
     }
   } else {
     const otp = otpEl.value.trim();
     const email = emailEl.value.trim().toLowerCase();
-    if (otp.length < 6) { setLoginMsg('Enter the code from your email.', 'error'); return; }
+    if (otp.length < 6) { setLoginMsg('Enter the 6-digit code.', 'error'); return; }
     btn.disabled = true;
     setLoginMsg('Verifying…');
     const { error } = await sb.auth.verifyOtp({ email, token: otp, type: 'email' });
