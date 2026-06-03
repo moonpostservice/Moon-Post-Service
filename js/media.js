@@ -207,7 +207,7 @@ function compressMoonPhoto(file) {
     });
 }
 
-// Upload a compressed blob to Supabase Storage, return public URL
+// Upload a compressed blob to the private moon-photos bucket, return object path
 async function uploadMoonPhoto(blob, context) {
     if (!currentAuthUser) throw new Error('Not authenticated');
     const ts = Date.now();
@@ -223,9 +223,67 @@ async function uploadMoonPhoto(blob, context) {
         metadata: { uploader: userName, location: locName, moon_phase: phase, date: new Date().toISOString() }
     });
     if (error) throw error;
-    const { data: urlData } = sb.storage.from('moon-photos').getPublicUrl(path);
-    return urlData.publicUrl;
+    // moon-photos is a PRIVATE bucket. Store the object PATH (not a URL); display
+    // code resolves a short-lived signed URL on render — see signedMoonPhotoUrl().
+    return data?.path || path;
 }
+
+// Resolve a short-lived signed URL for a private moon-photos object path.
+// Pass-through for data:/blob:/http(s): values (optimistic previews & legacy
+// public URLs). Returns null on failure so callers can skip the image.
+async function signedMoonPhotoUrl(pathOrUrl, expiresIn = 3600) {
+    if (!pathOrUrl) return null;
+    if (/^(https?:|data:|blob:)/i.test(pathOrUrl)) return pathOrUrl;
+    const path = pathOrUrl.replace(/^moon-photos\//, '');
+    try {
+        const { data, error } = await sb.storage.from('moon-photos').createSignedUrl(path, expiresIn);
+        if (error) { console.warn('[media] signed URL failed:', error.message); return null; }
+        return data?.signedUrl || null;
+    } catch (e) {
+        console.warn('[media] signed URL error:', e.message);
+        return null;
+    }
+}
+
+// Fill <img data-photo-path="..."> elements with a freshly signed URL.
+// `root` may be a container or an <img> itself. Idempotent via data-photo-hydrated.
+async function hydratePhotoElements(root) {
+    root = root || document;
+    let imgs;
+    if (root.matches && root.matches('img[data-photo-path]:not([data-photo-hydrated])')) {
+        imgs = [root];
+    } else if (root.querySelectorAll) {
+        imgs = Array.from(root.querySelectorAll('img[data-photo-path]:not([data-photo-hydrated])'));
+    } else {
+        return;
+    }
+    await Promise.all(imgs.map(async (img) => {
+        img.setAttribute('data-photo-hydrated', '1');
+        const url = await signedMoonPhotoUrl(img.getAttribute('data-photo-path'));
+        if (url) img.src = url;
+    }));
+}
+
+// Auto-hydrate private-photo <img> elements whenever they're inserted into the
+// DOM, so the many render paths (roulette, chat, transmissions) don't each need
+// to call hydratePhotoElements explicitly.
+(function initPhotoHydration() {
+    if (typeof MutationObserver === 'undefined') return;
+    const observer = new MutationObserver((mutations) => {
+        for (const mut of mutations) {
+            for (const node of mut.addedNodes) {
+                if (node.nodeType !== 1) continue; // elements only
+                hydratePhotoElements(node);
+            }
+        }
+    });
+    const start = () => {
+        observer.observe(document.body, { childList: true, subtree: true });
+        hydratePhotoElements(document); // catch anything already present
+    };
+    if (document.body) start();
+    else document.addEventListener('DOMContentLoaded', start);
+})();
 
 // Generic handler: compress file, show preview, store file ref
 function handlePhotoAttachment(input, previewImgId, previewContainerId, labelId, stateKey) {
@@ -349,7 +407,7 @@ function renderGlobalTransmissions() {
             <div class="shared-sky-signal">
                 <div class="shared-sky-location">${trans.location} · ${trans.time}</div>
                 <div class="shared-sky-text">${trans.message}</div>
-                ${trans.photo ? `<img src="${trans.photo}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:10px;margin-top:8px;object-fit:cover;">` : ''}
+                ${trans.photo ? `<img data-photo-path="${trans.photo}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:10px;margin-top:8px;object-fit:cover;">` : ''}
             </div>
         `).join('');
     }
@@ -378,7 +436,7 @@ function renderSharedSkySignals() {
                     ${t.lunarNoteClosing ? `<div class="bubble-lunar-closing">${t.lunarNoteClosing}</div>` : ''}
                 </div>
                 ${t.message ? `<p style="font-size:14px;color:rgba(255,255,255,0.85);line-height:1.5;margin:8px 0 0;">${t.message}</p>` : ''}
-                ${t.photo ? `<img src="${t.photo}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:10px;margin-top:8px;object-fit:cover;">` : ''}
+                ${t.photo ? `<img data-photo-path="${t.photo}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:10px;margin-top:8px;object-fit:cover;">` : ''}
                 <div class="msg-actions-row">${reactionsHtml}</div>
             </div>`;
         }
@@ -390,7 +448,7 @@ function renderSharedSkySignals() {
                 <span style="font-size:11px;color:rgba(255,255,255,0.35);">${t.time}</span>
             </div>
             ${t.message ? `<p style="font-size:14px;color:rgba(255,255,255,0.85);line-height:1.5;margin:0;">${t.message}</p>` : ''}
-            ${t.photo ? `<img src="${t.photo}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:10px;margin-top:8px;object-fit:cover;">` : ''}
+            ${t.photo ? `<img data-photo-path="${t.photo}" loading="lazy" style="max-width:100%;max-height:240px;border-radius:10px;margin-top:8px;object-fit:cover;">` : ''}
             <div class="msg-actions-row">${reactionsHtml}</div>
         </div>`;
     }).join('');
