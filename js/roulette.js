@@ -1092,7 +1092,10 @@ function _markRouletteThreadRead(msg) {
         .update({ recipient_read_at: readAt })
         .in('id', ids)
         .then(({ error }) => {
-            if (!error) unread.forEach(({ m }) => { m.recipient_read_at = readAt; });
+            if (!error) {
+                unread.forEach(({ m }) => { m.recipient_read_at = readAt; });
+                if (typeof renderMessages === 'function') renderMessages();
+            }
         });
 }
 
