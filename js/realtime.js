@@ -805,6 +805,12 @@ sb.auth.onAuthStateChange(async (event, session) => {
     }
 
     if (event === 'SIGNED_OUT') {
+        // If the app was never loaded, this SIGNED_OUT is spurious (Firefox fires it
+        // during page refresh before INITIAL_SESSION). Let initAuth handle initial state.
+        if (!_appDataLoaded) {
+            console.log('[AUTH EVENT] SIGNED_OUT before app loaded — ignoring, initAuth will handle it');
+            return;
+        }
         // CRITICAL: Verify the session is TRULY gone before wiping data
         // (token refresh can briefly trigger SIGNED_OUT even when session is valid)
         console.log('[AUTH EVENT] SIGNED_OUT received, verifying session...');

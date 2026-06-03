@@ -546,19 +546,21 @@ function compressAvatar(dataUrl) {
 
 async function logOut() {
     closeSettings();
-    // Don't depend on the SIGNED_OUT event to update the UI: its handler in
-    // realtime.js has a token-refresh race guard that can swallow the event,
-    // leaving the user looking signed-in until a manual refresh. Drive it
-    // deterministically here instead, and reload regardless of signOut outcome
-    // (network hangs/errors must not strand the user in a signed-in UI).
-    try {
-        await sb.auth.signOut();
-    } catch (e) {
-        console.warn('[auth] signOut error, clearing session locally:', e);
-    } finally {
-        try { localStorage.clear(); } catch (_) {}
-        window.location.reload();
-    }
+    // Show the landing page immediately — no waiting for network, no reload.
+    // Reset all in-memory state so the app is fully torn down.
+    currentAuthUser = null;
+    _appDataLoaded = false;
+    messages = [];
+    conversations = [];
+    currentConversation = null;
+    currentConversationIndex = -1;
+    globalTransmissions = [];
+    cleanupRealtime();
+    showOnboarding();
+    // Fire signOut + clear storage in background; errors don't matter —
+    // the UI is already on the landing page.
+    try { await sb.auth.signOut(); } catch (_) {}
+    try { localStorage.clear(); } catch (_) {}
 }
 
 async function deleteAccount() {
