@@ -44,12 +44,13 @@ async function sendMoonKey() {
     btn.textContent = 'Sending...';
     btn.disabled = true;
 
-    // Check if the email exists in the system and whether the account is suspended
-    const { data: suspendCheck } = await sb
-        .from('profiles')
-        .select('suspended_at, suspended_reason')
-        .eq('email', email)
-        .maybeSingle();
+    // Check if the email exists in the system and whether the account is suspended.
+    // Uses a SECURITY DEFINER RPC: the login screen runs as the anon role, which
+    // has no read access to `profiles`, so a direct table query always returned
+    // empty and falsely reported "not in our system". The RPC also does a
+    // case-insensitive match.
+    const { data: loginRows } = await sb.rpc('check_login_email', { p_email: email });
+    const suspendCheck = Array.isArray(loginRows) && loginRows.length ? loginRows[0] : null;
 
     if (!suspendCheck) {
         errorEl.textContent = 'This email isn\'t in our system. Double-check the address or contact us at hello@moonpost.app.';
