@@ -1084,6 +1084,8 @@ function _markRouletteThreadRead(msg) {
     const unread = thread.filter(({ m, role: r }) =>
         r === 'recipient' && !m.recipient_read_at &&
         (m.status === 'delivered' || m.status === 'revealed'));
+    console.log('[roulette] markRead thread:', thread.map(e => `${e.role}:${e.m.id.slice(0,8)}:${e.m.status}`));
+    console.log('[roulette] markRead unread:', unread.map(e => e.m.id));
     if (!unread.length) return;
 
     const readAt = new Date().toISOString();
@@ -1091,7 +1093,9 @@ function _markRouletteThreadRead(msg) {
     sb.from('moon_roulette_messages')
         .update({ recipient_read_at: readAt })
         .in('id', ids)
-        .then(({ error }) => {
+        .select('id, recipient_read_at')
+        .then(({ data, error }) => {
+            console.log('[roulette] markRead result — data:', data, 'error:', error);
             if (!error) {
                 unread.forEach(({ m }) => { m.recipient_read_at = readAt; });
                 if (typeof renderMessages === 'function') renderMessages();
