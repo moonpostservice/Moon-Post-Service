@@ -12,6 +12,17 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Escape sender-supplied values (e.g. sender_city) before interpolating into
+// the recipient's HTML email, so stored content can't inject markup.
+function esc(val: unknown): string {
+  return String(val ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-secret",
@@ -29,16 +40,24 @@ Deno.serve(async (req: Request) => {
     );
   }
 
-  // --- Verify internal caller ---
+  // --- Verify internal caller (fail CLOSED) ---
+  // This function runs with the service-role key and can read recipient emails and
+  // send mail, so it must never be open. If the secret is unset or does not match,
+  // reject. (Previously the check was skipped entirely when the env var was unset,
+  // which left the endpoint callable by anyone.)
   const internalSecret = Deno.env.get("INTERNAL_NOTIFY_SECRET");
-  if (internalSecret) {
-    const callerSecret = req.headers.get("x-internal-secret");
-    if (callerSecret !== internalSecret) {
-      return new Response(
-        JSON.stringify({ error: "Forbidden" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+  if (!internalSecret) {
+    console.error("INTERNAL_NOTIFY_SECRET not configured — refusing to run");
+    return new Response(
+      JSON.stringify({ error: "Service misconfigured" }),
+      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+  if (req.headers.get("x-internal-secret") !== internalSecret) {
+    return new Response(
+      JSON.stringify({ error: "Forbidden" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
   try {
@@ -128,8 +147,8 @@ Deno.serve(async (req: Request) => {
         ? new Date(msg.released_at).toLocaleString("en-US", { timeStyle: "short", dateStyle: "medium" })
         : "";
 
-      const moonPhase = msg.moon_phase ?? "";
-      const senderCity = msg.sender_city ?? "somewhere";
+      const moonPhase = esc(msg.moon_phase);
+      const senderCity = esc(msg.sender_city ?? "somewhere");
 
       // --- 5. Send via Resend ---
       const subject = "🌕 A mystery moon message has arrived";

@@ -21,6 +21,33 @@ function str(val: unknown, fallback = ""): string {
   return typeof val === "string" ? val : fallback;
 }
 
+// Escape user-controlled values before interpolating into HTML email bodies.
+// Prevents HTML/link injection that would let an authenticated caller craft
+// arbitrary phishing markup sent from our verified domain.
+function esc(val: unknown, fallback = ""): string {
+  return str(val, fallback)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Only allow links that point back to our own app origin. Anything else
+// (attacker-controlled href) is dropped so the email can't be weaponised
+// as a same-domain phishing lure.
+function safeLink(val: unknown, allowedOrigin: string): string {
+  const s = str(val);
+  try {
+    if (new URL(s).origin === new URL(allowedOrigin).origin) {
+      return s.replace(/"/g, "%22").replace(/'/g, "%27");
+    }
+  } catch {
+    /* not a valid URL */
+  }
+  return "";
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -80,6 +107,13 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    // Basic shape/length validation to reject malformed or header-injection addresses.
+    if (body.recipientEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.recipientEmail)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid recipientEmail" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const emailType = body.type as EmailType;
     const appUrl = Deno.env.get("APP_URL") ?? "https://moonpop.app";
@@ -95,34 +129,35 @@ Deno.serve(async (req: Request) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const senderName = str(body.senderName, "Someone");
-      const recipientLocation = str(body.recipientLocation, "your location");
-      const moonriseTime = str(body.moonriseTime, "soon");
-      const messagePreview = str(body.messagePreview);
+      const senderName = esc(body.senderName, "Someone");
+      const recipientLocation = esc(body.recipientLocation, "your location");
+      const moonriseTime = esc(body.moonriseTime, "soon");
+      const messagePreview = esc(body.messagePreview);
+      const link = safeLink(body.revealLink, appUrl);
 
       subject = `🌙 ${senderName} sent you a moon message!`;
       htmlBody = `
         <h2>You have a new moon message from ${senderName}!</h2>
         <p>It will be revealed when the moon rises over ${recipientLocation} (around ${moonriseTime}).</p>
         ${messagePreview ? `<p><em>"${messagePreview}..."</em></p>` : ""}
-        <p><a href="${str(body.revealLink)}">View your message</a></p>
+        ${link ? `<p><a href="${link}">View your message</a></p>` : ""}
       `;
 
     } else if (emailType === "invite") {
-      const senderName = str(body.senderName, "Someone");
-      const revealLink = str(body.revealLink);
+      const senderName = esc(body.senderName, "Someone");
+      const link = safeLink(body.revealLink, appUrl);
       subject = `🌙 ${senderName} invited you to Moon Post Service!`;
       htmlBody = `
         <h2>${senderName} wants to send you moon messages!</h2>
         <p>Moon Post Service lets you send messages that are revealed when the moon rises at the recipient's location.</p>
-        ${revealLink ? `<p><a href="${revealLink}">Join Moon Post Service</a></p>` : ""}
+        ${link ? `<p><a href="${link}">Join Moon Post Service</a></p>` : ""}
       `;
 
     } else if (emailType === "roulette_received") {
       // Recipient notification: message in transit, reveal city only
-      const senderCity = str(body.senderCity, "somewhere");
-      const moonPhase = str(body.moonPhase);
-      const releaseTime = str(body.releaseTime);
+      const senderCity = esc(body.senderCity, "somewhere");
+      const moonPhase = esc(body.moonPhase);
+      const releaseTime = esc(body.releaseTime);
 
       subject = "🌕 A mystery moon message is on its way to you";
       htmlBody = `
@@ -136,7 +171,7 @@ Deno.serve(async (req: Request) => {
 
     } else {
       // roulette_returned
-      const messagePreview = str(body.messagePreview);
+      const messagePreview = esc(body.messagePreview);
 
       subject = "🌙 Your Moon Roulette message found its way back to you";
       htmlBody = `
