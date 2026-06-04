@@ -5773,10 +5773,13 @@ body.moon-down .inbox-new-msg-cta {
     z-index: 4;
 }
 
-/* Scale orbit ring for available space — fills remaining flex space, shrinks with title */
+/* Scale orbit ring for available space — fills remaining flex space, shrinks with title.
+   Drive size from HEIGHT (the axis flexbox squeezes) and let aspect-ratio derive the
+   width, so the box stays square. Setting width AND height independently let flex shrink
+   the height while the width stayed fixed → non-square ellipse + markers off the stroke. */
 .split-right .orbit-container {
-    width: min(420px, 100%, calc(100vh - 340px));
     height: min(420px, 100%, calc(100vh - 340px));
+    width: auto;
     aspect-ratio: 1;
     min-width: 180px;
     min-height: 180px;
@@ -5878,8 +5881,9 @@ body.moon-down .inbox-new-msg-cta {
         width: 62%;
     }
     .split-right .orbit-container {
-        width: min(340px, calc(100vh - 320px));
         height: min(340px, calc(100vh - 320px));
+        width: auto;
+        aspect-ratio: 1;
         min-width: 220px;
         min-height: 220px;
         flex-shrink: 1;
