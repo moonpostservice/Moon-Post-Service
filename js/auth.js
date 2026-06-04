@@ -499,10 +499,13 @@ function filterOnboardingCities(query) {
 
 async function resendMoonKey() {
     const email = pendingAuthEmail || document.getElementById('authEmailSent').textContent;
+    // shouldCreateUser must stay false: a resend should never bring a new
+    // auth.users row into existence. The user already passed the
+    // check_login_email gate in sendMoonKey, so the account exists.
     const { error } = await sb.auth.signInWithOtp({
         email,
         options: {
-            shouldCreateUser: true
+            shouldCreateUser: false
         }
     });
     if (!error) {
