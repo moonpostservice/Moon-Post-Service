@@ -12,20 +12,35 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// --- Rate limiter: 10 roulette messages per minute per user ---
-const rateLimitMap = new Map<string, number[]>();
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 10;
+// --- Input caps for user-supplied content ---
+const MAX_MESSAGE_LEN = 2000;
+const MAX_URL_LEN = 1000;
+const MAX_TITLE_LEN = 300;
 
-function isRateLimited(userId: string): boolean {
-  const now = Date.now();
-  const timestamps = (rateLimitMap.get(userId) ?? []).filter(
-    (t) => now - t < RATE_LIMIT_WINDOW_MS
-  );
-  rateLimitMap.set(userId, timestamps);
-  if (timestamps.length >= RATE_LIMIT_MAX) return true;
-  timestamps.push(now);
-  return false;
+// Returns an error string if invalid, or null if OK.
+function validateContent(body: Record<string, unknown>): string | null {
+  const text = body.message_text;
+  if (text != null && (typeof text !== "string" || text.length > MAX_MESSAGE_LEN)) {
+    return `message_text must be a string of at most ${MAX_MESSAGE_LEN} characters`;
+  }
+  const title = body.song_title;
+  if (title != null && (typeof title !== "string" || title.length > MAX_TITLE_LEN)) {
+    return `song_title must be a string of at most ${MAX_TITLE_LEN} characters`;
+  }
+  for (const field of ["photo_url", "song_url"] as const) {
+    const v = body[field];
+    if (v == null) continue;
+    if (typeof v !== "string" || v.length > MAX_URL_LEN) {
+      return `${field} must be a string of at most ${MAX_URL_LEN} characters`;
+    }
+    try {
+      const scheme = new URL(v).protocol;
+      if (scheme !== "http:" && scheme !== "https:") return `${field} must be an http(s) URL`;
+    } catch {
+      return `${field} must be a valid URL`;
+    }
+  }
+  return null;
 }
 
 // --- Moon phase name from SunCalc illumination fraction (0–1) ---
@@ -142,20 +157,42 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // --- 2b. Validate content length / URL schemes ---
+    const contentErr = validateContent(body);
+    if (contentErr) {
+      return new Response(
+        JSON.stringify({ error: contentErr }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // parent_id is present when this is a re-launch of a returned message
     const parentId  = typeof body.parent_id  === "string" ? body.parent_id  : null;
     // reply_to_id is present when this is an anonymous reply to a specific roulette message
     const replyToId = typeof body.reply_to_id === "string" ? body.reply_to_id : null;
 
-    // --- 3. Rate limit ---
-    if (isRateLimited(user.id)) {
+    const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // --- 3. Rate limit (durable, cross-isolate): 10 sends per minute per user ---
+    const { data: allowed, error: rlErr } = await serviceClient.rpc("consume_rate_limit", {
+      p_user_id: user.id,
+      p_action: "roulette_send",
+      p_limit: 10,
+      p_window_seconds: 60,
+    });
+    if (rlErr) {
+      console.error("Rate limit check failed:", rlErr);
+      return new Response(
+        JSON.stringify({ error: "Internal server error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!allowed) {
       return new Response(
         JSON.stringify({ error: "Rate limit exceeded" }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     // --- 4. Fetch sender's city (stored on their profile) ---
     const { data: senderProfile, error: senderErr } = await serviceClient

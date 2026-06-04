@@ -83,6 +83,30 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // --- 1b. Rate limit (durable, cross-isolate): 40 emails per hour per user ---
+    // Bounds the invite/notification path so it can't be used to spam mail from
+    // our verified domain. Uses the service role so the limiter table stays private.
+    const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: allowed, error: rlErr } = await serviceClient.rpc("consume_rate_limit", {
+      p_user_id: user.id,
+      p_action: "email_send",
+      p_limit: 40,
+      p_window_seconds: 3600,
+    });
+    if (rlErr) {
+      console.error("Rate limit check failed:", rlErr);
+      return new Response(
+        JSON.stringify({ error: "Internal server error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded" }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // --- 2. Parse payload ---
     let body: Record<string, unknown>;
     try {
