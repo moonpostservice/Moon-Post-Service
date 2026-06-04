@@ -352,6 +352,70 @@
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: rgba(212, 181, 138, 0.25); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(212, 181, 138, 0.45); }
+    /* ── Analytics ── */
+    .an-toolbar { display: flex; justify-content: flex-end; margin-bottom: 14px; min-height: 16px; }
+    .an-generated { color: var(--muter); font-size: 11px; letter-spacing: 0.3px; }
+    .an-section-title {
+      font-family: var(--serif); font-size: 19px; color: var(--text-bright);
+      font-weight: 400; margin: 26px 0 12px; letter-spacing: 0.3px;
+    }
+    .an-section-title:first-child { margin-top: 0; }
+    .an-grid {
+      display: grid; gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    .an-card {
+      background: var(--bg-2); border: 1px solid var(--line-soft);
+      border-radius: 12px; padding: 16px 18px;
+    }
+    .an-card .num {
+      font-family: var(--serif); font-size: 30px; color: var(--accent-bright);
+      line-height: 1.1; font-weight: 500;
+    }
+    .an-card .lbl { color: var(--muted); font-size: 12px; margin-top: 4px; letter-spacing: 0.3px; }
+    .an-card .sub { color: var(--muter); font-size: 11px; margin-top: 6px; }
+
+    /* Funnel */
+    .an-funnel { display: flex; flex-direction: column; gap: 8px; max-width: 560px; }
+    .an-funnel-row { display: flex; align-items: center; gap: 12px; }
+    .an-funnel-label { width: 130px; flex-shrink: 0; color: var(--muted); font-size: 12px; }
+    .an-funnel-track {
+      flex: 1; background: var(--bg-3); border-radius: 6px; height: 26px;
+      overflow: hidden; border: 1px solid var(--line-soft);
+    }
+    .an-funnel-fill {
+      height: 100%; background: linear-gradient(90deg, var(--accent-deep), var(--accent-bright));
+      border-radius: 6px 0 0 6px; transition: width 0.4s ease;
+    }
+    .an-funnel-val { width: 92px; flex-shrink: 0; text-align: right; color: var(--text); font-size: 12px; }
+    .an-funnel-val b { color: var(--text-bright); }
+
+    /* Bar chart */
+    .an-chart { background: var(--bg-2); border: 1px solid var(--line-soft); border-radius: 12px; padding: 18px; }
+    .an-chart-legend { display: flex; gap: 16px; margin-bottom: 12px; font-size: 12px; color: var(--muted); }
+    .an-chart-legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+    .an-bars { display: flex; align-items: flex-end; gap: 3px; height: 140px; }
+    .an-bar-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; height: 100%; position: relative; min-width: 0; }
+    .an-bar-col:hover .an-bar-tip { display: block; }
+    .an-bar { width: 100%; border-radius: 2px 2px 0 0; min-height: 0; transition: height 0.3s; }
+    .an-bar.dm { background: var(--t-delivered); }
+    .an-bar.roulette { background: var(--accent); }
+    .an-bar.signup { background: var(--t-relaunched); }
+    .an-bar-tip {
+      display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+      background: var(--bg-3); border: 1px solid var(--line); border-radius: 6px;
+      padding: 5px 8px; font-size: 11px; color: var(--text-bright); white-space: nowrap;
+      z-index: 5; margin-bottom: 4px; pointer-events: none;
+    }
+    .an-axis { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muter); font-size: 10px; }
+
+    /* City list */
+    .an-cities { display: flex; flex-direction: column; gap: 6px; max-width: 460px; }
+    .an-city-row { display: flex; align-items: center; gap: 10px; }
+    .an-city-name { width: 120px; flex-shrink: 0; color: var(--text); font-size: 13px; }
+    .an-city-track { flex: 1; background: var(--bg-3); border-radius: 5px; height: 18px; overflow: hidden; }
+    .an-city-fill { height: 100%; background: var(--accent); border-radius: 5px; }
+    .an-city-val { width: 32px; text-align: right; color: var(--muted); font-size: 12px; }
   </style>
 </head>
 <body>
@@ -381,6 +445,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="roulette">Moon Roulette</button>
       <button class="tab-btn" data-tab="users">Users</button>
+      <button class="tab-btn" data-tab="analytics">Analytics</button>
     </div>
 
     <!-- Roulette tab -->
@@ -467,6 +532,16 @@
         </table>
       </div>
     </div> <!-- /tab-users -->
+
+    <!-- Analytics tab -->
+    <div class="tab-panel" id="tab-analytics">
+      <div class="an-toolbar">
+        <span class="an-generated" id="anGenerated"></span>
+      </div>
+      <div id="anBody">
+        <div class="state-msg"><div class="icon">◌</div>Loading…</div>
+      </div>
+    </div> <!-- /tab-analytics -->
 
   </main>
 </div>
@@ -1018,7 +1093,13 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'users' && !allUsers.length) loadUsers();
+    if (btn.dataset.tab === 'analytics' && !_analyticsLoaded) loadAnalytics();
   });
+});
+
+// Refresh button also refreshes the analytics tab once it's been opened.
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  if (_analyticsLoaded) loadAnalytics();
 });
 
 // ── Users ─────────────────────────────────────────────────────────────────────
@@ -1226,6 +1307,132 @@ const clearLoop = setInterval(() => {
   if (userHasTyped) { clearInterval(clearLoop); return; }
   if (emailInput.value) emailInput.value = '';
 }, 30);
+
+// ── Analytics ─────────────────────────────────────────────────────────────────
+
+let _analyticsLoaded = false;
+
+async function loadAnalytics() {
+  const body = document.getElementById('anBody');
+  body.innerHTML = `<div class="state-msg"><div class="icon">◌</div>Loading…</div>`;
+  const { data, error } = await sb.rpc('get_admin_analytics');
+  if (error) {
+    body.innerHTML = `<div class="state-msg"><div class="icon">⚠</div>${escHtml(error.message)}</div>`;
+    return;
+  }
+  _analyticsLoaded = true;
+  renderAnalytics(data);
+}
+
+function anCard(num, lbl, sub) {
+  return `<div class="an-card"><div class="num">${num}</div><div class="lbl">${escHtml(lbl)}</div>${sub ? `<div class="sub">${escHtml(sub)}</div>` : ''}</div>`;
+}
+
+function anFunnelRow(label, val, base) {
+  const pct = base > 0 ? Math.round((val / base) * 100) : 0;
+  return `<div class="an-funnel-row">
+    <div class="an-funnel-label">${escHtml(label)}</div>
+    <div class="an-funnel-track"><div class="an-funnel-fill" style="width:${pct}%"></div></div>
+    <div class="an-funnel-val"><b>${val}</b> · ${pct}%</div>
+  </div>`;
+}
+
+function renderAnalytics(d) {
+  const t = d.totals, a = d.active, m = d.messaging, f = d.funnel;
+  const gen = d.generated_at ? new Date(d.generated_at) : null;
+  document.getElementById('anGenerated').textContent =
+    gen ? `As of ${gen.toLocaleString()}` : '';
+
+  // ── Audience cards
+  let html = `<div class="an-section-title">Audience</div>
+    <div class="an-grid">
+      ${anCard(t.confirmed_users, 'Confirmed users', `${t.profiles} profiles`)}
+      ${anCard(a.d1, 'Active · 24h')}
+      ${anCard(a.d7, 'Active · 7d')}
+      ${anCard(a.d30, 'Active · 30d')}
+      ${anCard(t.with_push, 'Push enabled')}
+      ${anCard(t.roulette_opt_in, 'Roulette opt-in')}
+    </div>`;
+
+  // ── Activation funnel
+  const base = f.signed_up || 1;
+  html += `<div class="an-section-title">Activation funnel</div>
+    <div class="an-funnel">
+      ${anFunnelRow('Signed up', f.signed_up, base)}
+      ${anFunnelRow('Set location', f.set_city, base)}
+      ${anFunnelRow('Set profile name', f.set_name, base)}
+      ${anFunnelRow('Sent a message', f.activated, base)}
+    </div>`;
+
+  // ── Messaging cards
+  html += `<div class="an-section-title">Messaging</div>
+    <div class="an-grid">
+      ${anCard(m.dm_total, 'Direct messages', `${m.dm_7d} in last 7d · ${m.dm_senders} senders`)}
+      ${anCard(m.roulette_total, 'Roulette messages', `${m.roulette_7d} in last 7d · ${m.roulette_senders} senders`)}
+    </div>`;
+
+  // ── Messages per day (last 30d), dm + roulette stacked
+  const mbd = d.messages_by_day || [];
+  const maxTot = Math.max(1, ...mbd.map(r => (r.dm || 0) + (r.roulette || 0)));
+  html += `<div class="an-section-title">Messages per day · 30d</div>
+    <div class="an-chart">
+      <div class="an-chart-legend">
+        <span><span class="dot" style="background:var(--t-delivered)"></span>Direct</span>
+        <span><span class="dot" style="background:var(--accent)"></span>Roulette</span>
+      </div>
+      <div class="an-bars">
+        ${mbd.map(r => {
+          const dm = r.dm || 0, rl = r.roulette || 0;
+          return `<div class="an-bar-col">
+            <div class="an-bar-tip">${anDay(r.day)} — ${dm} DM · ${rl} roulette</div>
+            <div class="an-bar dm" style="height:${(dm / maxTot) * 100}%"></div>
+            <div class="an-bar roulette" style="height:${(rl / maxTot) * 100}%"></div>
+          </div>`;
+        }).join('')}
+      </div>
+      ${anAxis(mbd)}
+    </div>`;
+
+  // ── Signups per day (last 30d)
+  const sbd = d.signups_by_day || [];
+  const maxSign = Math.max(1, ...sbd.map(r => r.count || 0));
+  html += `<div class="an-section-title">Signups per day · 30d</div>
+    <div class="an-chart">
+      <div class="an-bars">
+        ${sbd.map(r => `<div class="an-bar-col">
+            <div class="an-bar-tip">${anDay(r.day)} — ${r.count || 0} signup${(r.count || 0) === 1 ? '' : 's'}</div>
+            <div class="an-bar signup" style="height:${((r.count || 0) / maxSign) * 100}%"></div>
+          </div>`).join('')}
+      </div>
+      ${anAxis(sbd)}
+    </div>`;
+
+  // ── Top cities
+  const cities = d.top_cities || [];
+  const maxCity = Math.max(1, ...cities.map(c => c.count || 0));
+  html += `<div class="an-section-title">Top cities</div>
+    <div class="an-cities">
+      ${cities.length ? cities.map(c => `<div class="an-city-row">
+        <div class="an-city-name">${escHtml(c.city)}</div>
+        <div class="an-city-track"><div class="an-city-fill" style="width:${((c.count || 0) / maxCity) * 100}%"></div></div>
+        <div class="an-city-val">${c.count}</div>
+      </div>`).join('') : '<div class="sub" style="color:var(--muter)">No cities yet</div>'}
+    </div>`;
+
+  document.getElementById('anBody').innerHTML = html;
+}
+
+function anDay(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function anAxis(rows) {
+  if (!rows.length) return '';
+  const first = anDay(rows[0].day);
+  const last = anDay(rows[rows.length - 1].day);
+  return `<div class="an-axis"><span>${first}</span><span>${last}</span></div>`;
+}
 
 init();
 </script>
