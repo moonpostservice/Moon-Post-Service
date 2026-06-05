@@ -515,13 +515,28 @@
                 <button onclick="closeAuthModal()" style="position:absolute;top:14px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;">✕</button>
                 <img class="onboarding-logo" src="assests/logo.svg" alt="Moon Post Service">
                 <h1 id="authModalTitle">Messages released by the moon</h1>
-                <p class="onboarding-tagline">Write now. It unlocks when the moon rises where they are.</p>
+                <p class="onboarding-tagline" id="authModalTagline">Write now. It unlocks when the moon rises where they are.</p>
 
-                <!-- Step 1: Email -->
+                <!-- Step 1: Who's this from? — signup collects name + email here; login asks email only -->
                 <div class="auth-step active" id="authStepEmail">
-                    <div class="onboarding-form">
+                    <div id="signupIntroHead" style="text-align:center;display:none;">
+                        <div style="font-size:30px;margin-bottom:6px;opacity:0.92;">🌙</div>
+                        <h2 style="font-family:var(--serif);color:var(--text-bright);font-size:24px;font-weight:500;margin:0 0 6px;letter-spacing:-0.2px;">Who's this message from?</h2>
+                        <p style="color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.5;">Setting this up creates your free Moon Post account — so the moon can deliver your message and bring you any replies.</p>
+                    </div>
+                    <div class="onboarding-form" style="text-align:left;">
+                        <div id="signupNameFields" style="display:none;">
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label>First name</label>
+                                <input type="text" id="authFirstName" placeholder="Your first name" autocomplete="given-name" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.6);color:var(--text-bright);font-family:var(--sans);font-size:14px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label>Last name <span style="color:var(--muter);font-weight:400;letter-spacing:0;text-transform:none;font-style:italic;">(optional)</span></label>
+                                <input type="text" id="authLastName" placeholder="Your last name" autocomplete="family-name" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.6);color:var(--text-bright);font-family:var(--sans);font-size:14px;">
+                            </div>
+                        </div>
                         <div class="form-group">
-                            <label>Enter your email</label>
+                            <label id="authEmailLabel">Enter your email</label>
                             <input type="email" class="auth-email-input" id="authEmail" placeholder="you@email.com" autocomplete="email">
                             <div class="auth-error" id="authError"></div>
                         </div>
@@ -531,23 +546,6 @@
                     </button>
                     <p class="auth-note">No password — we'll send a 6-digit code to confirm it's you.</p>
                     <p class="auth-note" style="margin-top:6px;">By continuing you agree to our <a onclick="event.preventDefault();openTermsPage()" href="/terms" style="color:var(--accent);text-decoration:none;cursor:pointer;">Terms, Privacy &amp; Community Guidelines</a>.</p>
-                </div>
-
-                <!-- Step: Your name (verify-last signup) -->
-                <div class="auth-step" id="authStepName">
-                    <div style="text-align:center;">
-                        <div style="font-size:32px;margin-bottom:8px;opacity:0.92;">🌙</div>
-                        <h2 style="font-family:var(--serif);color:var(--text-bright);font-size:26px;font-weight:500;margin:0 0 6px;letter-spacing:-0.2px;">Who's it from?</h2>
-                        <p style="color:var(--muted);font-size:13px;margin:0 0 20px;font-style:italic;">The name that appears on your message.</p>
-                        <div class="onboarding-form" style="text-align:left;">
-                            <div class="form-group">
-                                <label>Your name</label>
-                                <input type="text" id="signupName" placeholder="e.g. Sam" autocomplete="name" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.6);color:var(--text-bright);font-family:var(--sans);font-size:14px;" onkeydown="if(event.key==='Enter'){event.preventDefault();saveSignupName();}">
-                            </div>
-                        </div>
-                        <div id="signupNameError" style="color:#E89B73;font-size:12px;margin:8px 0;display:none;font-style:italic;"></div>
-                        <button class="onboarding-primary" onclick="saveSignupName()" style="margin-top:14px;">Continue</button>
-                    </div>
                 </div>
 
                 <!-- Step 2: Enter code -->
