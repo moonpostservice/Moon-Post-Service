@@ -27,22 +27,34 @@ let _pendingSignupProfile = null; // set on verify success, consumed by initAuth
 // Auth modal show/close
 function showAuthModal(mode) {
     authMode = mode === 'signup' ? 'signup' : 'login';
+    const isSignup = authMode === 'signup';
     // Fresh start: drop any in-progress signup draft and clear stale field/error state.
     _signupDraft = null;
-    const emailInput = document.getElementById('authEmail');
-    if (emailInput) emailInput.value = '';
+    ['authEmail', 'authFirstName', 'authLastName'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+    });
     const authErr = document.getElementById('authError');
     if (authErr) { authErr.textContent = ''; authErr.style.display = 'none'; }
-    const nameInput = document.getElementById('signupName');
-    if (nameInput) nameInput.value = '';
+
+    // Signup shows its own "Who's this from?" heading + name fields and hides the global
+    // brand title; login keeps the title and asks for email only.
+    const intro = document.getElementById('signupIntroHead');
+    const nameFields = document.getElementById('signupNameFields');
+    if (intro) intro.style.display = isSignup ? 'block' : 'none';
+    if (nameFields) nameFields.style.display = isSignup ? 'block' : 'none';
+    const title = document.getElementById('authModalTitle');
+    if (title) { title.textContent = isSignup ? '' : 'Welcome back'; title.style.display = isSignup ? 'none' : ''; }
+    const tagline = document.getElementById('authModalTagline');
+    if (tagline) tagline.style.display = isSignup ? 'none' : '';
+    const emailLabel = document.getElementById('authEmailLabel');
+    if (emailLabel) emailLabel.textContent = isSignup ? 'Your email' : 'Enter your email';
+
     const overlay = document.getElementById('authModalOverlay');
     overlay.style.display = 'flex';
-    const title = document.getElementById('authModalTitle');
-    if (title) title.textContent = mode === 'signup' ? 'Create your account' : 'Welcome back';
     // Reset to step 1
     document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
     document.getElementById('authStepEmail')?.classList.add('active');
-    setTimeout(() => document.getElementById('authEmail')?.focus(), 100);
+    setTimeout(() => document.getElementById(isSignup ? 'authFirstName' : 'authEmail')?.focus(), 100);
 }
 function closeAuthModal() {
     document.getElementById('authModalOverlay').style.display = 'none';
@@ -55,6 +67,14 @@ async function sendMoonKey() {
     const email = document.getElementById('authEmail').value.trim();
     const errorEl = document.getElementById('authError');
     const btn = document.getElementById('authSendBtn');
+
+    // Signup collects the sender's name on this same step — require a first name.
+    if (authMode === 'signup' && !(document.getElementById('authFirstName')?.value || '').trim()) {
+        errorEl.textContent = 'Add your first name so the moon knows who is writing.';
+        errorEl.style.display = 'block';
+        document.getElementById('authFirstName')?.focus();
+        return;
+    }
 
     if (!email || !email.includes('@')) {
         errorEl.textContent = 'Please enter a valid email address.';
@@ -98,11 +118,16 @@ async function sendMoonKey() {
     // We stash the email and move to the name step — no OTP, no account yet. (An existing
     // account in signup mode falls through and just gets a login code.)
     if (authMode === 'signup' && !suspendCheck) {
-        _signupDraft = { email, name: '', city: null };
+        _signupDraft = {
+            email,
+            firstName: (document.getElementById('authFirstName')?.value || '').trim(),
+            lastName: (document.getElementById('authLastName')?.value || '').trim(),
+            city: null
+        };
         pendingAuthEmail = email;
         btn.innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
         btn.disabled = false;
-        showSignupNameStep();
+        showLocationStep();
         return;
     }
 
@@ -132,31 +157,7 @@ async function sendMoonKey() {
     document.getElementById('otpDigit1').focus();
 }
 
-// ---- VERIFY-LAST signup steps: name → city → (code last) ----
-
-function showSignupNameStep() {
-    document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
-    document.getElementById('authStepName').classList.add('active');
-    const authModal = document.getElementById('authModalOverlay');
-    if (authModal) authModal.style.display = 'flex';
-    setTimeout(() => document.getElementById('signupName')?.focus(), 100);
-}
-
-function saveSignupName() {
-    const name = (document.getElementById('signupName')?.value || '').trim();
-    const errorEl = document.getElementById('signupNameError');
-    if (!name) {
-        if (errorEl) { errorEl.textContent = 'Add your name so the moon knows who is writing.'; errorEl.style.display = 'block'; }
-        document.getElementById('signupName')?.focus();
-        return;
-    }
-    if (errorEl) errorEl.style.display = 'none';
-    if (!_signupDraft) _signupDraft = { email: pendingAuthEmail, name: '', city: null };
-    _signupDraft.name = name;
-    // Reuse the existing location step (auto-detects city by timezone). saveOnboardingCity
-    // detects the active signup draft and routes to the verify step instead of writing to DB.
-    showLocationStep();
-}
+// ---- VERIFY-LAST signup steps: (name+email collected on step 1) → city → code last ----
 
 // Final step for verify-last signup: NOW send the OTP and show the code entry. This is the
 // first moment any account row can come into existence — only for a committed user who has
@@ -252,7 +253,12 @@ async function verifyMoonKey() {
     // writes the COMPLETE profile in one shot (no further steps). For login, fall through
     // to the existing behaviour.
     if (_signupDraft) {
-        _pendingSignupProfile = { email: _signupDraft.email, name: _signupDraft.name, city: _signupDraft.city };
+        _pendingSignupProfile = {
+            email: _signupDraft.email,
+            firstName: _signupDraft.firstName,
+            lastName: _signupDraft.lastName,
+            city: _signupDraft.city
+        };
         _signupDraft = null;
     }
 
@@ -709,11 +715,14 @@ async function initAuth(sessionOverride) {
                     const d = _pendingSignupProfile;
                     _pendingSignupProfile = null;
                     const c = d.city || {};
+                    const fullName = [d.firstName, d.lastName].filter(Boolean).join(' ').trim()
+                        || (session.user.email || 'moonfriend').split('@')[0];
                     const completeProfile = {
                         id: session.user.id,
                         email: session.user.email,
-                        username: d.name,
-                        first_name: d.name,
+                        username: fullName,
+                        first_name: d.firstName || fullName,
+                        last_name: d.lastName || null,
                         city: c.name || null,
                         latitude: (c.lat != null ? c.lat : null),
                         longitude: (c.lon != null ? c.lon : null),
@@ -724,7 +733,7 @@ async function initAuth(sessionOverride) {
                         console.error('[initAuth] Complete profile creation failed:', createErr);
                         await sb.from('profiles').upsert(completeProfile);
                     }
-                    localStorage.setItem('moonpop_username', d.name);
+                    localStorage.setItem('moonpop_username', fullName);
                     localStorage.setItem('moonpop_seen', 'true');
                     profile = createdProfile || completeProfile;
                     // fall through to the if (profile) block below — do NOT return
