@@ -530,7 +530,7 @@
                         Continue <svg class="app-icon md" style="color:var(--on-accent)"><use href="#icon-moonkey"/></svg>
                     </button>
                     <p class="auth-note">No password — we'll send a 6-digit code to confirm it's you.</p>
-                    <p class="auth-note" style="margin-top:6px;">By continuing you agree to our <a href="/terms" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">Terms</a> &amp; <a href="/privacy" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">Privacy</a>.</p>
+                    <p class="auth-note" style="margin-top:6px;">By continuing you agree to our <a onclick="event.preventDefault();openTermsPage()" href="/terms" style="color:var(--accent);text-decoration:none;cursor:pointer;">Terms, Privacy &amp; Community Guidelines</a>.</p>
                 </div>
 
                 <!-- Step: Your name (verify-last signup) -->
