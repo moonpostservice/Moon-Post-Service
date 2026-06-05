@@ -5773,17 +5773,18 @@ body.moon-down .inbox-new-msg-cta {
     z-index: 4;
 }
 
-/* Scale orbit ring for available space — fills remaining flex space, shrinks with title.
-   Drive size from HEIGHT (the axis flexbox squeezes) and let aspect-ratio derive the
-   width, so the box stays square. Setting width AND height independently let flex shrink
-   the height while the width stayed fixed → non-square ellipse + markers off the stroke. */
+/* Scale orbit ring to the available vertical space while staying perfectly square.
+   Both axes use the IDENTICAL viewport-based clamp (px + vh only — no `%`, no
+   `width:auto`+`aspect-ratio`, no flex-shrink). Those constructs resolve differently
+   across engines: Chromium derived a square via `aspect-ratio`, but Firefox resolved
+   the `100%` percentage-height-in-flex / auto-width differently and rendered a small,
+   distorted ring. Identical px/vh math on both axes computes the same value in every
+   browser, and flex-shrink:0 stops the column flex from squeezing it into an ellipse.
+   The ~470px reserve = header + ring title + moon-data-bar block (all fixed-height). */
 .split-right .orbit-container {
-    height: min(420px, 100%, calc(100vh - 340px));
-    width: auto;
-    aspect-ratio: 1;
-    min-width: 180px;
-    min-height: 180px;
-    flex-shrink: 1;
+    width: clamp(180px, calc(100vh - 470px), 420px);
+    height: clamp(180px, calc(100vh - 470px), 420px);
+    flex-shrink: 0;
 }
 
 /* ====================================== */
@@ -5952,7 +5953,14 @@ body.moon-down .inbox-new-msg-cta {
 
     .split-right .orbit-container {
         width: min(200px, 55vw);
-        height: min(200px, 55vw);
+        height: auto;
+        aspect-ratio: 1;
+        /* Clear the desktop min-* and flex-shrink so the column flex can't
+           squeeze the height — that made the box 200x180 (ellipse) and the
+           rotation-positioned markers/moon detached from the stroke. */
+        min-width: 0;
+        min-height: 0;
+        flex-shrink: 0;
     }
 
     /* Shrink countdown inside ring on mobile */
@@ -6977,18 +6985,29 @@ body::before {
     top: 50%; left: 0;
     transform: translateY(-50%);
 }
+/* Animate only opacity + transform (compositor-friendly). box-shadow is intentionally
+   NOT animated here — animating it forces a paint every frame for every star, the
+   dominant cost across a full starfield. Bright stars keep their static inline glow. */
 @keyframes twinkle {
     0%, 100% { opacity: calc(var(--peak, 0.7) * 0.3); transform: scale(0.95); }
-    50% { opacity: var(--peak, 0.7); transform: scale(1); box-shadow: 0 0 3px rgba(255,255,255,0.3); }
+    50% { opacity: var(--peak, 0.7); transform: scale(1); }
 }
 @keyframes twinkleFlash {
     0%, 100% { opacity: calc(var(--peak, 0.8) * 0.25); transform: scale(0.9); }
-    40% { opacity: var(--peak, 0.8); transform: scale(1.05); box-shadow: 0 0 5px rgba(255,255,255,0.4); }
+    40% { opacity: var(--peak, 0.8); transform: scale(1.05); }
     70% { opacity: calc(var(--peak, 0.8) * 0.4); transform: scale(0.95); }
 }
 @keyframes twinkleRandom {
     0%, 100% { opacity: 0; }
     50% { opacity: var(--peak, 0.7); }
+}
+/* Honour reduced-motion: freeze the starfield to a static glow instead of
+   running hundreds of perpetual opacity animations. */
+@media (prefers-reduced-motion: reduce) {
+    .star {
+        animation: none !important;
+        opacity: var(--peak, 0.7);
+    }
 }
 
 /* ============================================================

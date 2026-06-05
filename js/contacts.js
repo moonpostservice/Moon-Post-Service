@@ -65,6 +65,36 @@ function closePhilosophyPage() {
     if (window.location.pathname === '/philosophy') history.replaceState(null, '', '/');
 }
 // ---- MOON TRANSIT ILLUSTRATION (canvas) ----
+// Drive a per-frame canvas draw loop, but only while the canvas is actually on
+// screen. Pauses (cancels rAF) when the canvas scrolls out of view or its
+// container is hidden, and resumes when it returns — so decorative canvases stop
+// burning frames in the background. Also cancels any previous loop registered on
+// the same canvas, preventing duplicate loops from stacking on re-init.
+function visibleCanvasLoop(canvas, drawFrame) {
+    const prev = canvas._mpsLoop;
+    if (prev) { cancelAnimationFrame(prev.raf); if (prev.io) prev.io.disconnect(); }
+    const state = { onScreen: true, raf: 0, io: null };
+    canvas._mpsLoop = state;
+    function tick(ts) {
+        if (!state.onScreen) { state.raf = 0; return; }
+        drawFrame(ts);
+        state.raf = requestAnimationFrame(tick);
+    }
+    if ('IntersectionObserver' in window) {
+        state.io = new IntersectionObserver((entries) => {
+            const nowOn = entries.some(e => e.isIntersecting);
+            if (nowOn && !state.onScreen) {
+                state.onScreen = true;
+                if (!state.raf) state.raf = requestAnimationFrame(tick);
+            } else if (!nowOn) {
+                state.onScreen = false;
+            }
+        }, { threshold: 0 });
+        state.io.observe(canvas);
+    }
+    state.raf = requestAnimationFrame(tick);
+}
+
 function initTransitIllustration() {
     const canvas = document.getElementById('transitCanvas');
     if (!canvas) return;
@@ -445,10 +475,8 @@ function initTransitIllustration() {
         drawPin(them.x, them.y, '#FFD54F', 'THEM');
         drawEnvelope(envX, envY, envColor, envAlpha);
         drawMoon(moon.x, moon.y);
-
-        requestAnimationFrame(draw);
     }
-    requestAnimationFrame(draw);
+    visibleCanvasLoop(canvas, draw);
 }
 
 function setupRingCanvas(canvasId) {
@@ -506,9 +534,8 @@ function setupRingCanvas(canvasId) {
                 ctx.beginPath(); ctx.arc(x, y, dot.size, 0, Math.PI * 2); ctx.fillStyle = dotG; ctx.fill();
             });
         });
-        requestAnimationFrame(draw);
     }
-    requestAnimationFrame(draw);
+    visibleCanvasLoop(canvas, draw);
 }
 
 // CONTACTS PAGE

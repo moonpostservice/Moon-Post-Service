@@ -41,7 +41,7 @@ async function loadInTransitReplies() {
                     replies: []
                 });
             }
-            console.log('[dots] Added', transitReplies.length, 'in-transit reply dot(s)');
+            if (window.__DEBUG_DOTS) console.log('[dots] Added', transitReplies.length, 'in-transit reply dot(s)');
         }
     } catch (e) {
         console.error('loadInTransitReplies error:', e);
@@ -954,7 +954,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     (function() {
         const container = document.getElementById('starfieldTwinkle');
         if (!container) return;
-        const count = 320;
+        const count = 160;
         for (let i = 0; i < count; i++) {
             const star = document.createElement('div');
             const r = Math.random();
@@ -1118,7 +1118,7 @@ window.addEventListener('scroll', () => {
 function generateLandingStars() {
     const container = document.getElementById('onboardingStars');
     if (!container || container.children.length > 0) return;
-    const count = 350;
+    const count = 160;
     const stars = [];
     for (let i = 0; i < count; i++) {
         const star = document.createElement('div');
@@ -1214,6 +1214,11 @@ function showOnboarding() {
     const overlay = document.getElementById('onboardingOverlay');
     if (!overlay) return;
     overlay.classList.remove('hidden');
+    // The onboarding overlay is opaque (background: var(--bg)) and sits above the
+    // global starfield, so #starfieldTwinkle is fully occluded here — pause it so we
+    // aren't animating ~160 invisible stars behind the overlay.
+    const globalStars = document.getElementById('starfieldTwinkle');
+    if (globalStars) globalStars.style.display = 'none';
     // Initialize scroll animations + landing starfield + orbital dots
     initMoonriseParallax();
     generateLandingStars();
@@ -1321,6 +1326,9 @@ function showOnboarding() {
 function hideOnboarding() {
     const overlay = document.getElementById('onboardingOverlay');
     if (overlay) overlay.classList.add('hidden');
+    // Overlay gone — restore the global starfield that was paused in showOnboarding().
+    const globalStars = document.getElementById('starfieldTwinkle');
+    if (globalStars) globalStars.style.display = '';
     hideCityDropdown();
 }
 
@@ -1629,9 +1637,8 @@ function updateOrbitCenter() {
     const centerEl = document.getElementById('orbitCenter');
     const heroTitle = document.getElementById('heroTitle');
     const countdown = getCountdown();
-    const location = document.getElementById('userLocation')?.textContent || 'your location';
 
-    // Live HH:MM:SS format
+    // Live HH:MM:SS format — the only thing that genuinely changes every second.
     const pad = (n) => String(n).padStart(2, '0');
     const timerStr = `${pad(countdown.hours)}:${pad(countdown.minutes)}:${pad(countdown.seconds)}`;
 
@@ -1650,91 +1657,105 @@ function updateOrbitCenter() {
             <p class="visibility-subtitle">The moon needs to know where you are.</p>
             <button class="cta-button" onclick="toggleSettings()">Set Location</button>
         `;
+        window._orbitCenterSig = null; // force a rebuild once location arrives
         return;
     }
 
     const userName = localStorage.getItem('moonpop_username') || '';
 
-    // Show/hide inbox CTA
-    const inboxCta = document.getElementById('inboxNewMsgCta');
+    // Use releaseAt as source of truth (consistent with renderMessageDots)
+    const now = new Date();
+    const outgoingInTransit = messages.filter(m => m.type === 'sent' && ((m.releaseAt && new Date(m.releaseAt) > now) || (m.status === 'In Transit' && !m.releaseAt))).length;
+    const inTransit = outgoingInTransit + incomingInTransit;
+    const unreadCount = safeWaiting;
 
-    // Moon glow: toggle classes based on visibility
-    const moonIconEl = document.getElementById('orbitMoonIcon');
-    const orbitRingEl = document.querySelector('.orbit-ring');
-    if (moonData.isVisible) {
-        if (moonIconEl) moonIconEl.classList.add('moon-glow');
-        if (orbitRingEl) orbitRingEl.classList.add('moon-visible');
+    // This function runs every second only to advance the clock. Everything else here
+    // is a pure function of the state below, so we rebuild the markup only when that
+    // state changes; otherwise we just patch the timer text node. This avoids tearing
+    // down and re-creating the orbit-center subtree (and restarting the live-dot pulse
+    // animation) on every tick.
+    const sig = JSON.stringify([moonData.isVisible, userName, moonData.moonset || '', unreadCount, inTransit, incomingInTransit]);
+
+    if (sig === window._orbitCenterSig) {
+        const timerEl = centerEl && centerEl.querySelector('.live-timer');
+        if (timerEl) timerEl.textContent = timerStr;
     } else {
-        if (moonIconEl) moonIconEl.classList.remove('moon-glow');
-        if (orbitRingEl) orbitRingEl.classList.remove('moon-visible');
-    }
+        window._orbitCenterSig = sig;
 
-    if (moonData.isVisible) {
-        // Moon is UP — sender side
-        document.body.classList.remove('moon-down');
-        if (heroTitle) {
-            const greeting = userName ? `Hello ${userName}.` : 'Hello.';
-            const moonsetStr = moonData.moonset && moonData.moonset !== '--:--' ? moonData.moonset : '';
-            if (moonsetStr) {
-                heroTitle.innerHTML = `${greeting}<br>The Moon Post Service is now open! Closing at moonset at ${moonsetStr}.`;
-            } else {
-                heroTitle.innerHTML = `${greeting}<br>The Moon Post Service is now open!`;
+        // Show/hide inbox CTA
+        const inboxCta = document.getElementById('inboxNewMsgCta');
+
+        // Moon glow: toggle classes based on visibility
+        const moonIconEl = document.getElementById('orbitMoonIcon');
+        const orbitRingEl = document.querySelector('.orbit-ring');
+        if (moonData.isVisible) {
+            if (moonIconEl) moonIconEl.classList.add('moon-glow');
+            if (orbitRingEl) orbitRingEl.classList.add('moon-visible');
+        } else {
+            if (moonIconEl) moonIconEl.classList.remove('moon-glow');
+            if (orbitRingEl) orbitRingEl.classList.remove('moon-visible');
+        }
+
+        if (moonData.isVisible) {
+            // Moon is UP — sender side
+            document.body.classList.remove('moon-down');
+            if (heroTitle) {
+                const greeting = userName ? `Hello ${userName}.` : 'Hello.';
+                const moonsetStr = moonData.moonset && moonData.moonset !== '--:--' ? moonData.moonset : '';
+                if (moonsetStr) {
+                    heroTitle.innerHTML = `${greeting}<br>The Moon Post Service is now open! Closing at moonset at ${moonsetStr}.`;
+                } else {
+                    heroTitle.innerHTML = `${greeting}<br>The Moon Post Service is now open!`;
+                }
             }
-        }
-        if (inboxCta) inboxCta.style.display = '';
+            if (inboxCta) inboxCta.style.display = '';
 
-        // Combined status: unread + in-transit in one sentence
-        // Use releaseAt as source of truth (consistent with renderMessageDots)
-        const now = new Date();
-        const outgoingInTransit = messages.filter(m => m.type === 'sent' && ((m.releaseAt && new Date(m.releaseAt) > now) || (m.status === 'In Transit' && !m.releaseAt))).length;
-        const inTransit = outgoingInTransit + incomingInTransit;
-        // Use conversation-level unread counts (based on read receipts) instead of
-        // the never-set m.read field which counted ALL received messages as unread
-        const unreadCount = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
-        let statusLine = '';
-        if (unreadCount > 0 && inTransit > 0) {
-            statusLine = `<p class="moon-carrying-indicator">You have <span class="moon-carrying-count">${unreadCount}</span> unread ${unreadCount === 1 ? 'message' : 'messages'} and <span class="moon-carrying-count">${inTransit}</span> ${inTransit === 1 ? 'message' : 'messages'} being delivered</p>`;
-        } else if (unreadCount > 0) {
-            statusLine = `<p class="moon-carrying-indicator">You have <span class="moon-carrying-count">${unreadCount}</span> unread ${unreadCount === 1 ? 'message' : 'messages'}</p>`;
-        } else if (inTransit > 0) {
-            statusLine = `<p class="moon-carrying-indicator"><span class="moon-carrying-count">${inTransit}</span> ${inTransit === 1 ? 'message' : 'messages'} being delivered</p>`;
-        }
-
-        centerEl.innerHTML = `
-            <div class="standby-countdown live-timer">${timerStr}</div>
-            <p class="standby-label">until services close</p>
-            <div class="moon-live-indicator"><span class="moon-live-dot"></span> Moon is live</div>
-            ${statusLine}
-        `;
-    } else {
-        // Moon is DOWN — receiver side
-        document.body.classList.add('moon-down');
-        if (inboxCta) inboxCta.style.display = 'none';
-
-        // "Carrying" = only in-transit messages (not unread — those are already delivered)
-        const totalCarrying = incomingInTransit;
-        if (heroTitle) {
-            const greetingPrefix = userName ? `Hello ${userName}.<br>` : '';
-            if (totalCarrying > 0 && safeWaiting > 0) {
-                heroTitle.innerHTML = `${greetingPrefix}The moon carries ${totalCarrying} ${totalCarrying === 1 ? 'message' : 'messages'} for you. You also have ${safeWaiting} unread ${safeWaiting === 1 ? 'message' : 'messages'} waiting.`;
-            } else if (totalCarrying > 0) {
-                heroTitle.innerHTML = `${greetingPrefix}The moon carries ${totalCarrying} ${totalCarrying === 1 ? 'message' : 'messages'} for you. You'll receive them when the moon reaches your sky.`;
-            } else if (safeWaiting > 0) {
-                heroTitle.innerHTML = `${greetingPrefix}You have ${safeWaiting} unread ${safeWaiting === 1 ? 'message' : 'messages'}. The Moon Post Service opens when the moon rises.`;
-            } else {
-                heroTitle.innerHTML = `${greetingPrefix}The Moon Post Service opens when the moon rises.`;
+            // Combined status: unread + in-transit in one sentence
+            let statusLine = '';
+            if (unreadCount > 0 && inTransit > 0) {
+                statusLine = `<p class="moon-carrying-indicator">You have <span class="moon-carrying-count">${unreadCount}</span> unread ${unreadCount === 1 ? 'message' : 'messages'} and <span class="moon-carrying-count">${inTransit}</span> ${inTransit === 1 ? 'message' : 'messages'} being delivered</p>`;
+            } else if (unreadCount > 0) {
+                statusLine = `<p class="moon-carrying-indicator">You have <span class="moon-carrying-count">${unreadCount}</span> unread ${unreadCount === 1 ? 'message' : 'messages'}</p>`;
+            } else if (inTransit > 0) {
+                statusLine = `<p class="moon-carrying-indicator"><span class="moon-carrying-count">${inTransit}</span> ${inTransit === 1 ? 'message' : 'messages'} being delivered</p>`;
             }
-        }
 
-        // Ring center: countdown + carrying info
-        const carryingLine = totalCarrying > 0
-            ? `<p class="moon-carrying-indicator" style="margin-top:8px;opacity:0.7;">🌙 Carrying <span class="moon-carrying-count">${totalCarrying}</span> ${totalCarrying === 1 ? 'message' : 'messages'}</p>`
-            : '';
-        centerEl.innerHTML = `
-            <div class="standby-countdown live-timer" style="opacity:0.6;">${timerStr}</div>
-            <p class="standby-label">until moonrise</p>
-            ${carryingLine}
-        `;
+            centerEl.innerHTML = `
+                <div class="standby-countdown live-timer">${timerStr}</div>
+                <p class="standby-label">until services close</p>
+                <div class="moon-live-indicator"><span class="moon-live-dot"></span> Moon is live</div>
+                ${statusLine}
+            `;
+        } else {
+            // Moon is DOWN — receiver side
+            document.body.classList.add('moon-down');
+            if (inboxCta) inboxCta.style.display = 'none';
+
+            // "Carrying" = only in-transit messages (not unread — those are already delivered)
+            const totalCarrying = incomingInTransit;
+            if (heroTitle) {
+                const greetingPrefix = userName ? `Hello ${userName}.<br>` : '';
+                if (totalCarrying > 0 && safeWaiting > 0) {
+                    heroTitle.innerHTML = `${greetingPrefix}The moon carries ${totalCarrying} ${totalCarrying === 1 ? 'message' : 'messages'} for you. You also have ${safeWaiting} unread ${safeWaiting === 1 ? 'message' : 'messages'} waiting.`;
+                } else if (totalCarrying > 0) {
+                    heroTitle.innerHTML = `${greetingPrefix}The moon carries ${totalCarrying} ${totalCarrying === 1 ? 'message' : 'messages'} for you. You'll receive them when the moon reaches your sky.`;
+                } else if (safeWaiting > 0) {
+                    heroTitle.innerHTML = `${greetingPrefix}You have ${safeWaiting} unread ${safeWaiting === 1 ? 'message' : 'messages'}. The Moon Post Service opens when the moon rises.`;
+                } else {
+                    heroTitle.innerHTML = `${greetingPrefix}The Moon Post Service opens when the moon rises.`;
+                }
+            }
+
+            // Ring center: countdown + carrying info
+            const carryingLine = totalCarrying > 0
+                ? `<p class="moon-carrying-indicator" style="margin-top:8px;opacity:0.7;">🌙 Carrying <span class="moon-carrying-count">${totalCarrying}</span> ${totalCarrying === 1 ? 'message' : 'messages'}</p>`
+                : '';
+            centerEl.innerHTML = `
+                <div class="standby-countdown live-timer" style="opacity:0.6;">${timerStr}</div>
+                <p class="standby-label">until moonrise</p>
+                ${carryingLine}
+            `;
+        }
     }
 
     // Update reply row gating if conversation detail is open

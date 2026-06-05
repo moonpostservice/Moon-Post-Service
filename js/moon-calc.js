@@ -317,7 +317,7 @@ function deliveryTimeToRingDegrees(date) {
 
     // Guard: if ring boundaries aren't initialized yet, show dot at bottom as placeholder
     if (!moonData._ringStart || !moonData._ringMid || !moonData._ringEnd) {
-        console.log('Dots: ring not initialized, placing dot at 180°');
+        if (window.__DEBUG_DOTS) console.log('Dots: ring not initialized, placing dot at 180°');
         return 180;
     }
 
@@ -533,7 +533,7 @@ function renderMessageDots() {
     if (allSent.length === 0) sentDetail = '<i>no sent messages</i>';
 
     // Diagnostic info logged to console only (no visible panel)
-    console.log('[dots] moon:', moonData.isVisible ? 'UP' : 'DOWN', '| msgs:', messages.length, '| sent:', allSent.length, '| qualifying:', inTransitMessages.length);
+    if (window.__DEBUG_DOTS) console.log('[dots] moon:', moonData.isVisible ? 'UP' : 'DOWN', '| msgs:', messages.length, '| sent:', allSent.length, '| qualifying:', inTransitMessages.length);
 
     // NOTE: We no longer skip rendering when moon is down.
     // CSS handles reduced opacity via body.moon-down .message-dot { opacity: 0.35 }
@@ -592,23 +592,23 @@ function renderMessageDots() {
     });
 
     // Update diagnostic with render count
-    console.log('[dots] rendered:', dotsRendered, 'dots');
+    if (window.__DEBUG_DOTS) console.log('[dots] rendered:', dotsRendered, 'dots');
 
     // Incoming messages genuinely in transit (not just "moon is down" — use stillInTransit flag)
     // Don't require releaseAt — we can calculate the dot position from our own moonrise
     const incomingMessages = messages.filter(m => m.type === 'received' && m.stillInTransit);
-    if (incomingMessages.length > 0) console.log('Dots: incoming messages:', incomingMessages.length);
+    if (window.__DEBUG_DOTS && incomingMessages.length > 0) console.log('Dots: incoming messages:', incomingMessages.length);
 
     incomingMessages.forEach((msg) => {
         // Skip if releaseAt has passed (already revealed)
         const releaseDate = msg.releaseAt ? new Date(msg.releaseAt) : null;
         if (releaseDate && releaseDate <= now) {
-            console.log('Dots: skipping revealed incoming from', msg.sender, '(releaseAt passed)');
+            if (window.__DEBUG_DOTS) console.log('Dots: skipping revealed incoming from', msg.sender, '(releaseAt passed)');
             return;
         }
         // 24-hour age filter
         if (msg.createdAt && new Date(msg.createdAt) < twentyFourHoursAgo) {
-            console.log('Dots: skipping old incoming from', msg.sender, '(>24h)');
+            if (window.__DEBUG_DOTS) console.log('Dots: skipping old incoming from', msg.sender, '(>24h)');
             return;
         }
         // Use releaseDate for position if available, otherwise use our own moonrise
@@ -616,7 +616,7 @@ function renderMessageDots() {
         const deg = dotDate ? deliveryTimeToRingDegrees(dotDate) : 269;
         // Null-degree guard
         if (deg === null) {
-            console.log('Dots: incoming from', msg.sender, 'outside ring window — skipping');
+            if (window.__DEBUG_DOTS) console.log('Dots: incoming from', msg.sender, 'outside ring window — skipping');
             return;
         }
 
@@ -625,7 +625,7 @@ function renderMessageDots() {
 
         const riseTimeStr = moonData.moonrise || '--:--';
 
-        console.log('Dots: incoming dot from', msg.sender, 'at', deg.toFixed(1), '°, hours until:', hoursUntil.toFixed(1));
+        if (window.__DEBUG_DOTS) console.log('Dots: incoming dot from', msg.sender, 'at', deg.toFixed(1), '°, hours until:', hoursUntil.toFixed(1));
 
         const orbit = document.createElement('div');
         orbit.className = 'dot-orbit';
