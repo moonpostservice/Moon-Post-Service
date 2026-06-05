@@ -9726,3 +9726,155 @@ body.moon-down .new-message-btn {
     border-color: var(--accent);
 }
 .roulette-inline-send:disabled { opacity: 0.5; cursor: default; }
+
+/* ============================================================
+   LANDING HERO — "write first" compose box
+   Lets a logged-out visitor compose a real message before signing
+   up. Brass-on-navy, sits inside .ed-hero-text.
+   ============================================================ */
+.hero-compose {
+    margin-top: var(--space-5);
+    max-width: 480px;
+    padding: var(--space-5);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-md);
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-md);
+}
+.hc-modes {
+    display: flex;
+    gap: var(--space-1);
+    padding: 4px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-pill);
+    background: rgba(3, 10, 24, 0.5);
+}
+.hc-mode {
+    flex: 1;
+    padding: 8px 6px;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.hc-mode:hover { color: var(--text-bright); }
+.hc-mode.active {
+    background: var(--accent);
+    color: var(--on-accent);
+}
+.hc-hint {
+    margin: var(--space-3) 0 var(--space-4);
+    color: var(--muted);
+    font-size: var(--fs-small);
+    font-style: italic;
+    line-height: 1.4;
+}
+.hc-recipient {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+.hc-city-wrap { position: relative; }
+.hc-input,
+.hc-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    background: rgba(3, 10, 24, 0.6);
+    color: var(--text-bright);
+    font-family: var(--sans);
+    font-size: 14px;
+    transition: border-color var(--dur-fast) ease;
+}
+.hc-input::placeholder,
+.hc-textarea::placeholder { color: var(--muter); }
+.hc-input:focus,
+.hc-textarea:focus { outline: none; border-color: var(--accent); }
+.hc-textarea {
+    resize: vertical;
+    min-height: 84px;
+    line-height: 1.5;
+}
+.hc-lunar { display: flex; flex-direction: column; gap: var(--space-2); }
+.hc-lunar-text {
+    white-space: pre-wrap;
+    font-family: var(--serif);
+    font-size: 19px;
+    line-height: 1.5;
+    color: var(--text-bright);
+    padding: var(--space-3) 0;
+}
+.hc-lunar-closing {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--accent);
+    font-size: 14px;
+}
+.hc-lunar-actions { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
+.hc-ghost {
+    padding: 10px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.hc-ghost.sm { padding: 7px 14px; font-size: 12px; }
+.hc-ghost:hover { border-color: var(--accent); color: var(--accent-bright); }
+.hc-error {
+    color: #E89B73;
+    font-size: 12px;
+    margin: var(--space-2) 0 0;
+    font-style: italic;
+}
+.hc-send {
+    width: 100%;
+    margin-top: var(--space-4);
+    padding: 14px 24px;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--dur-fast) ease, transform var(--dur-fast) ease;
+}
+.hc-send:hover { background: var(--accent-bright); transform: translateY(-1px); }
+.hc-send:disabled { opacity: 0.55; cursor: default; transform: none; }
+.hc-login-line {
+    margin: var(--space-3) 0 0;
+    text-align: center;
+    color: var(--muter);
+    font-size: 12.5px;
+}
+.hc-login-link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.hc-login-link:hover { color: var(--accent-bright); text-decoration: underline; }
+@media (max-width: 768px) {
+    .hero-compose { max-width: 100%; padding: var(--space-4); }
+    .hc-mode { font-size: 11.5px; }
+}

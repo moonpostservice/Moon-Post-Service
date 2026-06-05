@@ -10,9 +10,31 @@ let currentAuthUser = null;
 let _isInitializing = false; // Guard: prevents concurrent initAuth calls
 let _appDataLoaded = false;  // Tracks whether initAuth has successfully loaded data
 let _domReady = false;       // Tracks whether DOMContentLoaded has fired
+// 'login' = existing-user gate (email must already exist, no account creation).
+// 'signup' = genuine new-user flow (OTP may create the auth user). The landing
+// hero's "Send" sets this to 'signup' before opening the auth modal.
+let authMode = 'login';
+
+// ---- "Verify last" signup ----
+// For a genuine new signup we collect email → name → city entirely client-side and
+// only send/verify the OTP as the FINAL step. Nothing is created until the code is
+// verified, so an incomplete account is impossible. _signupDraft holds the in-progress
+// fields; on successful verify it becomes _pendingSignupProfile, which initAuth uses to
+// write the complete profile in one shot (no location/profile steps).
+let _signupDraft = null;          // { email, name, city:{name,lat,lon,tz} }
+let _pendingSignupProfile = null; // set on verify success, consumed by initAuth
 
 // Auth modal show/close
 function showAuthModal(mode) {
+    authMode = mode === 'signup' ? 'signup' : 'login';
+    // Fresh start: drop any in-progress signup draft and clear stale field/error state.
+    _signupDraft = null;
+    const emailInput = document.getElementById('authEmail');
+    if (emailInput) emailInput.value = '';
+    const authErr = document.getElementById('authError');
+    if (authErr) { authErr.textContent = ''; authErr.style.display = 'none'; }
+    const nameInput = document.getElementById('signupName');
+    if (nameInput) nameInput.value = '';
     const overlay = document.getElementById('authModalOverlay');
     overlay.style.display = 'flex';
     const title = document.getElementById('authModalTitle');
@@ -52,10 +74,13 @@ async function sendMoonKey() {
     const { data: loginRows } = await sb.rpc('check_login_email', { p_email: email });
     const suspendCheck = Array.isArray(loginRows) && loginRows.length ? loginRows[0] : null;
 
-    if (!suspendCheck) {
+    // Login requires an existing, confirmed account. Signup (the landing-hero "Send"
+    // flow) is allowed to create a brand-new user, so we skip the existence gate — a
+    // returning user who lands here simply gets a login code instead.
+    if (authMode !== 'signup' && !suspendCheck) {
         errorEl.textContent = 'This email isn\'t in our system. Double-check the address or contact us at hello@moonpost.app.';
         errorEl.style.display = 'block';
-        btn.innerHTML = 'Send Moon Code <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
+        btn.innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
         btn.disabled = false;
         return;
     }
@@ -63,22 +88,38 @@ async function sendMoonKey() {
     if (suspendCheck?.suspended_at) {
         errorEl.textContent = 'Your account has been suspended. Contact us at hello@moonpost.app if you think this is a mistake.';
         errorEl.style.display = 'block';
-        btn.innerHTML = 'Send Moon Code <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
+        btn.innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
         btn.disabled = false;
+        return;
+    }
+
+    // VERIFY LAST: a genuine new signup (signup mode, email not already a confirmed
+    // account) collects name + city BEFORE we ever send a code or touch the auth system.
+    // We stash the email and move to the name step — no OTP, no account yet. (An existing
+    // account in signup mode falls through and just gets a login code.)
+    if (authMode === 'signup' && !suspendCheck) {
+        _signupDraft = { email, name: '', city: null };
+        pendingAuthEmail = email;
+        btn.innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
+        btn.disabled = false;
+        showSignupNameStep();
         return;
     }
 
     const { error } = await sb.auth.signInWithOtp({
         email,
         options: {
-            shouldCreateUser: false
+            // Only the genuine signup flow may create a new auth user. Profiles are NOT
+            // created until the email is confirmed (the AFTER-INSERT profile trigger was
+            // removed), so a typo'd signup email never leaves a phantom account.
+            shouldCreateUser: authMode === 'signup'
         }
     });
 
     if (error) {
         errorEl.textContent = error.message || 'Something went wrong. Please try again.';
         errorEl.style.display = 'block';
-        btn.innerHTML = 'Send Moon Code <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
+        btn.innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
         btn.disabled = false;
         return;
     }
@@ -89,6 +130,56 @@ async function sendMoonKey() {
     document.getElementById('authStepCode').classList.add('active');
     setupOtpInputs();
     document.getElementById('otpDigit1').focus();
+}
+
+// ---- VERIFY-LAST signup steps: name → city → (code last) ----
+
+function showSignupNameStep() {
+    document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+    document.getElementById('authStepName').classList.add('active');
+    const authModal = document.getElementById('authModalOverlay');
+    if (authModal) authModal.style.display = 'flex';
+    setTimeout(() => document.getElementById('signupName')?.focus(), 100);
+}
+
+function saveSignupName() {
+    const name = (document.getElementById('signupName')?.value || '').trim();
+    const errorEl = document.getElementById('signupNameError');
+    if (!name) {
+        if (errorEl) { errorEl.textContent = 'Add your name so the moon knows who is writing.'; errorEl.style.display = 'block'; }
+        document.getElementById('signupName')?.focus();
+        return;
+    }
+    if (errorEl) errorEl.style.display = 'none';
+    if (!_signupDraft) _signupDraft = { email: pendingAuthEmail, name: '', city: null };
+    _signupDraft.name = name;
+    // Reuse the existing location step (auto-detects city by timezone). saveOnboardingCity
+    // detects the active signup draft and routes to the verify step instead of writing to DB.
+    showLocationStep();
+}
+
+// Final step for verify-last signup: NOW send the OTP and show the code entry. This is the
+// first moment any account row can come into existence — only for a committed user who has
+// already given name + city.
+async function enterVerifyStep() {
+    if (!_signupDraft) return;
+    document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+    document.getElementById('authStepCode').classList.add('active');
+    document.getElementById('authEmailSent').textContent = _signupDraft.email;
+    const otpError = document.getElementById('otpError');
+    if (otpError) otpError.style.display = 'none';
+
+    const { error } = await sb.auth.signInWithOtp({
+        email: _signupDraft.email,
+        options: { shouldCreateUser: true }
+    });
+    if (error) {
+        if (otpError) { otpError.textContent = error.message || 'Could not send your code. Try again.'; otpError.style.display = 'block'; }
+        return;
+    }
+    pendingAuthEmail = _signupDraft.email;
+    setupOtpInputs();
+    document.getElementById('otpDigit1')?.focus();
 }
 
 function setupOtpInputs() {
@@ -157,11 +248,17 @@ async function verifyMoonKey() {
         return;
     }
 
-    // Auth successful — let onAuthStateChange → initAuth handle the rest
-    // initAuth will either show location step (in this modal) or hide onboarding entirely
+    // Auth successful. For a verify-last signup, promote the collected draft so initAuth
+    // writes the COMPLETE profile in one shot (no further steps). For login, fall through
+    // to the existing behaviour.
+    if (_signupDraft) {
+        _pendingSignupProfile = { email: _signupDraft.email, name: _signupDraft.name, city: _signupDraft.city };
+        _signupDraft = null;
+    }
+
     btn.textContent = 'Welcome!';
     window._needsLocationCheck = true;
-    // Don't close modal — initAuth will show location step if needed, or hideOnboarding if profile has city
+    // Don't close modal — initAuth will write the profile / hide onboarding as appropriate.
 }
 
 // ========================
@@ -333,6 +430,17 @@ async function saveOnboardingCity(city) {
     const btn = document.getElementById('confirmLocationBtn');
     if (btn) { btn.textContent = 'Setting your sky...'; btn.disabled = true; }
 
+    // VERIFY LAST: during a new signup we aren't authenticated yet — hold the city in the
+    // draft and advance to the final code step. Nothing is written to the DB here; the
+    // complete profile is written once the email is verified.
+    if (_signupDraft && !currentAuthUser) {
+        _signupDraft.city = { name: city.name, lat: city.lat, lon: city.lon, tz: city.tz };
+        localStorage.setItem('moonpop_location', JSON.stringify({ name: city.name, country: city.country }));
+        if (btn) { btn.textContent = "That's my sky 🌙"; btn.disabled = false; }
+        await enterVerifyStep();
+        return;
+    }
+
     // Save to localStorage
     localStorage.setItem('moonpop_location', JSON.stringify({ name: city.name, country: city.country }));
     // Save to Supabase profile
@@ -351,8 +459,11 @@ async function saveOnboardingCity(city) {
 
     // Check if this is a new user (no username set yet) — show profile setup
     if (!currentAuthUser) { console.warn('[saveOnboardingCity] No auth user yet, skipping profile check'); return; }
-    const { data: checkProfile } = await sb.from('profiles').select('username').eq('id', currentAuthUser.id).single();
-    if (!checkProfile || !checkProfile.username) {
+    // Detect new users by first_name, not username: a freshly-created profile carries a
+    // placeholder username (the email prefix) to satisfy the NOT NULL column, so only
+    // first_name reliably signals "completed the profile/consent step".
+    const { data: checkProfile } = await sb.from('profiles').select('first_name').eq('id', currentAuthUser.id).single();
+    if (!checkProfile || !checkProfile.first_name) {
         // New user — show profile step
         showProfileStep();
         return;
@@ -499,13 +610,13 @@ function filterOnboardingCities(query) {
 
 async function resendMoonKey() {
     const email = pendingAuthEmail || document.getElementById('authEmailSent').textContent;
-    // shouldCreateUser must stay false: a resend should never bring a new
-    // auth.users row into existence. The user already passed the
-    // check_login_email gate in sendMoonKey, so the account exists.
+    // Mirror the original send: a login resend must NOT create a user (false), while a
+    // signup resend may (true) — same safety as sendMoonKey. No profile is created until
+    // the email is confirmed, so a resend can't produce a phantom account either way.
     const { error } = await sb.auth.signInWithOtp({
         email,
         options: {
-            shouldCreateUser: false
+            shouldCreateUser: authMode === 'signup'
         }
     });
     if (!error) {
@@ -518,7 +629,7 @@ async function resendMoonKey() {
 function changeEmail() {
     document.getElementById('authStepCode').classList.remove('active');
     document.getElementById('authStepEmail').classList.add('active');
-    document.getElementById('authSendBtn').innerHTML = 'Send Moon Code <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
+    document.getElementById('authSendBtn').innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
     document.getElementById('authSendBtn').disabled = false;
     document.getElementById('authEmail').focus();
 }
@@ -590,20 +701,56 @@ async function initAuth(sessionOverride) {
 
             // New user — create profile row
             if (!profile) {
-                console.log('[initAuth] New user — creating profile');
-                const { data: newProfile, error: insertErr } = await sb.from('profiles').insert({
-                    id: session.user.id,
-                    email: session.user.email
-                }).select().single();
-                if (insertErr) {
-                    console.error('[initAuth] Profile creation failed:', insertErr);
-                    // Try upsert as fallback
-                    await sb.from('profiles').upsert({ id: session.user.id, email: session.user.email });
+                if (_pendingSignupProfile) {
+                    // VERIFY LAST: a completed signup draft means name + city are already in
+                    // hand. Write the COMPLETE profile in one shot and continue straight into
+                    // the app — no location/profile steps, no incomplete state possible.
+                    console.log('[initAuth] New signup — writing complete profile');
+                    const d = _pendingSignupProfile;
+                    _pendingSignupProfile = null;
+                    const c = d.city || {};
+                    const completeProfile = {
+                        id: session.user.id,
+                        email: session.user.email,
+                        username: d.name,
+                        first_name: d.name,
+                        city: c.name || null,
+                        latitude: (c.lat != null ? c.lat : null),
+                        longitude: (c.lon != null ? c.lon : null),
+                        timezone: c.tz || null
+                    };
+                    const { data: createdProfile, error: createErr } = await sb.from('profiles').insert(completeProfile).select().single();
+                    if (createErr) {
+                        console.error('[initAuth] Complete profile creation failed:', createErr);
+                        await sb.from('profiles').upsert(completeProfile);
+                    }
+                    localStorage.setItem('moonpop_username', d.name);
+                    localStorage.setItem('moonpop_seen', 'true');
+                    profile = createdProfile || completeProfile;
+                    // fall through to the if (profile) block below — do NOT return
+                } else {
+                    console.log('[initAuth] New user — creating profile');
+                    // username is NOT NULL with no default. The AFTER-INSERT trigger that used
+                    // to fill it (and created phantom profiles for unconfirmed emails) was
+                    // removed, so we seed a placeholder here; the onboarding steps overwrite
+                    // it with the real name. (Legacy fallback for any auth user without a
+                    // verify-last draft — e.g. an admin-created account.)
+                    const _placeholderUsername = (session.user.email || 'moonfriend').split('@')[0];
+                    const { data: newProfile, error: insertErr } = await sb.from('profiles').insert({
+                        id: session.user.id,
+                        email: session.user.email,
+                        username: _placeholderUsername
+                    }).select().single();
+                    if (insertErr) {
+                        console.error('[initAuth] Profile creation failed:', insertErr);
+                        // Try upsert as fallback
+                        await sb.from('profiles').upsert({ id: session.user.id, email: session.user.email, username: _placeholderUsername });
+                    }
+                    // Show location step for new user
+                    showLocationStep();
+                    _isInitializing = false;
+                    return;
                 }
-                // Show location step for new user
-                showLocationStep();
-                _isInitializing = false;
-                return;
             }
 
             if (profile) {
@@ -767,6 +914,13 @@ async function initAuth(sessionOverride) {
                 console.warn('[deeplink] Conversation not found:', chatId);
                 history.replaceState(null, '', '/');
             }
+        }
+
+        // Landing-hero "write first" hook: if the user arrived by composing in the hero
+        // and just finished signup/login, send their pending message now so it lands in
+        // their inbox. No-ops when there is no pending draft.
+        if (typeof flushPendingSend === 'function') {
+            try { await flushPendingSend(); } catch (e) { console.error('[initAuth] flushPendingSend failed:', e); }
         }
     } else {
         console.log('[initAuth] No session found, showing onboarding');

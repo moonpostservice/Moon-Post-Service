@@ -1248,15 +1248,18 @@ function showOnboarding() {
         }
 
         function renderMoonCta(container, isMoonUp, h, m, s, isBottom) {
+            // The hero (top) now carries its own compose box as the primary CTA, so we
+            // omit the redundant signup button there and keep only the ambient moon status.
+            // The bottom CTA keeps its button.
             if (isMoonUp) {
-                const subline = isBottom ? 'The moon is above you now' : 'It’s free';
+                const subline = isBottom ? 'The moon is above you now' : 'The moon is above you now';
                 container.innerHTML =
-                    '<button class="ed-cta-link" onclick="showAuthModal(\'signup\')">Send a moon message</button>' +
+                    (isBottom ? '<button class="ed-cta-link" onclick="showAuthModal(\'signup\')">Send a moon message</button>' : '') +
                     '<p class="ed-cta-subline">' + subline + '</p>';
             } else {
-                container.innerHTML =
-                    '<div class="ed-countdown-row"><span class="ed-countdown-label">Your moon rises in</span>' + buildBrassCounter(h, m, s) + '</div>' +
-                    '<button class="ed-cta-link" onclick="showAuthModal(\'signup\')">' + (isBottom ? 'Add someone you love' : 'Join free') + '</button>';
+                const counter = '<div class="ed-countdown-row"><span class="ed-countdown-label">Your moon rises in</span>' + buildBrassCounter(h, m, s) + '</div>';
+                container.innerHTML = counter +
+                    (isBottom ? '<button class="ed-cta-link" onclick="showAuthModal(\'signup\')">Add someone you love</button>' : '');
             }
         }
 

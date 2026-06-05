@@ -510,7 +510,7 @@
         </nav>
 
         <!-- Auth modal (popup overlay) -->
-        <div id="authModalOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(3,10,24,0.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;" onclick="if(event.target===this)closeAuthModal()">
+        <div id="authModalOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(3,10,24,0.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;overflow-y:auto;padding:24px 0;" onclick="if(event.target===this)closeAuthModal()">
             <div class="onboarding-card" style="position:relative;max-width:440px;width:90%;margin:auto;">
                 <button onclick="closeAuthModal()" style="position:absolute;top:14px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;">✕</button>
                 <img class="onboarding-logo" src="assests/logo.svg" alt="Moon Post Service">
@@ -527,9 +527,27 @@
                         </div>
                     </div>
                     <button class="onboarding-primary" id="authSendBtn" onclick="sendMoonKey()">
-                        Send Moon Code <svg class="app-icon md" style="color:var(--on-accent)"><use href="#icon-moonkey"/></svg>
+                        Continue <svg class="app-icon md" style="color:var(--on-accent)"><use href="#icon-moonkey"/></svg>
                     </button>
-                    <p class="auth-note">No password needed. We'll send a 6-digit code to your inbox.</p>
+                    <p class="auth-note">No password — we'll send a 6-digit code to confirm it's you.</p>
+                    <p class="auth-note" style="margin-top:6px;">By continuing you agree to our <a onclick="event.preventDefault();openTermsPage()" href="/terms" style="color:var(--accent);text-decoration:none;cursor:pointer;">Terms, Privacy &amp; Community Guidelines</a>.</p>
+                </div>
+
+                <!-- Step: Your name (verify-last signup) -->
+                <div class="auth-step" id="authStepName">
+                    <div style="text-align:center;">
+                        <div style="font-size:32px;margin-bottom:8px;opacity:0.92;">🌙</div>
+                        <h2 style="font-family:var(--serif);color:var(--text-bright);font-size:26px;font-weight:500;margin:0 0 6px;letter-spacing:-0.2px;">Who's it from?</h2>
+                        <p style="color:var(--muted);font-size:13px;margin:0 0 20px;font-style:italic;">The name that appears on your message.</p>
+                        <div class="onboarding-form" style="text-align:left;">
+                            <div class="form-group">
+                                <label>Your name</label>
+                                <input type="text" id="signupName" placeholder="e.g. Sam" autocomplete="name" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.6);color:var(--text-bright);font-family:var(--sans);font-size:14px;" onkeydown="if(event.key==='Enter'){event.preventDefault();saveSignupName();}">
+                            </div>
+                        </div>
+                        <div id="signupNameError" style="color:#E89B73;font-size:12px;margin:8px 0;display:none;font-style:italic;"></div>
+                        <button class="onboarding-primary" onclick="saveSignupName()" style="margin-top:14px;">Continue</button>
+                    </div>
                 </div>
 
                 <!-- Step 2: Enter code -->
@@ -641,6 +659,51 @@
                             <p class="ed-hero-sub fade-in-up">Moon Post Service is a messaging app that opens with the moon. No pings. No red dots. No noise. Just look at the sky to see if you have mail.</p>
                             <div class="ed-hero-cta fade-in-up" id="heroCta">
                                 <!-- JS populates based on moon state -->
+                            </div>
+
+                            <!-- Write-first hook: compose a real message before signing up -->
+                            <div class="hero-compose fade-in-up" id="heroCompose">
+                                <div class="hc-modes" role="tablist" aria-label="Message type">
+                                    <button type="button" class="hc-mode active" data-mode="roulette" onclick="heroSetMode('roulette')">Moon Roulette</button>
+                                    <button type="button" class="hc-mode" data-mode="message" onclick="heroSetMode('message')">Moon Message</button>
+                                    <button type="button" class="hc-mode" data-mode="lunar" onclick="heroSetMode('lunar')">Lunar Note</button>
+                                </div>
+                                <p class="hc-hint" id="hcHint">Send a message to a stranger. Only the moon knows who.</p>
+
+                                <!-- Recipient (Moon Message + Lunar Note) -->
+                                <div class="hc-recipient" id="hcRecipient" style="display:none;">
+                                    <input type="text" id="hcRecipName" class="hc-input" placeholder="Their name" autocomplete="off">
+                                    <input type="email" id="hcRecipEmail" class="hc-input" placeholder="Their email" autocomplete="off">
+                                    <div class="hc-city-wrap">
+                                        <input type="text" id="hcRecipCity" class="hc-input" placeholder="Their city" autocomplete="off" oninput="heroFilterCities(this.value)">
+                                        <div id="hcCityDropdown" class="city-dropdown"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Free text (Moon Roulette + Moon Message) -->
+                                <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Whisper your message to the stars…"></textarea>
+
+                                <!-- Lunar Note wizard (Lunar Note only) -->
+                                <div class="hc-lunar" id="hcLunar" style="display:none;">
+                                    <div id="hcLunarSteps">
+                                        <input type="text" id="hcLunar1" class="hc-input" placeholder="an emotion" autocomplete="off">
+                                        <input type="text" id="hcLunar2" class="hc-input" placeholder="a different emotion" autocomplete="off">
+                                        <input type="text" id="hcLunar3" class="hc-input" placeholder="something you pretend not to care about" autocomplete="off">
+                                        <button type="button" class="hc-ghost" onclick="heroRevealLunar()">Reveal your note 🌙</button>
+                                    </div>
+                                    <div id="hcLunarResult" style="display:none;">
+                                        <div class="hc-lunar-text" id="hcLunarText"></div>
+                                        <div class="hc-lunar-closing" id="hcLunarClosing"></div>
+                                        <div class="hc-lunar-actions">
+                                            <button type="button" class="hc-ghost sm" onclick="heroRegenLunar()">Try another</button>
+                                            <button type="button" class="hc-ghost sm" onclick="heroEditLunar()">Edit words</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="hc-error" id="hcError" style="display:none;"></div>
+                                <button type="button" class="hc-send" id="hcSendBtn" onclick="heroSend()">Send to the moon 🌙</button>
+                                <p class="hc-login-line">Already have an account? <button type="button" class="hc-login-link" onclick="showAuthModal('login')">Log in</button></p>
                             </div>
                         </div>
                         <div class="ed-hero-art" aria-hidden="true">
@@ -2432,5 +2495,6 @@
     <script src="/js/reveal.js"></script>
     <script src="/js/circles-functions.js"></script>
     <script src="/js/roulette.js"></script>
+    <script src="/js/hero-compose.js"></script>
 </body>
 </html>
