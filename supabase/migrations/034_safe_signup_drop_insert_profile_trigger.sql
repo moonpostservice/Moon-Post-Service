@@ -1,0 +1,26 @@
+-- 034_safe_signup_drop_insert_profile_trigger.sql
+--
+-- SAFE SELF-SERVE SIGNUP — remove the phantom-profile source.
+--
+-- Background: `signInWithOtp({ shouldCreateUser: true })` creates an UNCONFIRMED
+-- auth.users row the instant a code is requested. The AFTER-INSERT trigger
+-- `on_auth_user_created` then immediately ran `create_profile_for_user()`, inserting a
+-- `profiles` row (username = email prefix) for that unconfirmed user. A typo'd signup
+-- email therefore became a half-born "registered" account (the phantom-account bug).
+--
+-- The app already creates the profile itself, post-confirmation, in `initAuth()`
+-- (the `if (!profile)` branch inserts {id, email, username-placeholder} under the
+-- "Users can create own profile" RLS policy, then runs the location/profile onboarding).
+-- So this trigger is both redundant for confirmed users and the cause of phantoms for
+-- unconfirmed ones. We drop the trigger.
+--
+-- Result: unconfirmed / typo'd signup emails create NO profile. Confirmed users get
+-- their profile from initAuth as designed. The `check_login_email` gate already requires
+-- email_confirmed_at, so an unconfirmed auth row is inert. Existing profiles untouched.
+--
+-- Reversible: the function `create_profile_for_user()` is intentionally kept defined.
+-- To restore the old behaviour:
+--   CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users
+--     FOR EACH ROW EXECUTE FUNCTION create_profile_for_user();
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
