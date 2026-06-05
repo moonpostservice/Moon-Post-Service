@@ -4,6 +4,10 @@ dist/
 .env.test
 .vercel/
 
+# macOS / editor / tooling junk
+.DS_Store
+.claude/
+
 # Playwright
 tests/setup/.auth/
 playwright-report/
