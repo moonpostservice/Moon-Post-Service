@@ -9732,16 +9732,58 @@ body.moon-down .new-message-btn {
    Lets a logged-out visitor compose a real message before signing
    up. Brass-on-navy, sits inside .ed-hero-text.
    ============================================================ */
+/* Own section below the horizon */
+.ed-compose-section {
+    padding: var(--space-10) 32px var(--space-9);
+    text-align: center;
+}
+.ed-compose-eyebrow {
+    font-size: var(--fs-caption);
+    font-weight: 700;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: var(--space-3);
+}
+.ed-compose-title {
+    font-family: var(--serif);
+    font-size: var(--fs-h2);
+    font-weight: 500;
+    color: var(--text-bright);
+    letter-spacing: -0.3px;
+    margin-bottom: var(--space-6);
+}
+/* Hero cue that points down to the compose section */
+.ed-hero-cue {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: var(--space-4);
+    color: var(--accent);
+    font-size: var(--fs-small);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color var(--dur-fast) ease;
+}
+.ed-hero-cue:hover { color: var(--accent-bright); }
+.ed-hero-cue-arrow { display: inline-block; animation: edCueBounce 1.8s ease-in-out infinite; }
+@keyframes edCueBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+}
+
+/* Elevated solid card — no longer a translucent outline that recedes */
 .hero-compose {
-    margin-top: var(--space-5);
-    max-width: 480px;
-    padding: var(--space-5);
-    border: 1px solid var(--line-soft);
-    border-radius: var(--radius-md);
-    background: var(--panel);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: var(--shadow-md);
+    max-width: 540px;
+    margin: 0 auto;
+    padding: var(--space-6);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--bg-2);
+    box-shadow: var(--shadow-lg);
+    text-align: left;
 }
 .hc-modes {
     display: flex;
