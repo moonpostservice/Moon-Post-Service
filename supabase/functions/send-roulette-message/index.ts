@@ -384,6 +384,18 @@ Deno.serve(async (req: Request) => {
         moonIllumination = Math.round(illum.fraction * 100) / 100;
       }
 
+      // --- 7b. Same-city delivery: if the message "lands" in the sender's own
+      // city, there's no travel/moonrise delay — deliver it immediately rather
+      // than leaving it orbiting until the next local moonrise.
+      const norm = (c: string | null | undefined) =>
+        (c ?? "").trim().toLowerCase();
+      const sameLocation =
+        norm(recipient.city) !== "" &&
+        norm(recipient.city) === norm(senderProfile.city);
+
+      const status = sameLocation ? "delivered" : "queued";
+      if (sameLocation) releaseAt = new Date().toISOString();
+
       // --- 9. Insert roulette message ---
       const { data, error: insertErr } = await serviceClient
         .from("moon_roulette_messages")
@@ -396,7 +408,7 @@ Deno.serve(async (req: Request) => {
           photo_url: body.photo_url ?? null,
           song_url: body.song_url ?? null,
           song_title: body.song_title ?? null,
-          status: "queued",
+          status,
           release_at: releaseAt,
           moon_phase: moonPhase,
           moon_illumination: moonIllumination,
