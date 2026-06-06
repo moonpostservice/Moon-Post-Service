@@ -1,5 +1,5 @@
 // MoonPop Service Worker v36
-const CACHE_NAME = 'moonpop-v36';
+const CACHE_NAME = 'moonpop-v37';
 const STATIC_ASSETS = [
   // Only precache CDN assets (immutable, safe to cache-first)
   // App shell (index.html) is NOT precached — it uses network-first strategy
@@ -112,7 +112,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // App CSS & JS files — network-first, cache fallback (change with deployments)
-  if (url.pathname === '/styles.css' || url.pathname.startsWith('/js/')) {
+  if (url.pathname.startsWith('/css/') || url.pathname.startsWith('/js/')) {
     event.respondWith(
       fetch(event.request).then((response) => {
         const clone = response.clone();

@@ -1,0 +1,2599 @@
+/* ============================================================
+   messages.css — Philosophy page; message thread, lunar notes & reactions (core conversation UI)
+   Part of the split styles bundle. Load order:
+   base.css -> auth-sharedsky.css -> messages.css -> compose-circles.css -> app.css -> landing-roulette.css
+   (cascade depends on this order — keep <link> tags in sequence)
+   ============================================================ */
+
+/* ============================================================
+   PHILOSOPHY PAGE — editorial brass-on-navy
+   Long-form essay. Cormorant serif body for reading rhythm,
+   Satoshi for labels. Brass diamond separators.
+   ============================================================ */
+#philosophyPage {
+    font-family: var(--sans);
+    line-height: var(--lh-body);
+    color: var(--text);
+    background: var(--bg);
+}
+.phil-body {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 var(--space-7);
+    text-align: center;
+}
+.phil-text {
+    font-family: var(--serif);
+    font-size: clamp(22px, 2.4vw, 30px);
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+    text-align: center;
+    margin-bottom: 0;
+}
+.phil-text + .phil-text { margin-top: var(--space-9); }
+.phil-accent {
+    display: block;
+    text-align: center;
+    margin: var(--space-10) 0;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(30px, 4.6vw, 46px);
+    font-weight: 500;
+    color: var(--text-bright);
+    line-height: var(--lh-snug);
+    letter-spacing: -0.01em;
+}
+.phil-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin: var(--space-10) 0;
+    color: var(--accent);
+    font-size: 14px;
+    letter-spacing: 6px;
+}
+.phil-separator::before, .phil-separator::after {
+    content: '';
+    flex: 1;
+    max-width: 80px;
+    height: 1px;
+    background: var(--line);
+    opacity: 0.7;
+}
+.phil-cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 36px rgba(212, 181, 138, 0.28);
+}
+.header-philosophy-btn:hover { opacity: 1 !important; }
+.phil-signoff {
+    text-align: center;
+    padding: var(--space-10) var(--space-6) var(--space-8);
+    line-height: var(--lh-snug);
+}
+.phil-signoff-line {
+    font-family: var(--serif);
+    font-size: 22px;
+    color: var(--text);
+    font-style: italic;
+    margin-bottom: var(--space-2);
+    letter-spacing: -0.01em;
+}
+.phil-signoff-names {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 2px;
+    letter-spacing: 0.3px;
+}
+@media (max-width: 740px) {
+    .phil-body { padding: 0 var(--space-5); }
+    .phil-text { font-size: 19px; line-height: 1.65; }
+    .phil-accent { font-size: 26px; margin: var(--space-8) 0; }
+    .phil-signoff-line { font-size: 18px; }
+    .phil-signoff-names { font-size: 17px; }
+    .phil-separator { margin: var(--space-7) 0; }
+    #philosophyPage > div:first-child { padding: 0 16px; }
+}
+
+/* Moon on orbit - small crescent moon icon on the stroke */
+.moon-orbit {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    transition: transform 1s ease-out;
+    pointer-events: none;
+}
+
+/* Moon comet trail */
+.moon-orbit::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(255, 213, 79, 0.3), transparent);
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+}
+
+.moon-visible .moon-orbit::before {
+    opacity: 1;
+}
+
+.moon-icon {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 40px;
+    pointer-events: auto;
+    cursor: pointer;
+    /* SVG paths inherit currentColor — set the brass tone here */
+    color: var(--accent);
+}
+
+.moon-icon svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 2px 6px rgba(212, 181, 138, 0.4));
+}
+
+/* Message dots on orbit - positioned using rotation like the moon */
+.dot-orbit {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.message-dot {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background-color: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    z-index: 10;
+    pointer-events: auto;
+    /* Position dot centered on the 3px stroke: stroke center is at 1.5px from top */
+    /* Dot is 14px, so top = 1.5 - 7 = -5.5px */
+    top: -5.5px;
+    left: 50%;
+    transform: translateX(-50%);
+    /* Larger touch target on mobile */
+    -webkit-tap-highlight-color: transparent;
+}
+/* Hide dots entirely on mobile — screen too small */
+@media (max-width: 900px) {
+    .message-dot { display: none !important; }
+}
+/* Larger dots on touch devices (desktop touchscreens) */
+@media (pointer: coarse) and (min-width: 901px) {
+    .message-dot { width: 22px; height: 22px; top: -9.5px; }
+}
+
+/* Dot trailing afterglow */
+.message-dot::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 4px;
+    background: linear-gradient(270deg, rgba(212, 181, 138, 0.45), transparent);
+    border-radius: 2px;
+    pointer-events: none;
+}
+
+.message-dot.incoming::after {
+    background: linear-gradient(270deg, rgba(234, 216, 191, 0.45), transparent);
+}
+
+.message-dot:hover {
+    transform: translateX(-50%) scale(1.3);
+    box-shadow: 0 0 12px rgba(212, 181, 138, 0.55);
+}
+
+/* Tooltip for dot hover - dark glass card */
+.dot-tooltip {
+    position: fixed;
+    background: rgba(10, 22, 40, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 14px 18px;
+    border-radius: 12px;
+    border: 1px solid rgba(212, 181, 138, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    font-size: 13px;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+    max-width: 280px;
+    color: white;
+}
+@media (max-width: 900px) {
+    .dot-tooltip {
+        display: none !important;
+    }
+}
+
+.dot-tooltip.visible {
+    opacity: 1;
+}
+
+.dot-tooltip .tooltip-name {
+    font-weight: 700;
+    color: white;
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.dot-tooltip .tooltip-meta {
+    color: rgba(255, 255, 255, 0.6);
+    display: block;
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.dot-tooltip .tooltip-phase {
+    color: var(--accent);
+    font-size: 11px;
+    display: block;
+}
+
+.dot-tooltip .tooltip-progress {
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.dot-tooltip .tooltip-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent), #ffd54f);
+    transition: width 0.3s ease;
+}
+
+.dot-tooltip .tooltip-progress-fill.outgoing {
+    background: linear-gradient(90deg, var(--accent), #ffd54f);
+}
+
+/* Moon phase detail popup */
+.moon-phase-popup {
+    position: fixed;
+    background: rgba(8, 18, 32, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 16px 20px;
+    border-radius: 14px;
+    border: 1px solid rgba(212, 181, 138, 0.2);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    min-width: 200px;
+    color: white;
+}
+
+.moon-phase-popup.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    max-width: calc(100vw - 32px);
+}
+
+.moon-phase-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(212, 181, 138, 0.12);
+}
+
+.moon-phase-emoji {
+    font-size: 24px;
+}
+
+.moon-phase-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.moon-phase-popup-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.moon-phase-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.moon-phase-stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.moon-phase-stat-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Moon carrying indicator — orbit center */
+.moon-carrying-indicator {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 8px;
+    line-height: 1.5;
+}
+.moon-carrying-count {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+/* Moon live indicator */
+.moon-live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: rgba(255, 213, 79, 0.8);
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+
+.moon-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ffd54f;
+    animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; box-shadow: 0 0 6px rgba(255, 213, 79, 0.5); }
+}
+
+/* Center content */
+.orbit-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 280px;
+}
+
+.visibility-text {
+    font-size: 16px;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+}
+
+.visibility-subtitle {
+    font-size: 16px;
+    color: var(--text-dark);
+    margin-bottom: 20px;
+}
+/* Countdown state */
+
+.countdown-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Moon Data Bar - pill with border, smaller text */
+.moon-data-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+    padding: 10px 28px;
+    margin: 36px auto 0;
+    max-width: 720px;
+    border: 1px solid #0075EA;
+    border-radius: 32px;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.moon-data-item {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    color: var(--blue);
+    letter-spacing: 0.3px;
+}
+
+.moon-data-label {
+    font-weight: 900;
+    color: var(--blue);
+}
+
+.moon-data-value {
+    font-weight: 400;
+    color: var(--blue);
+    margin-left: 4px;
+}
+
+/* Inbox Section */
+.inbox-section {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 0 48px;
+}
+
+.inbox-card {
+    background: var(--bg);
+    border: 2px solid var(--blue);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.inbox-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 2px solid var(--blue);
+}
+
+.inbox-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.inbox-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Sort button */
+.inbox-sort-wrap { position: relative; }
+
+.inbox-sort-btn {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: none;
+    border: 1px solid rgba(212, 181, 138, 0.22);
+    border-radius: var(--radius-pill);
+    padding: 2px 8px 2px 6px;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    transition: color var(--dur-fast), border-color var(--dur-fast);
+}
+.inbox-sort-btn:hover {
+    color: var(--accent);
+    border-color: rgba(212, 181, 138, 0.5);
+}
+.inbox-sort-btn svg { flex-shrink: 0; }
+
+/* Sort dropdown */
+.inbox-sort-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--panel-strong);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    z-index: 300;
+    min-width: 136px;
+}
+.inbox-sort-menu.open { display: block; }
+
+.inbox-sort-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 9px 14px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background var(--dur-fast), color var(--dur-fast);
+}
+.inbox-sort-option:hover { background: rgba(212, 181, 138, 0.08); color: var(--text); }
+.inbox-sort-option.active { color: var(--accent); font-weight: 600; }
+.inbox-tab-btn:not(.active):hover {
+    color: rgba(255,255,255,0.6);
+}
+
+.inbox-title {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--blue);
+    margin-right: 8px;
+}
+
+/* Shared Sky row in inbox */
+/* Shared sky feed items (full page) */
+.shared-sky-feed .shared-sky-signal {
+    border-bottom: 1px solid #e8e4dc;
+    margin: 0;
+}
+
+.shared-sky-feed .shared-sky-signal:last-child {
+    border-bottom: none;
+}
+
+.shared-sky-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 2px solid rgba(0, 117, 234, 0.15);
+    cursor: pointer;
+    transition: background 0.2s;
+    background: rgba(212, 181, 138, 0.03);
+}
+
+.shared-sky-row:hover {
+    background: rgba(212, 181, 138, 0.08);
+}
+
+.shared-sky-row-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(212, 181, 138, 0.32), rgba(201, 157, 87, 0.55));
+    border: 1px solid var(--line-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.shared-sky-row-content {
+    flex: 1;
+}
+
+.shared-sky-row-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--blue);
+}
+
+.shared-sky-row-preview {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.shared-sky-row-badge {
+    background: var(--accent);
+    color: var(--on-accent);
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 20px;
+    height: 20px;
+    border-radius: var(--radius-pill);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    flex-shrink: 0;
+    letter-spacing: 0.2px;
+}
+
+.new-message-btn {
+    width: 36px;
+    height: 36px;
+    background: var(--blue);
+    border: 1px solid var(--blue);
+    border-radius: 10px;
+    font-size: 24px;
+    color: var(--white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+    padding-bottom: 2px;
+}
+
+.new-message-btn:hover {
+    background: var(--blue-light);
+}
+body.moon-down .new-message-btn {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.new-roulette-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(212, 181, 138, 0.15);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    color: var(--accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+}
+.new-roulette-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: 0 0 12px rgba(212, 181, 138, 0.35);
+}
+.inbox-new-msg-cta {
+    padding: 12px 20px;
+    border-top: 1px solid rgba(0, 117, 234, 0.15);
+    text-align: center;
+}
+.inbox-new-msg-cta .inbox-cta-btn {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 14px;
+}
+body.moon-down .inbox-new-msg-cta {
+    display: none !important;
+}
+
+.message-list {
+    list-style: none;
+}
+
+.message-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.message-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.message-list::-webkit-scrollbar-thumb {
+    background: var(--blue);
+    border-radius: 3px;
+    opacity: 0.5;
+}
+
+.message-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(0, 117, 234, 0.3);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.message-item:hover {
+    background: rgba(212, 181, 138, 0.05);
+}
+
+.message-item:last-child {
+    border-bottom: none;
+}
+
+.msg-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    margin-right: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    background: var(--blue);
+    position: relative;
+}
+
+.message-content {
+    flex: 1;
+}
+
+.message-sender {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--blue);
+    margin-bottom: 2px;
+    text-transform: capitalize;
+}
+
+.message-preview {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--blue);
+    text-transform: capitalize;
+    opacity: 0.8;
+}
+
+.message-time {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--blue);
+    text-transform: capitalize;
+    opacity: 0.7;
+}
+
+/* Moon transit time bar */
+.message-item {
+    position: relative;
+    flex-wrap: wrap;
+}
+.moon-transit-bar {
+    width: 100%;
+    height: 3px;
+    background: rgba(212, 181, 138, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+    flex-basis: 100%;
+}
+.moon-transit-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, rgba(212, 181, 138, 0.3), rgba(212, 181, 138, 0.7));
+    transition: width 2s ease;
+}
+.moon-transit-fill.active {
+    background: linear-gradient(90deg, rgba(76, 175, 80, 0.5), rgba(76, 175, 80, 0.9));
+}
+.moon-transit-label {
+    width: 100%;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    flex-basis: 100%;
+}
+/* Ambient Signals (Global Transmissions redesigned) */
+
+.signal-item {
+    text-align: center;
+    opacity: 0;
+    animation: signalFadeIn 0.6s ease forwards;
+}
+
+.signal-item:nth-child(1) { animation-delay: 0.1s; }
+.signal-item:nth-child(2) { animation-delay: 0.3s; }
+.signal-item:nth-child(3) { animation-delay: 0.5s; }
+
+@keyframes signalFadeIn {
+    to { opacity: 1; }
+}
+
+.signal-location {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+    opacity: 0.5;
+}
+
+.signal-text {
+    font-size: 14px;
+    color: var(--blue);
+    font-style: italic;
+    opacity: 0.7;
+    line-height: 1.6;
+}
+/* Shared Sky Modal (future-retro cream style) */
+
+/* Photo ring */
+
+/* Shared sky signals list */
+
+.shared-sky-signal {
+    text-align: left;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(212,181,138,0.22);
+}
+
+.shared-sky-signal:last-child {
+    border-bottom: none;
+}
+
+.shared-sky-location {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+    margin-bottom: 6px;
+    opacity: 0.8;
+}
+
+.shared-sky-text {
+    font-size: 15px;
+    color: var(--blue);
+    font-style: italic;
+    line-height: 1.6;
+    opacity: 0.85;
+}
+
+/* Animations */
+@keyframes subtleGlow {
+    0%, 100% { box-shadow: 0 0 8px rgba(212, 181, 138, 0.4); }
+    50% { box-shadow: 0 0 16px rgba(212, 181, 138, 0.7); }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* Releasing dots get subtle glow */
+.message-dot.releasing {
+    animation: subtleGlow 2s ease-in-out infinite;
+}
+
+/* Dots farther away are slightly smaller/dimmer */
+.message-dot {
+    opacity: 0.85;
+}
+
+.message-dot.releasing {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.1);
+}
+
+/* Incoming message dots on orbit ring (cream against brass for sent) */
+.message-dot.incoming {
+    background-color: #EAD8BF;
+    animation: incomingPulse 2s ease-in-out infinite;
+}
+
+.message-dot.incoming:hover {
+    box-shadow: 0 0 12px rgba(234, 216, 191, 0.55);
+}
+
+@keyframes incomingPulse {
+    0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+    50% { opacity: 1; transform: translateX(-50%) scale(1.2); }
+}
+
+/* Incoming transit progress bar (blue-to-moon gradient) */
+.transit-progress-bar.incoming {
+    background: linear-gradient(90deg, var(--blue), #8bb8e8);
+}
+
+/* Arriving badge style */
+.message-status-badge.arriving {
+    background: rgba(212, 181, 138, 0.12);
+    color: var(--blue);
+}
+
+/* Toast notification */
+.send-toast {
+    font-family: 'Satoshi', sans-serif;
+}
+
+.send-toast .toast-text strong {
+    display: block;
+    color: var(--blue);
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.send-toast .toast-text p {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(212, 181, 138, 0.3);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal {
+    background: var(--cream);
+    padding: 40px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 520px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.modal h2 {
+    font-size: 28px;
+    color: var(--blue);
+    margin-bottom: 8px;
+    font-weight: 900;
+}
+
+.modal-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: var(--accent);
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #e0dcd4;
+    border-radius: 6px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 15px;
+    transition: border-color 0.2s;
+    background: var(--white);
+    color: var(--text-dark);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: #a8c4db;
+}
+
+.form-group textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.6;
+}
+
+/* Recipient selector */
+.recipient-selector {
+    position: relative;
+}
+
+.recipient-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border: 2px solid var(--blue);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+}
+
+.recipient-dropdown.active {
+    display: block;
+}
+
+.recipient-option {
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.recipient-option:hover {
+    background: var(--cream);
+}
+
+.recipient-option .name {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.recipient-option .location {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.recipient-option.new-contact {
+    border-top: 1px solid #e0dcd4;
+    color: var(--accent);
+    font-weight: 600;
+}
+/* New contact location input */
+
+/* Attachments */
+.attachments {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.send-button {
+    width: 100%;
+    background: var(--accent);
+    color: var(--white);
+    border: none;
+    padding: 18px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Satoshi', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+}
+
+.send-button:hover {
+    background: var(--accent-bright);
+    transform: translateY(-1px);
+}
+
+.send-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.delivery-info {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 16px;
+    line-height: 1.5;
+}
+
+.delivery-info strong {
+    color: var(--accent);
+}
+
+.new-contact-btn {
+    background: none;
+    border: none;
+    color: var(--blue);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 0;
+    margin-top: 8px;
+    font-family: 'Satoshi', sans-serif;
+}
+
+.new-contact-btn:hover {
+    text-decoration: underline;
+}
+/* Lunar Note — pill toggle, panel, result card */
+
+.lunar-note-panel {
+    background: linear-gradient(135deg, #f8f5ef 0%, #f0ebe0 100%);
+    border: 1.5px solid rgba(212, 181, 138, 0.18);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 20px;
+    animation: lunarPanelIn 0.25s ease;
+}
+
+@keyframes lunarPanelIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.lunar-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.lunar-panel-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dark);
+    letter-spacing: 0.2px;
+}
+
+.lunar-intro {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    text-align: center;
+    font-style: italic;
+}
+
+.lunar-input {
+    padding: 12px 14px;
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
+    border-radius: 8px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 15px;
+    background: white;
+    color: var(--text-dark);
+    transition: border-color 0.2s;
+}
+
+.lunar-input:focus {
+    outline: none;
+    border-color: var(--blue);
+}
+
+.lunar-input::placeholder {
+    color: #b8cfe0;
+    font-style: italic;
+}
+
+/* Lunar Note result card — the collectible output */
+.lunar-result-card {
+    background: white;
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
+    border-radius: 14px;
+    padding: 24px 20px 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    animation: lunarCardIn 0.35s ease;
+}
+
+@keyframes lunarCardIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.lunar-result-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--blue), var(--accent), var(--blue));
+    opacity: 0.5;
+}
+
+.lunar-result-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+}
+
+.lunar-result-text {
+    font-size: 17px;
+    line-height: 1.8;
+    color: var(--text-dark);
+    font-weight: 500;
+    white-space: pre-line;
+    margin-bottom: 8px;
+}
+
+.lunar-result-closing {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 12px;
+}
+
+.lunar-result-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.lunar-action-btn {
+    background: none;
+    border: none;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--blue);
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.15s;
+}
+
+.lunar-action-btn:hover {
+    background: rgba(212, 181, 138, 0.08);
+}
+
+/* Lunar Note step-through cards */
+.lunar-step-container {
+    position: relative;
+}
+
+.lunar-step-card {
+    display: none;
+    background: white;
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    animation: lunarCardIn 0.25s ease;
+}
+
+.lunar-step-card.active {
+    display: block;
+}
+
+.lunar-step-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.lunar-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(212, 181, 138, 0.15);
+    transition: all 0.2s;
+}
+
+.lunar-dot.active {
+    background: var(--blue);
+    transform: scale(1.2);
+}
+
+.lunar-dot.done {
+    background: var(--accent);
+}
+
+.lunar-step-label {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 14px;
+    line-height: 1.4;
+}
+
+.lunar-step-card .lunar-input {
+    text-align: center;
+    font-size: 17px;
+    margin-bottom: 16px;
+}
+
+.lunar-step-next {
+    width: 100%;
+    padding: 12px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.lunar-step-next:hover:not(:disabled) {
+    background: #4a8fd4;
+}
+
+.lunar-step-next:disabled {
+    background: #d0ccc4;
+    cursor: not-allowed;
+}
+
+.lunar-step-nav {
+    display: flex;
+    gap: 8px;
+}
+
+.lunar-step-back {
+    flex: 0 0 auto;
+    padding: 12px 16px;
+    background: none;
+    color: var(--text-muted);
+    border: 1px solid rgba(212, 181, 138, 0.15);
+    border-radius: 8px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.lunar-step-back:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+.lunar-step-nav .lunar-step-next {
+    flex: 1;
+}
+/* Song picker */
+
+.song-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.song-suggestion {
+    font-size: 11px;
+    padding: 6px 10px;
+    background: var(--cream);
+    border-radius: 20px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+
+.song-suggestion:hover {
+    background: var(--blue);
+    color: white;
+}
+
+/* Moon carrying messages indicator */
+.moon-carrying-indicator {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 12px;
+    line-height: 1.5;
+}
+
+.moon-carrying-count {
+    color: var(--blue);
+    font-weight: 600;
+}
+
+#newContactCityDropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+#newContactCityDropdown.active {
+    display: block;
+}
+
+#newContactCityDropdown .city-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#newContactCityDropdown .city-option:hover {
+    background: var(--cream);
+}
+
+#composeNewContact .form-group {
+    position: relative;
+}
+
+/* Public Message Modal */
+.public-modal .modal {
+    background: var(--accent);
+}
+
+.public-modal h2 {
+    color: var(--white);
+}
+
+.public-modal .modal-subtitle {
+    color: rgba(255,255,255,0.8);
+}
+
+.public-modal .modal-close {
+    color: rgba(255,255,255,0.7);
+}
+
+.public-modal .modal-close:hover {
+    color: var(--white);
+}
+
+.public-modal label {
+    color: var(--white);
+}
+
+.public-modal .send-button {
+    background: var(--white);
+    color: var(--accent);
+}
+
+.public-modal .send-button:hover {
+    background: var(--cream);
+}
+
+.public-modal .delivery-info {
+    color: rgba(255,255,255,0.8);
+}
+
+.public-modal .delivery-info strong {
+    color: var(--white);
+}
+/* Message Detail Modal */
+
+/* Full-page message view */
+.message-page {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #e8e4dc;
+    z-index: 500;
+    animation: msgPageIn 0.3s ease;
+}
+
+.message-page.active {
+    display: block;
+}
+
+.message-page.closing {
+    display: block;
+    animation: msgPageOut 0.25s ease forwards;
+}
+
+@keyframes msgPageOut {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(100%); opacity: 0; }
+}
+
+@keyframes msgPageIn {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.message-page-inner {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    box-shadow: 0 0 40px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.message-page-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid #e0dcd4;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.message-page-back {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(212, 181, 138, 0.08);
+    color: var(--blue);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+
+.message-page-back:hover {
+    background: rgba(212, 181, 138, 0.15);
+}
+
+/* X close button (right side of header) */
+.message-page-close {
+    margin-left: auto;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 181, 138, 0.2);
+    background: rgba(212, 181, 138, 0.08);
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.message-page-close:hover {
+    background: rgba(212, 181, 138, 0.15);
+    color: white;
+    border-color: rgba(212, 181, 138, 0.4);
+}
+
+/* Note type toggle bar */
+/* Single pill toggle: Open Note ↔ Lunar Note */
+.note-toggle-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 0 4px;
+}
+.note-mode-toggle {
+    display: flex;
+    align-items: center;
+    background: rgba(10, 22, 40, 0.6);
+    border: 1px solid rgba(212, 181, 138, 0.15);
+    border-radius: 20px;
+    padding: 2px;
+    cursor: pointer;
+    gap: 0;
+    font-family: var(--font);
+}
+.note-mode-toggle .toggle-option {
+    padding: 5px 14px;
+    border-radius: 18px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: rgba(255, 255, 255, 0.35);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--font);
+    white-space: nowrap;
+}
+.note-mode-toggle .toggle-option:hover {
+    color: rgba(255, 255, 255, 0.55);
+}
+.note-mode-toggle .toggle-option.active {
+    background: rgba(212, 181, 138, 0.18);
+    color: var(--accent);
+}
+
+/* Reply input wrapper (+ button inside input) */
+.reply-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    border: 1.5px solid rgba(212, 181, 138, 0.2);
+    border-radius: 24px;
+    background: rgba(10, 22, 40, 0.6);
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+.reply-input-wrapper:focus-within {
+    border-color: rgba(212, 181, 138, 0.4);
+}
+.reply-attach-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: var(--accent);
+    font-size: 22px;
+    font-weight: 300;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.reply-attach-btn:hover {
+    background: rgba(212, 181, 138, 0.1);
+}
+.reply-input-wrapper .message-page-input {
+    border: none !important;
+    background: transparent !important;
+    outline: none;
+    padding-left: 0;
+}
+
+/* Attachment menu popover */
+.attach-menu {
+    display: flex;
+    gap: 8px;
+    padding: 6px 0;
+}
+.attach-option {
+    padding: 6px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(212, 181, 138, 0.2);
+    background: rgba(10, 22, 40, 0.8);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.2s;
+}
+.attach-option:hover {
+    background: rgba(212, 181, 138, 0.1);
+    border-color: rgba(212, 181, 138, 0.35);
+    color: white;
+}
+
+.reply-song-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(212, 181, 138, 0.06);
+    border: 1px solid rgba(212, 181, 138, 0.2);
+    border-radius: 10px;
+    margin: 4px 0 4px;
+}
+
+.message-page-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.message-page-info h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--blue);
+    margin-bottom: 2px;
+}
+
+.message-page-info p {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.message-page-body {
+    flex: 1;
+    padding: 20px;
+    padding-bottom: 40px;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.message-page-footer {
+    padding: 10px 16px;
+    border-top: 1px solid #e0dcd4;
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.reply-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.add-lunar-link {
+    background: none;
+    border: none;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    color: var(--blue);
+    cursor: pointer;
+    padding: 6px 0 2px;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+}
+
+.add-lunar-link:hover {
+    opacity: 1;
+}
+
+.message-page-input {
+    flex: 1;
+    padding: 10px 16px;
+    border: 2px solid #e0dcd4;
+    border-radius: 24px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 16px;
+}
+
+.message-page-input:focus {
+    outline: none;
+    border-color: var(--blue);
+}
+
+.message-page-send {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+
+.message-page-send:hover {
+    background: #e04448;
+}
+
+/* IM-style inbox status badges */
+.message-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    line-height: 1.4;
+}
+
+.message-status-badge.orbiting {
+    background: rgba(212, 181, 138, 0.1);
+    color: var(--accent);
+}
+
+.message-status-badge.released {
+    background: rgba(212, 181, 138, 0.1);
+    color: var(--blue);
+}
+
+/* Delivery info box in send step */
+.delivery-info-box {
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.delivery-info-box.known {
+    background: rgba(212, 181, 138, 0.08);
+    border: 1px solid rgba(212, 181, 138, 0.15);
+    color: var(--blue);
+}
+
+.delivery-info-box.new-user {
+    background: rgba(212, 181, 138, 0.06);
+    border: 1px solid rgba(212, 181, 138, 0.15);
+    color: var(--text-dark);
+}
+
+.delivery-info-box .delivery-icon {
+    font-size: 16px;
+    margin-right: 6px;
+}
+
+.message-status-badge.received {
+    background: rgba(212, 181, 138, 0.06);
+    color: var(--text-muted);
+}
+
+/* In-transit message — centered with glow */
+.message-bubble-transit-wrap {
+    position: relative;
+    margin: 0 auto;
+    max-width: 75%;
+    padding: 8px 0;
+}
+.message-bubble-transit-wrap .message-bubble.sent {
+    background: rgba(18, 35, 58, 0.7);
+    border: 1.5px solid transparent;
+    margin: 0 auto;
+    text-align: center;
+    background-clip: padding-box;
+    position: relative;
+    border-radius: 16px !important;
+    border-bottom-right-radius: 16px !important;
+}
+/* Animated gradient border that travels around the stroke */
+.message-bubble-transit-wrap .message-bubble.sent::before {
+    content: '';
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+        from var(--border-angle, 0deg),
+        transparent 40%,
+        rgba(212, 181, 138, 0.6) 50%,
+        transparent 60%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: borderRotate 3s linear infinite;
+    pointer-events: none;
+}
+@property --border-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+@keyframes borderRotate {
+    to { --border-angle: 360deg; }
+}
+/* Fallback glow for browsers without @property */
+@supports not (background: conic-gradient(from 0deg, red, blue)) {
+    .message-bubble-transit-wrap .message-bubble.sent {
+        border: 1.5px solid rgba(212, 181, 138, 0.3);
+        animation: transitPulseFallback 3s ease-in-out infinite;
+    }
+}
+@keyframes transitPulseFallback {
+    0%, 100% { border-color: rgba(212, 181, 138, 0.2); }
+    50% { border-color: rgba(212, 181, 138, 0.5); }
+}
+/* No reactions or reply on in-transit messages */
+.message-bubble-transit-wrap .msg-actions-row {
+    display: none !important;
+}
+.transit-eta-label {
+    text-align: center;
+    padding: 8px 0 2px;
+    font-size: 15px;
+    color: rgba(212, 181, 138, 0.7);
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+.transit-eta-label svg { width: 16px; height: 16px; fill: rgba(212, 181, 138, 0.7); }
+/* Transit zone — starfield background */
+.transit-zone {
+    position: relative;
+    padding: 20px 0;
+    background: radial-gradient(ellipse at center, rgba(10, 20, 40, 0.6) 0%, transparent 70%);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.transit-zone-stars {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+.transit-zone-star {
+    position: absolute;
+    border-radius: 50%;
+    background: white;
+    animation: twinkle var(--dur) ease-in-out infinite;
+    animation-delay: var(--delay);
+    opacity: 0;
+}
+.transit-zone .message-bubble-transit-wrap,
+.transit-zone .transit-eta-label {
+    position: relative;
+    z-index: 1;
+}
+
+.transit-progress {
+    height: 3px;
+    background: rgba(212, 181, 138, 0.15);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+}
+.transit-progress-bar {
+    height: 100%;
+    background: var(--blue);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.message-bubble {
+    background: rgba(212, 181, 138, 0.1);
+    padding: 16px 20px;
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    margin-bottom: 16px;
+}
+
+.message-bubble.sent {
+    background: var(--blue);
+    color: white;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 4px;
+    margin-left: auto;
+    max-width: 80%;
+}
+
+.message-bubble p {
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--blue);
+}
+
+.message-bubble.sent p {
+    color: white;
+}
+
+.message-bubble-time {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 8px;
+}
+
+.message-bubble.sent .message-bubble-time {
+    color: rgba(255,255,255,0.7);
+}
+
+/* Unread badge (brass pill) */
+.unread-badge {
+    background: var(--accent);
+    color: var(--on-accent);
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 20px;
+    height: 20px;
+    border-radius: var(--radius-pill);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    letter-spacing: 0.2px;
+}
+
+/* Unread conversation row styling */
+.message-item.unread .message-sender {
+    font-weight: 600;
+    color: var(--text-bright);
+}
+.message-item.unread .message-preview {
+    color: var(--text);
+    font-style: normal;
+    font-weight: 500;
+}
+
+/* Pulsing unread badge */
+.unread-badge.pulse {
+    animation: unreadPulse 1.5s ease-in-out infinite;
+}
+@keyframes unreadPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(212, 181, 138, 0.5); }
+    50% { transform: scale(1.15); box-shadow: 0 0 8px 2px rgba(212, 181, 138, 0.35); }
+}
+
+/* New message flash animation on conversation row */
+.message-item.new-message-flash {
+    animation: rowFlash 1.2s ease-out;
+}
+@keyframes rowFlash {
+    0% { background: rgba(212, 181, 138, 0.18); }
+    30% { background: rgba(212, 181, 138, 0.10); }
+    100% { background: transparent; }
+}
+/* Unread conversation has subtle brass tint */
+.message-item.unread {
+    background: rgba(212, 181, 138, 0.04);
+}
+
+/* Notification toast */
+.notification-toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: var(--blue);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 10000;
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    pointer-events: none;
+    font-family: 'Satoshi', sans-serif;
+    box-shadow: 0 4px 20px rgba(212, 181, 138, 0.3);
+    max-width: 90%;
+    text-align: center;
+}
+.notification-toast.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* Read receipt checkmarks */
+.read-receipt {
+    font-size: 12px;
+    margin-left: 4px;
+    letter-spacing: -2px;
+}
+.read-receipt.delivered {
+    color: rgba(255,255,255,0.5);
+}
+.read-receipt.read {
+    color: var(--accent);
+}
+.read-receipt.seen-label {
+    font-size: 10px;
+    letter-spacing: 0;
+    font-weight: 500;
+}
+/* For non-sent bubbles (shouldn't appear, but safety) */
+.message-bubble:not(.sent) .read-receipt.delivered {
+    color: var(--text-muted);
+}
+.bubble-lunar-note .read-receipt.delivered {
+    color: var(--text-muted);
+}
+.bubble-lunar-note .read-receipt.read {
+    color: #2196F3;
+}
+
+/* Reactions */
+/* Hover reaction trigger on message bubbles */
+.message-bubble,
+.bubble-lunar-note {
+    position: relative;
+}
+/* Reactions + reply action row */
+.msg-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+.msg-react-trigger {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 181, 138, 0.25);
+    background: rgba(8, 18, 35, 0.85);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 15px;
+    cursor: pointer;
+    opacity: 0.75;
+    transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.25);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+.message-bubble:hover .msg-react-trigger,
+.bubble-lunar-note:hover .msg-react-trigger,
+.chat-transit-msg:hover .msg-react-trigger {
+    opacity: 1;
+}
+.msg-react-trigger:hover,
+.msg-react-trigger:active {
+    opacity: 1 !important;
+    background: rgba(212, 181, 138, 0.18);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: scale(1.12);
+}
+.msg-react-trigger.pulse {
+    animation: reactPulse 0.35s ease;
+}
+@keyframes reactPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+/* On mobile/touch, always show trigger clearly */
+@media (hover: none) {
+    .msg-react-trigger {
+        opacity: 0.85;
+    }
+}
+/* Reaction picker — uses position:fixed to escape scroll container clipping */
+.reaction-picker-fixed {
+    position: fixed;
+    z-index: 99999;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    width: auto;
+    max-width: 320px;
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: rgba(12, 25, 45, 0.97);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(212, 181, 138, 0.25);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(212, 181, 138, 0.08);
+    animation: pickerFadeIn 0.15s ease;
+}
+@keyframes pickerFadeIn {
+    from { opacity: 0; transform: scale(0.92) translateY(4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.reaction-picker-fixed .reaction-picker-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(212, 181, 138, 0.5);
+    padding: 2px 4px 6px;
+    width: 100%;
+}
+.reaction-picker-fixed .reaction-option {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: none;
+    background: none;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.reaction-picker-fixed .reaction-option:hover,
+.reaction-picker-fixed .reaction-option:active {
+    background: rgba(212, 181, 138, 0.18);
+    transform: scale(1.2);
+}
+
+.reactions-bar {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.reaction-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: rgba(18, 32, 55, 0.85);
+    border: 1px solid rgba(212, 181, 138, 0.12);
+    border-radius: 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.reaction-chip:hover {
+    background: rgba(24, 42, 68, 0.9);
+    border-color: rgba(212, 181, 138, 0.3);
+}
+
+.reaction-chip.active {
+    background: rgba(30, 55, 90, 0.9);
+    border-color: rgba(212, 181, 138, 0.5);
+    box-shadow: 0 0 8px rgba(212, 181, 138, 0.15);
+}
+
+.reaction-chip .reaction-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.55);
+    margin-left: 1px;
+}
+
+.reaction-chip.active .reaction-count {
+    color: var(--accent);
+}
+
+/* Reaction picker popup */
+.reaction-picker {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: var(--white);
+    border: 1px solid #e0dcd4;
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    z-index: 20;
+    gap: 2px;
+    flex-wrap: wrap;
+    width: 300px;
+}
+
+.reaction-picker.active {
+    display: flex;
+}
+
+.reaction-option {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s;
+}
+
+.reaction-option:hover {
+    background: rgba(212, 181, 138, 0.1);
+    transform: scale(1.15);
+}
+
+.reaction-picker-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    padding: 4px 6px 2px;
+    width: 100%;
+}
+
+/* In-thread Lunar Note panel — dark theme */
+.thread-lunar-panel {
+    padding: 14px 16px;
+    border-top: 1px solid rgba(212, 181, 138, 0.15);
+    background: rgba(10, 22, 42, 0.95);
+    border-radius: 12px 12px 0 0;
+    margin: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+}
+
+.thread-lunar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 8px;
+}
+
+.thread-lunar-intro {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 12px;
+    font-style: italic;
+}
+
+.thread-lunar-step {
+    margin-bottom: 8px;
+}
+
+.thread-lunar-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: lowercase;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.thread-lunar-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid rgba(212, 181, 138, 0.2);
+    border-radius: 10px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 16px;
+    background: rgba(5, 12, 28, 0.8);
+    color: rgba(255, 255, 255, 0.9);
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.thread-lunar-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 14px;
+}
+
+.thread-lunar-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.thread-lunar-next-btn {
+    font-size: 14px !important;
+}
+
+.thread-lunar-step .lunar-step-back {
+    font-size: 13px !important;
+}
+
+.thread-lunar-send {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: #050e1e;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.thread-lunar-send:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.thread-lunar-send:not(:disabled):hover {
+    background: #6dd5ff;
+}
+
+/* Thread lunar Next/Reveal buttons — dark theme */
+.thread-lunar-panel .lunar-step-next,
+.thread-lunar-panel .thread-lunar-next-btn {
+    padding: 9px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 6px;
+    background: rgba(212, 181, 138, 0.2);
+    color: var(--accent);
+    border: 1px solid rgba(212, 181, 138, 0.25);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Satoshi', sans-serif;
+    transition: all 0.15s;
+}
+.thread-lunar-panel .lunar-step-next:hover:not(:disabled),
+.thread-lunar-panel .thread-lunar-next-btn:hover:not(:disabled) {
+    background: rgba(212, 181, 138, 0.3);
+    border-color: var(--accent);
+}
+.thread-lunar-panel .lunar-step-next:disabled,
+.thread-lunar-panel .thread-lunar-next-btn:disabled {
+    background: rgba(212, 181, 138, 0.08);
+    color: rgba(212, 181, 138, 0.3);
+    border-color: rgba(212, 181, 138, 0.1);
+    cursor: not-allowed;
+}
+/* Back button in thread lunar panel */
+.thread-lunar-panel .lunar-step-back {
+    color: rgba(255, 255, 255, 0.45) !important;
+}
+.thread-lunar-panel .lunar-step-back:hover {
+    color: var(--accent) !important;
+}
+/* Header row: title + cancel link */
+.thread-lunar-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+.thread-lunar-header-row .thread-lunar-intro {
+    margin-bottom: 0;
+    flex: 1;
+}
+.thread-lunar-cancel-link {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: 'Satoshi', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 0;
+    margin-left: 12px;
+    white-space: nowrap;
+    transition: color 0.15s;
+}
+.thread-lunar-cancel-link:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
+/* Progress dots */
+.thread-lunar-dots {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+.thread-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    transition: background 0.2s;
+}
+.thread-dot.active {
+    background: var(--accent);
+}
+.thread-dot.done {
+    background: rgba(212, 181, 138, 0.5);
+}
+/* Step nav row */
+.thread-lunar-step-nav {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+}
+/* Result card (matches compose result card style in dark theme) */
+.thread-lunar-result-card {
+    position: relative;
+    background: rgba(5, 14, 30, 0.8);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 10px 0 0;
+    border: 1px solid rgba(212, 181, 138, 0.15);
+    animation: threadLunarCardIn 0.35s ease;
+    overflow: hidden;
+}
+.thread-lunar-result-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), rgba(212, 181, 138, 0.6), var(--accent));
+}
+@keyframes threadLunarCardIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+.thread-lunar-result-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(212, 181, 138, 0.5);
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+.thread-lunar-result-text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.85);
+    white-space: pre-line;
+}
+.thread-lunar-result-closing {
+    font-size: 14px;
+    color: rgba(212, 181, 138, 0.6);
+    margin-top: 8px;
+    font-style: italic;
+}
+.thread-lunar-result-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    justify-content: center;
+}
+.thread-lunar-action-btn {
+    background: none;
+    border: 1px solid rgba(212, 181, 138, 0.2);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 12px;
+    color: rgba(212, 181, 138, 0.7);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.thread-lunar-action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(212, 181, 138, 0.08);
+}
+

@@ -613,7 +613,7 @@ function submitContactUsForm(e) {
     const subject = document.getElementById('contactUsSubject').value;
     const message = document.getElementById('contactUsMessage').value.trim();
 
-    const to = 'themoonpostservice@gmail.com,yoashf@gmail.com,mymanko@gmail.com';
+    const to = 'themoonpostservice@gmail.com';
     const body = `Name: ${name}\nEmail: ${email}\n\n${message}`;
     const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailtoUrl;

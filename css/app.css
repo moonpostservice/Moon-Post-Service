@@ -1,0 +1,1252 @@
+/* ============================================================
+   app.css — App shell: main page, header, settings dropdown, inbox, orbit ring, chat detail view
+   Part of the split styles bundle. Load order:
+   base.css -> auth-sharedsky.css -> messages.css -> compose-circles.css -> app.css -> landing-roulette.css
+   (cascade depends on this order — keep <link> tags in sequence)
+   ============================================================ */
+
+/* MAIN PAGE — DARK RETRO-FUTURISTIC     */
+/* Unified theme across entire app        */
+/* ====================================== */
+
+/* Body starfield background */
+body {
+    background: #050a14;
+    position: relative;
+    overflow: hidden;
+    height: 100vh;
+}
+@media (max-width: 900px) {
+    body {
+        overflow-y: auto;
+        height: auto;
+        min-height: 100vh;
+        font-size: 1rem; /* Respect user's system font size setting */
+        -webkit-text-size-adjust: 100%;
+    }
+
+    /* Mobile inbox: bigger text for readability */
+    .message-sender { font-size: 17px !important; }
+    .message-preview { font-size: 15px !important; }
+    .message-time { font-size: 13px !important; }
+    .inbox-header .inbox-title { font-size: 20px !important; }
+    .unread-badge { font-size: 13px !important; min-width: 22px !important; height: 22px !important; }
+    .message-item { padding: 14px 16px !important; }
+    .shared-sky-row { padding: 14px 16px !important; }
+    .msg-avatar { width: 48px !important; height: 48px !important; font-size: 18px !important; }
+}
+
+/* Static star layers — scattered tiny dots */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+        /* Bright prominent stars */
+        radial-gradient(1.8px 1.8px at 5% 8%, rgba(255,255,255,0.50), transparent 65%),
+        radial-gradient(1.6px 1.6px at 18% 42%, rgba(255,255,255,0.45), transparent 65%),
+        radial-gradient(1.8px 1.8px at 33% 15%, rgba(255,255,255,0.48), transparent 65%),
+        radial-gradient(1.5px 1.5px at 47% 71%, rgba(255,255,255,0.42), transparent 65%),
+        radial-gradient(1.6px 1.6px at 62% 5%, rgba(255,255,255,0.46), transparent 65%),
+        radial-gradient(1.8px 1.8px at 76% 55%, rgba(255,255,255,0.44), transparent 65%),
+        radial-gradient(1.5px 1.5px at 88% 28%, rgba(255,255,255,0.47), transparent 65%),
+        radial-gradient(1.6px 1.6px at 95% 82%, rgba(255,255,255,0.42), transparent 65%),
+        radial-gradient(1.8px 1.8px at 12% 90%, rgba(255,255,255,0.45), transparent 65%),
+        radial-gradient(1.5px 1.5px at 55% 38%, rgba(255,255,255,0.43), transparent 65%),
+        /* Medium stars */
+        radial-gradient(1.3px 1.3px at 2% 25%, rgba(255,255,255,0.16), transparent),
+        radial-gradient(1.2px 1.2px at 8% 58%, rgba(255,255,255,0.13), transparent),
+        radial-gradient(1.3px 1.3px at 14% 3%, rgba(255,255,255,0.15), transparent),
+        radial-gradient(1.2px 1.2px at 21% 76%, rgba(255,255,255,0.12), transparent),
+        radial-gradient(1.3px 1.3px at 27% 34%, rgba(255,255,255,0.14), transparent),
+        radial-gradient(1.2px 1.2px at 35% 62%, rgba(255,255,255,0.11), transparent),
+        radial-gradient(1.3px 1.3px at 41% 9%, rgba(255,255,255,0.16), transparent),
+        radial-gradient(1.2px 1.2px at 48% 85%, rgba(255,255,255,0.13), transparent),
+        radial-gradient(1.3px 1.3px at 54% 47%, rgba(255,255,255,0.15), transparent),
+        radial-gradient(1.2px 1.2px at 61% 19%, rgba(255,255,255,0.12), transparent),
+        radial-gradient(1.3px 1.3px at 68% 73%, rgba(255,255,255,0.14), transparent),
+        radial-gradient(1.2px 1.2px at 74% 41%, rgba(255,255,255,0.11), transparent),
+        radial-gradient(1.3px 1.3px at 81% 93%, rgba(255,255,255,0.16), transparent),
+        radial-gradient(1.2px 1.2px at 87% 16%, rgba(255,255,255,0.13), transparent),
+        radial-gradient(1.3px 1.3px at 93% 65%, rgba(255,255,255,0.15), transparent),
+        radial-gradient(1.2px 1.2px at 99% 48%, rgba(255,255,255,0.12), transparent),
+        /* Dim tiny stars — dense fill */
+        radial-gradient(0.8px 0.8px at 1% 12%, rgba(255,255,255,0.08), transparent),
+        radial-gradient(0.8px 0.8px at 4% 37%, rgba(255,255,255,0.06), transparent),
+        radial-gradient(0.8px 0.8px at 7% 68%, rgba(255,255,255,0.07), transparent),
+        radial-gradient(0.8px 0.8px at 10% 95%, rgba(255,255,255,0.05), transparent),
+        radial-gradient(0.8px 0.8px at 13% 22%, rgba(255,255,255,0.08), transparent),
+        radial-gradient(0.8px 0.8px at 16% 51%, rgba(255,255,255,0.06), transparent),
+        radial-gradient(0.8px 0.8px at 19% 83%, rgba(255,255,255,0.05), transparent),
+        radial-gradient(0.8px 0.8px at 23% 7%, rgba(255,255,255,0.07), transparent),
+        radial-gradient(0.8px 0.8px at 26% 44%, rgba(255,255,255,0.06), transparent),
+        radial-gradient(0.8px 0.8px at 30% 71%, rgba(255,255,255,0.05), transparent),
+        radial-gradient(0.8px 0.8px at 34% 18%, rgba(255,255,255,0.08), transparent),
+        radial-gradient(0.8px 0.8px at 37% 55%, rgba(255,255,255,0.06), transparent),
+        radial-gradient(0.8px 0.8px at 40% 88%, rgba(255,255,255,0.05), transparent),
+        radial-gradient(0.8px 0.8px at 44% 31%, rgba(255,255,255,0.07), transparent),
+        radial-gradient(0.8px 0.8px at 47% 63%, rgba(255,255,255,0.04), transparent),
+        radial-gradient(0.8px 0.8px at 51% 2%, rgba(255,255,255,0.08), transparent),
+        radial-gradient(0.8px 0.8px at 54% 40%, rgba(255,255,255,0.06), transparent),
+        radial-gradient(0.8px 0.8px at 58% 77%, rgba(255,255,255,0.05), transparent),
+        radial-gradient(0.8px 0.8px at 62% 14%, rgba(255,255,255,0.07), transparent),
+        radial-gradient(0.8px 0.8px at 65% 52%, rgba(255,255,255,0.06), transparent),
+        radial-gradient(0.8px 0.8px at 69% 86%, rgba(255,255,255,0.04), transparent),
+        radial-gradient(0.8px 0.8px at 72% 29%, rgba(255,255,255,0.08), transparent),
+        radial-gradient(0.8px 0.8px at 76% 60%, rgba(255,255,255,0.05), transparent),
+        radial-gradient(0.8px 0.8px at 79% 9%, rgba(255,255,255,0.07), transparent),
+        radial-gradient(0.8px 0.8px at 83% 45%, rgba(255,255,255,0.06), transparent),
+        radial-gradient(0.8px 0.8px at 86% 79%, rgba(255,255,255,0.04), transparent),
+        radial-gradient(0.8px 0.8px at 90% 21%, rgba(255,255,255,0.08), transparent),
+        radial-gradient(0.8px 0.8px at 93% 56%, rgba(255,255,255,0.05), transparent),
+        radial-gradient(0.8px 0.8px at 97% 38%, rgba(255,255,255,0.07), transparent),
+        radial-gradient(0.8px 0.8px at 99% 74%, rgba(255,255,255,0.06), transparent),
+        /* Extra-bright big stars */
+        radial-gradient(2.5px 2.5px at 10% 33%, rgba(255,255,255,0.65), transparent 70%),
+        radial-gradient(2px 2px at 42% 78%, rgba(255,255,255,0.58), transparent 70%),
+        radial-gradient(2.2px 2.2px at 71% 12%, rgba(255,255,255,0.62), transparent 70%),
+        radial-gradient(2px 2px at 85% 67%, rgba(255,255,255,0.55), transparent 70%),
+        radial-gradient(2.5px 2.5px at 28% 91%, rgba(255,255,255,0.60), transparent 70%),
+        /* Additional bright stars */
+        radial-gradient(2.5px 2.5px at 3% 72%, rgba(255,255,255,0.28), transparent),
+        radial-gradient(2.3px 2.3px at 22% 18%, rgba(255,255,255,0.26), transparent),
+        radial-gradient(2.5px 2.5px at 39% 52%, rgba(255,255,255,0.30), transparent),
+        radial-gradient(2px 2px at 58% 89%, rgba(255,255,255,0.24), transparent),
+        radial-gradient(2.3px 2.3px at 81% 4%, rgba(255,255,255,0.27), transparent),
+        radial-gradient(2.5px 2.5px at 67% 42%, rgba(255,255,255,0.25), transparent),
+        radial-gradient(2px 2px at 92% 31%, rgba(255,255,255,0.28), transparent),
+        radial-gradient(2.3px 2.3px at 15% 61%, rgba(255,255,255,0.22), transparent),
+        /* Additional medium stars */
+        radial-gradient(1.5px 1.5px at 6% 45%, rgba(255,255,255,0.18), transparent),
+        radial-gradient(1.5px 1.5px at 22% 62%, rgba(255,255,255,0.16), transparent),
+        radial-gradient(1.5px 1.5px at 39% 28%, rgba(255,255,255,0.17), transparent),
+        radial-gradient(1.5px 1.5px at 57% 85%, rgba(255,255,255,0.15), transparent),
+        radial-gradient(1.5px 1.5px at 73% 8%, rgba(255,255,255,0.18), transparent),
+        radial-gradient(1.5px 1.5px at 91% 51%, rgba(255,255,255,0.16), transparent),
+        /* More dim fill */
+        radial-gradient(0.6px 0.6px at 3% 56%, rgba(255,255,255,0.06), transparent),
+        radial-gradient(0.6px 0.6px at 17% 29%, rgba(255,255,255,0.05), transparent),
+        radial-gradient(0.6px 0.6px at 31% 83%, rgba(255,255,255,0.06), transparent),
+        radial-gradient(0.6px 0.6px at 46% 11%, rgba(255,255,255,0.05), transparent),
+        radial-gradient(0.6px 0.6px at 60% 68%, rgba(255,255,255,0.06), transparent),
+        radial-gradient(0.6px 0.6px at 75% 35%, rgba(255,255,255,0.05), transparent),
+        radial-gradient(0.6px 0.6px at 89% 92%, rgba(255,255,255,0.06), transparent),
+        /* Colored stars — yellow */
+        radial-gradient(2.2px 2.2px at 15% 22%, rgba(255,213,79,0.28), transparent),
+        radial-gradient(1.5px 1.5px at 55% 68%, rgba(255,213,79,0.18), transparent),
+        radial-gradient(1.8px 1.8px at 88% 14%, rgba(255,213,79,0.22), transparent),
+        /* Colored stars — pink/rose */
+        radial-gradient(2px 2px at 82% 35%, rgba(255,138,128,0.22), transparent),
+        radial-gradient(1.5px 1.5px at 38% 88%, rgba(255,138,128,0.16), transparent),
+        radial-gradient(1.8px 1.8px at 8% 72%, rgba(255,138,128,0.20), transparent),
+        /* Colored stars — light blue */
+        radial-gradient(1.8px 1.8px at 64% 26%, rgba(128,216,255,0.20), transparent),
+        radial-gradient(1.5px 1.5px at 29% 54%, rgba(128,216,255,0.15), transparent);
+    background-size: 200px 200px;
+}
+
+/* Twinkling stars overlay */
+.starfield-twinkle {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: white;
+    animation: twinkle var(--dur) ease-in-out infinite;
+    animation-delay: var(--delay);
+    opacity: 0;
+}
+.star.cross {
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+}
+.star.cross::before, .star.cross::after {
+    content: '';
+    position: absolute;
+    background: white;
+    border-radius: 1px;
+}
+.star.cross::before {
+    width: 1px; height: 100%;
+    left: 50%; top: 0;
+    transform: translateX(-50%);
+}
+.star.cross::after {
+    width: 100%; height: 1px;
+    top: 50%; left: 0;
+    transform: translateY(-50%);
+}
+/* Animate only opacity + transform (compositor-friendly). box-shadow is intentionally
+   NOT animated here — animating it forces a paint every frame for every star, the
+   dominant cost across a full starfield. Bright stars keep their static inline glow. */
+@keyframes twinkle {
+    0%, 100% { opacity: calc(var(--peak, 0.7) * 0.3); transform: scale(0.95); }
+    50% { opacity: var(--peak, 0.7); transform: scale(1); }
+}
+@keyframes twinkleFlash {
+    0%, 100% { opacity: calc(var(--peak, 0.8) * 0.25); transform: scale(0.9); }
+    40% { opacity: var(--peak, 0.8); transform: scale(1.05); }
+    70% { opacity: calc(var(--peak, 0.8) * 0.4); transform: scale(0.95); }
+}
+@keyframes twinkleRandom {
+    0%, 100% { opacity: 0; }
+    50% { opacity: var(--peak, 0.7); }
+}
+/* Honour reduced-motion: freeze the starfield to a static glow instead of
+   running hundreds of perpetual opacity animations. */
+@media (prefers-reduced-motion: reduce) {
+    .star {
+        animation: none !important;
+        opacity: var(--peak, 0.7);
+    }
+}
+
+/* ============================================================
+   APP HEADER — editorial brass-on-navy
+   Sticky header used across all logged-in surfaces. Transparent
+   over starfield, glass on scroll.
+   ============================================================ */
+.header {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: none;
+    font-family: var(--sans);
+}
+.header.scrolled {
+    background: rgba(3, 10, 24, 0.72);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid var(--line-soft);
+}
+
+/* Header brand (logo + tagline) */
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.header-brand .logo {
+    height: 40px;
+    width: auto;
+    display: block;
+}
+.header.scrolled .header-brand .logo {
+    height: 32px;
+}
+.header-tagline {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+}
+
+/* Desktop nav wrapper */
+.header-desktop-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Mobile hamburger button — hidden on desktop */
+.mobile-menu-btn {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    width: 40px;
+    height: 40px;
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+    transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+.mobile-menu-btn:hover, .mobile-menu-btn:active {
+    border-color: var(--accent);
+    background: rgba(212, 181, 138, 0.06);
+}
+.hamburger-line {
+    display: block;
+    width: 16px;
+    height: 1.5px;
+    background: var(--accent);
+    border-radius: 1px;
+    transition: transform var(--dur-fast) ease;
+}
+
+/* Mobile menu overlay */
+.mobile-menu-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 10, 24, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 99998;
+}
+.mobile-menu-overlay.open {
+    display: block;
+}
+
+/* Mobile menu drawer — slides in from right */
+.mobile-menu-drawer {
+    position: fixed;
+    top: 0;
+    right: -280px;
+    width: 280px;
+    height: 100%;
+    background: var(--panel-strong);
+    border-left: 1px solid var(--line-soft);
+    z-index: 99999;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -8px 0 32px rgba(0,0,0,0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+.mobile-menu-drawer.open {
+    right: 0;
+}
+.mobile-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--line-soft);
+}
+.mobile-menu-items {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0;
+}
+.mobile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 24px;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.mobile-menu-item:hover, .mobile-menu-item:active {
+    background: rgba(212, 181, 138, 0.08);
+    color: var(--accent-bright);
+}
+
+/* Header contacts button */
+.header-contacts-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    cursor: pointer;
+    color: var(--accent);
+    padding: 8px 16px 8px 14px;
+    border-radius: var(--radius-pill);
+    transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease, transform var(--dur-fast) ease, color var(--dur-fast) ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.header-contacts-btn:hover {
+    border-color: var(--accent);
+    background: rgba(212, 181, 138, 0.08);
+    color: var(--accent-bright);
+    transform: scale(1.06);
+}
+
+/* Header moon — dark theme */
+.header-moon {
+    border-color: var(--line);
+}
+.header-moon:hover {
+    border-color: var(--accent);
+}
+
+/* User button — brass ghost */
+.user-btn {
+    border: 1px solid var(--line);
+    color: var(--text-bright);
+}
+.user-btn:hover {
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
+}
+.user-initials {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--accent);
+}
+.settings-arrow { color: var(--accent); }
+
+/* ============================================================
+   SETTINGS DROPDOWN — editorial brass-on-navy
+   ============================================================ */
+.settings-dropdown {
+    background: var(--panel-strong);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--line-soft);
+    box-shadow: var(--shadow-lg);
+    color: var(--text);
+    font-family: var(--sans);
+}
+.settings-section + .settings-section { border-top-color: var(--line-soft); }
+.settings-section-header:active { background: rgba(212, 181, 138, 0.06); }
+.settings-section-header .section-summary { color: var(--text); }
+.settings-section-header .section-chevron { color: var(--accent); }
+.settings-dropdown label {
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+}
+.settings-dropdown input,
+.settings-dropdown select,
+.settings-select {
+    background: rgba(3, 10, 24, 0.6) !important;
+    border: 1px solid var(--line-soft) !important;
+    color: var(--text-bright) !important;
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+}
+.settings-dropdown input::placeholder { color: var(--muter); }
+.settings-dropdown input:focus,
+.settings-dropdown select:focus,
+.settings-select:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
+}
+.settings-dropdown p {
+    color: var(--muted) !important;
+    font-family: var(--sans);
+}
+.settings-dropdown .send-button {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: var(--on-accent);
+}
+.settings-dropdown .send-button:hover {
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+}
+.settings-dropdown a { color: var(--accent) !important; }
+.settings-dropdown a:hover { color: var(--accent-bright) !important; }
+
+/* ============================================================
+   INBOX (split-left column) — editorial brass-on-navy
+   ============================================================ */
+.split-left {
+    border-right: none;
+}
+
+/* Inbox card — dark glass with brass-soft border */
+.inbox-card {
+    background: var(--panel);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--line-soft);
+}
+.inbox-header {
+    border-bottom: 1px solid var(--line-soft);
+}
+.inbox-title {
+    font-family: var(--serif);
+    font-weight: 500;
+    color: var(--text-bright);
+    letter-spacing: -0.2px;
+    text-transform: none;
+}
+/* "New Moon Message" full-width pill at bottom of inbox */
+
+/* Compact new-message icon button (compose pencil in inbox header) */
+.new-message-btn {
+    background: rgba(212, 181, 138, 0.08);
+    border: 1px solid var(--line-soft);
+    color: var(--accent);
+}
+.new-message-btn:hover {
+    background: rgba(212, 181, 138, 0.16);
+    border-color: var(--accent);
+    color: var(--accent-bright);
+}
+.new-roulette-btn {
+    background: rgba(212, 181, 138, 0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.new-roulette-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: 0 0 14px rgba(212, 181, 138, 0.4);
+}
+.new-roulette-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: rgba(212, 181, 138, 0.35);
+    background: transparent;
+}
+.new-roulette-btn:disabled:hover {
+    background: transparent;
+    color: var(--accent);
+    box-shadow: none;
+}
+
+/* Shared-sky row in inbox — top of the conversation list */
+.shared-sky-row {
+    background: rgba(212, 181, 138, 0.04);
+    border-bottom-color: var(--line-soft);
+}
+.shared-sky-row:hover { background: rgba(212, 181, 138, 0.10); }
+.shared-sky-row-title {
+    font-family: var(--serif);
+    font-weight: 500;
+    color: var(--text-bright);
+    letter-spacing: -0.1px;
+}
+.shared-sky-row-preview {
+    color: var(--muted);
+    font-family: var(--serif);
+    font-style: italic;
+}
+
+/* Conversation list items — dark */
+.message-item {
+    border-bottom-color: var(--line-soft);
+}
+.message-item:hover { background: rgba(212, 181, 138, 0.06); }
+.message-sender {
+    font-family: var(--serif);
+    font-weight: 500;
+    color: var(--text-bright);
+    letter-spacing: -0.1px;
+}
+.message-preview {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+}
+.message-time, .message-meta {
+    color: var(--muter) !important;
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: 10px;
+}
+.msg-avatar {
+    background: rgba(212, 181, 138, 0.12);
+    border: 1px solid var(--line-soft);
+    color: var(--accent);
+    font-family: var(--serif);
+    font-weight: 500;
+}
+.msg-avatar img[src=""], .msg-avatar img:not([src]) {
+    display: none !important;
+}
+/* Direction chips: outgoing = brass primary, incoming = brass-soft */
+
+.message-list::-webkit-scrollbar-thumb { background: rgba(212, 181, 138, 0.3); }
+
+/* Circle rows — dark */
+.circle-row { border-bottom-color: var(--line-soft) !important; }
+.circle-row:hover { background: rgba(212, 181, 138, 0.06) !important; }
+
+/* ============================================================
+   ORBIT RING + MAIN CONTENT — editorial brass-on-navy
+   The signature visual: a brass orbital ring with the moon
+   tracking its phase. Message dots are warm brass envelopes
+   sitting on the ring; ambient brass glow when moon is above
+   the horizon.
+   ============================================================ */
+.orbit-ring {
+    border-color: var(--line-soft);
+    box-shadow: 0 0 12px rgba(212, 181, 138, 0.04), inset 0 0 12px rgba(212, 181, 138, 0.02);
+}
+
+.orbit-ring.moon-visible {
+    border-color: var(--line);
+    box-shadow: 0 0 24px rgba(212, 181, 138, 0.10), inset 0 0 24px rgba(212, 181, 138, 0.04);
+}
+
+.orbit-ring::before {
+    border-color: rgba(212, 181, 138, 0.06);
+}
+
+.orbit-ring.moon-visible::before {
+    border-color: rgba(212, 181, 138, 0.10);
+}
+
+/* Orbit illustration — solid dark, darker than page bg */
+.orbit-bg-illustration {
+    opacity: 1;
+    filter: none;
+    background: #050c16;
+}
+.orbit-bg-illustration img {
+    display: none;
+}
+
+/* Orbit center text — serif numerals, brass labels */
+.orbit-center { color: var(--text-bright); font-family: var(--serif); }
+.visibility-text {
+    color: var(--accent) !important;
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-size: 11px !important;
+    font-weight: 600;
+}
+.standby-countdown {
+    color: var(--text-bright) !important;
+    font-family: var(--serif) !important;
+    font-weight: 500;
+}
+.standby-label {
+    color: var(--accent) !important;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-family: var(--sans);
+    font-size: 11px !important;
+    font-weight: 600;
+}
+
+/* Message dots on orbit — brass for sent, brass-soft for incoming */
+.message-dot { box-shadow: 0 0 8px rgba(212, 181, 138, 0.50); }
+.message-dot:hover { box-shadow: 0 0 16px rgba(212, 181, 138, 0.75); }
+.message-dot.releasing { box-shadow: 0 0 14px rgba(212, 181, 138, 0.65); }
+.message-dot.incoming { box-shadow: 0 0 8px rgba(234, 216, 191, 0.45); }
+.message-dot.incoming:hover { box-shadow: 0 0 16px rgba(234, 216, 191, 0.65); }
+
+/* Roulette dots — diamond shape, moonlit blue-white, always pulsing */
+.message-dot.roulette-dot {
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(160,200,255,0.9) 100%);
+    border: 1px solid rgba(200, 225, 255, 0.6);
+    border-radius: 3px;
+    width: 14px;
+    height: 14px;
+    top: -5.5px;
+    transform: translateX(-50%) rotate(45deg);
+    box-shadow:
+        0 0 8px  rgba(160, 200, 255, 0.65),
+        0 0 22px rgba(160, 200, 255, 0.30);
+    animation: roulettePulse 2.5s ease-in-out infinite;
+}
+.message-dot.roulette-dot::after { display: none; }
+.message-dot.roulette-dot:hover {
+    transform: translateX(-50%) rotate(45deg) scale(1.4);
+    box-shadow:
+        0 0 14px rgba(160, 200, 255, 0.90),
+        0 0 36px rgba(160, 200, 255, 0.55);
+    animation: none;
+}
+.message-dot.roulette-dot.releasing {
+    animation: rouletteReleasePulse 1.4s ease-in-out infinite;
+}
+@keyframes roulettePulse {
+    0%, 100% {
+        opacity: 0.72;
+        box-shadow: 0 0 7px rgba(160,200,255,0.55), 0 0 18px rgba(160,200,255,0.22);
+    }
+    50% {
+        opacity: 1;
+        box-shadow: 0 0 13px rgba(160,200,255,0.88), 0 0 30px rgba(160,200,255,0.45);
+    }
+}
+@keyframes rouletteReleasePulse {
+    0%, 100% {
+        opacity: 0.85;
+        transform: translateX(-50%) rotate(45deg) scale(1.05);
+        box-shadow: 0 0 12px rgba(160,200,255,0.75), 0 0 28px rgba(160,200,255,0.40);
+    }
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) rotate(45deg) scale(1.2);
+        box-shadow: 0 0 20px rgba(160,200,255,0.95), 0 0 42px rgba(160,200,255,0.60);
+    }
+}
+
+/* Moon data bar — brass-bordered glass pill */
+.moon-data-bar {
+    background: var(--panel);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--line-soft);
+}
+.moon-data-item { color: var(--muted); }
+.moon-data-label {
+    color: var(--accent);
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-size: 10px;
+    font-weight: 600;
+}
+.moon-data-value {
+    color: var(--text-bright);
+    font-family: var(--serif);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Moon Down modal — editorial */
+.moon-down-modal { background: var(--panel-strong); border: 1px solid var(--line-soft); }
+.moon-down-modal h2 {
+    color: var(--text-bright);
+    font-family: var(--serif);
+    font-weight: 500;
+    letter-spacing: -0.2px;
+}
+.moon-down-countdown .countdown-value {
+    color: var(--accent);
+    font-family: var(--serif);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Moon-down standby overrides for dark theme */
+body.moon-down .cta-button {
+    background: rgba(212, 181, 138, 0.18);
+    border-color: var(--line-soft);
+    color: var(--muter);
+    box-shadow: none;
+}
+body.moon-down .new-message-btn {
+    opacity: 0.2;
+}
+
+/* ============================================================
+   MOON GLOW — when above horizon
+   Brass-toned glow drop-shadows, pulsing breath
+   ============================================================ */
+.moon-icon.moon-glow svg {
+    filter:
+        drop-shadow(0 0 6px rgba(212, 181, 138, 0.70))
+        drop-shadow(0 0 16px rgba(212, 181, 138, 0.42))
+        drop-shadow(0 0 32px rgba(212, 181, 138, 0.22));
+    animation: moonPulseGlow 4s ease-in-out infinite;
+}
+
+@keyframes moonPulseGlow {
+    0%, 100% {
+        filter:
+            drop-shadow(0 0 6px rgba(212, 181, 138, 0.70))
+            drop-shadow(0 0 16px rgba(212, 181, 138, 0.42))
+            drop-shadow(0 0 32px rgba(212, 181, 138, 0.22));
+    }
+    50% {
+        filter:
+            drop-shadow(0 0 10px rgba(212, 181, 138, 0.90))
+            drop-shadow(0 0 24px rgba(212, 181, 138, 0.55))
+            drop-shadow(0 0 40px rgba(212, 181, 138, 0.32));
+    }
+}
+
+/* Orbit ring glows when moon is visible (brass) */
+.orbit-ring.moon-visible {
+    border-color: rgba(212, 181, 138, 0.45);
+    box-shadow:
+        0 0 20px rgba(212, 181, 138, 0.10),
+        inset 0 0 20px rgba(212, 181, 138, 0.05);
+}
+
+/* Onboarding overlay — dark theme (already styled in base) */
+
+/* Modal overlays — editorial dark glass */
+.modal-overlay { background: rgba(3, 10, 24, 0.78); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.modal {
+    background: var(--panel-strong);
+    border: 1px solid var(--line-soft);
+    color: var(--text);
+    font-family: var(--sans);
+}
+
+/* "New Moon Message" CTA pill — brass on navy */
+.cta-button {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: var(--on-accent);
+    font-family: var(--sans);
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    box-shadow: 0 0 24px rgba(212, 181, 138, 0.18);
+}
+.cta-button:hover {
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+    box-shadow: 0 0 32px rgba(212, 181, 138, 0.26);
+}
+.moon-carrying-indicator { color: var(--muted) !important; }
+.moon-carrying-count { color: var(--accent-bright) !important; font-family: var(--serif); font-weight: 500; }
+
+/* Responsive — tagline hidden on small screens */
+@media (max-width: 768px) {
+    .header-tagline { display: none; }
+    .header-brand .logo { height: 64px; }
+}
+
+/* ============================== */
+/* CHAT VIEW — DARK THEME         */
+/* Matches compose page aesthetic  */
+/* ============================== */
+
+/* Dark starfield background */
+/* NOTE: shared-sky was previously bundled into this chat dark-theme
+   block. It now has its own editorial overrides higher up; these
+   rules are scoped to #messagePageView only. */
+#messagePageView.active {
+    background: #050a14;
+    background-image:
+        radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.12), transparent),
+        radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.08), transparent),
+        radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.15), transparent),
+        radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.1), transparent),
+        radial-gradient(2px 2px at 130px 80px, rgba(255,255,255,0.12), transparent),
+        radial-gradient(1px 1px at 160px 120px, rgba(255,255,255,0.08), transparent);
+    background-size: 200px 200px;
+}
+#messagePageView .message-page-inner {
+    background: transparent;
+    box-shadow: none;
+}
+
+/* ============================================================
+   CHAT DETAIL (#messagePageView) — editorial brass-on-navy
+   The conversation view. Received notes sit as dark glass cards
+   on the night sky; sent notes carry a brass-warm tint to mark
+   them as "what you wrote." Lunar notes are framed by brass
+   diamond seams.
+   ============================================================ */
+#messagePageView .message-page-header {
+    border-bottom: 1px solid var(--line-soft);
+    background: rgba(3, 10, 24, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+#messagePageView .message-page-back {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--accent);
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+#messagePageView .message-page-back:hover {
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
+    color: var(--accent-bright);
+}
+#messagePageView .message-page-avatar {
+    border: 1px solid var(--line);
+    padding: 2px;
+    background: rgba(212, 181, 138, 0.16);
+    color: var(--accent);
+    font-family: var(--serif);
+    font-weight: 500;
+}
+#messagePageView .message-page-info h3 {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text-bright);
+    letter-spacing: -0.2px;
+}
+#messagePageView .message-page-info p {
+    font-family: var(--serif);
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+/* Chat body */
+#messagePageView .message-page-body {
+    padding: 20px;
+    padding-bottom: 20px;
+    color: var(--text);
+    font-family: var(--sans);
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+}
+#messagePageView .message-page-body:hover {
+    scrollbar-color: rgba(212, 181, 138, 0.25) transparent;
+}
+#messagePageView .message-page-body::-webkit-scrollbar {
+    width: 4px;
+}
+#messagePageView .message-page-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+#messagePageView .message-page-body::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+#messagePageView .message-page-body:hover::-webkit-scrollbar-thumb {
+    background: rgba(212, 181, 138, 0.25);
+}
+
+/* Date separators in chat — brass tracked uppercase */
+#messagePageView .message-page-body .chat-date-sep {
+    color: var(--accent);
+    background: rgba(212, 181, 138, 0.08);
+    font-family: var(--sans);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
+}
+
+/* Received bubbles — dark glass with brass-soft seam */
+#messagePageView .message-bubble {
+    background: var(--panel);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--line-soft);
+    max-width: 88%;
+}
+#messagePageView .message-bubble p {
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--text-bright);
+    letter-spacing: -0.005em;
+}
+#messagePageView .message-bubble-time {
+    color: var(--muter);
+    font-family: var(--sans);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+/* Sent bubbles — warm brass-tinted glass for "your letters" */
+#messagePageView .message-bubble.sent {
+    background: rgba(212, 181, 138, 0.16);
+    border: 1px solid var(--line);
+    max-width: 88%;
+}
+#messagePageView .message-bubble.sent p {
+    color: var(--text-bright);
+}
+#messagePageView .message-bubble.sent .message-bubble-time {
+    color: rgba(212, 181, 138, 0.6);
+}
+
+/* Lunar Note bubbles — special editorial frame */
+#messagePageView .bubble-lunar-note {
+    background: var(--panel-strong);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    box-shadow:
+        inset 0 0 12px rgba(212, 181, 138, 0.06),
+        0 0 24px rgba(212, 181, 138, 0.10);
+}
+#messagePageView .bubble-lunar-note::before {
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.65;
+    height: 1.5px;
+}
+#messagePageView .bubble-lunar-label {
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
+}
+#messagePageView .bubble-lunar-text {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text-bright);
+    font-size: 17px;
+    line-height: 1.65;
+    letter-spacing: -0.005em;
+}
+#messagePageView .bubble-lunar-closing {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+    font-size: 14px;
+}
+#messagePageView .bubble-lunar-note .message-bubble-time {
+    color: var(--muter);
+}
+#messagePageView .bubble-lunar-note .read-receipt.delivered {
+    color: var(--muter);
+}
+#messagePageView .bubble-lunar-note .read-receipt.read {
+    color: var(--accent);
+}
+
+/* Read receipts — brass-toned */
+#messagePageView .read-receipt.delivered {
+    color: var(--muter);
+}
+#messagePageView .read-receipt.read {
+    color: var(--accent);
+}
+
+/* Reactions — brass-tinted chips */
+#messagePageView .reaction-chip {
+    background: rgba(3, 10, 24, 0.7);
+    border-color: var(--line-soft);
+}
+#messagePageView .reaction-chip:hover {
+    background: rgba(212, 181, 138, 0.10);
+    border-color: var(--line);
+}
+#messagePageView .reaction-chip.active {
+    background: rgba(212, 181, 138, 0.16);
+    border-color: var(--accent);
+}
+#messagePageView .reaction-chip .reaction-count {
+    color: var(--muted);
+    font-family: var(--sans);
+}
+#messagePageView .reaction-chip.active .reaction-count {
+    color: var(--accent-bright);
+}
+
+/* Reaction picker popup — editorial dark panel */
+#messagePageView .reaction-picker {
+    background: var(--panel-strong);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--line-soft);
+    box-shadow: var(--shadow-md);
+}
+#messagePageView .reaction-picker-label {
+    color: var(--accent);
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-size: 10px;
+    font-weight: 600;
+}
+#messagePageView .reaction-option:hover {
+    background: rgba(212, 181, 138, 0.10);
+}
+
+/* Chat footer — editorial dark glass */
+#messagePageView .message-page-footer {
+    border-top: 1px solid var(--line-soft);
+    background: rgba(3, 10, 24, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+#sharedSkyPhotoMenu { display: none; }
+#sharedSkyPhotoMenu.active { display: block; }
+
+/* Chat input */
+#messagePageView .message-page-input {
+    background: rgba(3, 10, 24, 0.6);
+    border: 1px solid var(--line-soft);
+    color: var(--text-bright);
+    font-family: var(--sans);
+    font-size: 14px;
+}
+#messagePageView .message-page-input::placeholder {
+    color: var(--muter);
+}
+#messagePageView .message-page-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
+}
+
+/* Send button — brass pill */
+#messagePageView .message-page-send {
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: 0 0 16px rgba(212, 181, 138, 0.22);
+}
+#messagePageView .message-page-send:hover {
+    background: var(--accent-bright);
+    box-shadow: 0 0 24px rgba(212, 181, 138, 0.32);
+}
+
+/* Photo label emoji in reply row */
+#messagePageView #replyPhotoLabel {
+    filter: none;
+}
+/* Lunar Note pill button (in composer) */
+
+/* Add Lunar link */
+#messagePageView .add-lunar-link {
+    color: var(--accent);
+    font-family: var(--sans);
+}
+#messagePageView .add-lunar-link:hover {
+    color: var(--accent-bright);
+}
+
+/* Moon gate — disabled state copy */
+#messagePageView #replyMoonGate {
+    color: var(--muter);
+    font-family: var(--serif);
+    font-style: italic;
+}
+#messagePageView #replyMoonGate svg {
+    color: var(--accent) !important;
+}
+
+/* Thread Lunar Note panel — editorial dark glass */
+#messagePageView .thread-lunar-panel {
+    background: var(--panel-strong);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line-soft);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+#messagePageView .thread-lunar-header {
+    color: var(--accent);
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
+    font-size: 11px;
+}
+#messagePageView .thread-lunar-intro {
+    color: var(--muted);
+    font-family: var(--serif);
+    font-style: italic;
+}
+#messagePageView .thread-lunar-label {
+    color: var(--accent);
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
+    font-size: 11px;
+}
+#messagePageView .thread-lunar-input {
+    background: rgba(3, 10, 24, 0.6);
+    border-color: var(--line-soft);
+    color: var(--text-bright);
+    font-family: var(--sans);
+}
+#messagePageView .thread-lunar-input::placeholder {
+    color: var(--muter);
+}
+#messagePageView .thread-lunar-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
+}
+#messagePageView .thread-lunar-send {
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: 0 0 16px rgba(212, 181, 138, 0.22);
+}
+#messagePageView .thread-lunar-send:not(:disabled):hover {
+    background: var(--accent-bright);
+    box-shadow: 0 0 24px rgba(212, 181, 138, 0.32);
+}
+
+/* Reply photo preview */
+#messagePageView #replyPhotoPreview img {
+    border: 1px solid var(--line-soft);
+}
+
+/* Transit/arriving messages — italic serif waiting state */
+#messagePageView .chat-transit-msg {
+    background: rgba(212, 181, 138, 0.04);
+    border: 1px dashed var(--line-soft);
+    color: var(--muted);
+    font-family: var(--serif);
+    font-style: italic;
+}
+
+/* ============================================================
+   Typing indicator (used in chat) — editorial brass
+   ============================================================ */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    margin-bottom: 8px;
+}
+.typing-indicator-bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 16px;
+    background: var(--panel);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-md);
+    border-bottom-left-radius: 4px;
+}
+.typing-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: typingPulse 1.4s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingPulse {
+    0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+    30% { opacity: 1; transform: scale(1); }
+}
+.typing-indicator-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--serif);
+    font-style: italic;
+}
+
+/* Comment thread on messages */
+.msg-comments-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--accent);
+    cursor: pointer;
+    margin-top: 4px;
+    padding: 2px 0;
+    opacity: 0.85;
+    transition: opacity var(--dur-fast) ease, color var(--dur-fast) ease;
+    background: none;
+    border: none;
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+}
+.msg-comments-link:hover {
+    opacity: 1;
+    color: var(--accent-bright);
+}
+
+/* Chat mobile responsive */
+@media (max-width: 640px) {
+    #messagePageView .message-bubble,
+    #messagePageView .bubble-lunar-note { max-width: 88%; }
+}
+
+/* ============================================ */

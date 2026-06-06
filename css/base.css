@@ -1,0 +1,372 @@
+/* ============================================================
+   base.css — Design tokens (:root), reset, button & surface primitives, base header/settings chrome
+   Part of the split styles bundle. Load order:
+   base.css -> auth-sharedsky.css -> messages.css -> compose-circles.css -> app.css -> landing-roulette.css
+   (cascade depends on this order — keep <link> tags in sequence)
+   ============================================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* ============================================================
+       MOON POST SERVICE — DESIGN SYSTEM
+       Editorial brass-on-navy lithograph aesthetic
+       Source of truth for color, type, spacing, radius, shadow,
+       and motion. Surfaces opt in by using these tokens.
+       ============================================================ */
+
+    /* --- Surface & ink --- */
+    --bg: #030A18;                              /* Deep midnight, app surface */
+    --bg-2: #071327;                            /* Slightly lifted surface */
+    --panel: rgba(7, 15, 30, 0.72);             /* Glass panel */
+    --panel-strong: rgba(6, 12, 24, 0.88);      /* Opaque panel */
+    --line: rgba(208, 180, 137, 0.46);          /* Brass rule */
+    --line-soft: rgba(208, 180, 137, 0.20);     /* Soft brass divider */
+    --text: #EAD8BF;                            /* Body cream */
+    --text-bright: #F0DFC2;                     /* Display cream */
+    --muted: rgba(234, 216, 191, 0.72);         /* Secondary copy */
+    --muter: rgba(234, 216, 191, 0.46);         /* Tertiary copy */
+    --accent: #D4B58A;                          /* Brass primary */
+    --accent-bright: #E5C9A0;                   /* Brass hover */
+    --accent-deep: #C99D57;                     /* Brass pressed / live */
+    --live: #D7B171;                            /* Live indicator */
+    --live-dot: #C99D57;                        /* Live dot */
+    --on-accent: #0A1422;                       /* Ink on brass */
+
+    /* --- Typography --- */
+    --serif: 'Cormorant Garamond', 'Iowan Old Style', 'Garamond', Georgia, serif;
+    --sans: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    --fs-display: clamp(40px, 5.4vw, 76px);
+    --fs-h1: clamp(38px, 5vw, 58px);
+    --fs-h2: clamp(30px, 3.4vw, 44px);
+    --fs-h3: clamp(22px, 2vw, 28px);
+    --fs-lead: clamp(17px, 1.6vw, 22px);
+    --fs-body: 15px;
+    --fs-small: 13px;
+    --fs-caption: 11px;
+    --lh-tight: 1.05;
+    --lh-snug: 1.2;
+    --lh-body: 1.55;
+    --tracking-label: 2.5px;
+
+    /* --- Spacing scale --- */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 40px;
+    --space-8: 48px;
+    --space-9: 56px;
+    --space-10: 80px;
+
+    /* --- Radius --- */
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 22px;
+    --radius-pill: 999px;
+
+    /* --- Shadow --- */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+    --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.42);
+    --shadow: var(--shadow-lg);
+
+    /* --- Motion --- */
+    --dur-fast: 0.2s;
+    --dur-normal: 0.4s;
+    --dur-slow: 0.9s;
+    --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+    /* --- Legacy aliases — redirected to brass-on-navy.
+       The light-cream/blue/coral theme is fully retired. These tokens
+       remain only so older selectors keep working without churn; they
+       all resolve to brass-system values. New code should use the
+       canonical tokens above. --- */
+    --cream: var(--bg);
+    --cream-dark: var(--bg-2);
+    --blue: var(--accent);
+    --blue-light: var(--accent-bright);
+    --coral: var(--accent);
+    --coral-light: var(--accent-bright);
+    --text-dark: var(--text-bright);
+    --text-muted: var(--muted);
+    /* Legacy --white was used both for backgrounds and for text on solid
+       colored buttons. The brass system uses --bg for panels and
+       --on-accent for text-on-brass, so --white now resolves to --bg
+       (the most common use was a panel background). The handful of
+       legacy `color: var(--white)` sites are already overridden by
+       dark-theme rules higher in specificity. */
+    --white: var(--bg);
+}
+
+body {
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--cream);
+    color: var(--text-dark);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* SVG Icon utility classes */
+.app-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+.app-icon.sm { width: 14px; height: 14px; }
+.app-icon.md { width: 18px; height: 18px; }
+.app-icon.lg { width: 24px; height: 24px; }
+.app-icon.xxl { width: 40px; height: 40px; }
+/* Moon phase icon specific - circular with subtle bg */
+ /* phases use their own fills */
+
+/* ============================================================
+   PRIMITIVES — canonical components for new surfaces
+   See DESIGN.md for usage. Older surface-specific classes
+   (.cta-button, .onboarding-primary, etc.) predate this layer
+   and remain in place; new code should use .btn.
+   ============================================================ */
+
+/* --- Button primitive ---
+   Base + modifiers. Compose with .btn .btn--primary, .btn--ghost, etc. */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: 12px 22px;
+    border-radius: var(--radius-pill);
+    border: 1px solid transparent;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+        background var(--dur-fast) ease,
+        border-color var(--dur-fast) ease,
+        color var(--dur-fast) ease,
+        transform var(--dur-fast) ease,
+        box-shadow var(--dur-fast) ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: translateY(1px); }
+.btn:disabled,
+.btn[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+/* Primary: solid brass pill, dark ink. The "do this" CTA. */
+.btn--primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+}
+.btn--primary:hover:not(:disabled) {
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+}
+
+/* Ghost: brass outline, transparent, brass text. Secondary actions. */
+.btn--ghost {
+    background: transparent;
+    border-color: var(--line);
+    color: var(--accent);
+}
+.btn--ghost:hover:not(:disabled) {
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
+    color: var(--accent-bright);
+}
+/* Link: text-only, brass. For tertiary "Resend code" etc. */
+
+/* Tracked: editorial uppercase label-style ghost. Used for
+   "NEW MOON MESSAGE" / "DELETE MY ACCOUNT" style buttons. */
+
+/* Sizes */
+
+.btn--block { width: 100%; }
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 48px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: transparent;
+    transition: padding 0.3s ease, box-shadow 0.3s ease;
+}
+
+.header.scrolled {
+    padding: 12px 48px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    background: rgba(5, 10, 20, 0.8);
+    backdrop-filter: blur(8px);
+}
+
+.header.scrolled .logo {
+    height: 18px;
+}
+
+.header-moon {
+    display: none;
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--blue);
+    border-radius: 50%;
+    padding: 3px;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.header.scrolled .header-moon {
+    display: block;
+}
+
+.header-moon-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.logo {
+    height: 24px;
+    width: auto;
+    flex-shrink: 0;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* User / Settings button */
+.user-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--blue);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    overflow: hidden;
+    position: relative;
+}
+
+.user-btn:hover {
+    transform: scale(1.08);
+    background: rgba(212, 181, 138, 0.08);
+}
+
+.user-initials {
+    font-weight: 800;
+    font-size: 12px;
+    color: var(--blue);
+}
+
+.user-avatar-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.settings-arrow {
+    font-size: 11px;
+    color: var(--blue);
+    cursor: pointer;
+    margin-left: 2px;
+    user-select: none;
+    transition: transform 0.2s;
+}
+
+.settings-arrow.open {
+    transform: rotate(180deg);
+}
+
+.settings-dropdown {
+    display: none;
+    position: fixed;
+    top: 60px;
+    right: 16px;
+    width: 320px;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: var(--white);
+    border-radius: 14px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+    z-index: 10002;
+    padding-bottom: 4px;
+}
+
+.settings-dropdown.active {
+    display: block;
+    animation: dropdownIn 0.18s ease;
+}
+
+@keyframes dropdownIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.settings-dropdown .form-group {
+    margin-bottom: 10px;
+}
+
+.settings-dropdown label {
+    font-size: 11px;
+    margin-bottom: 3px;
+}
+
+.settings-section { margin: 0; }
+.settings-section + .settings-section { border-top: 1px solid rgba(128,128,128,0.12); }
+.settings-section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 16px; cursor: pointer; user-select: none;
+}
+.settings-section-header:active { background: rgba(128,128,128,0.08); }
+.settings-section-header .section-summary {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--text-primary); flex: 1; min-width: 0;
+}
+.settings-section-header .section-summary .summary-text {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.settings-section-header .section-chevron {
+    transition: transform 0.2s; font-size: 18px; color: var(--accent); margin-left: 8px;
+}
+.settings-section.open .section-chevron { transform: rotate(180deg); }
+.settings-section-body { display: none; padding: 4px 16px 14px; }
+.settings-section.open .settings-section-body { display: block; }
+.settings-section .section-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(212, 181, 138, 0.16);
+    border: 1px solid var(--line-soft);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-family: var(--serif); font-size: 14px; font-weight: 500;
+    overflow: hidden; flex-shrink: 0;
+}
+.settings-section .section-avatar img {
+    width: 100%; height: 100%; object-fit: cover;
+}
+
