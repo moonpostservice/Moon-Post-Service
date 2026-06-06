@@ -1,0 +1,870 @@
+/* ============================================================
+   auth-sharedsky.css — Auth & onboarding flow; Shared Sky page
+   Part of the split styles bundle. Load order:
+   base.css -> auth-sharedsky.css -> messages.css -> compose-circles.css -> app.css -> landing-roulette.css
+   (cascade depends on this order — keep <link> tags in sequence)
+   ============================================================ */
+
+/* ============================================================
+   AUTH & ONBOARDING — editorial brass-on-navy
+   First-impression surfaces. Mirror landing aesthetic: serif
+   display type, brass accents, navy panels with cream ink.
+   ============================================================ */
+
+.drift-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 10, 24, 0.78);
+    z-index: 6000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.drift-modal-card {
+    max-width: 380px;
+    width: 100%;
+    background: var(--panel-strong);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-md);
+    padding: var(--space-7) var(--space-6);
+    box-shadow: var(--shadow-lg);
+    color: var(--text);
+    font-family: var(--sans);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.onboarding-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 5000;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    color: var(--text);
+}
+/* Twinkling starfield inside onboarding */
+.onboarding-stars {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.onboarding-overlay.hidden {
+    display: none;
+}
+
+.onboarding-card {
+    max-width: 440px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    background: var(--panel-strong);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8) var(--space-6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-lg);
+    color: var(--text);
+    font-family: var(--sans);
+}
+
+.onboarding-logo {
+    height: 64px;
+    width: auto;
+    margin-bottom: var(--space-5);
+    opacity: 0.92;
+}
+
+.onboarding-card h1 {
+    font-family: var(--serif);
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--text-bright);
+    margin-bottom: var(--space-3);
+    line-height: var(--lh-snug);
+    letter-spacing: -0.3px;
+}
+
+.onboarding-tagline {
+    font-size: 15px;
+    color: var(--muted);
+    margin-bottom: var(--space-7);
+    line-height: var(--lh-body);
+}
+
+.onboarding-card .onboarding-form {
+    text-align: left;
+    margin-bottom: var(--space-6);
+}
+
+.onboarding-card .onboarding-form label,
+.onboarding-card .form-group label {
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    margin-bottom: var(--space-2);
+    display: block;
+}
+
+.onboarding-card .onboarding-form .form-group {
+    margin-bottom: var(--space-5);
+}
+
+/* Inputs inside the auth/onboarding card — boosted specificity so editorial
+   tokens win over the generic .form-group input rules used elsewhere. */
+.onboarding-card .form-group input,
+.onboarding-card .form-group textarea,
+.onboarding-card .location-input-wrapper input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 15px;
+    transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+    background: rgba(3, 10, 24, 0.6);
+    color: var(--text-bright);
+}
+
+.onboarding-card .form-group input::placeholder,
+.onboarding-card .form-group textarea::placeholder,
+.onboarding-card .location-input-wrapper input::placeholder {
+    color: var(--muter);
+}
+
+.onboarding-card .form-group input:focus,
+.onboarding-card .form-group textarea:focus,
+.onboarding-card .location-input-wrapper input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
+}
+
+.location-input-wrapper {
+    position: relative;
+}
+
+.city-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--panel-strong);
+    border: 1px solid var(--line-soft);
+    border-top: none;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+    box-shadow: var(--shadow-md);
+}
+
+.city-dropdown.active {
+    display: block;
+}
+
+.city-option {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text);
+    transition: background var(--dur-fast) ease;
+}
+
+.city-option:hover {
+    background: rgba(212, 181, 138, 0.08);
+}
+
+.city-option .country {
+    color: var(--muter);
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+.onboarding-primary {
+    width: 100%;
+    padding: 14px 22px;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: var(--on-accent);
+    border-radius: var(--radius-pill);
+    font-family: var(--sans);
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, transform var(--dur-fast) ease;
+    margin-bottom: var(--space-3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.onboarding-primary:hover {
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+}
+
+.onboarding-primary:active {
+    transform: translateY(1px);
+}
+
+.onboarding-primary:disabled {
+    background: rgba(212, 181, 138, 0.25);
+    border-color: rgba(212, 181, 138, 0.25);
+    color: rgba(10, 20, 34, 0.6);
+    cursor: not-allowed;
+}
+
+/* --- Auth flow steps --- */
+.auth-step {
+    display: none;
+}
+.auth-step.active {
+    display: block;
+}
+.onboarding-card .auth-email-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 15px;
+    transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+    margin-bottom: var(--space-4);
+    background: rgba(3, 10, 24, 0.6);
+    color: var(--text-bright);
+}
+.onboarding-card .auth-email-input::placeholder {
+    color: var(--muter);
+}
+.onboarding-card .auth-email-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
+}
+.auth-note {
+    font-size: 13px;
+    color: var(--muter);
+    margin-top: var(--space-2);
+    line-height: var(--lh-body);
+}
+.auth-check-inbox {
+    text-align: center;
+}
+.auth-check-inbox .inbox-icon {
+    font-size: 44px;
+    margin-bottom: var(--space-4);
+    opacity: 0.92;
+}
+.auth-check-inbox h2 {
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--text-bright);
+    margin-bottom: var(--space-3);
+    letter-spacing: -0.2px;
+}
+.auth-check-inbox p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: var(--lh-body);
+    margin-bottom: var(--space-2);
+}
+.auth-email-highlight {
+    font-weight: 600;
+    color: var(--accent);
+    font-style: italic;
+    font-family: var(--serif);
+    font-size: 16px;
+}
+.auth-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+    margin-top: var(--space-5);
+}
+.auth-link-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.auth-link-btn:hover {
+    background: rgba(212, 181, 138, 0.08);
+    color: var(--accent-bright);
+}
+.auth-error {
+    color: #E89B73;
+    font-size: 13px;
+    margin-top: var(--space-2);
+    display: none;
+    font-style: italic;
+}
+.onboarding-card .otp-digit {
+    width: 40px;
+    height: 52px;
+    text-align: center;
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 500;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    background: rgba(3, 10, 24, 0.7);
+    color: var(--text-bright);
+    transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+    box-shadow: inset 0 1px 0 rgba(212, 181, 138, 0.04);
+}
+.onboarding-card .otp-digit:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.18), inset 0 1px 0 rgba(212, 181, 138, 0.04);
+}
+
+/* Auth modal close button */
+#authModalOverlay .onboarding-card > button[onclick*="closeAuthModal"] {
+    color: var(--muter);
+    transition: color var(--dur-fast) ease;
+}
+#authModalOverlay .onboarding-card > button[onclick*="closeAuthModal"]:hover {
+    color: var(--accent-bright);
+}
+/* Brass rule used between sections inside the auth card */
+
+/* Moon Down Modal */
+.moon-down-modal {
+    text-align: center;
+    max-width: 360px;
+    padding: 40px 32px;
+}
+
+.moon-down-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 24px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #d8d4cc 0%, #c0bdb6 100%);
+    opacity: 0.6;
+}
+
+.moon-down-modal h2 {
+    font-size: 20px;
+    color: var(--blue);
+    margin-bottom: 20px;
+}
+
+.moon-down-countdown {
+    margin-bottom: 16px;
+}
+
+.moon-down-countdown .countdown-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.moon-down-countdown .countdown-value {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--blue);
+}
+
+.moon-down-note {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
+.countdown-sublabel {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* Standby Mode (moon below horizon) */
+body.moon-down .cta-button {
+    background: #c5c2bb;
+    cursor: not-allowed;
+}
+
+body.moon-down .cta-button:hover {
+    background: #c5c2bb;
+}
+
+body.moon-down .moon-orbit {
+    opacity: 0.25;
+}
+
+body.moon-down .message-dot {
+    opacity: 0.35;
+    transform: translateX(-50%) scale(0.75);
+}
+
+body.moon-down .message-dot.releasing {
+    animation: none;
+    box-shadow: none;
+}
+/* Reply gating is now handled by JS in updateReplyRowMoonGate() *//* Standby center content */
+
+.standby-countdown {
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--blue);
+    line-height: 1;
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -1px;
+}
+
+.standby-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+}
+
+/* Disabled compose tooltip */
+.cta-button[data-tooltip] {
+    position: relative;
+}
+
+body.moon-down .cta-button[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--blue);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 100;
+}
+
+body.moon-down .cta-button[data-tooltip]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--blue);
+    z-index: 100;
+}
+/* Shared Sky posting disabled */
+
+/* Shared Sky is ALWAYS writable, even when moon is down */
+#sharedSkyPage .message-page-footer,
+#sharedSkyPage .message-page-input,
+#sharedSkyPage .message-page-send,
+#sharedSkyPage .reply-row {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: auto !important;
+}
+#sharedSkyPage .message-page-send {
+    cursor: pointer !important;
+}
+
+/* ============================================================
+   SHARED SKY — editorial brass-on-navy
+   Public anonymous thread. Reuses the .message-page shell but
+   with a dark editorial palette so it sits next to the landing
+   and reveal pages. Scoped to #sharedSkyPage so chat (still
+   light cream) is untouched.
+   ============================================================ */
+#sharedSkyPage.message-page { background: var(--bg); }
+#sharedSkyPage .message-page-inner {
+    background: var(--bg);
+    box-shadow: none;
+    color: var(--text);
+    font-family: var(--sans);
+}
+#sharedSkyPage .message-page-header {
+    border-bottom: 1px solid var(--line-soft);
+    background: rgba(3, 10, 24, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+#sharedSkyPage .message-page-info h3 {
+    font-family: var(--serif);
+    color: var(--text-bright);
+    font-weight: 500;
+    letter-spacing: -0.2px;
+}
+#sharedSkyPage .message-page-info p {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+}
+#sharedSkyPage .message-page-close {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+}
+#sharedSkyPage .message-page-close:hover {
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
+    color: var(--accent-bright);
+}
+#sharedSkyPage .message-page-body { background: var(--bg); }
+#sharedSkyPage .message-page-footer {
+    background: rgba(3, 10, 24, 0.92);
+    border-top: 1px solid var(--line-soft);
+}
+#sharedSkyPage .message-page-input {
+    background: rgba(3, 10, 24, 0.6);
+    border: 1px solid var(--line-soft);
+    color: var(--text-bright);
+    font-family: var(--sans);
+}
+#sharedSkyPage .message-page-input::placeholder { color: var(--muter); }
+#sharedSkyPage .message-page-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
+}
+#sharedSkyPage .message-page-send {
+    background: var(--accent);
+    color: var(--on-accent);
+    border: 1px solid var(--accent);
+}
+#sharedSkyPage .message-page-send:hover {
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+}
+
+/* Feed dividers between signals */
+#sharedSkyPage .shared-sky-feed .shared-sky-signal {
+    border-bottom: 1px solid var(--line-soft);
+}
+
+/* Lunar notes in Shared Sky — dark theme to match message page */
+#sharedSkyPage .bubble-lunar-note {
+    background: var(--panel-strong);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    box-shadow:
+        inset 0 0 12px rgba(212, 181, 138, 0.06),
+        0 0 24px rgba(212, 181, 138, 0.10);
+}
+#sharedSkyPage .bubble-lunar-note::before {
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.65;
+    height: 1.5px;
+}
+#sharedSkyPage .bubble-lunar-label {
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
+}
+#sharedSkyPage .bubble-lunar-text {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text-bright);
+    font-size: 17px;
+    line-height: 1.65;
+    letter-spacing: -0.005em;
+}
+#sharedSkyPage .bubble-lunar-closing {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* Note-mode toggle (Open / Lunar) inside shared-sky footer */
+#sharedSkyPage .note-mode-toggle {
+    background: rgba(3, 10, 24, 0.55);
+    border: 1px solid var(--line-soft);
+}
+#sharedSkyPage .note-mode-toggle .toggle-option {
+    color: var(--muter);
+}
+#sharedSkyPage .note-mode-toggle .toggle-option:hover {
+    color: var(--text);
+}
+#sharedSkyPage .note-mode-toggle .toggle-option.active {
+    background: rgba(212, 181, 138, 0.16);
+    color: var(--accent-bright);
+}
+
+/* Plus button in the reply row (photo attachment) */
+#sharedSkyPage #sharedSkyPlusBtn {
+    border: 1px solid var(--line) !important;
+    color: var(--accent) !important;
+    background: transparent !important;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+#sharedSkyPage #sharedSkyPlusBtn:hover {
+    background: rgba(212, 181, 138, 0.08) !important;
+    border-color: var(--accent) !important;
+}
+
+/* Photo attachment menu — brass-on-navy popover */
+#sharedSkyPage #sharedSkyPhotoMenu {
+    background: var(--panel-strong) !important;
+    border: 1px solid var(--line-soft) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+#sharedSkyPage .ss-photo-menu-item {
+    color: var(--text) !important;
+    font-family: var(--sans) !important;
+}
+
+/* Lunar Note multi-step composer */
+#ssLunarPanel .lunar-step-card {
+    background: var(--panel);
+    border-color: var(--line-soft);
+}
+#ssLunarPanel .lunar-step-label {
+    color: var(--accent);
+    font-family: var(--sans);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    font-weight: 600;
+}
+#ssLunarPanel .lunar-input {
+    background: rgba(3, 10, 24, 0.7);
+    border-color: var(--line-soft);
+    color: var(--text-bright);
+    font-family: var(--sans);
+}
+#ssLunarPanel .lunar-input::placeholder { color: var(--muter); }
+#ssLunarPanel .lunar-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
+}
+#ssLunarPanel .lunar-step-next {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+    font-weight: 600;
+}
+#ssLunarPanel .lunar-step-next:not(:disabled):hover {
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+}
+#ssLunarPanel .lunar-step-next:disabled {
+    background: rgba(212, 181, 138, 0.18);
+    color: rgba(10, 20, 34, 0.5);
+    border-color: rgba(212, 181, 138, 0.18);
+}
+#ssLunarPanel .lunar-step-back {
+    color: var(--muted);
+}
+#ssLunarPanel .lunar-step-back:hover {
+    color: var(--accent-bright);
+}
+#ssLunarPanel .lunar-dot { background: rgba(212, 181, 138, 0.22); }
+#ssLunarPanel .lunar-dot.active { background: var(--accent); }
+#ssLunarPanel .lunar-dot.done { background: rgba(212, 181, 138, 0.55); }
+#ssLunarPanel > p {
+    font-family: var(--serif) !important;
+    font-style: italic !important;
+    color: var(--muted) !important;
+    font-size: 13px !important;
+}
+/* Settings Modal Styles *//* Settings location display */
+
+.settings-select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 14px;
+    background: rgba(3, 10, 24, 0.6);
+    color: var(--text-bright);
+    cursor: pointer;
+}
+
+.settings-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
+}
+
+/* Main Content */
+.main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 48px 20px;
+}
+
+/* Orbit Container */
+.orbit-container {
+    position: relative;
+    width: 420px;
+    height: 420px;
+}
+
+.orbit-ring {
+    width: 100%;
+    height: 100%;
+    border: 2px solid rgba(212, 181, 138, 0.3);
+    border-radius: 50%;
+    position: relative;
+    transition: border-color 0.6s ease, box-shadow 0.6s ease;
+}
+
+/* Double-ring effect: inner faint ring */
+.orbit-ring::before {
+    content: '';
+    position: absolute;
+    top: 4%;
+    left: 4%;
+    width: 92%;
+    height: 92%;
+    border: 1px solid rgba(212, 181, 138, 0.08);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* Moon illustration background inside the ring */
+.orbit-bg-illustration {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 95%;
+    height: 95%;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    filter: sepia(1) saturate(3) hue-rotate(190deg) brightness(0.9);
+}
+
+.orbit-bg-illustration img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Moonrise/moonset horizon markers on the orbit stroke */
+.horizon-marker {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.horizon-dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    border-radius: 1px;
+}
+
+.horizon-dot.rise {
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(212, 181, 138, 0.55);
+}
+
+.horizon-dot.set {
+    background: var(--accent);
+    opacity: 0.6;
+    box-shadow: 0 0 6px rgba(212, 181, 138, 0.35);
+}
+
+.horizon-label {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+    pointer-events: none;
+    top: -58px;
+    left: 50%;
+    /* counter-rotation set dynamically by JS */
+}
+
+.horizon-title {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    opacity: 0.95;
+}
+
+.horizon-time {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+    font-variant-numeric: tabular-nums;
+}
+
+.rise-label .horizon-title {
+    color: var(--accent);
+}
+
+.rise-label .horizon-time {
+    color: var(--text-bright);
+}
+
+.set-label .horizon-title {
+    color: var(--accent);
+}
+
+.set-label .horizon-time {
+    color: var(--text-bright);
+    opacity: 0.6;
+}
+
+/* On mobile, move labels inside the ring so they don't clip off-screen */
+@media (max-width: 900px) {
+    .horizon-label {
+        top: 16px; /* Below the dot, inside the ring */
+    }
+    .horizon-title {
+        font-size: 8px;
+        letter-spacing: 0.5px;
+    }
+    .horizon-time {
+        font-size: 13px;
+    }
+}
+

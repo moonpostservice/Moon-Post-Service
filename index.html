@@ -29,7 +29,13 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-    <link rel="stylesheet" href="/styles.css">
+    <!-- Split stylesheet bundle — load order matters (cascade depends on it) -->
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/auth-sharedsky.css">
+    <link rel="stylesheet" href="/css/messages.css">
+    <link rel="stylesheet" href="/css/compose-circles.css">
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/landing-roulette.css">
     <!-- EmailJS removed — email now sent via Supabase Edge Function (send-email) -->
 </head>
 <body>

@@ -1,0 +1,1995 @@
+/* ============================================================
+   compose-circles.css — Moon Circles; Moon Reveal; new-message modal & compose; Contacts page
+   Part of the split styles bundle. Load order:
+   base.css -> auth-sharedsky.css -> messages.css -> compose-circles.css -> app.css -> landing-roulette.css
+   (cascade depends on this order — keep <link> tags in sequence)
+   ============================================================ */
+
+/* ================================================
+   MOON CIRCLES
+   ================================================ */
+.circle-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(0, 117, 234, 0.1);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.circle-row:hover {
+    background: rgba(212, 181, 138, 0.04);
+}
+
+.circle-row-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f0ebe0 0%, #e8e0d0 100%);
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.circle-row-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.circle-row-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.circle-row-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.circle-row-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+.circle-row-status.awaiting {
+    background: rgba(212, 181, 138, 0.1);
+    color: var(--accent);
+}
+
+.circle-row-status.contributed {
+    background: rgba(212, 181, 138, 0.08);
+    color: var(--blue);
+}
+
+.circle-row-status.revealed {
+    background: rgba(212, 181, 138, 0.12);
+    color: var(--blue);
+}
+
+/* Circle detail page */
+.circle-detail-header {
+    text-align: center;
+    padding: 20px 20px 10px;
+}
+
+.circle-detail-emoji {
+    font-size: 36px;
+    margin-bottom: 6px;
+}
+
+.circle-detail-name {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--blue);
+}
+
+.circle-detail-members {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.circle-tonight {
+    padding: 16px 20px;
+    margin: 0 20px 16px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f8f5ef 0%, #f0ebe0 100%);
+    border: 1.5px solid rgba(212, 181, 138, 0.12);
+}
+
+.circle-tonight-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.circle-tonight-prompt {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--blue);
+    line-height: 1.5;
+}
+
+.circle-contribute-btn {
+    width: calc(100% - 40px);
+    margin: 0 20px 16px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 2px dashed rgba(212, 181, 138, 0.2);
+    background: rgba(212, 181, 138, 0.03);
+    color: var(--blue);
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.circle-contribute-btn:hover {
+    border-color: var(--blue);
+    background: rgba(212, 181, 138, 0.06);
+}
+
+/* Night sections */
+.circle-night {
+    padding: 16px 20px;
+    border-top: 1px solid #e8e4dc;
+}
+
+.circle-night-date {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+.circle-note-card {
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: var(--white);
+    border: 1px solid rgba(212, 181, 138, 0.08);
+    margin-bottom: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+
+.circle-note-card:last-child {
+    margin-bottom: 0;
+}
+
+.circle-note-author {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--blue);
+    margin-bottom: 6px;
+}
+
+.circle-note-text {
+    font-size: 14px;
+    color: var(--text-dark);
+    line-height: 1.6;
+    white-space: pre-line;
+}
+
+.circle-note-closing {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    font-style: italic;
+}
+
+.circle-note-waiting {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 14px 16px;
+    text-align: center;
+    background: rgba(212, 181, 138, 0.03);
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+/* Circle contribute panel */
+.circle-contribute-panel {
+    margin: 0 20px 16px;
+    padding: 16px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f8f5ef 0%, #f0ebe0 100%);
+    border: 1.5px solid rgba(212, 181, 138, 0.12);
+}
+
+.circle-contribute-panel .thread-lunar-step {
+    margin-bottom: 8px;
+}
+
+.circle-contribute-result {
+    background: white;
+    border-radius: 10px;
+    padding: 12px;
+    margin: 10px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-line;
+    border: 1px solid rgba(212, 181, 138, 0.1);
+}
+
+.circle-member-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(212, 181, 138, 0.06);
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--text-dark);
+    margin: 3px;
+}
+
+.circle-member-chip .remove-member {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(212, 181, 138, 0.15);
+    color: var(--accent);
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Lunar Note card in message thread */
+.bubble-lunar-note {
+    background: linear-gradient(135deg, #f8f5ef 0%, #f0ebe0 100%);
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
+    border-radius: 14px;
+    padding: 18px 16px 14px;
+    text-align: center;
+    margin-bottom: 16px;
+    position: relative;
+}
+
+.bubble-lunar-note::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--blue), var(--accent), var(--blue));
+    opacity: 0.4;
+    border-radius: 14px 14px 0 0;
+}
+
+.bubble-lunar-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.bubble-lunar-text {
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--text-dark);
+    font-weight: 500;
+    white-space: pre-line;
+    margin-bottom: 6px;
+}
+
+.bubble-lunar-closing {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* YouTube embed preview */
+.yt-embed {
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+    border: 1.5px solid rgba(212, 181, 138, 0.15);
+    animation: lunarCardIn 0.2s ease;
+    position: relative;
+}
+
+.yt-embed iframe {
+    width: 100%;
+    height: 180px;
+    display: block;
+    border: none;
+}
+
+.yt-embed-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: #f8f5ef;
+}
+
+.yt-embed-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.yt-embed-remove {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(212, 181, 138, 0.1);
+    color: var(--accent);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.yt-embed-remove:hover {
+    background: rgba(212, 181, 138, 0.2);
+}
+
+/* Orbit dot highlight (from inbox hover) */
+.message-dot.highlighted {
+    transform: translateX(-50%) scale(1.8);
+    box-shadow: 0 0 16px rgba(212, 181, 138, 0.7), 0 0 30px rgba(212, 181, 138, 0.3);
+    z-index: 20;
+}
+
+/* Inbox message item hover → orbit connection */
+.message-item[data-orbiting="true"]:hover {
+    background: rgba(212, 181, 138, 0.05);
+}
+
+/* Empty state for new users */
+.empty-contacts {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--text-muted);
+}
+
+.empty-contacts-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: var(--blue);
+    opacity: 0.3;
+}
+
+.empty-contacts h4 {
+    font-size: 16px;
+    color: var(--blue);
+    margin-bottom: 8px;
+}
+
+.empty-contacts p {
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+/* ============================================================
+   MOON REVEAL PAGE (recipient landing) — editorial brass-on-navy
+   The first surface a recipient sees. Treats the message itself
+   like an aged-paper letter sitting under a brass spotlight on
+   a midnight desk.
+   ============================================================ */
+.moon-reveal-page {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg);
+    z-index: 6000;
+    overflow-y: auto;
+    color: var(--text);
+    font-family: var(--sans);
+}
+
+.moon-reveal-page.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-7) var(--space-5);
+}
+
+.moon-reveal-header {
+    text-align: center;
+    margin-bottom: var(--space-7);
+}
+
+.moon-reveal-logo {
+    height: 22px;
+    margin-bottom: var(--space-5);
+    opacity: 0.85;
+}
+
+.moon-reveal-visual {
+    width: 132px;
+    height: 132px;
+    margin: 0 auto var(--space-5);
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 32%, #F0DFC2, #C9A874 70%, #8B6F45);
+    box-shadow:
+        0 0 80px rgba(212, 181, 138, 0.32),
+        inset -10px -12px 30px rgba(120, 95, 65, 0.22);
+}
+
+.moon-reveal-tagline {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 16px;
+    color: var(--muted);
+    letter-spacing: -0.01em;
+}
+
+.moon-reveal-content {
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+}
+
+.moon-reveal-sender {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    margin-bottom: var(--space-3);
+}
+.moon-reveal-sender strong {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 18px;
+    color: var(--accent);
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 6px;
+}
+
+.moon-reveal-countdown {
+    background: var(--panel);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-lg);
+    padding: var(--space-7) var(--space-6);
+    margin-bottom: var(--space-5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.countdown-label-reveal {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    margin-bottom: var(--space-3);
+}
+
+.countdown-time-reveal {
+    font-family: var(--serif);
+    font-size: clamp(44px, 8vw, 56px);
+    font-weight: 500;
+    color: var(--text-bright);
+    margin-bottom: var(--space-2);
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.countdown-note {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: var(--lh-body);
+}
+
+/* The message itself — warm cream "letter paper" on the navy desk.
+   Dark navy ink mirrors a hand-written note. */
+.moon-reveal-message {
+    background: linear-gradient(180deg, #F4E7CD 0%, #EAD8BF 100%);
+    border: 1px solid rgba(120, 95, 65, 0.22);
+    border-radius: var(--radius-md);
+    padding: var(--space-7) var(--space-6);
+    margin-bottom: var(--space-5);
+    text-align: left;
+    box-shadow:
+        var(--shadow-md),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.reveal-message-text {
+    font-family: var(--serif);
+    font-size: 19px;
+    line-height: 1.55;
+    color: #1a1a2e;
+    margin-bottom: var(--space-4);
+    letter-spacing: -0.005em;
+}
+
+.reveal-message-meta {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: rgba(26, 26, 46, 0.55);
+    padding-top: var(--space-4);
+    border-top: 1px solid rgba(120, 95, 65, 0.18);
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+}
+
+.moon-reveal-blurred {
+    filter: blur(8px);
+    user-select: none;
+    pointer-events: none;
+}
+
+.reveal-state-toggle button:hover:not(.active) {
+    color: var(--text-bright);
+}
+
+.moon-reveal-cta {
+    margin-top: var(--space-7);
+    text-align: center;
+}
+
+.moon-reveal-cta p {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 15px;
+    color: var(--muted);
+    margin-bottom: var(--space-4);
+    line-height: var(--lh-body);
+}
+
+.moon-reveal-cta-buttons {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+}
+
+.cta-primary {
+    padding: 14px 30px;
+    background: var(--accent);
+    color: var(--on-accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-pill);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, transform var(--dur-fast) ease;
+}
+
+.cta-primary:hover {
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+    transform: translateY(-1px);
+}
+
+.close-reveal-page {
+    position: absolute;
+    top: var(--space-5);
+    right: var(--space-5);
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.close-reveal-page:hover {
+    background: rgba(212, 181, 138, 0.08);
+    border-color: var(--accent);
+    color: var(--accent-bright);
+}
+
+/* ──── Split-screen layout ──── */
+
+/* Header in split mode: full-width, proper sizing */
+.header.split-active {
+    position: relative; /* page doesn't scroll, no need for sticky */
+    padding: 24px clamp(16px, 4vw, 48px);
+}
+
+.header.split-active .logo {
+    height: clamp(45px, 5.6vw, 70px);
+}
+
+.split-layout {
+    display: flex;
+    /* viewport minus header+hero (~120px) minus bottom gap (48px) */
+    height: calc(100vh - 168px);
+    overflow: hidden;           /* no page scroll */
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.split-left {
+    width: 33%;
+    min-width: 280px;
+    overflow-y: hidden;
+    border-right: none;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 200; /* Above chat so it visually covers the slide animation */
+}
+
+.split-left .inbox-section {
+    max-width: none;
+    margin: 0;
+    padding: 12px clamp(12px, 2vw, 24px) 0;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.split-left .inbox-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Tab content divs must grow so CTA is pinned at bottom of card */
+.split-left #inboxTabContent,
+.split-left #rouletteTabContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+.split-left .roulette-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.split-left .message-list {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.split-right {
+    width: 67%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    gap: 8px;
+    padding: 8px;
+}
+
+.ring-title {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text-bright);
+    font-size: clamp(18px, 2.6vw, 26px);
+    font-weight: 500;
+    text-align: center;
+    align-self: center;
+    padding: 0 clamp(16px, 3vw, 32px);
+    margin: 0 0 clamp(8px, 2vh, 32px) 0;
+    line-height: 1.3;
+    letter-spacing: -0.2px;
+    flex-shrink: 0;
+}
+
+/* New Moon Warning Banner */
+.new-moon-warning {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 20px;
+    margin: 0 24px 16px;
+    background: rgba(212, 181, 138, 0.08);
+    border: 1px solid rgba(212, 181, 138, 0.2);
+    border-radius: 12px;
+    animation: newMoonPulse 4s ease-in-out infinite;
+}
+.new-moon-warning.hidden { display: none; }
+.new-moon-warning-text {
+    color: rgba(232, 244, 253, 0.7);
+    font-size: 13px;
+    font-style: italic;
+}
+.new-moon-warning-dismiss {
+    background: none;
+    border: none;
+    color: rgba(232, 244, 253, 0.4);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+}
+.new-moon-warning-dismiss:hover { color: rgba(232, 244, 253, 0.8); }
+@keyframes newMoonPulse {
+    0%, 100% { border-color: rgba(212, 181, 138, 0.15); }
+    50% { border-color: rgba(212, 181, 138, 0.3); }
+}
+
+/* Inbox-top wipe heads-up banner (≤5 days before the new moon) */
+.inbox-wipe-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin: 14px 16px 6px;
+    padding: 14px 16px;
+    background:
+        radial-gradient(80% 140% at 0% 0%, rgba(212, 181, 138, 0.14), transparent 70%),
+        linear-gradient(135deg, rgba(10, 22, 40, 0.85), rgba(19, 39, 68, 0.85));
+    border: 1px solid rgba(212, 181, 138, 0.22);
+    border-radius: 14px;
+    position: relative;
+    overflow: hidden;
+}
+.inbox-wipe-banner.hidden { display: none; }
+.inbox-wipe-banner::before {
+    /* thin moonlight sweep across the top edge */
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212, 181, 138, 0.55), transparent);
+    opacity: 0.7;
+    animation: inboxWipeSheen 6s ease-in-out infinite;
+}
+@keyframes inboxWipeSheen {
+    0%, 100% { opacity: 0.25; }
+    50%      { opacity: 0.75; }
+}
+.inbox-wipe-banner-icon {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    margin-top: 2px;
+    background:
+        radial-gradient(circle at 35% 35%, rgba(232, 244, 253, 0.15), transparent 60%),
+        #0a1628;
+    border: 1px solid rgba(212, 181, 138, 0.35);
+    box-shadow:
+        inset 0 0 10px rgba(10, 22, 40, 0.9),
+        0 0 14px rgba(212, 181, 138, 0.25);
+    animation: inboxWipeMoonBreathe 5s ease-in-out infinite;
+}
+@keyframes inboxWipeMoonBreathe {
+    0%, 100% { box-shadow: inset 0 0 10px rgba(10, 22, 40, 0.9), 0 0 10px rgba(212, 181, 138, 0.18); }
+    50%      { box-shadow: inset 0 0 10px rgba(10, 22, 40, 0.9), 0 0 22px rgba(212, 181, 138, 0.45); }
+}
+.inbox-wipe-banner-body {
+    flex: 1;
+    min-width: 0;
+}
+.inbox-wipe-banner-title {
+    color: rgba(232, 244, 253, 0.92);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+}
+.inbox-wipe-banner-sub {
+    color: rgba(232, 244, 253, 0.58);
+    font-size: 12px;
+    line-height: 1.5;
+    font-style: italic;
+}
+.inbox-wipe-banner-dismiss {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: rgba(232, 244, 253, 0.35);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    line-height: 1;
+    align-self: flex-start;
+    transition: color 0.2s ease;
+}
+.inbox-wipe-banner-dismiss:hover { color: rgba(232, 244, 253, 0.85); }
+
+/* Vaporize Animation — messages dissolving at new moon */
+@keyframes vaporize {
+    0% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    30% { opacity: 0.8; transform: translateY(-8px) scale(0.99); filter: blur(0.5px); }
+    60% { opacity: 0.4; transform: translateY(-25px) scale(0.96); filter: blur(2px); }
+    100% { opacity: 0; transform: translateY(-60px) scale(0.9); filter: blur(6px); }
+}
+@keyframes vaporizeParticle {
+    0% { opacity: 0.8; transform: translate(0, 0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--vx, 10px), var(--vy, -40px)) scale(0.3); }
+}
+.vaporizing .message-bubble,
+.vaporizing .bubble-lunar-note {
+    animation: vaporize 1.8s ease-out forwards;
+}
+.vaporizing .message-bubble:nth-child(2) { animation-delay: 0.15s; }
+.vaporizing .message-bubble:nth-child(3) { animation-delay: 0.3s; }
+.vaporizing .message-bubble:nth-child(4) { animation-delay: 0.45s; }
+.vaporizing .message-bubble:nth-child(5) { animation-delay: 0.6s; }
+.vaporizing .message-bubble:nth-child(6) { animation-delay: 0.75s; }
+
+/* Empty state after new moon cleanup */
+.new-cycle-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 32px;
+    text-align: center;
+    gap: 12px;
+}
+.new-cycle-empty-icon {
+    font-size: 48px;
+    opacity: 0.4;
+    margin-bottom: 8px;
+}
+.new-cycle-empty-title {
+    color: rgba(212, 181, 138, 0.7);
+    font-size: 20px;
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.5px;
+}
+.new-cycle-empty-subtitle {
+    color: rgba(232, 244, 253, 0.35);
+    font-size: 13px;
+}
+
+/* --- "Wiped by the new moon" empty state ---
+   Shown when conversations.wiped_at is set: the conversation shell survives
+   but all messages were removed at the last new moon. Ghostly silhouettes
+   of the gone messages dissolve into particles around a dark moon. */
+.new-cycle-empty.wiped {
+    position: relative;
+    padding-top: 56px;
+    overflow: hidden;
+}
+.new-cycle-empty.wiped .wiped-silhouettes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 24px;
+}
+.new-cycle-empty.wiped .wiped-silhouette-row {
+    display: flex;
+}
+.new-cycle-empty.wiped .wiped-silhouette-row.right { justify-content: flex-end; }
+.new-cycle-empty.wiped .wiped-silhouette-row.left  { justify-content: flex-start; }
+.new-cycle-empty.wiped .wiped-silhouette-row span {
+    display: block;
+    height: 28px;
+    border-radius: 14px;
+    background: linear-gradient(90deg,
+        rgba(212, 181, 138, 0.08),
+        rgba(212, 181, 138, 0.18),
+        rgba(212, 181, 138, 0.04));
+    filter: blur(0.5px);
+    animation: wiped-dissolve 4.5s ease-in-out infinite;
+}
+.new-cycle-empty.wiped .wiped-silhouette-row.right span {
+    width: 62%;
+    animation-delay: 0s;
+}
+.new-cycle-empty.wiped .wiped-silhouette-row.left span {
+    width: 48%;
+    animation-delay: 1.2s;
+}
+.new-cycle-empty.wiped .wiped-silhouette-row:nth-child(3) span {
+    width: 72%;
+    animation-delay: 2.4s;
+}
+@keyframes wiped-dissolve {
+    0%   { opacity: 0.55; transform: translateY(0) scaleX(1); filter: blur(0.5px); }
+    55%  { opacity: 0.15; transform: translateY(-6px) scaleX(1.02); filter: blur(2px); }
+    100% { opacity: 0;    transform: translateY(-14px) scaleX(0.92); filter: blur(5px); }
+}
+.new-cycle-empty.wiped .wiped-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+.new-cycle-empty.wiped .wiped-particle {
+    position: absolute;
+    left: 50%;
+    top: 58%;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(232, 244, 253, 0.7);
+    box-shadow: 0 0 6px rgba(212, 181, 138, 0.6);
+    opacity: 0;
+    transform: translate(-50%, -50%);
+    animation: wiped-particle-drift 3.8s ease-out infinite;
+    animation-delay: calc(var(--i) * 0.35s);
+}
+@keyframes wiped-particle-drift {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20%  { opacity: 0.9; }
+    100% {
+        opacity: 0;
+        transform: translate(
+            calc(-50% + (var(--i) - 3) * 32px),
+            calc(-180% + (var(--i) * -8px))
+        ) scale(0.3);
+    }
+}
+.new-cycle-empty.wiped .wiped-moon {
+    opacity: 0.55;
+    filter: drop-shadow(0 0 18px rgba(212, 181, 138, 0.35));
+    animation: wiped-moon-breathe 5s ease-in-out infinite;
+}
+@keyframes wiped-moon-breathe {
+    0%, 100% { opacity: 0.45; transform: scale(1); }
+    50%      { opacity: 0.7;  transform: scale(1.04); }
+}
+.new-cycle-empty.wiped .new-cycle-empty-title {
+    color: rgba(232, 244, 253, 0.82);
+    letter-spacing: 1px;
+}
+.new-cycle-empty.wiped .new-cycle-empty-subtitle {
+    color: rgba(232, 244, 253, 0.5);
+    max-width: 280px;
+    line-height: 1.5;
+}
+
+/* First-view: whole panel fades in slowly, as if materializing from nothing */
+@keyframes wiped-entrance {
+    0%   { opacity: 0; transform: translateY(12px) scale(0.97); filter: blur(6px); }
+    40%  { opacity: 0.6; filter: blur(2px); }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.new-cycle-empty.wiped.wiped-first-view {
+    animation: wiped-entrance 2.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.split-right .main-content {
+    padding: 0;
+    width: 100%;
+    align-items: center;
+    flex: 1 1 0;
+    min-height: 0;
+    justify-content: center;
+}
+
+.split-right .moon-data-bar {
+    margin: clamp(8px, 2vh, 36px) auto 140px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 4;
+}
+
+/* Scale orbit ring to the available vertical space while staying perfectly square.
+   Both axes use the IDENTICAL viewport-based clamp (px + vh only — no `%`, no
+   `width:auto`+`aspect-ratio`, no flex-shrink). Those constructs resolve differently
+   across engines: Chromium derived a square via `aspect-ratio`, but Firefox resolved
+   the `100%` percentage-height-in-flex / auto-width differently and rendered a small,
+   distorted ring. Identical px/vh math on both axes computes the same value in every
+   browser, and flex-shrink:0 stops the column flex from squeezing it into an ellipse.
+   The ~470px reserve = header + ring title + moon-data-bar block (all fixed-height). */
+.split-right .orbit-container {
+    width: clamp(180px, calc(100vh - 470px), 420px);
+    height: clamp(180px, calc(100vh - 470px), 420px);
+    flex-shrink: 0;
+}
+
+/* ====================================== */
+/* INLINE CHAT — Desktop only            */
+/* When a conversation is open, the chat  */
+/* replaces the ring in the right panel   */
+/* ====================================== */
+@media (min-width: 901px) {
+    /* Hide ring elements when chat is open */
+    body.chat-open .ring-title,
+    body.chat-open .main-content,
+    body.chat-open .moon-data-bar,
+    body.chat-open .app-horizon {
+        display: none !important;
+    }
+    /* Horizontal connecting line from active inbox item to chat */
+    body.chat-open .message-item.active {
+        background: rgba(212, 181, 138, 0.10);
+        border-left: 3px solid var(--accent);
+        position: relative;
+    }
+    body.chat-open .message-item.active::after {
+        content: '';
+        position: absolute;
+        right: -24px;
+        top: 50%;
+        width: 24px;
+        height: 1.5px;
+        background: rgba(212, 181, 138, 0.25);
+    }
+    /* Reposition chat overlay into right panel with margin.
+       Layout shared between chat-detail (cyan border) and shared-sky
+       (brass border). Visual borders/shadows split below. */
+    body.chat-open #messagePageView.active,
+    body.chat-open #sharedSkyPage.active {
+        position: fixed;
+        z-index: 100;
+        animation: msgPageInDesktop 0.2s ease;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-right: 24px;
+    }
+    body.chat-open #messagePageView.active,
+    body.chat-open #sharedSkyPage.active {
+        border: 1px solid var(--line-soft);
+        box-shadow: 0 0 24px rgba(212, 181, 138, 0.06);
+    }
+    body.chat-open #messagePageView .message-page-inner,
+    body.chat-open #sharedSkyPage .message-page-inner {
+        max-width: none;
+        margin: 0;
+        height: 100%;
+    }
+    /* Chat header — editorial dark glass */
+    body.chat-open #messagePageView .message-page-header {
+        background: rgba(3, 10, 24, 0.92);
+        border-bottom: 1px solid var(--line-soft);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }
+    /* Chat footer — editorial dark glass */
+    body.chat-open #messagePageView .message-page-footer {
+        background: rgba(3, 10, 24, 0.92);
+        border-top: 1px solid var(--line-soft);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }
+    /* Close animation */
+    body.chat-open #messagePageView.closing,
+    body.chat-open #sharedSkyPage.closing {
+        animation: msgPageOutDesktop 0.2s ease forwards;
+    }
+    /* Elevate header above chat so settings dropdown renders on top */
+    body.chat-open .header {
+        z-index: 10001;
+    }
+}
+
+@keyframes msgPageInDesktop {
+    from { opacity: 0; transform: translateX(-80px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes msgPageOutDesktop {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(-80px); }
+}
+
+/* Responsive — tablet landscape (901-1100px) */
+@media (min-width: 901px) and (max-width: 1100px) {
+    .split-left {
+        width: 38%;
+        min-width: 260px;
+    }
+    .split-right {
+        width: 62%;
+    }
+    .split-right .orbit-container {
+        height: min(340px, calc(100vh - 320px));
+        width: auto;
+        aspect-ratio: 1;
+        min-width: 220px;
+        min-height: 220px;
+        flex-shrink: 1;
+    }
+}
+
+/* Responsive — mobile & tablets */
+@media (max-width: 900px) {
+    .header.split-active {
+        position: sticky;
+        top: 0;
+        padding: 12px 16px;
+    }
+
+    .split-layout {
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
+    }
+
+    .split-left {
+        width: 100%;
+        min-width: unset;
+        overflow-y: visible;
+        border-right: none;
+        order: 2; /* inbox below orbit on mobile */
+        margin-top: 32px;
+    }
+
+    .split-left .inbox-section {
+        padding: 0;
+        margin: 0;
+        max-width: none;
+        display: block;
+        min-height: unset;
+    }
+
+    .split-left .inbox-card {
+        flex: unset;
+        display: block;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    .split-left .message-list {
+        flex: unset;
+        overflow-y: visible;
+    }
+
+    .split-right {
+        width: 100%;
+        overflow: visible;
+        order: 1; /* orbit on top on mobile */
+        padding: 0 0 24px;
+        min-height: 320px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .split-right .main-content {
+        padding: 16px 16px 8px;
+    }
+
+    .split-right .orbit-container {
+        width: min(200px, 55vw);
+        height: auto;
+        aspect-ratio: 1;
+        /* Clear the desktop min-* and flex-shrink so the column flex can't
+           squeeze the height — that made the box 200x180 (ellipse) and the
+           rotation-positioned markers/moon detached from the stroke. */
+        min-width: 0;
+        min-height: 0;
+        flex-shrink: 0;
+    }
+
+    /* Shrink countdown inside ring on mobile */
+    .standby-countdown {
+        font-size: 22px !important;
+        letter-spacing: -0.5px !important;
+        margin-bottom: 2px !important;
+    }
+    .standby-label {
+        font-size: 8px !important;
+        letter-spacing: 0.5px !important;
+        margin-bottom: 6px !important;
+    }
+    .moon-live-indicator {
+        font-size: 10px !important;
+    }
+    .moon-carrying-indicator {
+        font-size: 10px !important;
+    }
+
+    /* Moonrise/moonset labels: ON the ring stroke */
+    .horizon-label {
+        top: -48px !important;
+    }
+    .horizon-title {
+        font-size: 9px !important;
+    }
+    .horizon-time {
+        font-size: 15px !important;
+        font-weight: 800 !important;
+    }
+
+    /* Inbox message fonts bigger on mobile */
+    .message-item .message-sender {
+        font-size: 16px !important;
+    }
+    .message-item .message-preview {
+        font-size: 14px !important;
+    }
+    .message-item .message-time {
+        font-size: 12px !important;
+    }
+    .unread-badge {
+        font-size: 12px !important;
+        min-width: 22px !important;
+        height: 22px !important;
+    }
+    .shared-sky-row-preview {
+        font-size: 13px !important;
+    }
+
+    /* Contacts & Philosophy page headers on mobile */
+    #contactsPage > div:first-child,
+    #philosophyPage > div:first-child {
+        padding: 0 16px !important;
+        height: 64px !important;
+    }
+    #contactsPage > div:first-child img.logo,
+    #philosophyPage > div:first-child img.logo {
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 50% !important;
+    }
+    #contactsPage > div:first-child span,
+    #philosophyPage > div:first-child span {
+        font-size: 8px !important;
+        letter-spacing: 1.5px !important;
+    }
+    #contactsPage > div:first-child button,
+    #philosophyPage > div:first-child button {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 18px !important;
+    }
+
+    /* Contacts page content bigger fonts on mobile */
+    #contactsPage > div:nth-child(2) {
+        padding: 32px 20px !important;
+    }
+    #contactsPage #contactSearchInput {
+        font-size: 16px !important;
+        padding: 14px 16px !important;
+    }
+    #contactsPage #contactsListBody {
+        font-size: 16px;
+    }
+    #contactsPage #contactsListBody .msg-avatar {
+        width: 48px !important;
+        height: 48px !important;
+    }
+
+    /* Hero greeting text */
+    .ring-title {
+        font-size: 16px !important;
+        margin-top: 28px !important;
+        margin-bottom: 16px !important;
+        padding: 0 12px !important;
+    }
+
+    /* Moon data bar bigger on mobile */
+    .moon-data-bar {
+        display: none !important;
+    }
+
+    /* Settings: full-screen on mobile */
+    .settings-dropdown {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        z-index: 100000 !important;
+        padding-top: 70px !important;
+    }
+    .settings-dropdown .settings-close-btn {
+        display: flex !important;
+    }
+    .settings-section-header .section-chevron {
+        font-size: 22px !important;
+    }
+
+    .header {
+        padding: 12px 16px;
+    }
+
+    /* Hide desktop nav, show hamburger on mobile */
+    .header-desktop-nav {
+        display: none !important;
+    }
+    .mobile-menu-btn {
+        display: flex !important;
+    }
+
+    .main-content {
+        padding: 10px 16px;
+    }
+
+    .inbox-section {
+        padding: 0 16px;
+    }
+}
+/* ============================== */
+/* COMPOSE PAGE — DARK REDESIGN   */
+/* ============================== */
+
+/* New message picker — dark theme + right panel on desktop */
+#newMessagePicker .message-page-inner {
+    background: rgba(10, 22, 40, 0.95);
+}
+#newMessagePicker .message-page-header {
+    border-bottom: 1px solid rgba(212, 181, 138, 0.12);
+}
+@media (min-width: 901px) {
+    body.chat-open #newMessagePicker.active {
+        position: fixed;
+        z-index: 200;
+        right: 24px;
+        animation: msgPageInDesktop 0.2s ease;
+        border: 2px solid rgba(212, 181, 138, 0.3);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 0 20px rgba(212, 181, 138, 0.06);
+    }
+    body.chat-open #newMessagePicker .message-page-inner {
+        max-width: none;
+        margin: 0;
+        height: 100%;
+    }
+    body.chat-open #newMessagePicker .message-page-header {
+        background: rgba(8, 18, 35, 0.95);
+        border-bottom: 1px solid rgba(212, 181, 138, 0.18);
+        backdrop-filter: blur(16px);
+    }
+    body.chat-open #newMessagePicker.closing {
+        animation: msgPageOutDesktop 0.2s ease forwards;
+    }
+    body.chat-open #newMessagePicker .message-page-back {
+        display: none;
+    }
+    body.chat-open #newMessagePicker .message-page-close {
+        display: flex !important;
+    }
+}
+#newMsgContactSearch::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+#newMsgContactSearch:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.15);
+}
+
+/* Dark starfield background for compose modal */
+#messageModal.active {
+    background: #050a14;
+    background-image:
+        radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.12), transparent),
+        radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.08), transparent),
+        radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.15), transparent),
+        radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.1), transparent),
+        radial-gradient(2px 2px at 130px 80px, rgba(255,255,255,0.12), transparent),
+        radial-gradient(1px 1px at 160px 120px, rgba(255,255,255,0.08), transparent);
+    background-size: 200px 200px;
+}
+#messageModal .message-page-inner {
+    background: transparent;
+    box-shadow: none;
+    max-width: 720px;
+}
+#messageModal .message-page-header {
+    border-bottom: none;
+    padding: 16px 20px;
+}
+#messageModal .message-page-body {
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#messageModal #composeStep1 {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+#messageModal #composeStep1 .compose-glass-card {
+    flex-shrink: 0;
+}
+
+#messageModal .compose-add-row {
+    flex-shrink: 0;
+}
+
+#messageModal .compose-send-container {
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    background: var(--bg);
+    margin-top: 16px;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+    z-index: 5;
+}
+@media (min-width: 901px) {
+    body.chat-open #messageModal.active {
+        position: fixed;
+        z-index: 200;
+        right: 24px;
+        background: transparent;
+        animation: msgPageInDesktop 0.2s ease;
+        border: 2px solid rgba(212, 181, 138, 0.3);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 0 20px rgba(212, 181, 138, 0.06);
+    }
+    body.chat-open #messageModal .message-page-inner {
+        max-width: none;
+        margin: 0;
+        height: 100%;
+        background: rgba(5, 10, 20, 0.97);
+    }
+    body.chat-open #messageModal .message-page-header {
+        background: rgba(8, 18, 35, 0.95);
+        border-bottom: 1px solid rgba(212, 181, 138, 0.18);
+        backdrop-filter: blur(16px);
+    }
+    body.chat-open #messageModal.closing {
+        animation: msgPageOutDesktop 0.2s ease forwards;
+    }
+}
+
+/* Compose header (dark theme) */
+.compose-header-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+.compose-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid #ffd54f;
+    padding: 2px;
+    position: relative;
+    flex-shrink: 0;
+}
+.compose-avatar-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+}
+.compose-avatar-sparkle {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+}
+.compose-recipient-name {
+    font-weight: 700;
+    font-size: 17px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.compose-recipient-badge {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 2px 8px;
+    background: rgba(255, 213, 79, 0.15);
+    color: #ffd54f;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 213, 79, 0.3);
+}
+.compose-arrival-time {
+    font-size: 12px;
+    color: rgba(212, 181, 138, 0.6);
+    font-weight: 500;
+}
+.compose-header-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+.compose-header-btn:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Glass Card */
+.compose-glass-card {
+    background: rgba(18, 35, 58, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(212, 181, 138, 0.5);
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: inset 0 0 10px rgba(212, 181, 138, 0.1), 0 0 15px rgba(212, 181, 138, 0.2), 0 0 20px rgba(0,0,0,0.4);
+}
+
+/* Segmented Toggle */
+.compose-toggle-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+.compose-toggle {
+    display: flex;
+    align-items: center;
+    background: rgba(10, 22, 40, 0.6);
+    padding: 4px;
+    border-radius: 9999px;
+    border: 1px solid rgba(212, 181, 138, 0.15);
+}
+.compose-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 9999px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.45);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.25s;
+    font-family: inherit;
+}
+.compose-toggle-btn.active {
+    background: var(--accent);
+    color: #0a1628;
+    box-shadow: 0 0 15px rgba(212, 181, 138, 0.4);
+}
+.compose-toggle-btn:not(.active):hover {
+    color: rgba(255,255,255,0.7);
+}
+
+/* Open Note textarea */
+.compose-textarea {
+    width: 100%;
+    min-height: 260px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-size: 18px;
+    color: white;
+    line-height: 1.7;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+.compose-textarea::placeholder {
+    color: rgba(255,255,255,0.18);
+}
+
+/* Go Lunar overrides (dark theme) */
+#messageModal .lunar-note-panel {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin-bottom: 0;
+}
+#messageModal .lunar-panel-header { display: none; }
+#messageModal .lunar-intro {
+    color: rgba(212, 181, 138, 0.5);
+    font-size: 12px;
+}
+#messageModal .lunar-step-card {
+    background: rgba(10, 22, 40, 0.4);
+    border-color: rgba(212, 181, 138, 0.15);
+    color: white;
+}
+#messageModal .lunar-step-label {
+    color: rgba(212, 181, 138, 0.5);
+}
+#messageModal .lunar-input {
+    background: rgba(10, 22, 40, 0.6);
+    border-color: rgba(255,255,255,0.1);
+    color: white;
+}
+#messageModal .lunar-input:focus {
+    border-color: rgba(212, 181, 138, 0.5);
+}
+#messageModal .lunar-input::placeholder {
+    color: rgba(255,255,255,0.2);
+}
+#messageModal .lunar-step-next {
+    background: rgba(212, 181, 138, 0.1);
+    border: 1px solid rgba(212, 181, 138, 0.4);
+    color: var(--accent);
+}
+#messageModal .lunar-step-next:hover:not(:disabled) {
+    background: var(--accent);
+    color: #0a1628;
+}
+#messageModal .lunar-step-back {
+    color: rgba(255,255,255,0.4);
+}
+#messageModal .lunar-dot {
+    background: rgba(255,255,255,0.15);
+}
+#messageModal .lunar-dot.active {
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(212, 181, 138, 0.8);
+}
+#messageModal .lunar-dot.done {
+    background: rgba(212, 181, 138, 0.4);
+}
+#messageModal .lunar-result-card {
+    background: rgba(18, 35, 58, 0.8);
+    border-color: rgba(212, 181, 138, 0.2);
+    color: white;
+}
+#messageModal .lunar-result-card::before {
+    background: linear-gradient(90deg, var(--accent), var(--accent), var(--accent));
+}
+#messageModal .lunar-result-label {
+    color: rgba(212, 181, 138, 0.5);
+}
+#messageModal .lunar-result-text { color: white; }
+#messageModal .lunar-result-closing { color: rgba(255,255,255,0.4); }
+#messageModal .lunar-action-btn { color: var(--accent); }
+#messageModal .lunar-action-btn:hover { background: rgba(212, 181, 138, 0.1); }
+
+/* ADD: row */
+.compose-add-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding: 0 4px;
+}
+.compose-add-label {
+    color: rgba(255,255,255,0.35);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+.compose-add-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 181, 138, 0.5);
+    background: #050a14;
+    color: var(--accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.compose-add-btn:hover { background: rgba(212, 181, 138, 0.1); }
+.compose-add-btn.active {
+    background: var(--accent);
+    color: #050a14;
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(212, 181, 138, 0.4);
+}
+
+/* Music expansion panel */
+.compose-music-panel {
+    background: rgba(18, 35, 58, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(212, 181, 138, 0.2);
+    border-radius: 20px;
+    padding: 20px;
+    margin-top: 16px;
+    animation: composePanelIn 0.25s ease;
+}
+@keyframes composePanelIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.compose-music-search {
+    position: relative;
+}
+.compose-music-search input {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 9999px;
+    padding: 12px 16px 12px 44px;
+    color: white;
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+.compose-music-search input::placeholder { color: rgba(255,255,255,0.35); }
+.compose-music-search input:focus { border-color: rgba(212, 181, 138, 0.5); }
+.compose-music-yt-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+}
+/* Song suggestions inside music panel (dark theme) */
+#messageModal .song-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 14px;
+}
+#messageModal .song-suggestion {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    color: rgba(255,255,255,0.85);
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s;
+}
+#messageModal .song-suggestion:hover {
+    background: rgba(255,255,255,0.08);
+    color: white;
+}
+.compose-music-note {
+    text-align: center;
+    color: rgba(255,255,255,0.25);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 14px;
+}
+/* Song search results dark theme */
+#messageModal #songSearchResults {
+    background: transparent;
+}
+#messageModal #songSearchResults div {
+    color: rgba(255,255,255,0.7);
+}
+#messageModal #songSearchResults a {
+    color: var(--accent);
+}
+
+/* Photo panel */
+.compose-photo-panel {
+    background: rgba(18, 35, 58, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(212, 181, 138, 0.2);
+    border-radius: 20px;
+    padding: 20px;
+    margin-top: 16px;
+    animation: composePanelIn 0.25s ease;
+}
+.compose-photo-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    border: 2px dashed rgba(212, 181, 138, 0.3);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.compose-photo-dropzone:hover {
+    border-color: rgba(212, 181, 138, 0.6);
+    background: rgba(212, 181, 138, 0.05);
+}
+.compose-photo-dropzone svg { color: rgba(212, 181, 138, 0.4); }
+.compose-photo-dropzone-text {
+    color: rgba(255,255,255,0.4);
+    font-size: 13px;
+}
+#messageModal #moonPhotoPreview {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+}
+#messageModal #moonPhotoPreview img {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 14px;
+}
+.compose-photo-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Send button (coral glow) */
+.compose-send-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin-top: 36px;
+}
+.compose-send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 18px 40px;
+    background: var(--accent);
+    border: none;
+    border-radius: 16px;
+    color: white;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 0 25px rgba(212, 181, 138, 0.4);
+    transition: all 0.2s;
+}
+.compose-send-btn:hover {
+    background: rgba(212, 181, 138, 0.9);
+    box-shadow: 0 0 35px rgba(212, 181, 138, 0.5);
+}
+.compose-send-btn:active { transform: scale(0.97); }
+.compose-send-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Dark theme overrides for new contact / step2 forms inside compose */
+#messageModal .form-group label { color: rgba(212, 181, 138, 0.7); }
+#messageModal .form-group input,
+#messageModal .form-group textarea {
+    background: rgba(10, 22, 40, 0.6);
+    border-color: rgba(255,255,255,0.1);
+    color: white;
+}
+#messageModal .form-group input:focus,
+#messageModal .form-group textarea:focus {
+    border-color: rgba(212, 181, 138, 0.5);
+}
+#messageModal .form-group input::placeholder { color: rgba(255,255,255,0.25); }
+#messageModal .modal-header h2 { color: white; }
+#messageModal .modal-subtitle { color: rgba(255,255,255,0.4) !important; }
+#messageModal .new-contact-btn { color: var(--accent); border-color: rgba(212, 181, 138, 0.3); }
+#messageModal .send-button {
+    background: var(--accent);
+    box-shadow: 0 0 20px rgba(212, 181, 138, 0.3);
+}
+#messageModal .send-button:hover { background: rgba(212, 181, 138, 0.9); }
+#messageModal .recipient-selector input { background: rgba(10, 22, 40, 0.6); color: white; border-color: rgba(255,255,255,0.1); }
+#messageModal .recipient-dropdown { background: rgba(18, 35, 58, 0.95); border-color: rgba(212, 181, 138, 0.2); }
+#messageModal #newContactCityDropdown { background: rgba(18, 35, 58, 0.95); border-color: rgba(212, 181, 138, 0.2); }
+#messageModal #newContactCityDropdown .city-option { color: rgba(255,255,255,0.7); }
+#messageModal #newContactCityDropdown .city-option:hover { background: rgba(212, 181, 138, 0.1); }
+#messageModal .delivery-info-box { background: rgba(212, 181, 138, 0.08); border-color: rgba(212, 181, 138, 0.2); color: rgba(255,255,255,0.6); }
+/* Compose steps 2/3 — dark form overrides */
+#messageModal .modal-header h2 { color: rgba(255,255,255,0.9); }
+#messageModal .modal-subtitle { color: rgba(255,255,255,0.45); }
+#messageModal .form-group label { color: rgba(255,255,255,0.5); }
+#messageModal .form-group input,
+#messageModal .form-group textarea {
+    background: rgba(10, 22, 40, 0.6);
+    color: rgba(255,255,255,0.9);
+    border-color: rgba(212, 181, 138, 0.15);
+}
+#messageModal .form-group input::placeholder { color: rgba(255,255,255,0.2); }
+#messageModal .form-group input:focus {
+    border-color: rgba(212, 181, 138, 0.4);
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.08);
+}
+#messageModal .new-contact-btn {
+    color: var(--accent);
+    border-color: rgba(212, 181, 138, 0.2);
+    background: rgba(212, 181, 138, 0.06);
+}
+#messageModal .new-contact-btn:hover { background: rgba(212, 181, 138, 0.12); }
+#messageModal .recipient-dropdown .recipient-option { color: rgba(255,255,255,0.7); }
+#messageModal .recipient-dropdown .recipient-option:hover { background: rgba(212, 181, 138, 0.1); }
+
+/* ====================================== */
+/* CONTACTS PAGE — DARK THEME             */
+/* ====================================== */
+#contactsPage {
+    background: #050a14;
+    background-image:
+        radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.12), transparent),
+        radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.08), transparent),
+        radial-gradient(1.5px 1.5px at 90px 40px, rgba(255,255,255,0.15), transparent),
+        radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.06), transparent);
+    background-size: 200px 100px;
+}
+#contactsPage .message-page-inner {
+    background: transparent;
+    box-shadow: none;
+    max-width: 600px;
+}
+#contactsPage .message-page-header {
+    background: rgba(8, 18, 35, 0.9);
+    border-bottom: 1px solid rgba(212, 181, 138, 0.12);
+    backdrop-filter: blur(12px);
+}
+#contactsPage .message-page-header span {
+    color: var(--accent) !important;
+}
+#contactsPage .message-page-header button {
+    color: var(--accent) !important;
+}
+#contactsPage .message-page-body {
+    background: transparent;
+}
+
+/* Contacts search bar */
+#contactsPage #contactSearchInput {
+    background: rgba(10, 22, 40, 0.6) !important;
+    color: rgba(255,255,255,0.9) !important;
+    border: 1px solid rgba(212, 181, 138, 0.15) !important;
+}
+#contactsPage #contactSearchInput::placeholder {
+    color: rgba(255,255,255,0.25) !important;
+}
+#contactsPage #contactSearchInput:focus {
+    border-color: rgba(212, 181, 138, 0.4) !important;
+    box-shadow: 0 0 0 3px rgba(212, 181, 138, 0.08);
+    outline: none;
+}
+
+/* Contacts search container (overrides inline styles) */
+#contactsPage .message-page-header + div {
+    background: rgba(10, 22, 40, 0.4) !important;
+    border-bottom-color: rgba(212, 181, 138, 0.1) !important;
+}
+
+/* Compose mobile responsive */
+@media (max-width: 640px) {
+    .compose-glass-card { padding: 20px; border-radius: 18px; }
+    .compose-toggle-btn { padding: 8px 16px; font-size: 12px; }
+    .compose-textarea { min-height: 200px; font-size: 16px; }
+    .compose-send-btn { padding: 16px 32px; font-size: 15px; }
+}
+
+/* ====================================== */
