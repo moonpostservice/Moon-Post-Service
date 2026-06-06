@@ -563,7 +563,11 @@
 <script>
 const SUPABASE_URL = 'https://znfqqehthxcrizcixzpu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuZnFxZWh0aHhjcml6Y2l4enB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MzMyMDgsImV4cCI6MjA4NjAwOTIwOH0.Twf3d9QEhVq6j9yVKaS9QNhnvygYgxPj0zg6Ug5pAq0';
-const ADMIN_EMAILS = ['mymanko@gmail.com', 'yoashf@gmail.com'];
+// Admin identity is verified server-side via the is_admin() RPC (a SECURITY
+// DEFINER function that checks the signed-in user's email against an allowlist
+// baked into the database, never exposed to the browser). The allowlist is
+// intentionally NOT duplicated in client source so personal emails aren't
+// published in the page.
 
 // Isolated auth storage so the admin panel never shares/rotates the main app's
 // refresh token. Sharing the default storageKey caused both GoTrue clients to
@@ -584,10 +588,18 @@ let otpPending = false;
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
+// Server-side admin check: calls the is_admin() RPC, which evaluates the
+// signed-in user's identity in the database. Returns false for anon/non-admins.
+async function sessionIsAdmin(session) {
+  if (!session?.user) return false;
+  const { data, error } = await sb.rpc('is_admin');
+  return !error && data === true;
+}
+
 let _adminBooted = false;
-function bootAdmin(session) {
+async function bootAdmin(session) {
   if (_adminBooted) return;
-  if (!ADMIN_EMAILS.includes(session?.user?.email)) return;
+  if (!(await sessionIsAdmin(session))) return;
   _adminBooted = true;
   showApp();
   loadData();
@@ -628,7 +640,7 @@ async function init() {
               '| error =', error || 'none');
   _showAdminDiag(session, error);
 
-  if (ADMIN_EMAILS.includes(session?.user?.email)) {
+  if (session?.user?.email && await sessionIsAdmin(session)) {
     bootAdmin(session);
   } else if (session?.user?.email) {
     // A CONFIRMED non-admin session (signed in on the main site) would block
@@ -648,7 +660,8 @@ sb.auth.onAuthStateChange((event, session) => {
   console.log('[admin auth event]', event, '|', session?.user?.email || 'no session');
   // Boot the app as soon as a valid admin session appears (covers the Firefox
   // race where init()'s getSession resolved null before storage was ready).
-  if (ADMIN_EMAILS.includes(session?.user?.email)) bootAdmin(session);
+  // bootAdmin self-verifies admin identity server-side, so call it unconditionally.
+  bootAdmin(session);
 });
 
 function showLogin(msg) {
@@ -683,7 +696,6 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   if (!otpPending) {
     const email = emailEl.value.trim().toLowerCase();
     if (!email) { setLoginMsg('Enter your email.', 'error'); return; }
-    if (!ADMIN_EMAILS.includes(email)) { setLoginMsg('That email is not authorised.', 'error'); return; }
     btn.disabled = true;
     setLoginMsg('Sending code…');
     const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
@@ -705,10 +717,15 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     if (otp.length < 6) { setLoginMsg('Enter the 6-digit code.', 'error'); return; }
     btn.disabled = true;
     setLoginMsg('Verifying…');
-    const { error } = await sb.auth.verifyOtp({ email, token: otp, type: 'email' });
+    const { data, error } = await sb.auth.verifyOtp({ email, token: otp, type: 'email' });
     btn.disabled = false;
     if (error) {
       setLoginMsg(error.message, 'error');
+    } else if (!(await sessionIsAdmin(data.session))) {
+      // Authenticated, but not an admin — drop the session so no one lingers
+      // signed in to the admin client.
+      await sb.auth.signOut();
+      setLoginMsg('That account is not authorised.', 'error');
     } else {
       setLoginMsg('Verified!', 'success');
     }
@@ -719,7 +736,6 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
 document.getElementById('resendBtn').addEventListener('click', async () => {
   const resendBtn = document.getElementById('resendBtn');
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-  if (!ADMIN_EMAILS.includes(email)) { setLoginMsg('That email is not authorised.', 'error'); return; }
   resendBtn.disabled = true;
   setLoginMsg('Sending a new code…');
   const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
