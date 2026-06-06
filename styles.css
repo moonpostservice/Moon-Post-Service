@@ -9757,13 +9757,24 @@ body.moon-down .new-message-btn {
     text-align: center;
 }
 .ed-compose-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
     font-size: var(--fs-caption);
     font-weight: 700;
     letter-spacing: var(--tracking-label);
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: var(--space-3);
+    margin-bottom: var(--space-2);
 }
+.ed-compose-eyebrow::before,
+.ed-compose-eyebrow::after {
+    content: "";
+    width: 28px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line));
+}
+.ed-compose-eyebrow::after { transform: scaleX(-1); }
 .ed-compose-title {
     font-family: var(--serif);
     font-size: var(--fs-h2);
@@ -9771,6 +9782,7 @@ body.moon-down .new-message-btn {
     color: var(--text-bright);
     letter-spacing: -0.3px;
     margin-bottom: var(--space-6);
+    text-shadow: 0 0 36px rgba(212, 181, 138, 0.18);
 }
 /* Hero cue that points down to the compose section */
 .ed-hero-cue {
@@ -9851,19 +9863,24 @@ body.moon-down .new-message-btn {
     padding: 12px 14px;
     border: 1px solid var(--line-soft);
     border-radius: var(--radius-sm);
-    background: rgba(3, 10, 24, 0.6);
+    background: rgba(0, 1, 4, 0.96);
     color: var(--text-bright);
     font-family: var(--sans);
     font-size: 14px;
-    transition: border-color var(--dur-fast) ease;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
+    transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
 .hc-input::placeholder,
 .hc-textarea::placeholder { color: var(--muter); }
 .hc-input:focus,
-.hc-textarea:focus { outline: none; border-color: var(--accent); }
+.hc-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45), 0 0 0 3px rgba(212, 181, 138, 0.12);
+}
 .hc-textarea {
     resize: vertical;
-    min-height: 84px;
+    min-height: 120px;
     line-height: 1.5;
 }
 .hc-lunar { display: flex; flex-direction: column; gap: var(--space-2); }
