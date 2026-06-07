@@ -1,0 +1,81 @@
+name: Daily DB Backup
+
+# Free-tier Supabase has NO automatic backups. This workflow takes a daily
+# pg_dump of the production database, encrypts it (the repo is PUBLIC, so the
+# raw dump must never be exposed), and stores it as a workflow artifact.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   SUPABASE_DB_URL    Session-pooler connection string (IPv4, port 5432).
+#                      Supabase Dashboard -> Project Settings -> Database ->
+#                      Connection string -> "Session pooler". GitHub runners
+#                      are IPv4-only, so the direct (IPv6) host will NOT work.
+#   BACKUP_PASSPHRASE  A long random passphrase used to encrypt each dump.
+#                      Store it somewhere safe (password manager) -- without it
+#                      the backups cannot be restored.
+#
+# Restore (locally):
+#   gpg --batch --passphrase "<BACKUP_PASSPHRASE>" -o backup.dump -d backup.dump.gpg
+#   pg_restore --clean --if-exists --no-owner --no-privileges \
+#     -d "<target connection string>" backup.dump
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # daily at 09:00 UTC
+  workflow_dispatch: {} # allow manual runs from the Actions tab
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Install PostgreSQL 17 client
+        run: |
+          set -euo pipefail
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          pg_dump --version
+
+      - name: Dump database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set"; exit 1
+          fi
+          STAMP="$(date -u +%Y-%m-%d_%H%M%S)"
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+          # -Fc = custom format: compressed and restorable with pg_restore.
+          pg_dump --no-owner --no-privileges -Fc -f "moonpost-$STAMP.dump" "$SUPABASE_DB_URL"
+          ls -lh "moonpost-$STAMP.dump"
+
+      - name: Encrypt dump
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BACKUP_PASSPHRASE:-}" ]; then
+            echo "::error::BACKUP_PASSPHRASE secret is not set"; exit 1
+          fi
+          gpg --batch --yes --passphrase "$BACKUP_PASSPHRASE" \
+            --symmetric --cipher-algo AES256 \
+            -o "moonpost-$STAMP.dump.gpg" "moonpost-$STAMP.dump"
+          rm -f "moonpost-$STAMP.dump" # never upload the plaintext dump
+          ls -lh "moonpost-$STAMP.dump.gpg"
+
+      - name: Upload encrypted backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ env.STAMP }}
+          path: "*.dump.gpg"
+          retention-days: 30
+          if-no-files-found: error
