@@ -16,12 +16,12 @@
 // PUBLIC site key — safe to ship in the frontend. Override per-environment by
 // setting `window.TURNSTILE_SITE_KEY` before this script loads.
 //
-// ⚠️  REPLACE the default before enabling Supabase's "Enable Captcha protection"
-//     toggle. The default below is Cloudflare's official "always passes" TEST
-//     key so auth keeps working pre-launch. Once the real SECRET is set in
-//     Supabase, tokens minted by this test key will be REJECTED and break auth —
-//     so swap in the real site key first, then flip the Supabase toggle.
-const TURNSTILE_SITE_KEY = window.TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
+// This is the real Moon Post Service Turnstile site key, bound in Cloudflare to
+// the hostnames www.moonpostservice.com and moonpostservice.com. On any other
+// host (e.g. localhost) Turnstile returns a domain error and getCaptchaToken()
+// resolves null — harmless while Supabase's captcha toggle is OFF.
+// For Cloudflare's test ("always passes") key, use '1x00000000000000000000AA'.
+const TURNSTILE_SITE_KEY = window.TURNSTILE_SITE_KEY || '0x4AAAAAADgWKXTtSu60qdJo';
 
 let _captchaWidgetId = null;
 let _captchaResolve = null;
