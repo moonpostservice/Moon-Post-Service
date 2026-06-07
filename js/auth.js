@@ -86,6 +86,11 @@ async function sendMoonKey() {
     btn.textContent = 'Sending...';
     btn.disabled = true;
 
+    // CAPTCHA: obtain a fresh Turnstile token before anything touches the auth
+    // backend. Solving the challenge up front also gates the check_login_email
+    // existence probe below, raising the cost of scripted email enumeration (F1).
+    const captchaToken = await getCaptchaToken();
+
     // Check if the email exists in the system and whether the account is suspended.
     // Uses a SECURITY DEFINER RPC: the login screen runs as the anon role, which
     // has no read access to `profiles`, so a direct table query always returned
@@ -137,7 +142,8 @@ async function sendMoonKey() {
             // Only the genuine signup flow may create a new auth user. Profiles are NOT
             // created until the email is confirmed (the AFTER-INSERT profile trigger was
             // removed), so a typo'd signup email never leaves a phantom account.
-            shouldCreateUser: authMode === 'signup'
+            shouldCreateUser: authMode === 'signup',
+            captchaToken
         }
     });
 
@@ -170,9 +176,12 @@ async function enterVerifyStep() {
     const otpError = document.getElementById('otpError');
     if (otpError) otpError.style.display = 'none';
 
+    // Fresh token: this fires at the END of the signup flow (after name + city),
+    // minutes after the email step, so any earlier token would have expired.
+    const captchaToken = await getCaptchaToken();
     const { error } = await sb.auth.signInWithOtp({
         email: _signupDraft.email,
-        options: { shouldCreateUser: true }
+        options: { shouldCreateUser: true, captchaToken }
     });
     if (error) {
         if (otpError) { otpError.textContent = error.message || 'Could not send your code. Try again.'; otpError.style.display = 'block'; }
@@ -619,10 +628,12 @@ async function resendMoonKey() {
     // Mirror the original send: a login resend must NOT create a user (false), while a
     // signup resend may (true) — same safety as sendMoonKey. No profile is created until
     // the email is confirmed, so a resend can't produce a phantom account either way.
+    const captchaToken = await getCaptchaToken();
     const { error } = await sb.auth.signInWithOtp({
         email,
         options: {
-            shouldCreateUser: authMode === 'signup'
+            shouldCreateUser: authMode === 'signup',
+            captchaToken
         }
     });
     if (!error) {
