@@ -23,6 +23,41 @@ function esc(val: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
+// --- Brass-on-navy email shell (matches the moonrise digest in
+// release-messages). Email clients can't use CSS variables, so the design
+// tokens are inlined as literal hex/rgba: --bg #030A18, --accent #D4B58A,
+// --text #EAD8BF, --text-bright #F0DFC2, --on-accent #0A1422. ---
+function para(html: string): string {
+  return `<p style="color:rgba(234,216,191,0.7);font-size:15px;line-height:1.55;margin:0 0 12px;">${html}</p>`;
+}
+function emailShell(heading: string, innerHtml: string, ctaText: string, ctaHref: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#030A18;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#030A18;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px;background:linear-gradient(135deg,#030A18 0%,#0A1422 100%);border-radius:16px;border:1px solid rgba(212,181,138,0.28);">
+        <tr><td style="padding:32px 24px 8px;text-align:center;">
+          <div style="font-size:48px;margin-bottom:8px;">&#127765;</div>
+          <h1 style="color:#F0DFC2;font-size:20px;font-weight:600;margin:0;">${heading}</h1>
+        </td></tr>
+        <tr><td style="padding:12px 28px 16px;text-align:center;">
+          ${innerHtml}
+        </td></tr>
+        <tr><td style="padding:4px 24px 28px;text-align:center;">
+          <a href="${ctaHref}" style="display:inline-block;background:linear-gradient(135deg,#D4B58A,#C7A678);color:#0A1422;text-decoration:none;padding:14px 40px;border-radius:24px;font-size:15px;font-weight:600;">${ctaText}</a>
+        </td></tr>
+        <tr><td style="padding:0 24px 22px;text-align:center;">
+          <p style="color:rgba(234,216,191,0.28);font-size:11px;margin:0;">Moon Post Service &#8212; Messages delivered at moonrise &#127769;</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-secret",
@@ -152,14 +187,12 @@ Deno.serve(async (req: Request) => {
 
       // --- 5. Send via Resend ---
       const subject = "🌕 A mystery moon message has arrived";
-      const htmlBody = `
-        <h2>A Moon Roulette message has arrived</h2>
-        <p>Someone from <strong>${senderCity}</strong> sent you an anonymous moon message.</p>
-        ${moonPhase ? `<p>Moon phase: ${moonPhase}</p>` : ""}
-        ${releaseTime ? `<p>It arrived at <strong>${releaseTime}</strong>.</p>` : ""}
-        <p>You can read it, choose to reveal who sent it, or decline — anonymously.</p>
-        <p><a href="${appUrl}/roulette">Open Moon Roulette</a></p>
-      `;
+      const inner =
+        para(`Someone from <strong>${senderCity}</strong> sent you an anonymous moon message.`) +
+        (moonPhase ? para(`Moon phase: ${moonPhase}`) : "") +
+        (releaseTime ? para(`It arrived at <strong>${releaseTime}</strong>.`) : "") +
+        para("You can read it, choose to reveal who sent it, or decline — anonymously.");
+      const htmlBody = emailShell("A mystery moon message has arrived", inner, "Open Moon Roulette", `${appUrl}/roulette`);
 
       const emailRes = await fetch("https://api.resend.com/emails", {
         method: "POST",

@@ -48,6 +48,47 @@ function safeLink(val: unknown, allowedOrigin: string): string {
   return "";
 }
 
+// --- Brass-on-navy email shell (matches the moonrise digest in
+// release-messages). Email clients can't use CSS variables, so the design
+// tokens are inlined as literal hex/rgba: --bg #030A18, --accent #D4B58A,
+// --text #EAD8BF, --text-bright #F0DFC2, --on-accent #0A1422. ---
+function para(html: string): string {
+  return `<p style="color:rgba(234,216,191,0.7);font-size:15px;line-height:1.55;margin:0 0 12px;">${html}</p>`;
+}
+function quote(text: string, ellipsis = false): string {
+  return `<p style="color:rgba(234,216,191,0.6);font-size:15px;font-style:italic;margin:0 0 12px;">&ldquo;${text}${ellipsis ? "..." : ""}&rdquo;</p>`;
+}
+function emailShell(heading: string, innerHtml: string, ctaText: string, ctaHref: string): string {
+  const cta = ctaText && ctaHref
+    ? `
+        <tr><td style="padding:4px 24px 28px;text-align:center;">
+          <a href="${ctaHref}" style="display:inline-block;background:linear-gradient(135deg,#D4B58A,#C7A678);color:#0A1422;text-decoration:none;padding:14px 40px;border-radius:24px;font-size:15px;font-weight:600;">${ctaText}</a>
+        </td></tr>`
+    : "";
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#030A18;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#030A18;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px;background:linear-gradient(135deg,#030A18 0%,#0A1422 100%);border-radius:16px;border:1px solid rgba(212,181,138,0.28);">
+        <tr><td style="padding:32px 24px 8px;text-align:center;">
+          <div style="font-size:48px;margin-bottom:8px;">&#127769;</div>
+          <h1 style="color:#F0DFC2;font-size:20px;font-weight:600;margin:0;">${heading}</h1>
+        </td></tr>
+        <tr><td style="padding:12px 28px 16px;text-align:center;">
+          ${innerHtml}
+        </td></tr>${cta}
+        <tr><td style="padding:0 24px 22px;text-align:center;">
+          <p style="color:rgba(234,216,191,0.28);font-size:11px;margin:0;">Moon Post Service &#8212; Messages delivered at moonrise &#127769;</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -156,7 +197,7 @@ Deno.serve(async (req: Request) => {
     const emailType = body.type as EmailType;
     const appUrl = Deno.env.get("APP_URL") ?? "https://moonpop.app";
 
-    // --- 3. Build email by type ---
+    // --- 3. Build email by type (brass-on-navy shell) ---
     let subject: string;
     let htmlBody: string;
 
@@ -174,22 +215,18 @@ Deno.serve(async (req: Request) => {
       const link = safeLink(body.revealLink, appUrl);
 
       subject = `🌙 ${senderName} sent you a moon message!`;
-      htmlBody = `
-        <h2>You have a new moon message from ${senderName}!</h2>
-        <p>It will be revealed when the moon rises over ${recipientLocation} (around ${moonriseTime}).</p>
-        ${messagePreview ? `<p><em>"${messagePreview}..."</em></p>` : ""}
-        ${link ? `<p><a href="${link}">View your message</a></p>` : ""}
-      `;
+      const inner =
+        para(`It will be revealed when the moon rises over <strong>${recipientLocation}</strong> (around ${moonriseTime}).`) +
+        (messagePreview ? quote(messagePreview, true) : "");
+      htmlBody = emailShell(`${senderName} sent you a moon message`, inner, link ? "View your message" : "", link);
 
     } else if (emailType === "invite") {
       const senderName = esc(body.senderName, "Someone");
       const link = safeLink(body.revealLink, appUrl);
+
       subject = `🌙 ${senderName} invited you to Moon Post Service!`;
-      htmlBody = `
-        <h2>${senderName} wants to send you moon messages!</h2>
-        <p>Moon Post Service lets you send messages that are revealed when the moon rises at the recipient's location.</p>
-        ${link ? `<p><a href="${link}">Join Moon Post Service</a></p>` : ""}
-      `;
+      const inner = para(`${senderName} wants to send you moon messages. Moon Post Service delivers messages that are revealed when the moon rises at the recipient's location.`);
+      htmlBody = emailShell(`${senderName} invited you to Moon Post Service`, inner, link ? "Join Moon Post Service" : "", link);
 
     } else if (emailType === "roulette_received") {
       // Recipient notification: message in transit, reveal city only
@@ -198,26 +235,22 @@ Deno.serve(async (req: Request) => {
       const releaseTime = esc(body.releaseTime);
 
       subject = "🌕 A mystery moon message is on its way to you";
-      htmlBody = `
-        <h2>A Moon Roulette message is travelling your way</h2>
-        <p>Someone from <strong>${senderCity}</strong> sent you an anonymous moon message.</p>
-        ${moonPhase ? `<p>Moon phase: ${moonPhase}</p>` : ""}
-        ${releaseTime ? `<p>It will arrive when the moon rises — around <strong>${releaseTime}</strong>.</p>` : ""}
-        <p>When it arrives, you can choose to read it, reveal who sent it, or decline.</p>
-        <p><a href="${appUrl}/roulette">Open Moon Roulette</a></p>
-      `;
+      const inner =
+        para(`Someone from <strong>${senderCity}</strong> sent you an anonymous moon message.`) +
+        (moonPhase ? para(`Moon phase: ${moonPhase}`) : "") +
+        (releaseTime ? para(`It will arrive when the moon rises — around <strong>${releaseTime}</strong>.`) : "") +
+        para("When it arrives, you can read it, reveal who sent it, or decline.");
+      htmlBody = emailShell("A mystery moon message is on its way", inner, "Open Moon Roulette", `${appUrl}/roulette`);
 
     } else {
       // roulette_returned
       const messagePreview = esc(body.messagePreview);
 
       subject = "🌙 Your Moon Roulette message found its way back to you";
-      htmlBody = `
-        <h2>Your Moon Roulette message has returned</h2>
-        ${messagePreview ? `<p><em>"${messagePreview}"</em></p>` : ""}
-        <p>The recipient chose not to connect this time. You can re-launch it to someone new, or let it rest.</p>
-        <p><a href="${appUrl}/roulette">Open Moon Roulette</a></p>
-      `;
+      const inner =
+        (messagePreview ? quote(messagePreview) : "") +
+        para("The recipient chose not to connect this time. You can re-launch it to someone new, or let it rest.");
+      htmlBody = emailShell("Your message found its way back to you", inner, "Open Moon Roulette", `${appUrl}/roulette`);
     }
 
     // --- 4. Send via Resend ---
