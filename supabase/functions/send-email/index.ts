@@ -107,6 +107,20 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // --- 1c. Suspension gate (server-side enforcement — the client check is
+    // only UX and is bypassable). A suspended account cannot send mail. ---
+    const { data: senderProfile } = await serviceClient
+      .from("profiles")
+      .select("suspended_at")
+      .eq("id", user.id)
+      .single();
+    if (senderProfile?.suspended_at) {
+      return new Response(
+        JSON.stringify({ error: "Your account has been suspended." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // --- 2. Parse payload ---
     let body: Record<string, unknown>;
     try {
