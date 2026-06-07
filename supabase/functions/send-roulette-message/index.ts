@@ -194,10 +194,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // --- 4. Fetch sender's city (stored on their profile) ---
+    // --- 4. Fetch sender's city + suspension state (stored on their profile) ---
     const { data: senderProfile, error: senderErr } = await serviceClient
       .from("profiles")
-      .select("city")
+      .select("city, suspended_at")
       .eq("id", user.id)
       .single();
 
@@ -205,6 +205,15 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: "Sender profile incomplete" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // --- 4a. Suspension gate (server-side enforcement — the client check is
+    // only UX and is bypassable). A suspended account cannot send or reply. ---
+    if (senderProfile.suspended_at) {
+      return new Response(
+        JSON.stringify({ error: "Your account has been suspended." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
