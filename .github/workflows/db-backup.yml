@@ -75,6 +75,23 @@ jobs:
           rm -f "moonpost-$STAMP.dump" # never upload the plaintext dump
           ls -lh "moonpost-$STAMP.dump.gpg"
 
+      - name: Verify backup is restorable
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          # Decrypt to a throwaway file and confirm pg_restore can parse the
+          # archive's table of contents. Proves the passphrase decrypts AND the
+          # dump is a valid, restorable custom-format archive (not a paperweight).
+          gpg --batch --yes --passphrase "$BACKUP_PASSPHRASE" \
+            -o "verify-$STAMP.dump" -d "moonpost-$STAMP.dump.gpg"
+          ENTRIES="$(/usr/lib/postgresql/17/bin/pg_restore --list "verify-$STAMP.dump" | grep -cE '^[0-9]')"
+          echo "pg_restore parsed $ENTRIES archive entries"
+          if [ "$ENTRIES" -lt 1 ]; then
+            echo "::error::Decrypted dump has no restorable entries"; exit 1
+          fi
+          rm -f "verify-$STAMP.dump" # never leave plaintext on disk
+
       - name: Upload encrypted backup
         uses: actions/upload-artifact@v4
         with:
