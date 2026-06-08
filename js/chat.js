@@ -357,17 +357,11 @@ async function openConversation(convIndex) {
         console.error('[openConversation] renderConversationThread failed for', conv.dbConversationId, err);
         const content = document.getElementById('detailContent');
         if (content) {
-            const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            const errMsg = err && err.message ? err.message : String(err);
-            const errLine = ((err && err.stack ? err.stack.split('\n')[1] : '') || '').trim();
             content.innerHTML =
                 '<div class="new-cycle-empty">' +
                 '<div class="new-cycle-empty-icon">' + (typeof iconSvg === 'function' ? iconSvg('new-moon', 'lg') : '') + '</div>' +
                 '<div class="new-cycle-empty-title">This conversation couldn’t load</div>' +
                 '<div class="new-cycle-empty-subtitle">Please refresh and try again.</div>' +
-                '<div class="new-cycle-empty-subtitle" style="margin-top:10px;font-family:monospace;font-size:11px;opacity:0.7;word-break:break-word;">' +
-                    esc(errMsg) + (errLine ? '<br>' + esc(errLine) : '') +
-                '</div>' +
                 '</div>';
         }
     }
@@ -775,7 +769,9 @@ function renderConversationThread() {
         // Build actions row (reactions + reply) for any message with a dbId
         const actionsHtml = (dbId) => {
             if (!dbId) return '';
-            return renderReactionsBar(dbId);
+            // Guard: never let a missing reactions.js (e.g. a load failure) blank
+            // the whole conversation — degrade to no reaction bar instead.
+            return (typeof renderReactionsBar === 'function') ? renderReactionsBar(dbId) : '';
         };
 
         // Sender label above the first bubble of a received run (groups like iMessage)
@@ -968,14 +964,9 @@ function renderConversationThread() {
             }
         }
       } catch (itemErr) {
-        // One bad message must never blank the whole conversation. Skip it,
-        // render the rest, and surface the error (inline + console) for diagnosis.
+        // One bad message must never blank the whole conversation — skip it,
+        // render the rest, and log which item failed.
         console.error('[renderConversationThread] item render failed — type:', item && item.type, 'dbId:', item && item.msgDbId, itemErr);
-        const _esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        const _line = ((itemErr && itemErr.stack ? itemErr.stack.split('\n')[1] : '') || '').trim();
-        html += '<div style="max-width:85%;margin:6px auto;padding:8px 10px;border:1px solid rgba(232,155,115,0.5);border-radius:10px;background:rgba(232,155,115,0.08);font-family:monospace;font-size:11px;color:#E89B73;word-break:break-word;">' +
-                '⚠ message render error (' + _esc(item && item.type) + '): ' + _esc(itemErr && itemErr.message ? itemErr.message : itemErr) +
-                (_line ? '<br>' + _esc(_line) : '') + '</div>';
       }
     });
 
