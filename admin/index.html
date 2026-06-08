@@ -678,6 +678,8 @@ function showLogin(msg) {
   document.getElementById('loginOtp').style.display = 'none';
   document.getElementById('resendBtn').style.display = 'none';
   document.getElementById('loginBtn').textContent = 'Send code';
+  // Render the Turnstile widget now so a token is ready before the admin submits.
+  if (typeof initCaptcha === 'function') initCaptcha();
   if (msg) setLoginMsg(msg, 'error');
 }
 
@@ -704,6 +706,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     btn.disabled = true;
     setLoginMsg('Sending code…');
     const captchaToken = await getCaptchaToken();
+    if (!captchaToken) { btn.disabled = false; setLoginMsg('Please complete the verification check, then try again.', 'error'); return; }
     const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, captchaToken } });
     btn.disabled = false;
     if (error) {
@@ -745,6 +748,7 @@ document.getElementById('resendBtn').addEventListener('click', async () => {
   resendBtn.disabled = true;
   setLoginMsg('Sending a new code…');
   const captchaToken = await getCaptchaToken();
+  if (!captchaToken) { resendBtn.disabled = false; setLoginMsg('Please complete the verification check, then try again.', 'error'); return; }
   const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, captchaToken } });
   resendBtn.disabled = false;
   if (error) {

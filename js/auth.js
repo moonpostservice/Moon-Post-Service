@@ -54,6 +54,8 @@ function showAuthModal(mode) {
     // Reset to step 1
     document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
     document.getElementById('authStepEmail')?.classList.add('active');
+    // Render the Turnstile widget now so a token is ready before the user submits.
+    if (typeof initCaptcha === 'function') initCaptcha();
     setTimeout(() => document.getElementById(isSignup ? 'authFirstName' : 'authEmail')?.focus(), 100);
 }
 function closeAuthModal() {
@@ -86,9 +88,6 @@ async function sendMoonKey() {
     btn.textContent = 'Sending...';
     btn.disabled = true;
 
-    // CAPTCHA: a fresh Turnstile token is required for the OTP send below.
-    const captchaToken = await getCaptchaToken();
-
     // NO EXISTENCE PRE-CHECK (F1). We deliberately do NOT probe whether the email is
     // registered. The old check_login_email RPC was an anon-callable enumeration
     // oracle (a row meant "registered", empty meant "not"), and the captcha only
@@ -120,6 +119,14 @@ async function sendMoonKey() {
     // outcome — so a non-existent email is indistinguishable from a real one and there
     // is no enumeration oracle. Only clearly-recoverable, non-leaky errors (rate limit,
     // captcha) are surfaced; any existence-revealing error is swallowed.
+    const captchaToken = await getCaptchaToken();
+    if (!captchaToken) {
+        errorEl.textContent = 'Please complete the verification check above and try again.';
+        errorEl.style.display = 'block';
+        btn.innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
+        btn.disabled = false;
+        return;
+    }
     const { error } = await sb.auth.signInWithOtp({
         email,
         options: { shouldCreateUser: false, captchaToken }
@@ -173,6 +180,10 @@ async function enterVerifyStep() {
     // Fresh token: this fires at the END of the signup flow (after name + city),
     // minutes after the email step, so any earlier token would have expired.
     const captchaToken = await getCaptchaToken();
+    if (!captchaToken) {
+        if (otpError) { otpError.textContent = 'Please complete the verification check above and try again.'; otpError.style.display = 'block'; }
+        return;
+    }
     const { error } = await sb.auth.signInWithOtp({
         email: _signupDraft.email,
         options: { shouldCreateUser: true, captchaToken }
@@ -623,6 +634,10 @@ async function resendMoonKey() {
     // signup resend may (true) — same safety as sendMoonKey. No profile is created until
     // the email is confirmed, so a resend can't produce a phantom account either way.
     const captchaToken = await getCaptchaToken();
+    if (!captchaToken) {
+        alert('Please complete the verification check, then tap Resend again.');
+        return;
+    }
     const { error } = await sb.auth.signInWithOtp({
         email,
         options: {
