@@ -99,7 +99,11 @@ async function loadFullConversationThread(conv) {
             const stillInTransit = !isSent && ((m.release_at && new Date(m.release_at) > new Date()) || m.status === 'in_transit');
             const tooOld = m.created_at && new Date(m.created_at) < new Date(Date.now() - 24 * 3600000);
             const actuallyInTransit = stillInTransit && !tooOld;
-            const contentVisible = isSent || (!!moonData.isVisible && !actuallyInTransit);
+            // Once a message has been read it stays readable — the moon-gate only
+            // seals genuinely new/unread incoming messages, never re-hides history
+            // the recipient has already seen.
+            const alreadyRead = !isSent && !!m.read_at;
+            const contentVisible = isSent || alreadyRead || (!!moonData.isVisible && !actuallyInTransit);
 
             // For sender name: use profile, then recipient_name ONLY for sent messages
             // (for received messages, recipient_name = current user, NOT the sender)
