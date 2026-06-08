@@ -39,11 +39,15 @@ async function loadRouletteMessages() {
     if (!currentAuthUser) return;
     try {
         const [sentRes, receivedRes, revealsRes] = await Promise.all([
-            // Sent: query the raw table — sender_id RLS policy applies
+            // Sent: query the raw table — sender_id RLS policy applies.
+            // Exclude graduated threads: once a thread is mutually revealed it is
+            // mirrored into the normal messages system and must no longer appear as
+            // a separate roulette inbox row (the conversation lives in one chatbox).
             sb.from('moon_roulette_messages')
                 .select('id, sender_city, recipient_id, recipient_city, status, release_at, released_at, moon_phase, moon_illumination, message_text, photo_url, song_url, song_title, parent_id, send_attempt, recipient_read_at, created_at, updated_at')
                 .eq('sender_id', currentAuthUser.id)
                 .is('sender_deleted_at', null)
+                .is('graduated_at', null)
                 .order('created_at', { ascending: false }),
 
             // Received: use the anonymity view — hides sender_id pre-reveal
