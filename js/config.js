@@ -1,6 +1,6 @@
 // Moon Post Service — State & Icon Helpers
 
-console.log('%c[MoonPop] v68 loaded — DIAGNOSTIC: full sent message data + recipient moon status', 'color: #4fc3f7; font-weight: bold;');
+console.log('%c[MoonPop] v68 loaded — DIAGNOSTIC: full sent message data + recipient moon status', 'color: #D4B58A; font-weight: bold;');
 // ============================================
 // STATE - Must be declared first
 // ============================================

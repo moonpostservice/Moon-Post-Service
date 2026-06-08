@@ -774,7 +774,7 @@ function updateOnlineIndicators() {
                 if (avatar) {
                     const d = document.createElement('span');
                     d.className = 'online-dot-indicator';
-                    d.style.cssText = 'position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid #0a1628;z-index:1;';
+                    d.style.cssText = 'position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid var(--bg);z-index:1;';
                     avatar.appendChild(d);
                 }
             }
@@ -1943,7 +1943,7 @@ function renderMessages() {
         if (!avatarUrl && contact?.avatar) avatarUrl = contact.avatar;
         // Check online via profile ID first (most reliable), then contact fallback
         const online = (conv.otherProfileId && onlineUsers[conv.otherProfileId]) || isContactOnline(contact);
-        const onlineDot = online ? '<span class="online-dot-indicator" style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid #0a1628;z-index:1;"></span>' : '';
+        const onlineDot = online ? '<span class="online-dot-indicator" style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid var(--bg);z-index:1;"></span>' : '';
 
         let avatar;
         if (avatarUrl) {
