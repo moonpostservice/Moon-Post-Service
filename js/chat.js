@@ -742,6 +742,7 @@ function renderConversationThread() {
     }
 
     timeline.forEach((item, itemIndex) => {
+      try {
         // Date separator
         const itemDate = new Date(item.createdAt);
         const dateStr = itemDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -966,6 +967,11 @@ function renderConversationThread() {
                 `;
             }
         }
+      } catch (itemErr) {
+        // One bad message must never blank the whole conversation. Skip it,
+        // render the rest, and log which item/type failed for diagnosis.
+        console.error('[renderConversationThread] item render failed — type:', item && item.type, 'dbId:', item && item.msgDbId, itemErr);
+      }
     });
 
     // Close transit zone if it was opened
