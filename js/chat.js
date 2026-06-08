@@ -658,6 +658,20 @@ function renderConversationThread() {
     let html = '';
     let lastDate = '';
     let transitBannerShown = false;
+    let prevWasReceived = false; // for grouping the other person's sender label
+
+    // Sender label shown above the first bubble in a run of received messages
+    const senderName = conv.otherUsername || conv.otherName || 'Them';
+    const _myAvatar = localStorage.getItem('moonpop_profilepic');
+    let senderAvatar = conv.otherAvatar || null;
+    // Safety: never render our own avatar for the other person
+    if (senderAvatar && _myAvatar && senderAvatar === _myAvatar) senderAvatar = null;
+    const buildSenderLabel = () => {
+        const av = senderAvatar
+            ? `<img src="${senderAvatar}" class="msg-sender-avatar" alt="">`
+            : `<span class="msg-sender-avatar msg-sender-initial">${senderName.charAt(0).toUpperCase()}</span>`;
+        return `<div class="msg-sender-label">${av}<span class="msg-sender-name">${senderName}</span></div>`;
+    };
 
     // Empty state: distinguish between never-had-messages, new-moon-in-progress,
     // and "this conversation was wiped by the last new moon" (conv.wipedAt set).
@@ -733,6 +747,11 @@ function renderConversationThread() {
             if (!dbId) return '';
             return renderReactionsBar(dbId);
         };
+
+        // Sender label above the first bubble of a received run (groups like iMessage)
+        const isReceivedBubble = (item.type === 'text' || item.type === 'lunar-note') && !item.sent;
+        if (isReceivedBubble && !prevWasReceived) html += buildSenderLabel();
+        if (item.type === 'text' || item.type === 'lunar-note') prevWasReceived = isReceivedBubble;
 
         if (item.type === 'lunar-note') {
             const lunarReceipt = item.sent ? (() => {
