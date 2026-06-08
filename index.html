@@ -1137,6 +1137,21 @@
         </div>
     </div>
 
+    <!-- Delete Account Confirmation Modal -->
+    <div class="modal-overlay" id="deleteAccountModal">
+        <div class="modal" style="max-width:440px;text-align:center;">
+            <button class="modal-close" onclick="closeDeleteAccountModal()" aria-label="Cancel">&times;</button>
+            <h2 style="font-size:24px;">Delete your account?</h2>
+            <p style="color:var(--muted);font-size:14px;line-height:1.6;margin:16px 0 8px;">This permanently erases everything — your messages, conversations, contacts, photos and profile. Your email is removed from our records too.</p>
+            <p style="color:var(--muted);font-size:13px;font-style:italic;margin:0 0 24px;">This cannot be undone.</p>
+            <div id="deleteAccountError" style="display:none;color:#E0876B;font-size:13px;margin:0 0 16px;"></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button id="deleteAccountConfirmBtn" onclick="confirmDeleteAccount()" style="width:100%;padding:12px;border-radius:var(--radius-pill);border:1px solid #C2553E;background:#C2553E;color:#fff;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;letter-spacing:0.3px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">Delete forever</button>
+                <button onclick="closeDeleteAccountModal()" style="width:100%;padding:12px;border-radius:var(--radius-pill);border:1px solid var(--line);background:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer;transition:color 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div class="notification-toast" id="notificationToast"></div>
 

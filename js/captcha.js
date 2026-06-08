@@ -1,36 +1,37 @@
 // Cloudflare Turnstile CAPTCHA helper for Supabase auth (OTP send paths).
 // Shared by the main app (index.html) and the admin panel (admin/index.html).
 //
-// WHY EXECUTE-ON-DEMAND (not an always-visible inline widget):
-// The signup flow is "verify last" — the OTP is only sent at the FINAL step,
-// minutes after the email is entered (name → city come in between). A token
-// grabbed up front would expire (~5 min) and is single-use, so it would be stale
-// by the time signInWithOtp runs. Instead we render ONE Turnstile widget in
-// `execution: 'execute'` mode and call turnstile.execute() right before each
-// auth call, so every signInWithOtp gets a fresh, single-use token. We reset
-// after each use. With `appearance: 'interaction-only'` legitimate users pass
-// silently; an interactive challenge only appears when Cloudflare deems it
-// necessary — which is exactly what raises the cost of scripted abuse of the
-// login flow (the residual check_login_email enumeration vector, F1).
-
-// PUBLIC site key — safe to ship in the frontend. Override per-environment by
-// setting `window.TURNSTILE_SITE_KEY` before this script loads.
+// DESIGN: one VISIBLE, always-rendered "managed" widget that continuously keeps a
+// fresh token. We render it as soon as the auth modal opens (initCaptcha), so by
+// the time the user submits, a token is already in hand. getCaptchaToken() returns
+// the current token and immediately resets the widget to mint the NEXT one (tokens
+// are single-use). On expiry/error the token is cleared and the widget refreshes.
 //
-// This is the real Moon Post Service Turnstile site key, bound in Cloudflare to
-// the hostnames www.moonpostservice.com and moonpostservice.com. On any other
-// host (e.g. localhost) Turnstile returns a domain error and getCaptchaToken()
-// resolves null — harmless while Supabase's captcha toggle is OFF.
-// For Cloudflare's test ("always passes") key, use '1x00000000000000000000AA'.
+// Why not execute-on-demand / interaction-only: that hid the challenge. Once
+// Cloudflare escalated from a silent pass to an interactive challenge, the invisible
+// widget never surfaced it, getCaptchaToken() timed out to null, and Supabase
+// rejected the tokenless request ("no captcha_token found"). A visible widget shows
+// the challenge plainly and is far more reliable.
+
+// PUBLIC site key — safe to ship. Override via window.TURNSTILE_SITE_KEY before load
+// (e.g. Cloudflare's test key '1x00000000000000000000AA', which passes on any host,
+// for local testing). Default is the real Moon Post Service key (bound to
+// www.moonpostservice.com / moonpostservice.com).
 const TURNSTILE_SITE_KEY = window.TURNSTILE_SITE_KEY || '0x4AAAAAADgWKXTtSu60qdJo';
 
 let _captchaWidgetId = null;
-let _captchaResolve = null;
+let _currentToken = null;
+let _waiters = [];
 
-// Render the (invisible until needed) widget exactly once. Returns false if the
-// Turnstile script hasn't loaded or there's no host element — callers then send a
-// null token, which is harmless while Supabase's captcha toggle is OFF and never
-// hard-blocks auth on a CDN hiccup.
-function _ensureCaptchaWidget() {
+function _resolveWaiters(tok) {
+    if (!tok) return;
+    const ws = _waiters; _waiters = [];
+    ws.forEach((r) => { try { r(tok); } catch (_) {} });
+}
+
+// Render the widget once into #turnstileHost. Safe to call repeatedly (no-op after
+// the first success). Returns false if Turnstile/host aren't ready yet.
+function initCaptcha() {
     if (_captchaWidgetId !== null) return true;
     if (typeof turnstile === 'undefined') return false;
     const host = document.getElementById('turnstileHost');
@@ -38,12 +39,10 @@ function _ensureCaptchaWidget() {
     try {
         _captchaWidgetId = turnstile.render(host, {
             sitekey: TURNSTILE_SITE_KEY,
-            theme: 'dark',                 // fits brass-on-navy
-            execution: 'execute',          // wait for turnstile.execute()
-            appearance: 'interaction-only',// invisible unless a challenge is required
-            callback: (token) => { if (_captchaResolve) _captchaResolve(token); },
-            'error-callback': () => { if (_captchaResolve) _captchaResolve(null); return true; },
-            'expired-callback': () => { try { turnstile.reset(_captchaWidgetId); } catch (_) {} },
+            theme: 'dark',            // fits brass-on-navy
+            callback: (tok) => { _currentToken = tok; _resolveWaiters(tok); },
+            'expired-callback': () => { _currentToken = null; try { turnstile.reset(_captchaWidgetId); } catch (_) {} },
+            'error-callback': () => { _currentToken = null; return true; },
         });
     } catch (e) {
         console.warn('[captcha] render failed:', e);
@@ -52,29 +51,33 @@ function _ensureCaptchaWidget() {
     return _captchaWidgetId !== null;
 }
 
-// Returns a fresh, single-use Turnstile token, or null if Turnstile is
-// unavailable. Pass the result as `options.captchaToken` on a Supabase auth call.
-async function getCaptchaToken() {
-    if (!_ensureCaptchaWidget()) return null;
-    // Reset first so every attempt starts from a clean slate (tokens are single-use).
-    try { turnstile.reset(_captchaWidgetId); } catch (_) {}
-    return await new Promise((resolve) => {
-        let settled = false;
-        const done = (v) => { if (!settled) { settled = true; _captchaResolve = null; resolve(v); } };
-        _captchaResolve = done;
-        try { turnstile.execute(_captchaWidgetId); } catch (_) { done(null); }
-        // Safety net: never leave the auth button hanging if the challenge stalls.
-        setTimeout(() => done(null), 30000);
-    });
+// Returns a fresh, single-use Turnstile token (or null if unavailable). Pass it as
+// options.captchaToken. After handing out the current token we reset the widget so a
+// new token is minted for the next call.
+async function getCaptchaToken({ timeoutMs = 12000 } = {}) {
+    if (!initCaptcha()) return null;
+    let tok = _currentToken;
+    if (!tok) {
+        tok = await new Promise((resolve) => {
+            let done = false;
+            const finish = (v) => { if (!done) { done = true; _waiters = _waiters.filter((w) => w !== finish); resolve(v); } };
+            _waiters.push(finish);
+            setTimeout(() => finish(_currentToken || null), timeoutMs);
+        });
+    }
+    // Consume: clear and mint a fresh token for the next attempt (single-use).
+    _currentToken = null;
+    if (_captchaWidgetId !== null) { try { turnstile.reset(_captchaWidgetId); } catch (_) {} }
+    return tok || null;
 }
 
-// Explicitly clear the widget (e.g. after a failed attempt). getCaptchaToken()
-// already resets before each run, so this is only needed for manual UX resets.
 function resetCaptcha() {
+    _currentToken = null;
     if (_captchaWidgetId !== null && typeof turnstile !== 'undefined') {
         try { turnstile.reset(_captchaWidgetId); } catch (_) {}
     }
 }
 
+window.initCaptcha = initCaptcha;
 window.getCaptchaToken = getCaptchaToken;
 window.resetCaptcha = resetCaptcha;

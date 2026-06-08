@@ -563,14 +563,60 @@ async function logOut() {
     try { localStorage.clear(); } catch (_) {}
 }
 
-async function deleteAccount() {
-    if (!confirm('Are you sure you want to delete your account? This cannot be undone.')) return;
-    if (!confirm('This will permanently delete all your messages, contacts, and data. Continue?')) return;
-    
-    // Sign out
-    await sb.auth.signOut();
-    localStorage.clear();
-    window.location.reload();
+// Account deletion uses a styled confirmation modal (see #deleteAccountModal),
+// not the browser confirm() popup. The actual erase is server-side and
+// irreversible: delete_my_account() removes every trace of the user (messages,
+// threads, roulette, contacts, photos, profile, auth row) in one transaction.
+function deleteAccount() {
+    const modal = document.getElementById('deleteAccountModal');
+    if (!modal) return;
+    // Reset to the initial confirm state each time it's opened.
+    const err = document.getElementById('deleteAccountError');
+    if (err) { err.style.display = 'none'; err.textContent = ''; }
+    const btn = document.getElementById('deleteAccountConfirmBtn');
+    if (btn) { btn.disabled = false; btn.textContent = 'Delete forever'; }
+    modal.classList.add('active');
+}
+
+function closeDeleteAccountModal() {
+    document.getElementById('deleteAccountModal')?.classList.remove('active');
+}
+
+async function confirmDeleteAccount() {
+    const btn = document.getElementById('deleteAccountConfirmBtn');
+    const err = document.getElementById('deleteAccountError');
+    if (err) { err.style.display = 'none'; err.textContent = ''; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+
+    const { error } = await sb.rpc('delete_my_account');
+
+    if (error) {
+        // Deletion failed — keep the user signed in so nothing is left in a
+        // half-torn-down state, and tell them it didn't work.
+        console.error('Account deletion failed:', error);
+        if (err) {
+            err.textContent = 'Something went wrong deleting your account. Please try again.';
+            err.style.display = 'block';
+        }
+        if (btn) { btn.disabled = false; btn.textContent = 'Delete forever'; }
+        return;
+    }
+
+    // Account is gone. Tear down the session and return to the landing page.
+    closeDeleteAccountModal();
+    closeSettings();
+    currentAuthUser = null;
+    _appDataLoaded = false;
+    messages = [];
+    conversations = [];
+    currentConversation = null;
+    currentConversationIndex = -1;
+    globalTransmissions = [];
+    cleanupRealtime();
+    showOnboarding();
+    try { await sb.auth.signOut(); } catch (_) {}
+    try { localStorage.clear(); } catch (_) {}
+    try { showNotificationToast('Your account has been deleted.'); } catch (_) {}
 }
 
 // Track original profile values to detect changes
