@@ -1213,6 +1213,9 @@ function initMoonriseParallax() {
 function showOnboarding() {
     const overlay = document.getElementById('onboardingOverlay');
     if (!overlay) return;
+    // Make sure no leftover auth/OTP modal sits on top of the landing page
+    // (e.g. after sign-out, where the "Welcome back" code screen could still be open).
+    if (typeof closeAuthModal === 'function') closeAuthModal();
     overlay.classList.remove('hidden');
     // The onboarding overlay is opaque (background: var(--bg)) and sits above the
     // global starfield, so #starfieldTwinkle is fully occluded here — pause it so we
