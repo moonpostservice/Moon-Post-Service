@@ -357,11 +357,17 @@ async function openConversation(convIndex) {
         console.error('[openConversation] renderConversationThread failed for', conv.dbConversationId, err);
         const content = document.getElementById('detailContent');
         if (content) {
+            const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const errMsg = err && err.message ? err.message : String(err);
+            const errLine = ((err && err.stack ? err.stack.split('\n')[1] : '') || '').trim();
             content.innerHTML =
                 '<div class="new-cycle-empty">' +
                 '<div class="new-cycle-empty-icon">' + (typeof iconSvg === 'function' ? iconSvg('new-moon', 'lg') : '') + '</div>' +
                 '<div class="new-cycle-empty-title">This conversation couldn’t load</div>' +
                 '<div class="new-cycle-empty-subtitle">Please refresh and try again.</div>' +
+                '<div class="new-cycle-empty-subtitle" style="margin-top:10px;font-family:monospace;font-size:11px;opacity:0.7;word-break:break-word;">' +
+                    esc(errMsg) + (errLine ? '<br>' + esc(errLine) : '') +
+                '</div>' +
                 '</div>';
         }
     }
