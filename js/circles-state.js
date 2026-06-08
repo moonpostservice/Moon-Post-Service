@@ -214,6 +214,11 @@ let currentConversation = null; // Currently open conversation
 // loadWipedConversations() and re-merged on EVERY buildConversations() so realtime/
 // effects rebuilds don't drop them from the inbox.
 let _wipedConvCache = [];
+// My per-conversation read state: conversation_id -> last_read_at (ISO). This app
+// tracks "read" in the read_receipts table, NOT messages.read_at — so message
+// visibility must consult THIS to tell already-seen messages (don't re-seal under a
+// down moon) from genuinely-new ones (gate until moonrise).
+let myReadReceipts = {};
 
 // Build conversations: group messages by the other person
 function buildConversations() {
@@ -950,6 +955,17 @@ async function loadMessages(retryCount = 0) {
             if (profiles) profiles.forEach(p => { profileMap[p.id] = p; });
         }
 
+        // Prefetch my read receipts BEFORE mapping so message visibility can tell
+        // "already seen" (read at/after the message) from genuinely-new messages.
+        // (read_receipts is this app's real read signal; messages.read_at is unused.)
+        try {
+            const { data: _rcpts } = await sb.from('read_receipts')
+                .select('conversation_id, last_read_at')
+                .eq('user_id', currentAuthUser.id);
+            myReadReceipts = {};
+            (_rcpts || []).forEach(r => { myReadReceipts[r.conversation_id] = r.last_read_at; });
+        } catch (e) { console.error('[loadMessages] read_receipts prefetch failed:', e); }
+
         const allMessages = [];
         const seenIds = new Set(); // Global dedup across sent + received
 
@@ -1041,8 +1057,11 @@ async function loadMessages(retryCount = 0) {
             const actuallyInTransit = stillInTransit && !tooOld;
             // Once a message has been read it stays readable — the moon-gate only
             // seals genuinely new/unread incoming messages, never re-hides history
-            // the recipient has already seen.
-            const alreadyRead = !!m.read_at;
+            // the recipient has already seen. "Read" = my read_receipt for this
+            // conversation is at/after the message (NOT messages.read_at, which is
+            // never set for received messages).
+            const _lastRead = m.conversation_id ? myReadReceipts[m.conversation_id] : null;
+            const alreadyRead = !!(_lastRead && m.created_at && new Date(_lastRead) >= new Date(m.created_at));
             const contentVisible = alreadyRead || (!!moonData.isVisible && !actuallyInTransit);
 
             allMessages.push({

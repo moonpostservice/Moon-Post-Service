@@ -101,8 +101,11 @@ async function loadFullConversationThread(conv) {
             const actuallyInTransit = stillInTransit && !tooOld;
             // Once a message has been read it stays readable — the moon-gate only
             // seals genuinely new/unread incoming messages, never re-hides history
-            // the recipient has already seen.
-            const alreadyRead = !isSent && !!m.read_at;
+            // the recipient has already seen. "Read" = my read_receipt for this
+            // conversation is at/after the message (read_receipts is the real read
+            // signal; messages.read_at is never set for received messages).
+            const _lastRead = (typeof myReadReceipts !== 'undefined' && m.conversation_id) ? myReadReceipts[m.conversation_id] : null;
+            const alreadyRead = !isSent && !!(_lastRead && m.created_at && new Date(_lastRead) >= new Date(m.created_at));
             const contentVisible = isSent || alreadyRead || (!!moonData.isVisible && !actuallyInTransit);
 
             // For sender name: use profile, then recipient_name ONLY for sent messages
@@ -399,6 +402,9 @@ async function openConversation(convIndex) {
     // Mark conversation as read (always, even if unreadCount is 0 — keeps receipt fresh)
     if (conv.dbConversationId && currentAuthUser) {
         conv.unreadCount = 0;
+        // Keep in-memory read state in sync so already-seen messages stay visible
+        // on subsequent renders even when the moon is down.
+        if (typeof myReadReceipts !== 'undefined') myReadReceipts[conv.dbConversationId] = new Date().toISOString();
         // Always save to localStorage (reliable fallback)
         saveLocalReadReceipt(conv.dbConversationId);
         renderMessages(); // Re-render inbox to clear badge
