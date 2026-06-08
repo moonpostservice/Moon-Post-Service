@@ -210,6 +210,10 @@ async function loadContacts() {
 let messages = [];
 let conversations = []; // Grouped by person
 let currentConversation = null; // Currently open conversation
+// Dissolved (new-moon-wiped) conversations with no surviving messages. Cached by
+// loadWipedConversations() and re-merged on EVERY buildConversations() so realtime/
+// effects rebuilds don't drop them from the inbox.
+let _wipedConvCache = [];
 
 // Build conversations: group messages by the other person
 function buildConversations() {
@@ -482,12 +486,94 @@ function buildConversations() {
 
     // Recalculate time strings and sort conversations by latest activity
     conversations = Object.values(convMap);
+
+    // Merge dissolved (new-moon-wiped) conversations that have no surviving
+    // messages, so they stay in the inbox across EVERY rebuild — not just the
+    // one inside loadMessages(). Skip any that already have a real (un-wiped)
+    // entry from surviving messages, deduped by conversation id or person.
+    if (_wipedConvCache.length) {
+        const haveConvId = new Set(conversations.map(c => c.dbConversationId).filter(Boolean));
+        const haveProfile = new Set(conversations.map(c => c.otherProfileId).filter(Boolean));
+        _wipedConvCache.forEach(w => {
+            if (w.dbConversationId && haveConvId.has(w.dbConversationId)) return;
+            if (w.otherProfileId && haveProfile.has(w.otherProfileId)) return;
+            conversations.push({ ...w });
+        });
+    }
+
     conversations.forEach(conv => {
         conv.latestTime = timeAgo(conv.latestCreatedAt);
     });
     conversations.sort((a, b) =>
         new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt)
     );
+}
+
+// Fetch dissolved (new-moon-wiped) conversations that have no surviving messages
+// and cache them so buildConversations() can re-merge them on every rebuild.
+// (Previously this injection lived inline in loadMessages, so any later
+// buildConversations() call from realtime/effects silently dropped these rows.)
+async function loadWipedConversations() {
+    _wipedConvCache = [];
+    if (!currentAuthUser) return;
+    try {
+        const { data: myParticipations } = await sb.from('conversation_participants')
+            .select('conversation_id')
+            .eq('profile_id', currentAuthUser.id);
+        if (!myParticipations || myParticipations.length === 0) return;
+
+        const ids = myParticipations.map(p => p.conversation_id);
+        const { data: wipedConvs } = await sb.from('conversations')
+            .select('id, wiped_at, last_message_at')
+            .in('id', ids)
+            .not('wiped_at', 'is', null);
+        if (!wipedConvs || wipedConvs.length === 0) return;
+
+        const wipedIds = wipedConvs.map(c => c.id);
+        const { data: otherParts } = await sb.from('conversation_participants')
+            .select('conversation_id, profile_id, email')
+            .in('conversation_id', wipedIds)
+            .neq('profile_id', currentAuthUser.id);
+
+        const otherProfileIds = (otherParts || []).map(p => p.profile_id).filter(Boolean);
+        const otherProfileMap = {};
+        if (otherProfileIds.length > 0) {
+            const { data: otherProfiles } = await sb.from('profiles')
+                .select('id, username, first_name, last_name, avatar_url, city')
+                .in('id', otherProfileIds);
+            (otherProfiles || []).forEach(p => { otherProfileMap[p.id] = p; });
+        }
+
+        wipedConvs.forEach(conv => {
+            const other = (otherParts || []).find(p => p.conversation_id === conv.id);
+            if (!other) return;
+            const profile = other.profile_id ? otherProfileMap[other.profile_id] : null;
+            const otherName = profile
+                ? (profile.username || profile.first_name || other.email || 'Unknown')
+                : (other.email || 'Unknown');
+            const wipedDate = new Date(conv.wiped_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            _wipedConvCache.push({
+                otherKey: other.profile_id || other.email,
+                otherName,
+                otherUsername: profile?.username || null,
+                otherAvatar: profile?.avatar_url || null,
+                otherProfileId: other.profile_id || null,
+                otherEmail: other.email || null,
+                location: profile?.city || null,
+                messages: [],
+                latestCreatedAt: conv.wiped_at,
+                latestPreview: 'New moon erased this conversation',
+                latestTime: wipedDate,
+                dbConversationId: conv.id,
+                wipedAt: conv.wiped_at,
+                unreadCount: 0,
+                hasInTransit: false,
+                hasIncomingTransit: false,
+            });
+        });
+    } catch (e) {
+        console.error('[loadWipedConversations] failed:', e);
+    }
 }
 
 // Load conversation metadata: unread counts + read receipts from DB
@@ -1121,82 +1207,12 @@ async function loadMessages(retryCount = 0) {
         messages = allMessages;
 
         // Build conversations (grouped by person)
+        // Fetch dissolved (new-moon-wiped) conversations into the cache FIRST, then
+        // build — buildConversations() re-merges the cache on every rebuild so later
+        // realtime/effects refreshes keep these rows in the inbox (the old inline
+        // injection ran only here, so any later rebuild silently dropped them).
+        await loadWipedConversations();
         buildConversations();
-
-        // Inject wiped conversations that have no surviving messages.
-        // After a new-moon wipe all messages are deleted, so buildConversations()
-        // produces an empty list. We query conversation_participants to find every
-        // conversation the user has been in, then add placeholder entries for
-        // any that are missing (because they were wiped) so the inbox stays populated.
-        try {
-            const existingConvIds = new Set(conversations.map(c => c.dbConversationId).filter(Boolean));
-
-            const { data: myParticipations } = await sb.from('conversation_participants')
-                .select('conversation_id')
-                .eq('profile_id', currentAuthUser.id);
-
-            if (myParticipations && myParticipations.length > 0) {
-                const missingIds = myParticipations
-                    .map(p => p.conversation_id)
-                    .filter(id => !existingConvIds.has(id));
-
-                if (missingIds.length > 0) {
-                    const { data: wipedConvs } = await sb.from('conversations')
-                        .select('id, wiped_at, last_message_at')
-                        .in('id', missingIds)
-                        .not('wiped_at', 'is', null);
-
-                    if (wipedConvs && wipedConvs.length > 0) {
-                        const wipedIds = wipedConvs.map(c => c.id);
-
-                        const { data: otherParts } = await sb.from('conversation_participants')
-                            .select('conversation_id, profile_id, email')
-                            .in('conversation_id', wipedIds)
-                            .neq('profile_id', currentAuthUser.id);
-
-                        const otherProfileIds = (otherParts || []).map(p => p.profile_id).filter(Boolean);
-                        const otherProfileMap = {};
-                        if (otherProfileIds.length > 0) {
-                            const { data: otherProfiles } = await sb.from('profiles')
-                                .select('id, username, first_name, last_name, avatar_url, city')
-                                .in('id', otherProfileIds);
-                            (otherProfiles || []).forEach(p => { otherProfileMap[p.id] = p; });
-                        }
-
-                        wipedConvs.forEach(conv => {
-                            const other = (otherParts || []).find(p => p.conversation_id === conv.id);
-                            if (!other) return;
-                            const profile = other.profile_id ? otherProfileMap[other.profile_id] : null;
-                            const otherName = profile
-                                ? (profile.first_name || profile.username || other.email || 'Unknown')
-                                : (other.email || 'Unknown');
-                            const wipedDate = new Date(conv.wiped_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                            conversations.push({
-                                otherKey: other.profile_id || other.email,
-                                otherName,
-                                otherUsername: profile?.username || null,
-                                otherAvatar: profile?.avatar_url || null,
-                                otherProfileId: other.profile_id || null,
-                                otherEmail: other.email || null,
-                                location: profile?.city || null,
-                                messages: [],
-                                latestCreatedAt: conv.wiped_at,
-                                latestPreview: 'New moon erased this conversation',
-                                latestTime: wipedDate,
-                                dbConversationId: conv.id,
-                                wipedAt: conv.wiped_at,
-                                unreadCount: 0,
-                                hasInTransit: false,
-                                hasIncomingTransit: false,
-                            });
-                        });
-                        console.log('[loadMessages] Injected', wipedConvs.length, 'wiped conversation(s) into inbox');
-                    }
-                }
-            }
-        } catch (e) {
-            console.error('[loadMessages] Failed to inject wiped conversations:', e);
-        }
 
         // Load unread counts + read receipt metadata from DB
         await loadConversationMetadata();

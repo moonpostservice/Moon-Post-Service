@@ -700,6 +700,7 @@ function renderConversationThread() {
                 <div class="new-cycle-empty-icon wiped-moon">${iconSvg('new-moon', 'lg')}</div>
                 <div class="new-cycle-empty-title">Wiped at the new moon</div>
                 <div class="new-cycle-empty-subtitle">This conversation dissolved with the dark moon on ${wipedDate}.</div>
+                <div class="new-cycle-empty-subtitle" style="margin-top:6px;opacity:0.85;">Write a new message to begin again under this moon.</div>
             </div>`;
         } else {
             const illum = typeof SunCalc !== 'undefined' ? SunCalc.getMoonIllumination(new Date()) : null;
