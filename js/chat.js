@@ -267,8 +267,10 @@ async function openConversation(convIndex) {
         ? `${namePrefix}${conv.location || 'Unknown'} · Online under the same sky`
         : `${namePrefix}${conv.location || 'Unknown'} · ${conv.messages.length} transmission${conv.messages.length > 1 ? 's' : ''}`;
 
-    // Load replies for ALL messages in this conversation
-    if (currentAuthUser) {
+    // Load replies for ALL messages in this conversation.
+    // Wrapped so a replies/reactions query failure can't abort the open and leave
+    // the chatbox stuck closed — the panel still opens with whatever loaded.
+    if (currentAuthUser) try {
         const msgIds = conv.messages.filter(m => m.dbId).map(m => m.dbId);
         if (msgIds.length > 0) {
             const { data: allReplies, error: replErr } = await sb.from('replies')
@@ -339,14 +341,30 @@ async function openConversation(convIndex) {
                 });
             }
         }
-    }
+    } catch (e) { console.error('[openConversation] replies/reactions load failed:', e); }
 
     // Close Shared Sky if it's open
     document.getElementById('sharedSkyPage').classList.remove('active', 'closing');
 
-    renderConversationThread();
+    // Show the panel BEFORE rendering so a render error can never leave the
+    // chatbox stuck closed (it used to render first, so any throw in
+    // renderConversationThread silently aborted before the panel opened).
     page.classList.add('active');
     document.body.style.overflow = 'hidden';
+    try {
+        renderConversationThread();
+    } catch (err) {
+        console.error('[openConversation] renderConversationThread failed for', conv.dbConversationId, err);
+        const content = document.getElementById('detailContent');
+        if (content) {
+            content.innerHTML =
+                '<div class="new-cycle-empty">' +
+                '<div class="new-cycle-empty-icon">' + (typeof iconSvg === 'function' ? iconSvg('new-moon', 'lg') : '') + '</div>' +
+                '<div class="new-cycle-empty-title">This conversation couldn’t load</div>' +
+                '<div class="new-cycle-empty-subtitle">Please refresh and try again.</div>' +
+                '</div>';
+        }
+    }
 
     // Desktop inline chat: position overlay in the right panel
     const _isMobile = window.matchMedia('(max-width: 900px)').matches;
