@@ -1,0 +1,22 @@
+-- 038_drop_check_login_email.sql
+--
+-- Close the F1 email-enumeration vector at the API layer.
+--
+-- check_login_email(text) (migration 022) was GRANTed EXECUTE to anon so the login
+-- screen could pre-check whether an email was registered. That made it an oracle:
+-- anyone with the public anon key could call it in a loop and learn which emails
+-- have accounts (a row => registered, empty => not). The Turnstile captcha we added
+-- only guarded the browser flow, so a script calling the RPC directly bypassed it.
+--
+-- The frontend no longer performs any existence pre-check (the login UI now shows a
+-- neutral "if an account exists, we've sent a code" message regardless), so the
+-- function has no remaining caller. Drop it outright — that removes every grant in
+-- one shot. (A plain REVOKE FROM anon would NOT be enough on its own: functions also
+-- carry a default EXECUTE grant to PUBLIC, so anon would retain access unless PUBLIC
+-- were revoked too. DROP avoids that footgun entirely.)
+--
+-- Note: this also removes the (already client-side-only, already-bypassable)
+-- suspension pre-check the login screen did via this RPC. Suspension enforcement
+-- belongs server-side and is tracked as a separate follow-up.
+
+DROP FUNCTION IF EXISTS public.check_login_email(text);
