@@ -724,19 +724,19 @@
 }
 .new-moon-warning.hidden { display: none; }
 .new-moon-warning-text {
-    color: rgba(232, 244, 253, 0.7);
+    color: rgba(234, 216, 191, 0.7);
     font-size: 13px;
     font-style: italic;
 }
 .new-moon-warning-dismiss {
     background: none;
     border: none;
-    color: rgba(232, 244, 253, 0.4);
+    color: rgba(234, 216, 191, 0.4);
     cursor: pointer;
     font-size: 14px;
     padding: 2px 6px;
 }
-.new-moon-warning-dismiss:hover { color: rgba(232, 244, 253, 0.8); }
+.new-moon-warning-dismiss:hover { color: rgba(234, 216, 191, 0.8); }
 @keyframes newMoonPulse {
     0%, 100% { border-color: rgba(212, 181, 138, 0.15); }
     50% { border-color: rgba(212, 181, 138, 0.3); }
@@ -751,7 +751,7 @@
     padding: 14px 16px;
     background:
         radial-gradient(80% 140% at 0% 0%, rgba(212, 181, 138, 0.14), transparent 70%),
-        linear-gradient(135deg, rgba(10, 22, 40, 0.85), rgba(19, 39, 68, 0.85));
+        linear-gradient(135deg, rgba(3, 10, 24, 0.85), rgba(7, 19, 39, 0.85));
     border: 1px solid rgba(212, 181, 138, 0.22);
     border-radius: 14px;
     position: relative;
@@ -779,31 +779,31 @@
     border-radius: 50%;
     margin-top: 2px;
     background:
-        radial-gradient(circle at 35% 35%, rgba(232, 244, 253, 0.15), transparent 60%),
-        #0a1628;
+        radial-gradient(circle at 35% 35%, rgba(234, 216, 191, 0.15), transparent 60%),
+        var(--bg);
     border: 1px solid rgba(212, 181, 138, 0.35);
     box-shadow:
-        inset 0 0 10px rgba(10, 22, 40, 0.9),
+        inset 0 0 10px rgba(3, 10, 24, 0.9),
         0 0 14px rgba(212, 181, 138, 0.25);
     animation: inboxWipeMoonBreathe 5s ease-in-out infinite;
 }
 @keyframes inboxWipeMoonBreathe {
-    0%, 100% { box-shadow: inset 0 0 10px rgba(10, 22, 40, 0.9), 0 0 10px rgba(212, 181, 138, 0.18); }
-    50%      { box-shadow: inset 0 0 10px rgba(10, 22, 40, 0.9), 0 0 22px rgba(212, 181, 138, 0.45); }
+    0%, 100% { box-shadow: inset 0 0 10px rgba(3, 10, 24, 0.9), 0 0 10px rgba(212, 181, 138, 0.18); }
+    50%      { box-shadow: inset 0 0 10px rgba(3, 10, 24, 0.9), 0 0 22px rgba(212, 181, 138, 0.45); }
 }
 .inbox-wipe-banner-body {
     flex: 1;
     min-width: 0;
 }
 .inbox-wipe-banner-title {
-    color: rgba(232, 244, 253, 0.92);
+    color: rgba(234, 216, 191, 0.92);
     font-size: 14px;
     font-weight: 600;
     letter-spacing: 0.3px;
     margin-bottom: 4px;
 }
 .inbox-wipe-banner-sub {
-    color: rgba(232, 244, 253, 0.58);
+    color: rgba(234, 216, 191, 0.58);
     font-size: 12px;
     line-height: 1.5;
     font-style: italic;
@@ -812,7 +812,7 @@
     flex-shrink: 0;
     background: none;
     border: none;
-    color: rgba(232, 244, 253, 0.35);
+    color: rgba(234, 216, 191, 0.35);
     cursor: pointer;
     font-size: 14px;
     padding: 2px 6px;
@@ -820,7 +820,7 @@
     align-self: flex-start;
     transition: color 0.2s ease;
 }
-.inbox-wipe-banner-dismiss:hover { color: rgba(232, 244, 253, 0.85); }
+.inbox-wipe-banner-dismiss:hover { color: rgba(234, 216, 191, 0.85); }
 
 /* Vaporize Animation — messages dissolving at new moon */
 @keyframes vaporize {
@@ -866,7 +866,7 @@
     letter-spacing: 0.5px;
 }
 .new-cycle-empty-subtitle {
-    color: rgba(232, 244, 253, 0.35);
+    color: rgba(234, 216, 191, 0.35);
     font-size: 13px;
 }
 
@@ -932,7 +932,7 @@
     width: 3px;
     height: 3px;
     border-radius: 50%;
-    background: rgba(232, 244, 253, 0.7);
+    background: rgba(234, 216, 191, 0.7);
     box-shadow: 0 0 6px rgba(212, 181, 138, 0.6);
     opacity: 0;
     transform: translate(-50%, -50%);
@@ -960,11 +960,11 @@
     50%      { opacity: 0.7;  transform: scale(1.04); }
 }
 .new-cycle-empty.wiped .new-cycle-empty-title {
-    color: rgba(232, 244, 253, 0.82);
+    color: rgba(234, 216, 191, 0.82);
     letter-spacing: 1px;
 }
 .new-cycle-empty.wiped .new-cycle-empty-subtitle {
-    color: rgba(232, 244, 253, 0.5);
+    color: rgba(234, 216, 191, 0.5);
     max-width: 280px;
     line-height: 1.5;
 }
@@ -1333,7 +1333,7 @@
 
 /* New message picker — dark theme + right panel on desktop */
 #newMessagePicker .message-page-inner {
-    background: rgba(10, 22, 40, 0.95);
+    background: rgba(3, 10, 24, 0.95);
 }
 #newMessagePicker .message-page-header {
     border-bottom: 1px solid rgba(212, 181, 138, 0.12);
@@ -1552,7 +1552,7 @@
 .compose-toggle {
     display: flex;
     align-items: center;
-    background: rgba(10, 22, 40, 0.6);
+    background: rgba(3, 10, 24, 0.6);
     padding: 4px;
     border-radius: 9999px;
     border: 1px solid rgba(212, 181, 138, 0.15);
@@ -1574,7 +1574,7 @@
 }
 .compose-toggle-btn.active {
     background: var(--accent);
-    color: #0a1628;
+    color: var(--on-accent);
     box-shadow: 0 0 15px rgba(212, 181, 138, 0.4);
 }
 .compose-toggle-btn:not(.active):hover {
@@ -1613,7 +1613,7 @@
     font-size: 12px;
 }
 #messageModal .lunar-step-card {
-    background: rgba(10, 22, 40, 0.4);
+    background: rgba(3, 10, 24, 0.4);
     border-color: rgba(212, 181, 138, 0.15);
     color: white;
 }
@@ -1621,7 +1621,7 @@
     color: rgba(212, 181, 138, 0.5);
 }
 #messageModal .lunar-input {
-    background: rgba(10, 22, 40, 0.6);
+    background: rgba(3, 10, 24, 0.6);
     border-color: rgba(255,255,255,0.1);
     color: white;
 }
@@ -1638,7 +1638,7 @@
 }
 #messageModal .lunar-step-next:hover:not(:disabled) {
     background: var(--accent);
-    color: #0a1628;
+    color: var(--on-accent);
 }
 #messageModal .lunar-step-back {
     color: rgba(255,255,255,0.4);
@@ -1884,7 +1884,7 @@
 #messageModal .form-group label { color: rgba(212, 181, 138, 0.7); }
 #messageModal .form-group input,
 #messageModal .form-group textarea {
-    background: rgba(10, 22, 40, 0.6);
+    background: rgba(3, 10, 24, 0.6);
     border-color: rgba(255,255,255,0.1);
     color: white;
 }
@@ -1901,7 +1901,7 @@
     box-shadow: 0 0 20px rgba(212, 181, 138, 0.3);
 }
 #messageModal .send-button:hover { background: rgba(212, 181, 138, 0.9); }
-#messageModal .recipient-selector input { background: rgba(10, 22, 40, 0.6); color: white; border-color: rgba(255,255,255,0.1); }
+#messageModal .recipient-selector input { background: rgba(3, 10, 24, 0.6); color: white; border-color: rgba(255,255,255,0.1); }
 #messageModal .recipient-dropdown { background: rgba(18, 35, 58, 0.95); border-color: rgba(212, 181, 138, 0.2); }
 #messageModal #newContactCityDropdown { background: rgba(18, 35, 58, 0.95); border-color: rgba(212, 181, 138, 0.2); }
 #messageModal #newContactCityDropdown .city-option { color: rgba(255,255,255,0.7); }
@@ -1913,7 +1913,7 @@
 #messageModal .form-group label { color: rgba(255,255,255,0.5); }
 #messageModal .form-group input,
 #messageModal .form-group textarea {
-    background: rgba(10, 22, 40, 0.6);
+    background: rgba(3, 10, 24, 0.6);
     color: rgba(255,255,255,0.9);
     border-color: rgba(212, 181, 138, 0.15);
 }
@@ -1965,7 +1965,7 @@
 
 /* Contacts search bar */
 #contactsPage #contactSearchInput {
-    background: rgba(10, 22, 40, 0.6) !important;
+    background: rgba(3, 10, 24, 0.6) !important;
     color: rgba(255,255,255,0.9) !important;
     border: 1px solid rgba(212, 181, 138, 0.15) !important;
 }
@@ -1980,7 +1980,7 @@
 
 /* Contacts search container (overrides inline styles) */
 #contactsPage .message-page-header + div {
-    background: rgba(10, 22, 40, 0.4) !important;
+    background: rgba(3, 10, 24, 0.4) !important;
     border-bottom-color: rgba(212, 181, 138, 0.1) !important;
 }
 

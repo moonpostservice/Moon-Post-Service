@@ -486,9 +486,9 @@ function setupRingCanvas(canvasId) {
     const hero = canvas.parentElement;
     let W, H, cx, cy, baseR;
     const RINGS = [
-        { radiusFrac: 0.38, speed: 0.0055, dir: 1, ringColor: 'rgba(212,181,138,0.12)', ringWidth: 0.5, dots: [{ angle: 0, color: [79,195,247], size: 4.5, trail: 120, history: [] }, { angle: Math.PI, color: [53,125,197], size: 3, trail: 80, history: [] }] },
-        { radiusFrac: 0.62, speed: 0.0032, dir: 1, ringColor: 'rgba(100,160,220,0.18)', ringWidth: 0.8, dots: [{ angle: 0, color: [79,195,247], size: 5.5, trail: 160, history: [] }, { angle: Math.PI*0.67, color: [53,125,197], size: 3.5, trail: 100, history: [] }, { angle: Math.PI*1.33, color: [79,195,247], size: 3, trail: 80, history: [] }] },
-        { radiusFrac: 0.80, speed: 0.0018, dir: -1, ringColor: 'rgba(212,181,138,0.08)', ringWidth: 0.5, dots: [{ angle: Math.PI*0.25, color: [79,195,247], size: 3, trail: 90, history: [] }, { angle: Math.PI*1.25, color: [53,125,197], size: 2.5, trail: 70, history: [] }] },
+        { radiusFrac: 0.38, speed: 0.0055, dir: 1, ringColor: 'rgba(212,181,138,0.12)', ringWidth: 0.5, dots: [{ angle: 0, color: [212,181,138], size: 4.5, trail: 120, history: [] }, { angle: Math.PI, color: [201,157,87], size: 3, trail: 80, history: [] }] },
+        { radiusFrac: 0.62, speed: 0.0032, dir: 1, ringColor: 'rgba(212,181,138,0.18)', ringWidth: 0.8, dots: [{ angle: 0, color: [212,181,138], size: 5.5, trail: 160, history: [] }, { angle: Math.PI*0.67, color: [201,157,87], size: 3.5, trail: 100, history: [] }, { angle: Math.PI*1.33, color: [212,181,138], size: 3, trail: 80, history: [] }] },
+        { radiusFrac: 0.80, speed: 0.0018, dir: -1, ringColor: 'rgba(212,181,138,0.08)', ringWidth: 0.5, dots: [{ angle: Math.PI*0.25, color: [212,181,138], size: 3, trail: 90, history: [] }, { angle: Math.PI*1.25, color: [201,157,87], size: 2.5, trail: 70, history: [] }] },
     ];
     function resize() {
         W = hero.offsetWidth; H = hero.offsetHeight;
@@ -909,7 +909,7 @@ function renderContactRow(contact, isOnMps) {
         : `<span>${initial}</span>`;
     const online = isContactOnline(contact);
     const statusDotColor = online ? '#4caf50' : (isOnMps ? '#4caf50' : '');
-    const statusDot = statusDotColor ? `<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:${statusDotColor};border:2px solid #0a1628;z-index:1;${!online && isOnMps ? 'opacity:0.4;' : ''}"></span>` : '';
+    const statusDot = statusDotColor ? `<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:${statusDotColor};border:2px solid var(--bg);z-index:1;${!online && isOnMps ? 'opacity:0.4;' : ''}"></span>` : '';
 
     // Display name with username and self badge
     const displayName = contact.name || 'Unknown';
@@ -1555,7 +1555,7 @@ function renderPickerRow(contact) {
         ? `<img src="${contact.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
         : `<span>${initial}</span>`;
     const online = isContactOnline(contact);
-    const statusDot = online ? `<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid #0a1628;z-index:1;"></span>` : '';
+    const statusDot = online ? `<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#4caf50;border:2px solid var(--bg);z-index:1;"></span>` : '';
 
     return `
         <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid rgba(212,181,138,0.1);gap:14px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(212,181,138,0.06)'" onmouseout="this.style.background='transparent'" onclick="pickContactForMessage('${escapedName}')">

@@ -1396,7 +1396,7 @@
                     <div class="reply-row">
                         <div style="position:relative;flex-shrink:0;">
                             <button id="sharedSkyPlusBtn" onclick="event.stopPropagation();sharedSkyPlusAction()" style="cursor:pointer;padding:0;background:none;border:1px solid rgba(212,181,138,0.3);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:20px;font-weight:300;line-height:1;">+</button>
-                            <div id="sharedSkyPhotoMenu" style="position:absolute;bottom:40px;left:0;background:rgba(10,22,40,0.95);border:1px solid rgba(212,181,138,0.2);border-radius:10px;padding:4px 0;min-width:180px;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+                            <div id="sharedSkyPhotoMenu" style="position:absolute;bottom:40px;left:0;background:rgba(3, 10, 24,0.95);border:1px solid rgba(212,181,138,0.2);border-radius:10px;padding:4px 0;min-width:180px;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
                                 <label for="sharedSkyCameraInput" class="ss-photo-menu-item ss-camera-only" style="display:none;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;color:white;font-size:13px;font-weight:500;transition:background 0.15s;" onmouseover="this.style.background='rgba(212,181,138,0.1)'" onmouseout="this.style.background='transparent'">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                                     📷 Snap the Moon
@@ -2081,7 +2081,7 @@
                         </span>
                         <input type="text" id="songInput" placeholder="Search YouTube for a song..." oninput="onSongInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();if(!extractYouTubeId(this.value.trim()) && !extractSpotifyTrackId(this.value.trim()))searchYouTubeSong();}">
                     </div>
-                    <button onclick="searchYouTubeSong()" id="songSearchBtn" style="display:none;margin-top:8px;background:var(--accent);color:#0a1628;border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;">Search</button>
+                    <button onclick="searchYouTubeSong()" id="songSearchBtn" style="display:none;margin-top:8px;background:var(--accent);color: var(--on-accent);border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;">Search</button>
                     <div id="songSearchResults" style="max-height:180px;overflow-y:auto;display:none;margin-top:8px;"></div>
                     <div class="song-suggestions" id="songSuggestions">
                         <!-- Populated by JS on each compose open -->
