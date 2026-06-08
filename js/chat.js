@@ -969,8 +969,13 @@ function renderConversationThread() {
         }
       } catch (itemErr) {
         // One bad message must never blank the whole conversation. Skip it,
-        // render the rest, and log which item/type failed for diagnosis.
+        // render the rest, and surface the error (inline + console) for diagnosis.
         console.error('[renderConversationThread] item render failed — type:', item && item.type, 'dbId:', item && item.msgDbId, itemErr);
+        const _esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const _line = ((itemErr && itemErr.stack ? itemErr.stack.split('\n')[1] : '') || '').trim();
+        html += '<div style="max-width:85%;margin:6px auto;padding:8px 10px;border:1px solid rgba(232,155,115,0.5);border-radius:10px;background:rgba(232,155,115,0.08);font-family:monospace;font-size:11px;color:#E89B73;word-break:break-word;">' +
+                '⚠ message render error (' + _esc(item && item.type) + '): ' + _esc(itemErr && itemErr.message ? itemErr.message : itemErr) +
+                (_line ? '<br>' + _esc(_line) : '') + '</div>';
       }
     });
 
