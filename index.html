@@ -564,7 +564,7 @@
                     <div class="auth-check-inbox">
                         <div class="inbox-icon">🌙</div>
                         <h2>Enter your Moon Code</h2>
-                        <p>We sent a 6-digit code to</p>
+                        <p id="authCodeIntro">If an account exists, we've sent a 6-digit code to</p>
                         <p class="auth-email-highlight" id="authEmailSent"></p>
                         <div style="display:flex;justify-content:center;gap:8px;margin:20px 0;">
                             <input type="text" id="otpDigit1" class="otp-digit" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
@@ -582,6 +582,9 @@
                             <button class="auth-link-btn" onclick="resendMoonKey()">Resend code</button>
                             <button class="auth-link-btn" onclick="changeEmail()">Change email</button>
                         </div>
+                        <p class="auth-note" id="authCodeSignupHint" style="display:none;margin-top:10px;">
+                            Don't have an account? <button class="auth-link-btn" style="display:inline;" onclick="showAuthModal('signup')">Sign up</button>
+                        </p>
                     </div>
                 </div>
 

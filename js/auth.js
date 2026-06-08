@@ -86,43 +86,21 @@ async function sendMoonKey() {
     btn.textContent = 'Sending...';
     btn.disabled = true;
 
-    // CAPTCHA: obtain a fresh Turnstile token before anything touches the auth
-    // backend. Solving the challenge up front also gates the check_login_email
-    // existence probe below, raising the cost of scripted email enumeration (F1).
+    // CAPTCHA: a fresh Turnstile token is required for the OTP send below.
     const captchaToken = await getCaptchaToken();
 
-    // Check if the email exists in the system and whether the account is suspended.
-    // Uses a SECURITY DEFINER RPC: the login screen runs as the anon role, which
-    // has no read access to `profiles`, so a direct table query always returned
-    // empty and falsely reported "not in our system". The RPC also does a
-    // case-insensitive match.
-    const { data: loginRows } = await sb.rpc('check_login_email', { p_email: email });
-    const suspendCheck = Array.isArray(loginRows) && loginRows.length ? loginRows[0] : null;
+    // NO EXISTENCE PRE-CHECK (F1). We deliberately do NOT probe whether the email is
+    // registered. The old check_login_email RPC was an anon-callable enumeration
+    // oracle (a row meant "registered", empty meant "not"), and the captcha only
+    // guarded the browser path — a script could call the RPC directly. The RPC is
+    // now dropped, and existence is never revealed in the UI either (see below).
 
-    // Login requires an existing, confirmed account. Signup (the landing-hero "Send"
-    // flow) is allowed to create a brand-new user, so we skip the existence gate — a
-    // returning user who lands here simply gets a login code instead.
-    if (authMode !== 'signup' && !suspendCheck) {
-        errorEl.textContent = 'This email isn\'t in our system. Double-check the address or contact us at hello@moonpost.app.';
-        errorEl.style.display = 'block';
-        btn.innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
-        btn.disabled = false;
-        return;
-    }
-
-    if (suspendCheck?.suspended_at) {
-        errorEl.textContent = 'Your account has been suspended. Contact us at hello@moonpost.app if you think this is a mistake.';
-        errorEl.style.display = 'block';
-        btn.innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
-        btn.disabled = false;
-        return;
-    }
-
-    // VERIFY LAST: a genuine new signup (signup mode, email not already a confirmed
-    // account) collects name + city BEFORE we ever send a code or touch the auth system.
-    // We stash the email and move to the name step — no OTP, no account yet. (An existing
-    // account in signup mode falls through and just gets a login code.)
-    if (authMode === 'signup' && !suspendCheck) {
+    // VERIFY-LAST signup: collect name + city BEFORE sending any code or touching the
+    // auth system. Since we can no longer tell whether the email already exists, EVERY
+    // signup runs the verify-last flow. If the email turns out to belong to an existing
+    // account, initAuth finds the profile on verify and just logs them in — the
+    // collected draft is ignored — so a returning user is never harmed by these steps.
+    if (authMode === 'signup') {
         _signupDraft = {
             email,
             firstName: (document.getElementById('authFirstName')?.value || '').trim(),
@@ -136,26 +114,36 @@ async function sendMoonKey() {
         return;
     }
 
+    // LOGIN: never reveal whether the email is registered. With shouldCreateUser:false
+    // Supabase sends a code only if a confirmed account exists, and we advance to the
+    // neutral "if an account exists, we've sent a code" screen REGARDLESS of the
+    // outcome — so a non-existent email is indistinguishable from a real one and there
+    // is no enumeration oracle. Only clearly-recoverable, non-leaky errors (rate limit,
+    // captcha) are surfaced; any existence-revealing error is swallowed.
     const { error } = await sb.auth.signInWithOtp({
         email,
-        options: {
-            // Only the genuine signup flow may create a new auth user. Profiles are NOT
-            // created until the email is confirmed (the AFTER-INSERT profile trigger was
-            // removed), so a typo'd signup email never leaves a phantom account.
-            shouldCreateUser: authMode === 'signup',
-            captchaToken
-        }
+        options: { shouldCreateUser: false, captchaToken }
     });
 
-    if (error) {
-        errorEl.textContent = error.message || 'Something went wrong. Please try again.';
+    if (error && (error.status === 429 || /captcha/i.test(error.message || ''))) {
+        errorEl.textContent = error.status === 429
+            ? 'Too many attempts. Please wait a moment and try again.'
+            : 'Verification failed. Please try again.';
         errorEl.style.display = 'block';
         btn.innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
         btn.disabled = false;
         return;
     }
+    // Any other error (e.g. "email not found" / "signups not allowed") is intentionally
+    // NOT surfaced — falling through to the neutral code screen keeps existence private.
 
     pendingAuthEmail = email;
+    // Neutral, existence-agnostic copy for the login path + a path to signup for
+    // anyone who isn't actually registered (they can't tell, and that's the point).
+    const codeIntro = document.getElementById('authCodeIntro');
+    if (codeIntro) codeIntro.textContent = "If an account exists, we've sent a 6-digit code to";
+    const signupHint = document.getElementById('authCodeSignupHint');
+    if (signupHint) signupHint.style.display = 'block';
     document.getElementById('authEmailSent').textContent = email;
     document.getElementById('authStepEmail').classList.remove('active');
     document.getElementById('authStepCode').classList.add('active');
@@ -173,6 +161,12 @@ async function enterVerifyStep() {
     document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
     document.getElementById('authStepCode').classList.add('active');
     document.getElementById('authEmailSent').textContent = _signupDraft.email;
+    // Signup definitely sent a code (we're creating the account) — keep the definite
+    // wording and hide the login-only "sign up" hint.
+    const codeIntro = document.getElementById('authCodeIntro');
+    if (codeIntro) codeIntro.textContent = 'We sent a 6-digit code to';
+    const signupHint = document.getElementById('authCodeSignupHint');
+    if (signupHint) signupHint.style.display = 'none';
     const otpError = document.getElementById('otpError');
     if (otpError) otpError.style.display = 'none';
 
