@@ -340,11 +340,17 @@ Deno.serve(async (req: Request) => {
     }
 
     // --- Phase 3: Digest notifications --- group by recipient, one email per user ---
+    // Guard: never notify about an ALREADY-READ message. Normally read state lives in
+    // read_receipts (messages.read_at stays null for live messages), so this only
+    // excludes rows born already-read — e.g. graduated roulette threads, which mirror
+    // old delivered messages in with read_at set. Without this, revealing a roulette
+    // thread emailed "1 message waiting" for messages the recipient read weeks ago.
     const { data: unnotifiedMsgs } = await supabase
       .from('messages')
       .select('id, sender_id, recipient_id, message_text, lunar_note_text')
       .eq('status', 'released')
       .is('notified_at', null)
+      .is('read_at', null)
       .not('recipient_id', 'is', null)
       .limit(50);
 
