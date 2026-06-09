@@ -57,8 +57,11 @@ function showAuthModal(mode) {
     // Always reopen with a clean, clickable submit button — a prior send that hung or
     // errored could otherwise leave it stuck on a disabled "Sending..." across reopen.
     resetSendBtn();
-    // Render the Turnstile widget now so a token is ready before the user submits.
-    if (typeof initCaptcha === 'function') initCaptcha();
+    // Start rendering the Turnstile widget now (retrying until the async API script is
+    // loaded) so the managed challenge resolves in the background while the user types,
+    // not during their submit wait.
+    if (typeof warmCaptcha === 'function') warmCaptcha();
+    else if (typeof initCaptcha === 'function') initCaptcha();
     setTimeout(() => document.getElementById(isSignup ? 'authFirstName' : 'authEmail')?.focus(), 100);
 }
 function closeAuthModal() {

@@ -71,6 +71,19 @@ async function getCaptchaToken({ timeoutMs = 12000 } = {}) {
     return tok || null;
 }
 
+// Kick off rendering as early as possible. initCaptcha() no-ops while the (async)
+// Turnstile script is still downloading, so a one-shot call on modal-open can miss —
+// leaving the whole challenge to run during the user's submit wait. Retry on a short
+// interval until the widget renders (or we give up), so the managed challenge starts
+// in the background while the user is still typing their email.
+function warmCaptcha({ tries = 40, intervalMs = 150 } = {}) {
+    if (initCaptcha()) return;
+    let n = 0;
+    const t = setInterval(() => {
+        if (initCaptcha() || ++n >= tries) clearInterval(t);
+    }, intervalMs);
+}
+
 function resetCaptcha() {
     _currentToken = null;
     if (_captchaWidgetId !== null && typeof turnstile !== 'undefined') {
@@ -79,5 +92,6 @@ function resetCaptcha() {
 }
 
 window.initCaptcha = initCaptcha;
+window.warmCaptcha = warmCaptcha;
 window.getCaptchaToken = getCaptchaToken;
 window.resetCaptcha = resetCaptcha;

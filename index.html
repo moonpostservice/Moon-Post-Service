@@ -27,7 +27,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Cloudflare Turnstile — supplies the captchaToken for Supabase OTP sends -->
+    <!-- Cloudflare Turnstile — supplies the captchaToken for Supabase OTP sends.
+         Preconnect so the DNS+TLS handshake to challenges.cloudflare.com is already
+         warm by the time the widget renders — shaves the connection cost off the
+         (visible, managed) verification the user waits on at the email step. -->
+    <link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://challenges.cloudflare.com">
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
