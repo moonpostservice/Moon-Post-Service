@@ -1,7 +1,7 @@
 {
-  "name": "MoonPop - Messages Released By The Moon",
-  "short_name": "MoonPop",
-  "description": "Send moon messages that arrive at moonrise",
+  "name": "Moon Post Service — Messages released by the moon",
+  "short_name": "Moon Post",
+  "description": "Messages released by the moon. Write now. It unlocks when the moon rises where they are.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
