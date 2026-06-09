@@ -106,6 +106,39 @@ function withTimeout(promise, ms) {
     ]);
 }
 
+// Send an OTP with a Turnstile token, transparently retrying ONCE with a freshly
+// minted token if Cloudflare rejects it. Prod auth logs showed intermittent
+// 'captcha_failed' on the same domain/keys as successful sends — the symptom of a
+// token that went stale/expired between when the widget minted it and when the user
+// hit Send (lingering, slow typing, or a backgrounded tab throttling the widget's
+// auto-refresh). A fresh token on retry succeeds, so the user never sees the error.
+// Returns a normalized shape: { noToken } | { timedOut } | { threw, error } |
+// the raw Supabase result ({ error } or {}).
+async function sendOtpWithCaptcha(email, shouldCreateUser) {
+    const attempt = async (token) => {
+        try {
+            const r = await withTimeout(sb.auth.signInWithOtp({
+                email, options: { shouldCreateUser, captchaToken: token }
+            }), 15000);
+            if (r && r.__timedOut) return { timedOut: true };
+            return r || {};
+        } catch (e) {
+            console.warn('[auth] signInWithOtp threw:', e);
+            return { threw: true, error: e };
+        }
+    };
+    let token = await getCaptchaToken();
+    if (!token) return { noToken: true };
+    let res = await attempt(token);
+    // Only retry a genuine captcha rejection (not a network throw/timeout).
+    if (res.error && !res.threw && !res.timedOut && /captcha/i.test(res.error.message || '')) {
+        if (typeof resetCaptcha === 'function') resetCaptcha();
+        const fresh = await getCaptchaToken();
+        if (fresh) res = await attempt(fresh);
+    }
+    return res;
+}
+
 async function sendMoonKey() {
     const email = document.getElementById('authEmail').value.trim();
     const errorEl = document.getElementById('authError');
@@ -160,33 +193,24 @@ async function sendMoonKey() {
     // outcome — so a non-existent email is indistinguishable from a real one and there
     // is no enumeration oracle. Only clearly-recoverable, non-leaky errors (rate limit,
     // captcha) are surfaced; any existence-revealing error is swallowed.
-    const captchaToken = await getCaptchaToken();
-    if (!captchaToken) {
+    // Send the code with a captcha token; transparently retries once on a stale-token
+    // captcha rejection (see sendOtpWithCaptcha). Neither a network error nor a timeout
+    // reveals account existence, so both are safe to surface — unlike the "email not
+    // found" path below, which stays silent to avoid an enumeration oracle.
+    const result = await sendOtpWithCaptcha(email, false);
+    if (result.noToken) {
         errorEl.textContent = 'Please complete the verification check above and try again.';
         errorEl.style.display = 'block';
         resetSendBtn();
         return;
     }
-
-    // Guard the network call: a thrown error (network failure) or a hung request must
-    // re-enable the button with neutral feedback, never leave it stuck on "Sending...".
-    // Neither a network error nor a timeout reveals account existence, so both are safe
-    // to surface — unlike the "email not found" path below, which stays silent.
-    let result;
-    try {
-        result = await withTimeout(sb.auth.signInWithOtp({
-            email,
-            options: { shouldCreateUser: false, captchaToken }
-        }), 15000);
-    } catch (e) {
-        console.warn('[auth] signInWithOtp threw:', e);
-        result = { error: e };
+    if (result.threw) {
         errorEl.textContent = "We couldn't reach the server. Please try again.";
         errorEl.style.display = 'block';
         resetSendBtn();
         return;
     }
-    if (result && result.__timedOut) {
+    if (result.timedOut) {
         errorEl.textContent = 'That took too long. Please try again.';
         errorEl.style.display = 'block';
         resetSendBtn();
@@ -238,27 +262,19 @@ async function enterVerifyStep() {
     const otpError = document.getElementById('otpError');
     if (otpError) otpError.style.display = 'none';
 
-    // Fresh token: this fires at the END of the signup flow (after name + city),
-    // minutes after the email step, so any earlier token would have expired.
-    const captchaToken = await getCaptchaToken();
-    if (!captchaToken) {
+    // This fires at the END of the signup flow (after name + city), minutes after the
+    // email step, so any earlier token would have expired — sendOtpWithCaptcha mints a
+    // fresh one and transparently retries once if it's rejected as stale.
+    const result = await sendOtpWithCaptcha(_signupDraft.email, true);
+    if (result.noToken) {
         if (otpError) { otpError.textContent = 'Please complete the verification check above and try again.'; otpError.style.display = 'block'; }
         return;
     }
-    // Guard the send so a thrown/hung request surfaces a retry message on the code step
-    // instead of silently leaving the user staring at a code that never arrives.
-    let result;
-    try {
-        result = await withTimeout(sb.auth.signInWithOtp({
-            email: _signupDraft.email,
-            options: { shouldCreateUser: true, captchaToken }
-        }), 15000);
-    } catch (e) {
-        console.warn('[auth] signInWithOtp threw (signup):', e);
+    if (result.threw) {
         if (otpError) { otpError.textContent = "We couldn't reach the server. Please tap Resend code."; otpError.style.display = 'block'; }
         return;
     }
-    if (result && result.__timedOut) {
+    if (result.timedOut) {
         if (otpError) { otpError.textContent = 'That took too long. Please tap Resend code.'; otpError.style.display = 'block'; }
         return;
     }
@@ -708,26 +724,17 @@ async function resendMoonKey() {
     // Mirror the original send: a login resend must NOT create a user (false), while a
     // signup resend may (true) — same safety as sendMoonKey. No profile is created until
     // the email is confirmed, so a resend can't produce a phantom account either way.
-    const captchaToken = await getCaptchaToken();
-    if (!captchaToken) {
+    // sendOtpWithCaptcha transparently retries once on a stale-token captcha rejection.
+    const result = await sendOtpWithCaptcha(email, authMode === 'signup');
+    if (result.noToken) {
         alert('Please complete the verification check, then tap Resend again.');
         return;
     }
-    let result;
-    try {
-        result = await withTimeout(sb.auth.signInWithOtp({
-            email,
-            options: {
-                shouldCreateUser: authMode === 'signup',
-                captchaToken
-            }
-        }), 15000);
-    } catch (e) {
-        console.warn('[auth] signInWithOtp threw (resend):', e);
+    if (result.threw) {
         alert("We couldn't reach the server. Please try again in a moment.");
         return;
     }
-    if (result && result.__timedOut) {
+    if (result.timedOut) {
         alert('That took too long. Please try again in a moment.');
         return;
     }
