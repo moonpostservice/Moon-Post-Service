@@ -681,6 +681,18 @@ function renderMessageDots() {
         dotsRendered++;
     });
 
+    // First-load entrance: fade the message dots in as a group the first time
+    // they populate, so they arrive smoothly alongside the ring instead of
+    // popping in after the network load finishes. Triggered only ONCE per page
+    // load — realtime/effects rebuilds also call this function and must not
+    // re-animate. The animation lives on the persistent #messageDots element
+    // (not the dots, which get rebuilt), so the near-immediate second boot
+    // render that swaps the children can't cut the fade short.
+    if (!window._dotsRevealed && container.childElementCount > 0) {
+        container.classList.add('dots-enter');
+        window._dotsRevealed = true;
+    }
+
     // Update stats display
     updateMessageStats();
 

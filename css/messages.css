@@ -149,6 +149,20 @@
     filter: drop-shadow(0 2px 6px rgba(212, 181, 138, 0.4));
 }
 
+/* First-load entrance for the ring's message dots. The ring paints instantly
+   (local math) while the dots wait on the network; this fades the dots in as a
+   group when they first arrive so they feel like they land WITH the ring rather
+   than popping in afterward. JS adds .dots-enter to #messageDots once per page
+   load (not on realtime rebuilds). Opacity-only on the container — child dots
+   keep their own opacity (e.g. the moon-down 0.35 dim) once the fade completes. */
+@keyframes dotsRevealIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+#messageDots.dots-enter {
+    animation: dotsRevealIn 0.7s ease-out;
+}
+
 /* Message dots on orbit - positioned using rotation like the moon */
 .dot-orbit {
     position: absolute;
