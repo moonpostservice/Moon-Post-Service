@@ -388,11 +388,22 @@ async function openConversation(convIndex) {
     // Setup typing indicator channel
     setupTypingChannel(conv.dbConversationId);
 
-    // Update URL to reflect the open conversation (deep-linkable)
-    // Use replaceState if already viewing a chat, to avoid stacking history entries
+    // Update URL to reflect the open conversation (deep-linkable).
+    // closeAllPanels() above already tore down any sibling overlay's UI, but NOT its
+    // history entry. If we were launched from another overlay route (e.g. /shared-sky),
+    // we must (a) build the path from a CLEAN base so we never produce a nested
+    // /shared-sky/chat/<id> URL, and (b) replaceState instead of pushState — otherwise
+    // closing the chat (history.back) lands back on /shared-sky and the popstate handler
+    // re-opens Shared Sky behind the inbox instead of returning to the ring.
     if (conv.dbConversationId) {
-        const chatPath = window.location.pathname.replace(/\/chat\/.*$/, '').replace(/\/$/, '') + '/chat/' + conv.dbConversationId;
-        if (window.location.pathname.match(/\/chat\//)) {
+        const OVERLAY_PATHS = ['/shared-sky', '/roulette', '/faq', '/philosophy', '/terms', '/contacts', '/new-message'];
+        const curPath = window.location.pathname;
+        let base = curPath.replace(/\/chat\/.*$/, '').replace(/\/$/, '');
+        if (OVERLAY_PATHS.includes(base)) base = '';
+        const chatPath = base + '/chat/' + conv.dbConversationId;
+        const alreadyInChat = /\/chat\//.test(curPath);
+        const cameFromOverlay = OVERLAY_PATHS.includes(curPath.replace(/\/$/, ''));
+        if (alreadyInChat || cameFromOverlay) {
             history.replaceState({ chat: conv.dbConversationId }, '', chatPath);
         } else {
             history.pushState({ chat: conv.dbConversationId }, '', chatPath);
