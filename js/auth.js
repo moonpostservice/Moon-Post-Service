@@ -44,8 +44,6 @@ function showAuthModal(mode) {
     if (nameFields) nameFields.style.display = isSignup ? 'block' : 'none';
     const title = document.getElementById('authModalTitle');
     if (title) { title.textContent = isSignup ? '' : 'Welcome back'; title.style.display = isSignup ? 'none' : ''; }
-    const tagline = document.getElementById('authModalTagline');
-    if (tagline) tagline.style.display = isSignup ? 'none' : '';
     const emailLabel = document.getElementById('authEmailLabel');
     if (emailLabel) emailLabel.textContent = isSignup ? 'Your email' : 'Enter your email';
 
@@ -969,24 +967,26 @@ async function initAuth(sessionOverride) {
         await loadBlockedUsers();
         console.log('[initAuth] Blocked users:', blockedUserIds.size);
 
-        console.log('[initAuth] Loading contacts...');
-        await loadContacts();
-        console.log('[initAuth] Contacts loaded:', contacts.length);
-
-        console.log('[initAuth] Loading messages...');
-        await loadMessages();
-        console.log('[initAuth] Messages loaded:', messages.length, 'conversations:', conversations.length);
+        // Contacts and messages are independent (neither reads the other's state),
+        // so load them CONCURRENTLY instead of one-then-the-other. These are the two
+        // heaviest fetches — running them in parallel roughly halves inbox load time.
+        console.log('[initAuth] Loading contacts + messages...');
+        await Promise.all([loadContacts(), loadMessages()]);
+        console.log('[initAuth] Loaded — contacts:', contacts.length, 'messages:', messages.length, 'conversations:', conversations.length);
 
         // Auto-create contacts for anyone in conversations but not in contacts
+        // (needs both contacts and conversations populated, so it runs after the pair)
         await syncConversationContacts();
 
-        await loadSharedSky();
-        await loadMoonCircles();
+        // Shared Sky + Moon Circles are independent of each other and of the inbox
+        await Promise.all([loadSharedSky(), loadMoonCircles()]);
 
         console.log('[initAuth] Rendering UI...');
-        await loadInTransitReplies();
-        // Load roulette messages on startup so they appear in the inbox immediately
-        if (typeof loadRouletteMessages === 'function') await loadRouletteMessages();
+        // In-transit replies + roulette messages are independent — fetch in parallel
+        await Promise.all([
+            loadInTransitReplies(),
+            (typeof loadRouletteMessages === 'function') ? loadRouletteMessages() : Promise.resolve(),
+        ]);
         renderMessages();
         if (typeof showInboxWipeBanner === 'function') showInboxWipeBanner();
         renderMessageDots();

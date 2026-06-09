@@ -161,16 +161,23 @@ async function loadContacts() {
         }
     }
 
-    // Third pass: for contacts WITHOUT a linked profile, try to find them by email
+    // Third pass: for contacts WITHOUT a linked profile, try to find them by email.
+    // ONE batched query for all unlinked emails (was N+1: a query per contact in a
+    // serial loop — the single biggest contributor to slow inbox load).
     const unlinked = contacts.filter(c => c.email && !c.linkedProfileId);
-    for (const c of unlinked) {
+    if (unlinked.length > 0) {
         try {
-            const { data: found } = await sb.from('profiles')
-                .select('id, username, first_name, last_name, city, avatar_url')
-                .eq('email', c.email)
-                .limit(1);
-            if (found && found.length > 0) {
-                const p = found[0];
+            const unlinkedEmails = unlinked.map(c => c.email);
+            const { data: foundProfiles } = await sb.from('profiles')
+                .select('id, username, first_name, last_name, city, avatar_url, email')
+                .in('email', unlinkedEmails);
+            // Index found profiles by lowercased email for matching
+            const byEmail = {};
+            (foundProfiles || []).forEach(p => { if (p.email) byEmail[p.email.toLowerCase()] = p; });
+
+            for (const c of unlinked) {
+                const p = byEmail[(c.email || '').toLowerCase()];
+                if (!p) continue;
                 const idx = contacts.indexOf(c);
                 const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ');
                 contacts[idx].avatar = p.avatar_url || null;
@@ -193,7 +200,7 @@ async function loadContacts() {
                 }).eq('id', c.id);
             }
         } catch(e) {
-            console.error('Contact email lookup failed for', c.email, e);
+            console.error('Contact batch email lookup failed:', e);
         }
     }
 
@@ -599,10 +606,44 @@ function saveLocalReadReceipt(convId) {
 async function loadConversationMetadata() {
     if (!currentAuthUser) return;
     try {
-        // 1. Fetch my read_receipts (to calculate unread counts)
-        const { data: myReceipts, error: receiptErr } = await sb.from('read_receipts')
-            .select('conversation_id, last_read_at')
-            .eq('user_id', currentAuthUser.id);
+        // The four reads below only depend on values already in hand (the current
+        // user, the conversation ids, and the message ids) — none depends on another's
+        // result. Compute the id lists first, then fire all four CONCURRENTLY instead
+        // of paying four sequential round-trips.
+        const myConvIds = conversations.map(c => c.dbConversationId).filter(Boolean);
+        const allMsgIds = [];
+        const msgToConv = {};
+        conversations.forEach(conv => {
+            conv.messages.forEach(m => {
+                if (m.dbId) {
+                    allMsgIds.push(m.dbId);
+                    msgToConv[m.dbId] = conv;
+                }
+            });
+        });
+
+        const _emptyRes = Promise.resolve({ data: [] });
+        const [
+            { data: myReceipts, error: receiptErr },
+            { data: convRows, error: convErr },
+            { data: otherReceipts },
+            { data: recentReplies },
+        ] = await Promise.all([
+            // 1. My read_receipts (to calculate unread counts)
+            sb.from('read_receipts').select('conversation_id, last_read_at').eq('user_id', currentAuthUser.id),
+            // 2a. conversations.wiped_at for the new-moon-wipe empty-state UI
+            myConvIds.length > 0
+                ? sb.from('conversations').select('id, wiped_at').in('id', myConvIds)
+                : _emptyRes,
+            // 2b. Other participants' read_receipts (blue checkmarks on sent messages)
+            myConvIds.length > 0
+                ? sb.from('read_receipts').select('conversation_id, last_read_at').in('conversation_id', myConvIds).neq('user_id', currentAuthUser.id)
+                : _emptyRes,
+            // 3. Latest replies per conversation for preview + unread
+            allMsgIds.length > 0
+                ? sb.from('replies').select('id, message_id, text, is_lunar_note, lunar_note_text, sender_id, created_at').in('message_id', allMsgIds).order('created_at', { ascending: false }).limit(100)
+                : _emptyRes,
+        ]);
 
         if (receiptErr) {
             console.error('read_receipts SELECT failed:', receiptErr.message, receiptErr.code);
@@ -623,67 +664,32 @@ async function loadConversationMetadata() {
             }
         });
 
-        // 2. Fetch other participants' read_receipts (for blue checkmarks on sent messages)
-        const myConvIds = conversations.map(c => c.dbConversationId).filter(Boolean);
-
-        // 2a. Fetch conversations.wiped_at so the chat empty-state can show
-        // the "new moon wiped this conversation" UI for threads whose messages
-        // were deleted by the new-moon-wipe edge function.
-        if (myConvIds.length > 0) {
-            const { data: convRows, error: convErr } = await sb.from('conversations')
-                .select('id, wiped_at')
-                .in('id', myConvIds);
-            if (convErr) {
-                console.error('conversations SELECT (wiped_at) failed:', convErr.message);
-            } else if (convRows) {
-                const wipedMap = {};
-                convRows.forEach(r => { wipedMap[r.id] = r.wiped_at; });
-                conversations.forEach(conv => {
-                    if (conv.dbConversationId) {
-                        conv.wipedAt = wipedMap[conv.dbConversationId] || null;
-                    }
-                });
-            }
+        // Apply conversations.wiped_at so the chat empty-state can show the
+        // "new moon wiped this conversation" UI for wiped threads.
+        if (convErr) {
+            console.error('conversations SELECT (wiped_at) failed:', convErr.message);
+        } else if (convRows) {
+            const wipedMap = {};
+            convRows.forEach(r => { wipedMap[r.id] = r.wiped_at; });
+            conversations.forEach(conv => {
+                if (conv.dbConversationId) {
+                    conv.wipedAt = wipedMap[conv.dbConversationId] || null;
+                }
+            });
         }
 
         let otherReceiptMap = {};
-        if (myConvIds.length > 0) {
-            const { data: otherReceipts } = await sb.from('read_receipts')
-                .select('conversation_id, last_read_at')
-                .in('conversation_id', myConvIds)
-                .neq('user_id', currentAuthUser.id);
-
-            if (otherReceipts) {
-                otherReceipts.forEach(r => {
-                    if (!otherReceiptMap[r.conversation_id] || new Date(r.last_read_at) > new Date(otherReceiptMap[r.conversation_id])) {
-                        otherReceiptMap[r.conversation_id] = r.last_read_at;
-                    }
-                });
-            }
-        }
-
-        // 3. Fetch latest replies per conversation for preview + unread
-        const allMsgIds = [];
-        const msgToConv = {};
-        conversations.forEach(conv => {
-            conv.messages.forEach(m => {
-                if (m.dbId) {
-                    allMsgIds.push(m.dbId);
-                    msgToConv[m.dbId] = conv;
+        if (otherReceipts) {
+            otherReceipts.forEach(r => {
+                if (!otherReceiptMap[r.conversation_id] || new Date(r.last_read_at) > new Date(otherReceiptMap[r.conversation_id])) {
+                    otherReceiptMap[r.conversation_id] = r.last_read_at;
                 }
             });
-        });
+        }
 
         let latestReplyPerConv = {};
-        let allRecentReplies = [];
-        if (allMsgIds.length > 0) {
-            const { data: recentReplies } = await sb.from('replies')
-                .select('id, message_id, text, is_lunar_note, lunar_note_text, sender_id, created_at')
-                .in('message_id', allMsgIds)
-                .order('created_at', { ascending: false })
-                .limit(100);
-            allRecentReplies = recentReplies || [];
-
+        let allRecentReplies = recentReplies || [];
+        {
             if (recentReplies) {
                 recentReplies.forEach(r => {
                     const conv = msgToConv[r.message_id];
@@ -768,20 +774,6 @@ async function loadConversationMetadata() {
                 }
             }
             conv.unreadCount = unreadMsgCount + unreadReplyCount;
-            // ALWAYS log unread calculation for debugging
-            console.log('[unread]', conv.otherName,
-                '| FINAL:', conv.unreadCount,
-                '| msgs:', unreadMsgCount, '/', conv.messages.filter(m => m.type === 'received').length, 'received',
-                '| replies:', unreadReplyCount,
-                '| effectiveRead:', effectiveReadTime?.toISOString() || 'NULL',
-                '| myLastRead:', myLastRead || 'NULL',
-                '| _lastSentAt:', conv._lastSentAt || 'NULL',
-                '| latestReply sender_id:', latestReply?.sender_id || 'NULL',
-                '| latestReply created_at:', latestReply?.created_at || 'NULL',
-                '| myId:', currentAuthUser?.id,
-                '| allMsgIds:', conv.messages.map(m => m.dbId).filter(Boolean).length,
-                '| allRecentReplies matched:', allRecentReplies.filter(r => msgToConv[r.message_id] === conv).length
-            );
         });
 
         // Re-sort conversations since reply timestamps may have changed ordering
@@ -885,12 +877,25 @@ async function loadMessages(retryCount = 0) {
 
         // *** NO FK JOINS — they silently fail if FK missing or value is NULL ***
 
-        // 1. Fetch messages I sent (paginated — latest 200 for inbox)
-        const { data: sent, error: sentErr } = await sb.from('messages')
-            .select('*')
-            .eq('sender_id', currentAuthUser.id)
-            .order('created_at', { ascending: false })
-            .range(0, 199);
+        // Fire the independent reads CONCURRENTLY instead of in series. Sent,
+        // received-by-id, received-by-email and my read-receipts only depend on the
+        // current user — there's no reason to pay four sequential round-trips. This
+        // collapses ~4 serial network waits into one.
+        const _emailQuery = currentAuthUser.email
+            ? sb.from('messages').select('*').eq('recipient_email', currentAuthUser.email).order('created_at', { ascending: false }).range(0, 199)
+            : Promise.resolve({ data: [], error: null });
+        const [
+            { data: sent, error: sentErr },
+            { data: recvById, error: err1 },
+            { data: recvByEmail, error: err2 },
+            { data: _rcpts, error: _rcptErr },
+        ] = await Promise.all([
+            sb.from('messages').select('*').eq('sender_id', currentAuthUser.id).order('created_at', { ascending: false }).range(0, 199),
+            sb.from('messages').select('*').eq('recipient_id', currentAuthUser.id).order('created_at', { ascending: false }).range(0, 199),
+            _emailQuery,
+            sb.from('read_receipts').select('conversation_id, last_read_at').eq('user_id', currentAuthUser.id),
+        ]);
+
         if (sentErr) {
             console.error('loadMessages: sent query failed:', sentErr.message, sentErr.code, sentErr.details);
             // If auth error, try getting fresh session
@@ -906,30 +911,14 @@ async function loadMessages(retryCount = 0) {
             }
         }
 
-        // 2. Fetch messages sent TO me — two separate safe queries
+        // Merge the two "received" result sets (id + email), de-duped by message id
         let received = [];
-
-        // 2a. By recipient_id (paginated — latest 200)
-        const { data: recvById, error: err1 } = await sb.from('messages')
-            .select('*')
-            .eq('recipient_id', currentAuthUser.id)
-            .order('created_at', { ascending: false })
-            .range(0, 199);
         if (err1) console.error('loadMessages: recv by id failed:', err1.message);
         if (recvById) received = received.concat(recvById);
-
-        // 2b. By recipient_email (catches messages sent before profile was linked)
-        if (currentAuthUser.email) {
-            const { data: recvByEmail, error: err2 } = await sb.from('messages')
-                .select('*')
-                .eq('recipient_email', currentAuthUser.email)
-                .order('created_at', { ascending: false })
-                .range(0, 199);
-            if (err2) console.error('loadMessages: recv by email failed:', err2.message);
-            if (recvByEmail) {
-                const existingIds = new Set(received.map(m => m.id));
-                recvByEmail.forEach(m => { if (!existingIds.has(m.id)) received.push(m); });
-            }
+        if (err2) console.error('loadMessages: recv by email failed:', err2.message);
+        if (recvByEmail) {
+            const existingIds = new Set(received.map(m => m.id));
+            recvByEmail.forEach(m => { if (!existingIds.has(m.id)) received.push(m); });
         }
 
         // Filter out messages from/to blocked users
@@ -955,16 +944,13 @@ async function loadMessages(retryCount = 0) {
             if (profiles) profiles.forEach(p => { profileMap[p.id] = p; });
         }
 
-        // Prefetch my read receipts BEFORE mapping so message visibility can tell
-        // "already seen" (read at/after the message) from genuinely-new messages.
-        // (read_receipts is this app's real read signal; messages.read_at is unused.)
-        try {
-            const { data: _rcpts } = await sb.from('read_receipts')
-                .select('conversation_id, last_read_at')
-                .eq('user_id', currentAuthUser.id);
-            myReadReceipts = {};
-            (_rcpts || []).forEach(r => { myReadReceipts[r.conversation_id] = r.last_read_at; });
-        } catch (e) { console.error('[loadMessages] read_receipts prefetch failed:', e); }
+        // Read receipts were prefetched in the concurrent batch above so message
+        // visibility can tell "already seen" (read at/after the message) from
+        // genuinely-new messages. (read_receipts is this app's real read signal;
+        // messages.read_at is unused.)
+        if (_rcptErr) console.error('[loadMessages] read_receipts prefetch failed:', _rcptErr.message);
+        myReadReceipts = {};
+        (_rcpts || []).forEach(r => { myReadReceipts[r.conversation_id] = r.last_read_at; });
 
         const allMessages = [];
         const seenIds = new Set(); // Global dedup across sent + received
@@ -999,7 +985,6 @@ async function loadMessages(retryCount = 0) {
                 } else {
                     statusDisplay = 'Released';
                 }
-                console.log('[load] sent to', m.recipient_name, '| db_status:', m.status, '| release_at:', m.release_at, '| releasePast:', releasePast, '| → display:', statusDisplay);
 
                 const rp = m.recipient_id ? profileMap[m.recipient_id] : null;
 
@@ -1092,15 +1077,43 @@ async function loadMessages(retryCount = 0) {
             });
         });
 
-        // Also fetch sent replies that are still in_transit (for dot rendering on reload)
-        try {
-            const { data: inTransitReplies } = await sb.from('replies')
+        // Fetch the three reply result-sets CONCURRENTLY. None depends on another's
+        // result — only on the message-id list already built above — so paying three
+        // sequential round-trips here was pure wasted latency.
+        const _replyMsgIds = allMessages
+            .filter(m => m.dbId && !m.isReplyDot && !m.isIncomingReplyTransit)
+            .map(m => m.dbId)
+            .filter(Boolean);
+        const _emptyRes = Promise.resolve({ data: [] });
+        const [_inTransitRes, _incomingRes, _latestRes] = await Promise.all([
+            sb.from('replies')
                 .select('id, sender_id, release_at, recipient_city, created_at, message_id')
                 .eq('sender_id', currentAuthUser.id)
                 .eq('status', 'in_transit')
                 .gt('release_at', new Date().toISOString())
                 .order('created_at', { ascending: false })
-                .limit(50);
+                .limit(50),
+            _replyMsgIds.length > 0
+                ? sb.from('replies')
+                    .select('id, sender_id, release_at, recipient_city, created_at, message_id, status')
+                    .in('message_id', _replyMsgIds)
+                    .neq('sender_id', currentAuthUser.id)
+                    .eq('status', 'in_transit')
+                    .order('created_at', { ascending: false })
+                    .limit(50)
+                : _emptyRes,
+            _replyMsgIds.length > 0
+                ? sb.from('replies')
+                    .select('message_id, created_at, sender_id, text')
+                    .in('message_id', _replyMsgIds)
+                    .order('created_at', { ascending: false })
+                    .limit(200)
+                : _emptyRes,
+        ]);
+
+        // Also fetch sent replies that are still in_transit (for dot rendering on reload)
+        try {
+            const inTransitReplies = _inTransitRes.data;
             if (inTransitReplies && inTransitReplies.length > 0) {
                 console.log('[loadMessages] Found', inTransitReplies.length, 'in-transit replies for dot rendering');
                 // Look up recipient names from the parent message
@@ -1133,21 +1146,8 @@ async function loadMessages(retryCount = 0) {
         // Also fetch INCOMING in-transit replies (from others, on messages where I'm the recipient)
         // These show as "On Its Way" in the inbox with a progress bar
         try {
-            // Get IDs of ALL my messages (both sent and received) because
-            // replies on sent messages are also incoming TO me
-            const myReceivedMsgIds = allMessages
-                .filter(m => m.dbId && !m.isReplyDot && !m.isIncomingReplyTransit)
-                .map(m => m.dbId)
-                .filter(Boolean);
-            if (myReceivedMsgIds.length > 0) {
-                const { data: incomingTransitReplies } = await sb.from('replies')
-                    .select('id, sender_id, release_at, recipient_city, created_at, message_id, status')
-                    .in('message_id', myReceivedMsgIds)
-                    .neq('sender_id', currentAuthUser.id)
-                    .eq('status', 'in_transit')
-                    .order('created_at', { ascending: false })
-                    .limit(50);
-                if (incomingTransitReplies && incomingTransitReplies.length > 0) {
+            const incomingTransitReplies = _incomingRes.data;
+            if (incomingTransitReplies && incomingTransitReplies.length > 0) {
                     console.log('[loadMessages] Found', incomingTransitReplies.length, 'incoming in-transit replies');
                     // No need to set _incomingTransitReplies — synthetic entries handle counting
                     // Add as synthetic received entries so buildConversations picks them up
@@ -1173,7 +1173,6 @@ async function loadMessages(retryCount = 0) {
                         });
                     }
                 }
-            }
         } catch (e) {
             console.error('[loadMessages] Failed to fetch incoming in-transit replies:', e);
         }
@@ -1181,14 +1180,9 @@ async function loadMessages(retryCount = 0) {
         // Fetch latest reply timestamp per message for correct conversation sorting
         // Without this, conversations revert to top-level message order on reload
         try {
-            const msgIds = allMessages.filter(m => m.dbId && !m.isReplyDot && !m.isIncomingReplyTransit).map(m => m.dbId);
-            if (msgIds.length > 0) {
-                const { data: latestReplies } = await sb.from('replies')
-                    .select('message_id, created_at, sender_id, text')
-                    .in('message_id', msgIds)
-                    .order('created_at', { ascending: false })
-                    .limit(200);
-                if (latestReplies) {
+            const latestReplies = _latestRes.data;
+            if (latestReplies && latestReplies.length > 0) {
+                {
                     // Group by message_id and get the latest
                     const latestByMsg = {};
                     latestReplies.forEach(r => {

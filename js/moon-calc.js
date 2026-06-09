@@ -224,8 +224,6 @@ function calculateMoonTimes(lat, lon) {
         moonData._ringEnd   = cycleRise
             || (cycleSet ? new Date(cycleSet.getTime() + 12 * 3600000) : new Date(now.getTime() + 12 * 3600000));
     }
-    console.log('[ring] boundaries:', moonData._ringStart, '→', moonData._ringMid, '→', moonData._ringEnd);
-    
     // For display: show today's rise/set times
     // Find the rise and set most relevant to "today"
     const todayRise = allRises.find(r => r >= dayStart) || allRises[allRises.length - 1];
