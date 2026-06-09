@@ -625,6 +625,31 @@ body::before {
     font-family: var(--serif) !important;
     font-weight: 500;
 }
+/* Live ticking timer: each digit lives in a fixed-width 1ch cell so the row can
+   never shift horizontally as the numbers change, on ANY font. The fallback stack
+   also drops Georgia — its old-style figures (3,4,7,9 descend; 6,8 ascend) make the
+   number bob vertically during the webfont load. Times has lining figures on the
+   baseline, so the timer stays rock-steady even before Cormorant arrives. */
+.standby-countdown.live-timer {
+    font-family: 'Cormorant Garamond', 'Iowan Old Style', 'Times New Roman', Times, serif !important;
+}
+.live-timer .t-digit {
+    display: inline-block;
+    width: 1ch;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+/* Center content scales WITH the ring, not the viewport. cqmin = the smaller of the
+   orbit-container's width/height (it's a size container), so the timer and labels
+   always stay in proportion to the ring at any size. The clamp floors/ceilings keep
+   them legible on small rings and from ballooning on large ones. The 280px fixed
+   width on .orbit-center is replaced with a ring-relative width so the text block
+   grows with the ring too. */
+.orbit-container .orbit-center { width: 78cqmin; }
+.orbit-container .standby-countdown { font-size: clamp(20px, 11cqmin, 60px); }
+.orbit-container .standby-label { font-size: clamp(8px, 2.7cqmin, 13px) !important; }
+.orbit-container .moon-live-indicator { font-size: clamp(9px, 2.5cqmin, 13px); }
+.orbit-container .moon-carrying-indicator { font-size: clamp(10px, 2.6cqmin, 14px) !important; }
 .standby-label {
     color: var(--accent) !important;
     text-transform: uppercase;

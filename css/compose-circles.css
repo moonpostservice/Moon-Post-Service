@@ -982,31 +982,39 @@
 .split-right .main-content {
     padding: 0;
     width: 100%;
+    display: flex;
     align-items: center;
     flex: 1 1 0;
     min-height: 0;
     justify-content: center;
+    /* Size container: the ring is sized against THIS element's real free space
+       (see .split-right .orbit-container below), not a guessed viewport reserve. */
+    container-type: size;
 }
 
 .split-right .moon-data-bar {
-    margin: clamp(8px, 2vh, 36px) auto 140px;
+    /* Bottom margin only has to clear the ~120px absolute .app-horizon graphic (which
+       is faded out over its top 30%). The old flat 140px stole vertical room from the
+       ring on laptop-height screens; scale it down on shorter viewports (floor 80px
+       still clears the faded horizon) and keep full clearance on tall ones. */
+    margin: clamp(8px, 2vh, 36px) auto clamp(80px, 11vh, 140px);
     flex-shrink: 0;
     position: relative;
     z-index: 4;
 }
 
-/* Scale orbit ring to the available vertical space while staying perfectly square.
-   Both axes use the IDENTICAL viewport-based clamp (px + vh only — no `%`, no
-   `width:auto`+`aspect-ratio`, no flex-shrink). Those constructs resolve differently
-   across engines: Chromium derived a square via `aspect-ratio`, but Firefox resolved
-   the `100%` percentage-height-in-flex / auto-width differently and rendered a small,
-   distorted ring. Identical px/vh math on both axes computes the same value in every
-   browser, and flex-shrink:0 stops the column flex from squeezing it into an ellipse.
-   The ~470px reserve = header + ring title + moon-data-bar block (all fixed-height). */
+/* Ring = the largest square that fits the main-content's REAL free space. cqmin =
+   the smaller of the container's width/height, so the ring always fills the room and
+   stays perfectly square on every engine (container units, unlike the old
+   `width:auto`+`aspect-ratio`, compute identically in Chromium and Firefox). This
+   replaces the old `calc(100vh - 470px)` guess that ignored the wide horizontal
+   space, capped the ring at a too-small 420px, and made it jump with window height.
+   orbit-container is itself a size container so the timer/labels can scale to it. */
 .split-right .orbit-container {
-    width: clamp(180px, calc(100vh - 470px), 420px);
-    height: clamp(180px, calc(100vh - 470px), 420px);
+    width: min(100cqmin, 600px);
+    height: min(100cqmin, 600px);
     flex-shrink: 0;
+    container-type: size;
 }
 
 /* ====================================== */
@@ -1103,14 +1111,10 @@
     .split-right {
         width: 62%;
     }
-    .split-right .orbit-container {
-        height: min(340px, calc(100vh - 320px));
-        width: auto;
-        aspect-ratio: 1;
-        min-width: 220px;
-        min-height: 220px;
-        flex-shrink: 1;
-    }
+    /* Ring sizing is handled by the base cqmin rule — it already fits the narrower
+       62% panel here. (The old override used flex-shrink:1, which let the variable
+       hero-title height squeeze the ring at the SAME window size — the main cause of
+       the "sometimes small, sometimes big" jumping.) */
 }
 
 /* Responsive — mobile & tablets */

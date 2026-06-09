@@ -1636,6 +1636,21 @@ function updateMoonPosition() {
 }
 
 // Update center content
+// Render the live timer with each DIGIT in a fixed-width (1ch) cell. The colons
+// never change so they stay as plain text. This makes the timer's width and the
+// glyph baseline immune to whatever font actually renders: even if the Cormorant
+// webfont hasn't loaded and we fall back to a font with proportional or old-style
+// figures, each digit sits centered in an identical box and can't shift the row
+// horizontally or bob it vertically. (Past tabular-nums-only fixes kept regressing
+// because the Windows serif fallback — Georgia — ignores tabular-nums.)
+function timerCellsHtml(str) {
+    let out = '';
+    for (const ch of str) {
+        out += ch >= '0' && ch <= '9' ? `<span class="t-digit">${ch}</span>` : ch;
+    }
+    return out;
+}
+
 function updateOrbitCenter() {
     const centerEl = document.getElementById('orbitCenter');
     const heroTitle = document.getElementById('heroTitle');
@@ -1681,7 +1696,7 @@ function updateOrbitCenter() {
 
     if (sig === window._orbitCenterSig) {
         const timerEl = centerEl && centerEl.querySelector('.live-timer');
-        if (timerEl) timerEl.textContent = timerStr;
+        if (timerEl) timerEl.innerHTML = timerCellsHtml(timerStr);
     } else {
         window._orbitCenterSig = sig;
 
@@ -1724,7 +1739,7 @@ function updateOrbitCenter() {
             }
 
             centerEl.innerHTML = `
-                <div class="standby-countdown live-timer">${timerStr}</div>
+                <div class="standby-countdown live-timer">${timerCellsHtml(timerStr)}</div>
                 <p class="standby-label">until services close</p>
                 <div class="moon-live-indicator"><span class="moon-live-dot"></span> Moon is live</div>
                 ${statusLine}
@@ -1754,7 +1769,7 @@ function updateOrbitCenter() {
                 ? `<p class="moon-carrying-indicator" style="margin-top:8px;opacity:0.7;">🌙 Carrying <span class="moon-carrying-count">${totalCarrying}</span> ${totalCarrying === 1 ? 'message' : 'messages'}</p>`
                 : '';
             centerEl.innerHTML = `
-                <div class="standby-countdown live-timer" style="opacity:0.6;">${timerStr}</div>
+                <div class="standby-countdown live-timer" style="opacity:0.6;">${timerCellsHtml(timerStr)}</div>
                 <p class="standby-label">until moonrise</p>
                 ${carryingLine}
             `;

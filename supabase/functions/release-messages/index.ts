@@ -184,9 +184,7 @@ function buildDigestEmailHtml(recipientCity: string, messages: DigestMessage[]):
     <tr><td align="center">
       <table width="100%" style="max-width:480px;background:linear-gradient(135deg,#030A18 0%,#0A1422 100%);border-radius:16px;border:1px solid rgba(212,181,138,0.28);">
         <tr><td style="padding:32px 24px 16px;text-align:center;">
-          <div style="font-size:48px;margin-bottom:8px;">&#127769;</div>
-          <h1 style="color:#F0DFC2;font-size:20px;font-weight:600;margin:0 0 6px;">The moon just rose${recipientCity ? ' over ' + recipientCity : ''}</h1>
-          <p style="color:rgba(234,216,191,0.55);font-size:14px;margin:0;">${count} ${plural} waiting for you</p>
+          <h1 style="color:#F0DFC2;font-size:20px;font-weight:600;margin:0 0 6px;">Welcome back</h1>
         </td></tr>
         <tr><td style="padding:0 24px 20px;">
           <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(212,181,138,0.06);border:1px solid rgba(212,181,138,0.18);border-radius:12px;overflow:hidden;">
@@ -198,7 +196,7 @@ function buildDigestEmailHtml(recipientCity: string, messages: DigestMessage[]):
         </td></tr>
         <tr><td style="padding:0 24px 20px;text-align:center;">
           <p style="color:rgba(234,216,191,0.32);font-size:11px;margin:0;">You can disable email notifications in your settings.</p>
-          <p style="color:rgba(234,216,191,0.28);font-size:11px;margin:4px 0 0;">Moon Post Service &#8212; Messages delivered at moonrise &#127769;</p>
+          <p style="color:rgba(234,216,191,0.28);font-size:11px;margin:4px 0 0;">Moon Post Service &#8212; Messages delivered at moonrise</p>
         </td></tr>
       </table>
     </td></tr>
