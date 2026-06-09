@@ -923,7 +923,7 @@ body.moon-down .new-message-btn {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--line-soft);
-    max-width: 88%;
+    max-width: 80%;
 }
 #messagePageView .message-bubble p {
     font-family: var(--serif);
@@ -942,15 +942,16 @@ body.moon-down .new-message-btn {
 
 /* Sent bubbles — warm brass-tinted glass for "your letters" */
 #messagePageView .message-bubble.sent {
-    background: rgba(212, 181, 138, 0.16);
-    border: 1px solid var(--line);
-    max-width: 88%;
+    background: var(--accent);
+    border: 1px solid transparent;
+    color: var(--on-accent);
+    max-width: 80%;
 }
 #messagePageView .message-bubble.sent p {
-    color: var(--text-bright);
+    color: var(--on-accent);
 }
 #messagePageView .message-bubble.sent .message-bubble-time {
-    color: rgba(212, 181, 138, 0.6);
+    color: rgba(10, 20, 34, 0.62);
 }
 
 /* Lunar Note bubbles — special editorial frame */
