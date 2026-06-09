@@ -17,14 +17,6 @@
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
     }
   ],
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "has": [{ "type": "host", "value": "www.moonpostservice.com" }],
-      "destination": "https://moonpostservice.com/$1",
-      "permanent": true
-    }
-  ],
   "rewrites": [
     { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/chat/:id", "destination": "/index.html" },

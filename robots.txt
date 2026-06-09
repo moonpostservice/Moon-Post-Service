@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /chat/
 
-Sitemap: https://moonpostservice.com/sitemap.xml
+Sitemap: https://www.moonpostservice.com/sitemap.xml
