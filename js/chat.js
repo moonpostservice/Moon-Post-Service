@@ -1159,6 +1159,19 @@ function renderDetailContent(index) {
     }
 }
 
+// Grow a <textarea> message box to fit its content up to maxPx, then let it scroll
+// internally so the caret/latest line stays visible (the browser keeps the caret in
+// view while typing once the box is scrollable). The chat reply box and the Shared Sky
+// box used to be single-line <input>s, so a long message scrolled out of sight and the
+// box never grew — this is what makes them behave like a proper expanding composer.
+function autoGrowInput(el, maxPx = 140) {
+    if (!el) return;
+    el.style.height = 'auto';
+    const next = Math.min(el.scrollHeight, maxPx);
+    el.style.height = next + 'px';
+    el.style.overflowY = el.scrollHeight > maxPx ? 'auto' : 'hidden';
+}
+
 function closeMessageDetail() {
     // If URL has /chat/, use history.back() so browser history stays clean
     // The popstate handler will do the actual UI teardown
@@ -1653,6 +1666,7 @@ async function sendSharedSkyMessage() {
     }
 
     input.value = '';
+    autoGrowInput(input); // collapse the grown textarea back to one line
     clearSharedSkyPhoto();
     if (ssLunarNoteActive) resetSharedSkyLunarNote();
     renderSharedSkySignals();
@@ -1859,6 +1873,7 @@ async function sendReply() {
 
     // Clear input immediately for snappy feel
     input.value = '';
+    autoGrowInput(input); // collapse the grown textarea back to one line
 
     // Stop typing emission
     if (_typingChannel && currentAuthUser) {

@@ -1432,7 +1432,7 @@
                         </div>
                         <input type="file" id="sharedSkyCameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleSharedSkyPhoto(this); document.getElementById('sharedSkyPhotoMenu').classList.remove('active');">
                         <input type="file" id="sharedSkyPhotoInput" accept="image/*" style="display:none;" onchange="handleSharedSkyPhoto(this); document.getElementById('sharedSkyPhotoMenu').classList.remove('active');">
-                        <input type="text" class="message-page-input" placeholder="Share something with the sky..." id="sharedSkyInput" onkeydown="if(event.key==='Enter')sendSharedSkyMessage()">
+                        <textarea class="message-page-input" rows="1" placeholder="Share something with the sky..." id="sharedSkyInput" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendSharedSkyMessage()}" oninput="autoGrowInput(this)"></textarea>
                         <button class="message-page-send" onclick="sendSharedSkyMessage()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
                     </div>
                 </div>
@@ -2408,7 +2408,7 @@
                     <div class="reply-row" id="replyRow">
                         <div class="reply-input-wrapper">
                             <button class="reply-attach-btn" id="attachBtn" onclick="toggleAttachMenu()">+</button>
-                            <input type="text" class="message-page-input" placeholder="Whisper your message to the stars..." id="replyInput" onkeydown="if(event.key==='Enter')sendReply()" oninput="emitTyping(); onReplyInputMedia(this.value)">
+                            <textarea class="message-page-input" rows="1" placeholder="Whisper your message to the stars..." id="replyInput" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendReply();}" oninput="emitTyping(); onReplyInputMedia(this.value); autoGrowInput(this)"></textarea>
                         </div>
                         <button class="message-page-send" id="replySendBtn" onclick="sendReply()"><svg class="app-icon" style="width:18px;height:18px"><use href="#icon-send"/></svg></button>
                         <input type="file" id="replyPhotoInput" accept="image/*" style="display:none;" onchange="handleReplyPhoto(this)">

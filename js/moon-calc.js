@@ -582,8 +582,9 @@ function renderMessageDots() {
             e.stopPropagation();
             const name = this.dataset.to;
             if (!name) return;
-            const conv = conversations.find(c => c.otherName === name);
-            if (conv) openConversation(conv);
+            // openConversation expects an INDEX, not the conversation object.
+            const ci = conversations.findIndex(c => c.otherName === name);
+            if (ci !== -1) openConversation(ci);
         };
         orbit.appendChild(dot);
         container.appendChild(orbit);
@@ -643,8 +644,9 @@ function renderMessageDots() {
             e.stopPropagation();
             const name = this.dataset.from;
             if (!name) return;
-            const conv = conversations.find(c => c.otherName === name);
-            if (conv) openConversation(conv);
+            // openConversation expects an INDEX, not the conversation object.
+            const ci = conversations.findIndex(c => c.otherName === name);
+            if (ci !== -1) openConversation(ci);
         };
 
         orbit.appendChild(dot);
@@ -757,8 +759,9 @@ function attachDotTooltips() {
             const isIncoming = dot.dataset.incoming === 'true';
             const name = isIncoming ? dot.dataset.from : dot.dataset.to;
             if (!name) return;
-            const conv = conversations.find(c => c.otherName === name);
-            if (conv) openConversation(conv);
+            // openConversation expects an INDEX, not the conversation object.
+            const ci = conversations.findIndex(c => c.otherName === name);
+            if (ci !== -1) openConversation(ci);
         });
     });
 }
