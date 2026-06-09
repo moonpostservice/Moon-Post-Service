@@ -556,6 +556,9 @@ async function logOut() {
     currentConversationIndex = -1;
     globalTransmissions = [];
     cleanupRealtime();
+    // Explicitly close + reset the auth modal so no stale "Enter your Moon Code" screen
+    // can linger over the landing page (showOnboarding does this too — belt and suspenders).
+    if (typeof closeAuthModal === 'function') closeAuthModal();
     showOnboarding();
     // Fire signOut + clear storage in background; errors don't matter —
     // the UI is already on the landing page.

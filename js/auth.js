@@ -54,16 +54,54 @@ function showAuthModal(mode) {
     // Reset to step 1
     document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
     document.getElementById('authStepEmail')?.classList.add('active');
+    // Always reopen with a clean, clickable submit button — a prior send that hung or
+    // errored could otherwise leave it stuck on a disabled "Sending..." across reopen.
+    resetSendBtn();
     // Render the Turnstile widget now so a token is ready before the user submits.
     if (typeof initCaptcha === 'function') initCaptcha();
     setTimeout(() => document.getElementById(isSignup ? 'authFirstName' : 'authEmail')?.focus(), 100);
 }
 function closeAuthModal() {
-    document.getElementById('authModalOverlay').style.display = 'none';
+    const overlay = document.getElementById('authModalOverlay');
+    if (overlay) overlay.style.display = 'none';
+    // Hard-reset the modal's internal state so it can NEVER reappear showing a stale
+    // screen. The modal is a child of #onboardingOverlay and is hidden after login only
+    // as a side effect of the parent being hidden — its own display + active step + typed
+    // code all linger. If the onboarding overlay is later re-shown (e.g. on sign-out),
+    // that leftover "Enter your Moon Code" screen would pop back up. Resetting on close
+    // means a reopen always starts clean at the email step.
+    document.querySelectorAll('#authModalOverlay .auth-step').forEach(s => s.classList.remove('active'));
+    document.getElementById('authStepEmail')?.classList.add('active');
+    for (let i = 1; i <= 6; i++) {
+        const d = document.getElementById('otpDigit' + i);
+        if (d) d.value = '';
+    }
+    const authErr = document.getElementById('authError');
+    if (authErr) { authErr.textContent = ''; authErr.style.display = 'none'; }
+    const otpErr = document.getElementById('otpError');
+    if (otpErr) { otpErr.textContent = ''; otpErr.style.display = 'none'; }
 }
 
 // Send OTP code to email
 let pendingAuthEmail = '';
+
+// The enabled label for the email-step submit button. Centralized so the button can
+// always be restored to a clean, clickable state (see resetSendBtn).
+const SEND_BTN_HTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
+function resetSendBtn() {
+    const btn = document.getElementById('authSendBtn');
+    if (btn) { btn.innerHTML = SEND_BTN_HTML; btn.disabled = false; }
+}
+
+// Race a promise against a timeout so a hung auth/network request can never leave the
+// "Sending..." button permanently disabled with no feedback. Resolves to a sentinel
+// { __timedOut: true } if the underlying promise doesn't settle in time.
+function withTimeout(promise, ms) {
+    return Promise.race([
+        promise,
+        new Promise((resolve) => setTimeout(() => resolve({ __timedOut: true }), ms)),
+    ]);
+}
 
 async function sendMoonKey() {
     const email = document.getElementById('authEmail').value.trim();
@@ -123,22 +161,42 @@ async function sendMoonKey() {
     if (!captchaToken) {
         errorEl.textContent = 'Please complete the verification check above and try again.';
         errorEl.style.display = 'block';
-        btn.innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
-        btn.disabled = false;
+        resetSendBtn();
         return;
     }
-    const { error } = await sb.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false, captchaToken }
-    });
+
+    // Guard the network call: a thrown error (network failure) or a hung request must
+    // re-enable the button with neutral feedback, never leave it stuck on "Sending...".
+    // Neither a network error nor a timeout reveals account existence, so both are safe
+    // to surface — unlike the "email not found" path below, which stays silent.
+    let result;
+    try {
+        result = await withTimeout(sb.auth.signInWithOtp({
+            email,
+            options: { shouldCreateUser: false, captchaToken }
+        }), 15000);
+    } catch (e) {
+        console.warn('[auth] signInWithOtp threw:', e);
+        result = { error: e };
+        errorEl.textContent = "We couldn't reach the server. Please try again.";
+        errorEl.style.display = 'block';
+        resetSendBtn();
+        return;
+    }
+    if (result && result.__timedOut) {
+        errorEl.textContent = 'That took too long. Please try again.';
+        errorEl.style.display = 'block';
+        resetSendBtn();
+        return;
+    }
+    const { error } = result || {};
 
     if (error && (error.status === 429 || /captcha/i.test(error.message || ''))) {
         errorEl.textContent = error.status === 429
             ? 'Too many attempts. Please wait a moment and try again.'
             : 'Verification failed. Please try again.';
         errorEl.style.display = 'block';
-        btn.innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
-        btn.disabled = false;
+        resetSendBtn();
         return;
     }
     // Any other error (e.g. "email not found" / "signups not allowed") is intentionally
@@ -184,10 +242,24 @@ async function enterVerifyStep() {
         if (otpError) { otpError.textContent = 'Please complete the verification check above and try again.'; otpError.style.display = 'block'; }
         return;
     }
-    const { error } = await sb.auth.signInWithOtp({
-        email: _signupDraft.email,
-        options: { shouldCreateUser: true, captchaToken }
-    });
+    // Guard the send so a thrown/hung request surfaces a retry message on the code step
+    // instead of silently leaving the user staring at a code that never arrives.
+    let result;
+    try {
+        result = await withTimeout(sb.auth.signInWithOtp({
+            email: _signupDraft.email,
+            options: { shouldCreateUser: true, captchaToken }
+        }), 15000);
+    } catch (e) {
+        console.warn('[auth] signInWithOtp threw (signup):', e);
+        if (otpError) { otpError.textContent = "We couldn't reach the server. Please tap Resend code."; otpError.style.display = 'block'; }
+        return;
+    }
+    if (result && result.__timedOut) {
+        if (otpError) { otpError.textContent = 'That took too long. Please tap Resend code.'; otpError.style.display = 'block'; }
+        return;
+    }
+    const { error } = result || {};
     if (error) {
         if (otpError) { otpError.textContent = error.message || 'Could not send your code. Try again.'; otpError.style.display = 'block'; }
         return;
@@ -638,13 +710,25 @@ async function resendMoonKey() {
         alert('Please complete the verification check, then tap Resend again.');
         return;
     }
-    const { error } = await sb.auth.signInWithOtp({
-        email,
-        options: {
-            shouldCreateUser: authMode === 'signup',
-            captchaToken
-        }
-    });
+    let result;
+    try {
+        result = await withTimeout(sb.auth.signInWithOtp({
+            email,
+            options: {
+                shouldCreateUser: authMode === 'signup',
+                captchaToken
+            }
+        }), 15000);
+    } catch (e) {
+        console.warn('[auth] signInWithOtp threw (resend):', e);
+        alert("We couldn't reach the server. Please try again in a moment.");
+        return;
+    }
+    if (result && result.__timedOut) {
+        alert('That took too long. Please try again in a moment.');
+        return;
+    }
+    const { error } = result || {};
     if (!error) {
         alert('New code sent! Check your inbox.');
     } else {
@@ -655,8 +739,7 @@ async function resendMoonKey() {
 function changeEmail() {
     document.getElementById('authStepCode').classList.remove('active');
     document.getElementById('authStepEmail').classList.add('active');
-    document.getElementById('authSendBtn').innerHTML = 'Continue <svg class="app-icon md" style="color:#FDF6E3"><use href="#icon-moonkey"/></svg>';
-    document.getElementById('authSendBtn').disabled = false;
+    resetSendBtn();
     document.getElementById('authEmail').focus();
 }
 
@@ -837,6 +920,11 @@ async function initAuth(sessionOverride) {
         // Go straight to the app
         localStorage.setItem('moonpop_seen', 'true');
         hideOnboarding();
+        // Fully close + reset the auth modal on login success. Hiding only the parent
+        // onboarding overlay leaves the modal at display:flex with the OTP step still
+        // active — which is what resurfaced as a stale "Enter your Moon Code" screen when
+        // the overlay was later re-shown on sign-out.
+        closeAuthModal();
 
         // Ensure userInitials always has a fallback letter
         const initialsEl = document.getElementById('userInitials');
