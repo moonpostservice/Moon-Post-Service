@@ -576,8 +576,29 @@ async function handleSendRoulette(parentId = '') {
 }
 
 async function handleSendRouletteFromCompose() {
-    const messageText = document.getElementById('messageText')?.value.trim();
     const sendBtn = document.getElementById('composeMainBtn');
+
+    // Open note (the plain textarea)
+    const textMessage = document.getElementById('messageText')?.value.trim() || '';
+
+    // Lunar note — mirrors handleComposeSend(): fold it into the message body
+    // so a roulette message behaves exactly like a normal moon message,
+    // just anonymous. The recipient never knows which mode the sender chose.
+    let lunarNoteText = '';
+    let lunarClosing = '';
+    if (lunarNoteActive && document.getElementById('lunarResultCard')?.style.display !== 'none') {
+        lunarNoteText = document.getElementById('lunarResultText')?.textContent || '';
+        lunarClosing = document.getElementById('lunarResultClosing')?.textContent || '';
+    }
+
+    let messageText = '';
+    if (textMessage) messageText += textMessage;
+    if (lunarNoteText) {
+        if (messageText) messageText += '\n\n';
+        messageText += '🌙 Lunar Note\n' + lunarNoteText;
+        if (lunarClosing) messageText += '\n' + lunarClosing;
+    }
+
     if (!messageText) {
         showNotificationToast('Write a message to a stranger first.');
         return;
