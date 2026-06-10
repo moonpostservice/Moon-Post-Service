@@ -105,7 +105,13 @@ async function loadFullConversationThread(conv) {
             // conversation is at/after the message (read_receipts is the real read
             // signal; messages.read_at is never set for received messages).
             const _lastRead = (typeof myReadReceipts !== 'undefined' && m.conversation_id) ? myReadReceipts[m.conversation_id] : null;
-            const alreadyRead = !isSent && !!(_lastRead && m.created_at && new Date(_lastRead) >= new Date(m.created_at));
+            // "Read" must mean the content could actually have been seen: the receipt
+            // has to be at/after the RELEASE time, not just creation. Opening the chat
+            // stamps a receipt immediately, so comparing against created_at would
+            // unseal messages that are still in transit (receipt "now" > created_at
+            // even though release_at is hours away).
+            const _readGate = m.release_at || m.created_at;
+            const alreadyRead = !isSent && !!(_lastRead && _readGate && new Date(_lastRead) >= new Date(_readGate));
             const contentVisible = isSent || alreadyRead || (!!moonData.isVisible && !actuallyInTransit);
 
             // For sender name: use profile, then recipient_name ONLY for sent messages
@@ -288,19 +294,23 @@ async function openConversation(convIndex) {
                 const replyMap = {};
                 allReplies.forEach(r => {
                     if (!replyMap[r.message_id]) replyMap[r.message_id] = [];
+                    // Incoming replies stay SEALED until their release time — never
+                    // ship the text/photo/song to the renderer while in transit.
+                    const sealed = replyStillSealed(r, currentAuthUser.id);
                     replyMap[r.message_id].push({
                         id: r.id,
                         dbId: r.id,
-                        text: r.text,
+                        text: sealed ? '' : r.text,
                         time: timeAgo(r.created_at),
                         createdAt: r.created_at,
                         sent: r.sender_id === currentAuthUser.id,
                         senderId: r.sender_id,
                         isLunarNote: r.is_lunar_note || false,
-                        photoUrl: r.photo_url || null,
-                        songUrl: r.song_url || null,
-                        songTitle: r.song_title || null,
-                        status: r.sender_id === currentAuthUser.id ? (r.status === 'in_transit' ? 'In Transit' : 'Released') : '',
+                        photoUrl: sealed ? null : (r.photo_url || null),
+                        songUrl: sealed ? null : (r.song_url || null),
+                        songTitle: sealed ? null : (r.song_title || null),
+                        status: r.sender_id === currentAuthUser.id ? (r.status === 'in_transit' ? 'In Transit' : 'Released') : (sealed ? 'Arriving' : ''),
+                        stillInTransit: sealed,
                         releaseAt: r.release_at || null,
                         recipientCity: r.recipient_city || null,
                         reactions: []
@@ -653,6 +663,25 @@ function renderConversationThread() {
         // Add replies for this message — each reply uses its OWN dbId for reactions
         if (msg.replies) {
             msg.replies.forEach(r => {
+                // Received reply still in transit: render the "arriving" placeholder
+                // with its countdown — never the content (which the loader blanked).
+                const rSealed = !r.sent && (r.status === 'Arriving' || r.stillInTransit ||
+                    (r.releaseAt && new Date(r.releaseAt) > new Date()));
+                if (rSealed) {
+                    timeline.push({
+                        type: 'arriving',
+                        time: r.time,
+                        createdAt: r.createdAt || msg.createdAt,
+                        sent: false,
+                        releaseAt: r.releaseAt || null,
+                        msgIndex,
+                        msgDbId: r.dbId || msg.dbId,
+                        parentMsgDbId: msg.dbId,
+                        isReply: !!r.dbId,
+                        isMessage: true
+                    });
+                    return;
+                }
                 // Hide received lunar replies when moon is below horizon
                 if (r.isLunarNote && !r.sent && !moonData.isVisible) return;
                 timeline.push({

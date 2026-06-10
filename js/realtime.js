@@ -152,17 +152,20 @@ async function debouncedReloadMessages() {
                     const replyMap = {};
                     freshReplies.forEach(r => {
                         if (!replyMap[r.message_id]) replyMap[r.message_id] = [];
+                        // Incoming replies stay SEALED until release — same gate as openConversation.
+                        const sealed = replyStillSealed(r, currentAuthUser.id);
                         replyMap[r.message_id].push({
                             id: r.id,
                             dbId: r.id,
-                            text: r.text,
+                            text: sealed ? '' : r.text,
                             time: timeAgo(r.created_at),
                             createdAt: r.created_at,
                             sent: r.sender_id === currentAuthUser.id,
                             senderId: r.sender_id,
                             isLunarNote: r.is_lunar_note || false,
-                            photoUrl: r.photo_url || null,
-                            status: r.sender_id === currentAuthUser.id ? (r.status === 'in_transit' ? 'In Transit' : 'Released') : '',
+                            photoUrl: sealed ? null : (r.photo_url || null),
+                            status: r.sender_id === currentAuthUser.id ? (r.status === 'in_transit' ? 'In Transit' : 'Released') : (sealed ? 'Arriving' : ''),
+                            stillInTransit: sealed,
                             releaseAt: r.release_at || null,
                             recipientCity: r.recipient_city || null,
                             reactions: []
@@ -447,16 +450,22 @@ function setupRealtimeMessages() {
                 r.createdAt === reply.created_at && r.text === (reply.text || reply.reply_text));
             if (alreadyExists) return;
 
+            // SEALED until release: an in-transit reply must never carry its content
+            // into the live thread — only an "arriving" placeholder with the ETA.
+            const sealed = replyStillSealed(reply, currentAuthUser.id);
             targetMsg.replies.push({
                 id: reply.id,
                 dbId: reply.id,
-                text: reply.text || reply.reply_text,
+                text: sealed ? '' : (reply.text || reply.reply_text),
                 time: 'Just now',
                 createdAt: reply.created_at || new Date().toISOString(),
                 sent: false,
                 senderId: reply.sender_id,
                 isLunarNote: reply.is_lunar_note || false,
-                photoUrl: reply.photo_url || null,
+                photoUrl: sealed ? null : (reply.photo_url || null),
+                status: sealed ? 'Arriving' : '',
+                stillInTransit: sealed,
+                releaseAt: reply.release_at || null,
                 reactions: []
             });
 

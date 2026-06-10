@@ -53,8 +53,21 @@ function usernameFromEmail(email, fallback = '') {
     return email.split('@')[0] || fallback;
 }
 
+// --- Moon delivery gate ----------------------------------------------------
+
+// A reply someone ELSE sent me is still sealed (in transit) until its release
+// time passes — same rule as top-level messages: release_at in the future OR
+// the DB still says in_transit, with the same 24h hard cap so nothing can get
+// stuck sealed forever. Replies I sent are never sealed for me.
+function replyStillSealed(r, myUserId) {
+    if (!r || r.sender_id === myUserId) return false;
+    const tooOld = r.created_at && new Date(r.created_at) < new Date(Date.now() - 24 * 3600000);
+    if (tooOld) return false;
+    return (r.release_at && new Date(r.release_at) > new Date()) || r.status === 'in_transit';
+}
+
 // Dual export: stays a browser global (non-module <script>), and also exports
 // for CommonJS so these pure functions can be unit-tested in plain Node.
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { getSavedLocation, getSavedCityName, setText, usernameFromEmail };
+    module.exports = { getSavedLocation, getSavedCityName, setText, usernameFromEmail, replyStillSealed };
 }

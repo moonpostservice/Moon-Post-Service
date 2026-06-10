@@ -407,9 +407,13 @@ function buildConversations() {
             // Latest is a reply WE sent — show preview of our reply text
             conv.latestPreview = youPrefix + latestReply.text;
         } else if (replyIsNewer && !isSentReply) {
-            // Latest is an incoming reply — only show text if moon is up
-            // When moon is down, message content must stay hidden
-            conv.latestPreview = moonData.isVisible ? (latestReply.text || 'Moon message') : '🌙 Moon message';
+            // Latest is an incoming reply — never show text while it's still in
+            // transit, and only show released text if the moon is up
+            if (latestReply.stillInTransit || latestReply.status === 'Arriving') {
+                conv.latestPreview = '🌙 On its way';
+            } else {
+                conv.latestPreview = moonData.isVisible ? (latestReply.text || 'Moon message') : '🌙 Moon message';
+            }
         } else if (latest.stillInTransit && latest.type === 'received') {
             conv.latestPreview = '🌙 On its way';
         } else if (latest.status === 'In Transit') {
@@ -1046,7 +1050,11 @@ async function loadMessages(retryCount = 0) {
             // conversation is at/after the message (NOT messages.read_at, which is
             // never set for received messages).
             const _lastRead = m.conversation_id ? myReadReceipts[m.conversation_id] : null;
-            const alreadyRead = !!(_lastRead && m.created_at && new Date(_lastRead) >= new Date(m.created_at));
+            // Receipt must be at/after the RELEASE time (not created_at): opening the
+            // chat stamps a receipt at "now", which would otherwise unseal messages
+            // still in transit. See same gate in chat.js loadFullConversationThread.
+            const _readGate = m.release_at || m.created_at;
+            const alreadyRead = !!(_lastRead && _readGate && new Date(_lastRead) >= new Date(_readGate));
             const contentVisible = alreadyRead || (!!moonData.isVisible && !actuallyInTransit);
 
             allMessages.push({
@@ -1104,7 +1112,7 @@ async function loadMessages(retryCount = 0) {
                 : _emptyRes,
             _replyMsgIds.length > 0
                 ? sb.from('replies')
-                    .select('message_id, created_at, sender_id, text')
+                    .select('message_id, created_at, sender_id, text, status, release_at')
                     .in('message_id', _replyMsgIds)
                     .order('created_at', { ascending: false })
                     .limit(200)
@@ -1194,17 +1202,23 @@ async function loadMessages(retryCount = 0) {
                     allMessages.forEach(m => {
                         const lr = latestByMsg[m.dbId];
                         if (lr) {
+                            // Incoming replies still in transit must not leak their text
+                            // into the inbox preview or the synthetic reply entry.
+                            const lrSealed = replyStillSealed(lr, currentAuthUser?.id);
                             m._latestReplyAt = lr.created_at;
-                            m._latestReplyText = lr.text;
+                            m._latestReplyText = lrSealed ? '' : lr.text;
                             m._latestReplySenderId = lr.sender_id;
                             // Add as synthetic reply so buildConversations finds it
                             if (!m.replies) m.replies = [];
                             if (!m.replies.some(r => r.createdAt === lr.created_at)) {
                                 m.replies.push({
                                     createdAt: lr.created_at,
-                                    text: lr.text,
+                                    text: lrSealed ? '' : lr.text,
                                     senderId: lr.sender_id,
-                                    sent: lr.sender_id === currentAuthUser?.id
+                                    sent: lr.sender_id === currentAuthUser?.id,
+                                    status: lrSealed ? 'Arriving' : '',
+                                    stillInTransit: lrSealed,
+                                    releaseAt: lr.release_at || null
                                 });
                             }
                         }
