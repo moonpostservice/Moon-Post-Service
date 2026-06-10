@@ -606,23 +606,46 @@ function closeContactUsPage() {
     document.getElementById('contactUsPage').style.display = 'none';
     document.body.style.overflow = '';
 }
-function submitContactUsForm(e) {
+async function submitContactUsForm(e) {
     e.preventDefault();
     const name    = document.getElementById('contactUsName').value.trim();
     const email   = document.getElementById('contactUsEmail').value.trim();
     const subject = document.getElementById('contactUsSubject').value;
     const message = document.getElementById('contactUsMessage').value.trim();
 
-    const to = 'themoonpostservice@gmail.com';
-    const body = `Name: ${name}\nEmail: ${email}\n\n${message}`;
-    const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoUrl;
-
-    const btn = document.getElementById('contactUsSubmitBtn');
+    const btn          = document.getElementById('contactUsSubmitBtn');
     const confirmation = document.getElementById('contactUsConfirmation');
+    const errorBox     = document.getElementById('contactUsError');
+
+    if (errorBox) errorBox.style.display = 'none';
+    if (!name || !email || !subject || !message) {
+        if (errorBox) { errorBox.textContent = 'Please fill in every field before sending.'; errorBox.style.display = 'block'; }
+        return;
+    }
+
     btn.disabled = true;
-    btn.textContent = 'Sent';
-    confirmation.style.display = 'block';
+    btn.textContent = 'Sending…';
+
+    try {
+        // Sent server-side (submit-contact-message edge function) — no mailto, so the
+        // visitor's email app never opens and our inbox address stays private. The
+        // message lands in the admin backstage and pings the team by email.
+        const { error } = await sb.functions.invoke('submit-contact-message', {
+            body: { name, email, subject, message }
+        });
+        if (error) throw error;
+
+        document.getElementById('contactUsForm').reset();
+        btn.textContent = 'Sent';
+        confirmation.style.display = 'block';
+    } catch (err) {
+        console.error('[contact] submit error:', err);
+        let msg = 'Something went wrong. Please try again.';
+        try { const b = await err.context?.json(); if (b?.error) msg = b.error; } catch {}
+        if (errorBox) { errorBox.textContent = msg; errorBox.style.display = 'block'; }
+        btn.disabled = false;
+        btn.textContent = 'Send Message';
+    }
 }
 
 function toggleFaq(btn) {

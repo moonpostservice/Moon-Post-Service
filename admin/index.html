@@ -451,6 +451,7 @@
       <button class="tab-btn active" data-tab="roulette">Moon Roulette</button>
       <button class="tab-btn" data-tab="users">Users</button>
       <button class="tab-btn" data-tab="analytics">Analytics</button>
+      <button class="tab-btn" data-tab="contact">Contact</button>
     </div>
 
     <!-- Roulette tab -->
@@ -547,6 +548,31 @@
         <div class="state-msg"><div class="icon">◌</div>Loading…</div>
       </div>
     </div> <!-- /tab-analytics -->
+
+    <!-- Contact tab -->
+    <div class="tab-panel" id="tab-contact">
+      <div class="search-row">
+        <input id="contactSearchInput" class="search-input" type="text" placeholder="Search by name, email, subject, message…">
+        <span class="count-label" id="contactRowCountLabel"></span>
+      </div>
+      <div class="table-wrap">
+        <table id="contactTable">
+          <thead>
+            <tr>
+              <th>Received</th>
+              <th>From</th>
+              <th>Subject</th>
+              <th>Message</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="contactTableBody">
+            <tr><td colspan="6"><div class="state-msg"><div class="icon">◌</div>Loading…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div> <!-- /tab-contact -->
 
   </main>
 </div>
@@ -1122,12 +1148,14 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'users' && !allUsers.length) loadUsers();
     if (btn.dataset.tab === 'analytics' && !_analyticsLoaded) loadAnalytics();
+    if (btn.dataset.tab === 'contact' && !_contactLoaded) loadContact();
   });
 });
 
-// Refresh button also refreshes the analytics tab once it's been opened.
+// Refresh button also refreshes the analytics + contact tabs once opened.
 document.getElementById('refreshBtn').addEventListener('click', () => {
   if (_analyticsLoaded) loadAnalytics();
+  if (_contactLoaded) loadContact();
 });
 
 // ── Users ─────────────────────────────────────────────────────────────────────
@@ -1220,6 +1248,84 @@ document.getElementById('tableBody').addEventListener('click', e => {
   if (!btn) return;
   openModal('delete_roulette_message', { messageId: btn.dataset.messageId });
 }, true);
+
+// ── Contact messages ────────────────────────────────────────────────────────────
+
+let _contactLoaded = false;
+let allContact = [];
+
+async function loadContact() {
+  document.getElementById('contactTableBody').innerHTML =
+    `<tr><td colspan="6"><div class="state-msg"><div class="icon">◌</div>Loading…</div></td></tr>`;
+
+  const { data, error } = await sb.rpc('get_admin_contact_messages');
+  if (error) {
+    document.getElementById('contactTableBody').innerHTML =
+      `<tr><td colspan="6"><div class="state-msg"><div class="icon">⚠</div>${escHtml(error.message)}</div></td></tr>`;
+    return;
+  }
+  _contactLoaded = true;
+  allContact = data || [];
+  renderContact();
+}
+
+document.getElementById('contactSearchInput').addEventListener('input', renderContact);
+
+function renderContact() {
+  const q = document.getElementById('contactSearchInput').value.toLowerCase();
+  const filtered = allContact.filter(c => {
+    if (!q) return true;
+    return [c.name, c.email, c.subject, c.message].some(v => v && v.toLowerCase().includes(q));
+  });
+
+  const newCount = allContact.filter(c => c.status === 'new').length;
+  document.getElementById('contactRowCountLabel').textContent =
+    filtered.length === allContact.length
+      ? `${allContact.length} messages${newCount ? ` · ${newCount} new` : ''}`
+      : `${filtered.length} of ${allContact.length}`;
+
+  if (!filtered.length) {
+    document.getElementById('contactTableBody').innerHTML =
+      `<tr><td colspan="6"><div class="state-msg"><div class="icon">◌</div>No messages.</div></td></tr>`;
+    return;
+  }
+
+  let html = '';
+  for (const c of filtered) {
+    const badgeClass = c.status === 'new' ? 'badge-active' : (c.status === 'archived' ? 'badge-suspended' : '');
+    html += `<tr${c.status === 'new' ? ' style="background:rgba(212,181,138,0.04);"' : ''}>
+      <td><span class="ts-val">${fmtDate(c.created_at)}</span></td>
+      <td>
+        <div class="person">
+          <span class="person-name">${escHtml(c.name || '—')}</span>
+          <span class="person-email"><a href="mailto:${escHtml(c.email)}" style="color:inherit;">${escHtml(c.email || '—')}</a></span>
+        </div>
+      </td>
+      <td>${escHtml(c.subject || '—')}</td>
+      <td><div style="max-width:420px;white-space:pre-wrap;font-size:12px;color:var(--muted);max-height:120px;overflow:auto;line-height:1.45;">${escHtml(c.message || '')}</div></td>
+      <td><span class="badge ${badgeClass}">${escHtml(c.status)}</span></td>
+      <td>
+        ${c.status !== 'read'     ? `<button class="btn-action" data-cstatus="read"     data-id="${c.id}">Mark read</button>` : ''}
+        ${c.status !== 'archived' ? `<button class="btn-action" data-cstatus="archived" data-id="${c.id}">Archive</button>`   : ''}
+        ${c.status !== 'new'      ? `<button class="btn-action" data-cstatus="new"      data-id="${c.id}">Unread</button>`    : ''}
+      </td>
+    </tr>`;
+  }
+  document.getElementById('contactTableBody').innerHTML = html;
+}
+
+document.getElementById('contactTableBody').addEventListener('click', async e => {
+  const btn = e.target.closest('[data-cstatus]');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const status = btn.dataset.cstatus;
+  btn.disabled = true;
+  const { error } = await sb.rpc('set_contact_message_status', { p_id: id, p_status: status });
+  if (error) { alert(error.message); btn.disabled = false; return; }
+  const row = allContact.find(c => c.id === id);
+  if (row) row.status = status;
+  renderContact();
+});
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 
