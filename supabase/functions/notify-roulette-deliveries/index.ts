@@ -124,8 +124,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const appUrl = Deno.env.get("APP_URL") ?? "https://moonpop.app";
-    const emailFrom = Deno.env.get("EMAIL_FROM") ?? "Moon Post Service <noreply@moonpop.app>";
+    const appUrl = Deno.env.get("APP_URL") ?? "https://www.moonpostservice.com";
+    const emailFrom = Deno.env.get("EMAIL_FROM") ?? "Moon Post Service <hello@moonpostservice.com>";
 
     let processed = 0;
     let skipped = 0;

@@ -154,7 +154,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (senderProfile?.notify_email && senderProfile.email) {
-      const appUrl = Deno.env.get("APP_URL") ?? "https://moonpop.app";
+      const appUrl = Deno.env.get("APP_URL") ?? "https://www.moonpostservice.com";
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
       if (resendApiKey) {
@@ -169,7 +169,7 @@ Deno.serve(async (req: Request) => {
             Authorization: `Bearer ${resendApiKey}`,
           },
           body: JSON.stringify({
-            from: Deno.env.get("EMAIL_FROM") ?? "Moon Post Service <noreply@moonpop.app>",
+            from: Deno.env.get("EMAIL_FROM") ?? "Moon Post Service <hello@moonpostservice.com>",
             to: [senderProfile.email],
             subject: "🌙 Your Moon Roulette message found its way back to you",
             html: `

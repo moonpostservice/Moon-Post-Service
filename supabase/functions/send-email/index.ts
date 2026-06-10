@@ -195,7 +195,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const emailType = body.type as EmailType;
-    const appUrl = Deno.env.get("APP_URL") ?? "https://moonpop.app";
+    const appUrl = Deno.env.get("APP_URL") ?? "https://www.moonpostservice.com";
 
     // --- 3. Build email by type (brass-on-navy shell) ---
     let subject: string;
@@ -270,7 +270,7 @@ Deno.serve(async (req: Request) => {
         Authorization: `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: Deno.env.get("EMAIL_FROM") ?? "Moon Post Service <noreply@moonpop.app>",
+        from: Deno.env.get("EMAIL_FROM") ?? "Moon Post Service <hello@moonpostservice.com>",
         to: [body.recipientEmail as string],
         subject,
         html: htmlBody,
