@@ -586,9 +586,29 @@ async function handleSendRouletteFromCompose() {
     // just anonymous. The recipient never knows which mode the sender chose.
     let lunarNoteText = '';
     let lunarClosing = '';
-    if (lunarNoteActive && document.getElementById('lunarResultCard')?.style.display !== 'none') {
-        lunarNoteText = document.getElementById('lunarResultText')?.textContent || '';
-        lunarClosing = document.getElementById('lunarResultClosing')?.textContent || '';
+    if (lunarNoteActive) {
+        const v1 = document.getElementById('lunarInput1')?.value.trim() || '';
+        const v2 = document.getElementById('lunarInput2')?.value.trim() || '';
+        const v3 = document.getElementById('lunarInput3')?.value.trim() || '';
+        const card = document.getElementById('lunarResultCard');
+        const revealed = card && card.style.display !== 'none';
+
+        // The "Go Lunar" wizard only generates the note when the user taps
+        // "Reveal 🌙". If they filled all three answers but went straight to
+        // Send, reveal it for them so hitting Send just works.
+        if (!revealed && v1 && v2 && v3) {
+            revealLunarNote();
+        } else if (!revealed && (v1 || v2 || v3)) {
+            // Half-finished Lunar Note — guide them instead of failing with
+            // the confusing "write a message to a stranger first".
+            showNotificationToast('Finish your Lunar Note before sending.');
+            return;
+        }
+
+        if (card && card.style.display !== 'none') {
+            lunarNoteText = document.getElementById('lunarResultText')?.textContent || '';
+            lunarClosing = document.getElementById('lunarResultClosing')?.textContent || '';
+        }
     }
 
     let messageText = '';
