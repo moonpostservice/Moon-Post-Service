@@ -1821,6 +1821,12 @@ function updateOrbitCenter() {
     document.querySelectorAll('.chat-transit-countdown').forEach(el => {
         const release = el.dataset.release;
         if (!release) return;
+        // data-count mirrors the collapsed-arriving card count (chat.js) so the
+        // live ticker pluralizes the same way the initial render does.
+        const count = parseInt(el.dataset.count || '1', 10);
+        const subject = count > 1
+            ? `${count} moon messages are on their way`
+            : 'A moon message is on its way';
         const diff = new Date(release).getTime() - Date.now();
         const noteEl = el.querySelector('.chat-transit-note');
         if (!noteEl) return;
@@ -1828,9 +1834,9 @@ function updateOrbitCenter() {
             const h = Math.floor(diff / 3600000);
             const m = Math.floor((diff % 3600000) / 60000);
             const eta = h > 0 ? `${h}h ${m}m` : `${m}m`;
-            noteEl.textContent = `A moon message is on its way — arriving in ${eta}.`;
+            noteEl.textContent = `${subject} — arriving in ${eta}.`;
         } else {
-            noteEl.textContent = 'A moon message has arrived.';
+            noteEl.textContent = count > 1 ? `${count} moon messages have arrived.` : 'A moon message has arrived.';
         }
     });
 }

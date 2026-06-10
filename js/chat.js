@@ -591,7 +591,7 @@ function renderConversationThread() {
     const content = document.getElementById('detailContent');
 
     // Build a flat timeline of all items
-    const timeline = [];
+    let timeline = [];
 
     // Add all messages (oldest first)
     const sortedMsgs = [...conv.messages].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
@@ -713,6 +713,27 @@ function renderConversationThread() {
 
     // Sort timeline chronologically
     timeline.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    // Collapse consecutive received "arriving" placeholders into ONE card. When
+    // the sender fires several messages while the recipient's moon is down, the
+    // recipient should see a single "N moon messages are on their way" indicator,
+    // not one card per undelivered message. Runs broken by any other item (a
+    // reply, a released message) stay separate. The merged card carries the
+    // latest release/time and a count for pluralization + the live ticker.
+    timeline = timeline.reduce((acc, item) => {
+        const prev = acc[acc.length - 1];
+        if (item.type === 'arriving' && prev && prev.type === 'arriving') {
+            prev.count += 1;
+            if (item.releaseAt && (!prev.releaseAt || new Date(item.releaseAt) > new Date(prev.releaseAt))) {
+                prev.releaseAt = item.releaseAt;
+            }
+            prev.time = item.time;
+            prev.createdAt = item.createdAt;
+        } else {
+            acc.push(item.type === 'arriving' ? { ...item, count: 1 } : item);
+        }
+        return acc;
+    }, []);
 
     // Debug: count messages with/without dbId
     const withDbId = timeline.filter(t => t.msgDbId).length;
@@ -942,26 +963,28 @@ function renderConversationThread() {
                 </div>
             `;
         } else if (item.type === 'arriving') {
-            // Received in-transit message: shown as notification
-            let arrivalNote = 'A moon message is on its way to you...';
+            // Received in-transit message(s): shown as a single notification card.
+            // `count` collapses a run of undelivered messages into one indicator.
+            const count = item.count || 1;
+            const subject = count > 1
+                ? `${count} moon messages are on their way`
+                : 'A moon message is on its way';
+            let arrivalNote = count > 1 ? `${subject} to you...` : 'A moon message is on its way to you...';
             if (item.releaseAt) {
                 const diff = new Date(item.releaseAt).getTime() - Date.now();
                 if (diff > 0) {
                     const h = Math.floor(diff / 3600000);
                     const m = Math.floor((diff % 3600000) / 60000);
                     const eta = h > 0 ? `${h}h ${m}m` : `${m}m`;
-                    arrivalNote = `A moon message is on its way \u2014 arriving in ${eta}.`;
+                    arrivalNote = `${subject} \u2014 arriving in ${eta}.`;
                 } else {
-                    arrivalNote = 'A moon message has arrived.';
+                    arrivalNote = count > 1 ? `${count} moon messages have arrived.` : 'A moon message has arrived.';
                 }
             }
             html += `
-                <div class="chat-transit-msg chat-transit-countdown" data-release="${item.releaseAt || ''}" style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(18,35,58,0.5);border:1px dashed rgba(212,181,138,0.25);margin-bottom:8px;">
+                <div class="chat-transit-msg chat-transit-countdown" data-release="${item.releaseAt || ''}" data-count="${count}" style="max-width:85%;padding:14px 16px;border-radius:16px;background:rgba(18,35,58,0.5);border:1px dashed rgba(212,181,138,0.25);margin-bottom:8px;">
                     <div class="chat-transit-note" style="font-size:17px;color:rgba(212,181,138,0.7);font-style:italic;">${arrivalNote}</div>
                     <div class="message-bubble-time">${item.time}</div>
-                    <div class="msg-actions-row">
-                        ${actionsHtml(item.msgDbId)}
-                    </div>
                 </div>
             `;
         } else if (item.type === 'lunar-reply') {
