@@ -672,6 +672,12 @@ function switchContactsTab(tab) {
 let contactSearchTimer = null;
 let _lastSearchResults = []; // Cache search results so we can reference by index
 
+const INVITE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function escapeContactHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function debouncedContactSearch() {
     clearTimeout(contactSearchTimer);
     const query = document.getElementById('contactSearchInput').value.trim();
@@ -690,7 +696,7 @@ async function searchUsersForContact(query) {
     resultsDiv.innerHTML = '<div style="padding:8px;color:var(--text-muted);font-size:13px;">Searching...</div>';
 
     // Check if query is an email address
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query);
+    const isEmail = INVITE_EMAIL_RE.test(query);
 
     try {
         const { data, error } = await sb.rpc('search_users', { search_query: query });
@@ -744,18 +750,33 @@ async function searchUsersForContact(query) {
             }).join('');
         }
 
-        // If email search found no exact match, show invite option
-        if (isEmail) {
+        // Show the invite row as soon as the query looks like an email (contains @),
+        // unless it exactly matches a registered user shown above.
+        if (query.includes('@')) {
             const exactMatch = _lastSearchResults.find(u => u.email && u.email.toLowerCase() === query.toLowerCase());
             if (!exactMatch) {
+                const alreadyContact = existingEmails.has(query.toLowerCase());
+                const safeQuery = escapeContactHtml(query);
+                const onclickEmail = safeQuery.replace(/'/g, "\\'");
+                let subText, actionBtn;
+                if (alreadyContact) {
+                    subText = 'Already in your contacts';
+                    actionBtn = `<button onclick="inviteEmailFromSearch('${onclickEmail}')" style="background:none;border:1px solid var(--line);color:var(--accent);border-radius:16px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Resend invite</button>`;
+                } else if (isEmail) {
+                    subText = 'Not on Moon Post Service yet';
+                    actionBtn = `<button onclick="inviteEmailFromSearch('${onclickEmail}')" style="background:var(--accent);color:var(--bg);border:none;border-radius:16px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Invite</button>`;
+                } else {
+                    subText = 'Keep typing their full email to invite them';
+                    actionBtn = `<button disabled style="background:rgba(212,181,138,0.15);color:var(--muted);border:none;border-radius:16px;padding:6px 16px;font-size:12px;font-weight:600;cursor:default;white-space:nowrap;">Invite</button>`;
+                }
                 html += `
                     <div style="display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid rgba(212,181,138,0.08);">
-                        <div style="width:36px;height:36px;border-radius:50%;background:var(--coral);color:white;display:flex;align-items:center;justify-content:center;font-size:16px;">✉</div>
-                        <div style="flex:1;">
-                            <div style="font-size:14px;font-weight:600;color:var(--coral);">${query}</div>
-                            <div style="font-size:11px;color:var(--text-muted);">Not on Moon Post Service yet</div>
+                        <div style="width:36px;height:36px;border-radius:50%;background:rgba(212,181,138,0.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;">✉</div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:14px;font-weight:600;color:var(--accent);overflow:hidden;text-overflow:ellipsis;">${safeQuery}</div>
+                            <div style="font-size:11px;color:var(--text-muted);">${subText}</div>
                         </div>
-                        <button onclick="inviteEmailFromSearch('${query.replace(/'/g, "\\'")}')" style="background:var(--coral);color:white;border:none;border-radius:16px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Invite</button>
+                        ${actionBtn}
                     </div>
                 `;
             }
@@ -830,18 +851,11 @@ async function addSearchResult(idx) {
 // Legacy stub — invite tab removed
 async function sendInviteFromContacts() {}
 
-// Invite email from search results
-async function inviteEmailFromSearch(email) {
-    if (!email) return;
+// Core invite: send the email + record as off-platform contact. Returns true on success.
+async function sendInviteEmail(email) {
     const senderName = localStorage.getItem('moonpop_username') || 'Someone on Moon Post Service';
-    const resultsDiv = document.getElementById('contactSearchResults');
-
     try {
-        // Show sending state
-        const inviteBtn = resultsDiv.querySelector('button[onclick*="inviteEmailFromSearch"]');
-        if (inviteBtn) { inviteBtn.textContent = 'Sending...'; inviteBtn.disabled = true; }
-
-        const { data, error } = await sb.functions.invoke('send-email', {
+        const { error } = await sb.functions.invoke('send-email', {
             body: {
                 type: 'invite',
                 recipientEmail: email,
@@ -851,17 +865,15 @@ async function inviteEmailFromSearch(email) {
         });
         if (error) throw error;
 
-        // Also add as contact (off-platform)
         if (!contacts.find(c => c.email && c.email.toLowerCase() === email.toLowerCase())) {
-            const newContact = {
+            contacts.push({
                 name: email,
                 location: 'Unknown',
                 email: email,
                 avatar: null,
                 isOnMoonpop: false,
                 linkedProfileId: null
-            };
-            contacts.push(newContact);
+            });
             if (currentAuthUser) {
                 await sb.from('contacts').insert({
                     owner_id: currentAuthUser.id,
@@ -872,15 +884,77 @@ async function inviteEmailFromSearch(email) {
             }
             renderContactsList();
         }
-
-        // Update button to show success
-        if (inviteBtn) { inviteBtn.textContent = '✓ Invited'; inviteBtn.style.background = '#4caf50'; }
-        else alert('Invite sent to ' + email + '!');
+        return true;
     } catch(e) {
         console.error('Invite send failed:', e);
+        return false;
+    }
+}
+
+// Invite email from search results
+async function inviteEmailFromSearch(email) {
+    if (!email) return;
+    const resultsDiv = document.getElementById('contactSearchResults');
+    const inviteBtn = resultsDiv.querySelector('button[onclick*="inviteEmailFromSearch"]');
+    if (inviteBtn) { inviteBtn.textContent = 'Sending...'; inviteBtn.disabled = true; }
+
+    const ok = await sendInviteEmail(email);
+
+    if (ok) {
+        if (inviteBtn) { inviteBtn.textContent = '✓ Invited'; inviteBtn.style.background = '#4caf50'; inviteBtn.style.color = 'white'; inviteBtn.style.border = 'none'; }
+        else alert('Invite sent to ' + email + '!');
+    } else {
         alert('Failed to send invite. Please try again.');
-        const inviteBtn = resultsDiv.querySelector('button[onclick*="inviteEmailFromSearch"]');
         if (inviteBtn) { inviteBtn.textContent = 'Invite'; inviteBtn.disabled = false; }
+    }
+}
+
+// ---- "Invite a friend" standalone form (always-visible entry point) ----
+function toggleInviteFriendForm(forceOpen) {
+    const form = document.getElementById('inviteFriendForm');
+    if (!form) return;
+    const open = forceOpen === true || form.style.display === 'none';
+    form.style.display = open ? 'flex' : 'none';
+    if (open) {
+        const input = document.getElementById('inviteFriendEmail');
+        input.focus();
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        const status = document.getElementById('inviteFriendStatus');
+        if (status) status.style.display = 'none';
+    }
+}
+
+async function sendInviteFromForm() {
+    const input = document.getElementById('inviteFriendEmail');
+    const btn = document.getElementById('inviteFriendSendBtn');
+    const status = document.getElementById('inviteFriendStatus');
+    const email = (input.value || '').trim().toLowerCase();
+
+    if (!INVITE_EMAIL_RE.test(email)) {
+        status.style.display = 'block';
+        status.style.color = '#e0a0a0';
+        status.textContent = 'Please enter a full email address.';
+        input.focus();
+        return;
+    }
+
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+    status.style.display = 'none';
+
+    const ok = await sendInviteEmail(email);
+
+    btn.textContent = 'Send invite';
+    btn.disabled = false;
+    status.style.display = 'block';
+    if (ok) {
+        status.style.color = '#4caf50';
+        status.textContent = '✓ Invite sent to ' + email;
+        input.value = '';
+    } else {
+        status.style.color = '#e0a0a0';
+        status.textContent = 'Could not send the invite. Please try again in a moment.';
     }
 }
 
@@ -897,6 +971,7 @@ function renderContactsList() {
                 <h4 style="color:var(--blue);margin-bottom:8px;">No contacts yet</h4>
                 <p style="font-size:13px;margin-bottom:16px;">Search for MoonPop users or invite someone new.</p>
                 <button onclick="(function(){const el=document.getElementById('contactSearchInput');el.scrollIntoView({behavior:'smooth',block:'center'});el.focus();el.style.transition='box-shadow 0.2s';el.style.boxShadow='0 0 0 3px var(--accent)';setTimeout(()=>{el.style.boxShadow='';},1200);})()" style="background:var(--accent);color:var(--bg);border:none;border-radius:20px;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:600;">+ Add a contact</button>
+                <div style="margin-top:12px;"><a onclick="toggleInviteFriendForm(true)" style="cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);">✉ Invite a friend by email</a></div>
             </div>
         `;
         return;

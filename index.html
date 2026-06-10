@@ -1942,6 +1942,15 @@
                 <input type="text" id="contactSearchInput" placeholder="Search by name, username, or email..." autocomplete="off" oninput="debouncedContactSearch()" style="width:100%;box-sizing:border-box;padding:12px 16px;border:1px solid var(--line-soft);border-radius:var(--radius-sm);font-family:var(--sans);font-size:14px;background:rgba(3,10,24,0.6);color:var(--text-bright);">
                 <div id="contactSearchResults" style="max-height:300px;overflow-y:auto;margin-top:4px;"></div>
             </div>
+            <!-- Invite a friend -->
+            <div style="margin-bottom:24px;">
+                <button onclick="toggleInviteFriendForm()" style="background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--accent);display:inline-flex;align-items:center;gap:6px;">✉ Invite a friend by email</button>
+                <div id="inviteFriendForm" style="display:none;margin-top:12px;gap:8px;align-items:center;">
+                    <input type="email" id="inviteFriendEmail" placeholder="friend@email.com" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();sendInviteFromForm();}" style="flex:1;box-sizing:border-box;padding:10px 14px;border:1px solid var(--line-soft);border-radius:var(--radius-sm);font-family:var(--sans);font-size:14px;background:rgba(3,10,24,0.6);color:var(--text-bright);">
+                    <button id="inviteFriendSendBtn" onclick="sendInviteFromForm()" style="background:var(--accent);color:var(--bg);border:none;border-radius:16px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Send invite</button>
+                </div>
+                <div id="inviteFriendStatus" style="display:none;margin-top:8px;font-family:var(--sans);font-size:12px;"></div>
+            </div>
             <div id="contactsListBody" style="padding:0;">
                 <!-- Populated by JS -->
             </div>
