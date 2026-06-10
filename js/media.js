@@ -496,7 +496,12 @@ function openSharedSkyModal() {
     // Scroll to bottom
     const feed = document.getElementById('sharedSkySignals');
     if (feed) setTimeout(() => { feed.scrollTop = feed.scrollHeight; }, 100);
-    if (!arguments[0]) history.pushState({ page: 'shared-sky' }, '', '/shared-sky');
+    // Push a history entry only when opening fresh (not when restoring via popstate)
+    // AND not when the URL is already /shared-sky — otherwise repeated opens stack
+    // duplicate /shared-sky entries that a later chat-close can land back on.
+    if (!arguments[0] && window.location.pathname !== '/shared-sky') {
+        history.pushState({ page: 'shared-sky' }, '', '/shared-sky');
+    }
 }
 
 function closeSharedSkyModal() {

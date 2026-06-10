@@ -32,7 +32,10 @@ window.addEventListener('popstate', async function(e) {
         _closeMessageDetailUI();
         renderMessages();
     } else if (chatMatch) {
-        // Navigated forward/back to a chat URL — open it
+        // Navigated forward/back to a chat URL — open it.
+        // Defensively close Shared Sky so it can never remain active behind the chat
+        // (both panels share z-index 500; chat would just paint on top).
+        document.getElementById('sharedSkyPage').classList.remove('active', 'closing');
         const chatId = chatMatch[1];
         const convIdx = conversations.findIndex(c => c.dbConversationId === chatId);
         if (convIdx !== -1) {

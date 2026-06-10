@@ -396,18 +396,27 @@ async function openConversation(convIndex) {
     // /shared-sky/chat/<id> URL, and (b) replaceState instead of pushState — otherwise
     // closing the chat (history.back) lands back on /shared-sky and the popstate handler
     // re-opens Shared Sky behind the inbox instead of returning to the ring.
-    if (conv.dbConversationId) {
+    {
         const OVERLAY_PATHS = ['/shared-sky', '/roulette', '/faq', '/philosophy', '/terms', '/contacts', '/new-message'];
         const curPath = window.location.pathname;
         let base = curPath.replace(/\/chat\/.*$/, '').replace(/\/$/, '');
         if (OVERLAY_PATHS.includes(base)) base = '';
-        const chatPath = base + '/chat/' + conv.dbConversationId;
         const alreadyInChat = /\/chat\//.test(curPath);
         const cameFromOverlay = OVERLAY_PATHS.includes(curPath.replace(/\/$/, ''));
-        if (alreadyInChat || cameFromOverlay) {
-            history.replaceState({ chat: conv.dbConversationId }, '', chatPath);
-        } else {
-            history.pushState({ chat: conv.dbConversationId }, '', chatPath);
+        if (conv.dbConversationId) {
+            const chatPath = base + '/chat/' + conv.dbConversationId;
+            if (alreadyInChat || cameFromOverlay) {
+                history.replaceState({ chat: conv.dbConversationId }, '', chatPath);
+            } else {
+                history.pushState({ chat: conv.dbConversationId }, '', chatPath);
+            }
+        } else if (cameFromOverlay) {
+            // No deep-linkable id (e.g. a conversation with no DB row yet), but we must
+            // NOT leave the overlay URL (e.g. /shared-sky) in the address bar. If we did,
+            // closing this chat — or a later one opened from a re-pushed /shared-sky —
+            // would history.back() onto the stale entry and re-open Shared Sky behind the
+            // ring. Collapse to a clean base so closing returns to the inbox/ring.
+            history.replaceState(null, '', (base || '/'));
         }
     }
 
