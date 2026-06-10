@@ -552,12 +552,14 @@ function openContactsPage(noPush) {
     _lastSearchResults = [];
     setTimeout(() => document.getElementById('contactSearchInput').focus(), 100);
     if (!noPush) history.pushState({ page: 'contacts' }, '', '/contacts');
+    syncInboxCtaBtn();
 }
 
 function closeContactsPage() {
     document.getElementById('contactsPage').style.display = 'none';
     document.body.style.overflow = '';
     if (window.location.pathname === '/contacts') history.replaceState(null, '', '/');
+    syncInboxCtaBtn();
 }
 
 // FAQ PAGE
@@ -1450,6 +1452,7 @@ function openNewMessagePicker() {
 
     setTimeout(() => document.getElementById('newMsgContactSearch').focus(), 100);
     history.pushState({ page: 'new-message' }, '', '/new-message');
+    syncInboxCtaBtn();
 }
 
 function closeNewMessagePicker() {
@@ -1469,6 +1472,7 @@ function closeNewMessagePicker() {
         document.body.style.overflow = '';
     }
     if (window.location.pathname === '/new-message') history.replaceState(null, '', '/');
+    syncInboxCtaBtnDeferred();
 }
 
 function renderNewMsgContactList(query) {
@@ -1781,6 +1785,24 @@ function pickContactForMessage(contactName) {
     openModalForRecipient();
 }
 
+// Disable the inbox "New Moon Message" CTA while a compose / recipient-picker /
+// contacts overlay is open, so it can't be clicked from underneath the panel.
+// Derives state from the live DOM so it survives picker→compose transitions.
+function syncInboxCtaBtn() {
+    const btn = document.querySelector('.inbox-cta-btn');
+    if (!btn) return;
+    const shown = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return false;
+        // compose/picker toggle via .active; contacts page toggles display
+        return el.classList.contains('active') ||
+               (el.style.display !== '' && el.style.display !== 'none');
+    };
+    btn.disabled = shown('messageModal') || shown('newMessagePicker') || shown('contactsPage');
+}
+// Re-check after the 200ms close animation removes the .active class.
+function syncInboxCtaBtnDeferred() { setTimeout(syncInboxCtaBtn, 260); }
+
 function _openComposePanel() {
     // Close other panels first
     if (document.getElementById('sharedSkyPage').classList.contains('active')) closeSharedSkyModal();
@@ -1803,6 +1825,7 @@ function _openComposePanel() {
     } else {
         document.body.style.overflow = 'hidden';
     }
+    syncInboxCtaBtn();
 }
 
 function _closeComposePanel() {
@@ -1821,6 +1844,7 @@ function _closeComposePanel() {
         page.classList.remove('active');
         document.body.style.overflow = '';
     }
+    syncInboxCtaBtnDeferred();
 }
 
 function openNewContactForMessage() {

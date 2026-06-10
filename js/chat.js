@@ -217,6 +217,7 @@ function closeAllPanels() {
     document.body.style.overflow = '';
     currentConversation = null;
     currentConversationIndex = -1;
+    if (typeof syncInboxCtaBtn === 'function') syncInboxCtaBtn();
 }
 
 async function openConversation(convIndex) {

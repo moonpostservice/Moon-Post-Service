@@ -700,6 +700,12 @@ body.moon-down .new-message-btn {
     padding: 12px 20px;
     font-size: 14px;
 }
+.inbox-new-msg-cta .inbox-cta-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none;
+}
 body.moon-down .inbox-new-msg-cta {
     display: none !important;
 }
