@@ -144,7 +144,9 @@ async function debouncedReloadMessages() {
             // Now load replies + reactions for ALL messages in the full thread
             const msgIds = currentConversation.messages.filter(m => m.dbId).map(m => m.dbId);
             if (msgIds.length > 0 && currentAuthUser) {
-                const { data: freshReplies } = await sb.from('replies')
+                // replies_v (not replies): server-side seal — content columns are
+                // NULL while a reply is in transit for me (migration 043).
+                const { data: freshReplies } = await sb.from('replies_v')
                     .select('*')
                     .in('message_id', msgIds)
                     .order('created_at', { ascending: true });
@@ -447,22 +449,32 @@ function setupRealtimeMessages() {
             targetMsg.replies = targetMsg.replies || [];
             // Avoid duplicate if we somehow already have this reply
             const alreadyExists = targetMsg.replies.some(r =>
-                r.createdAt === reply.created_at && r.text === (reply.text || reply.reply_text));
+                r.dbId === reply.id ||
+                (r.createdAt === reply.created_at && r.text === (reply.text || reply.reply_text)));
             if (alreadyExists) return;
 
             // SEALED until release: an in-transit reply must never carry its content
             // into the live thread — only an "arriving" placeholder with the ETA.
             const sealed = replyStillSealed(reply, currentAuthUser.id);
+            // Realtime payloads no longer include content columns at all (column
+            // grants, migration 043) — for a reply that is already released, fetch
+            // the viewer-masked row from replies_v to get its text/photo/song.
+            let full = reply;
+            if (!sealed) {
+                const { data: fullRow } = await sb.from('replies_v')
+                    .select('*').eq('id', reply.id).maybeSingle();
+                if (fullRow) full = fullRow;
+            }
             targetMsg.replies.push({
                 id: reply.id,
                 dbId: reply.id,
-                text: sealed ? '' : (reply.text || reply.reply_text),
+                text: sealed ? '' : (full.text || ''),
                 time: 'Just now',
                 createdAt: reply.created_at || new Date().toISOString(),
                 sent: false,
                 senderId: reply.sender_id,
                 isLunarNote: reply.is_lunar_note || false,
-                photoUrl: sealed ? null : (reply.photo_url || null),
+                photoUrl: sealed ? null : (full.photo_url || null),
                 status: sealed ? 'Arriving' : '',
                 stillInTransit: sealed,
                 releaseAt: reply.release_at || null,
@@ -505,12 +517,14 @@ function setupRealtimeMessages() {
                     replyConv.incomingTransitCreatedAt = reply.created_at;
                     replyConv.incomingTransitReleaseAt = reply.release_at;
                 } else {
+                    // `full` (fetched from replies_v above) carries the content —
+                    // the realtime payload itself no longer does (migration 043).
                     const prefix = isMyReply ? 'You: ' : '';
-                    if (reply.is_lunar_note && reply.lunar_note_text) {
-                        const snippet = reply.lunar_note_text.replace(/\n/g, ' ').substring(0, 40);
+                    if (full.is_lunar_note && full.lunar_note_text) {
+                        const snippet = full.lunar_note_text.replace(/\n/g, ' ').substring(0, 40);
                         replyConv.latestPreview = prefix + '🌙 ' + snippet;
                     } else {
-                        replyConv.latestPreview = prefix + (reply.text || reply.reply_text || '🌕');
+                        replyConv.latestPreview = prefix + (full.text || '🌕');
                     }
                     if (replyConv.latestPreview.length > 50) {
                         replyConv.latestPreview = replyConv.latestPreview.substring(0, 50) + '...';

@@ -63,7 +63,10 @@ let currentConversationIndex = -1;
 async function loadFullConversationThread(conv) {
     if (!conv.dbConversationId || !currentAuthUser) return;
     try {
-        const { data: convMessages, error } = await sb.from('messages')
+        // messages_v (not messages): the masking view NULLs content columns while
+        // a message is sealed for me (migration 043) — the contentVisible gate
+        // below stays as the cosmetic moon-up layer on top.
+        const { data: convMessages, error } = await sb.from('messages_v')
             .select('*')
             .eq('conversation_id', conv.dbConversationId)
             .order('created_at', { ascending: true });
@@ -283,7 +286,9 @@ async function openConversation(convIndex) {
     if (currentAuthUser) try {
         const msgIds = conv.messages.filter(m => m.dbId).map(m => m.dbId);
         if (msgIds.length > 0) {
-            const { data: allReplies, error: replErr } = await sb.from('replies')
+            // replies_v (not replies): server-side seal — content columns are
+            // NULL while a reply is in transit for me (migration 043).
+            const { data: allReplies, error: replErr } = await sb.from('replies_v')
                 .select('*')
                 .in('message_id', msgIds)
                 .order('created_at', { ascending: true });
@@ -1601,7 +1606,7 @@ async function sendThreadLunarNote() {
             status: lunarStatus,
             release_at: lunarFinalRelease,
             recipient_city: recipientCity
-        }).select().single();
+        }).select('id, created_at').single();
         if (error) console.error('Lunar note reply save failed:', error);
         if (lunarData) { lunarReply.id = lunarData.id; lunarReply.dbId = lunarData.id; }
 
@@ -1975,7 +1980,10 @@ async function sendReply() {
             if (replyPhotoUrl) insertData.photo_url = replyPhotoUrl;
             if (replySongUrl) { insertData.song_url = replySongUrl; insertData.song_title = replySongUrl; }
             clearReplySong();
-            const { data: replyData, error } = await sb.from('replies').insert(insertData).select().single();
+            // RETURNING is limited to metadata columns: clients no longer hold
+            // SELECT on reply content columns (migration 043), so a bare
+            // .select() (RETURNING *) would be rejected.
+            const { data: replyData, error } = await sb.from('replies').insert(insertData).select('id, created_at').single();
             if (error) {
                 console.error('Reply save failed:', error);
                 const idx = targetMsg.replies.findIndex(r => r.createdAt === now && r.text === replyText);

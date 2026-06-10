@@ -435,53 +435,16 @@ function getContactMoonStatus(cityName) {
     return { isUp: false, hoursUntilRise, hoursUntilSet: 0, progress };
 }
 
-// Auto-release: when the local user's moon rises, mark received messages
-// as viewable client-side. No DB updates needed — the contentVisible logic
-// in loadMessages() already checks moonData.isVisible + release_at timing.
-// The sender's release_at ensures messages aren't visible before moonrise.
+// Moonrise refresh: when the local user's moon rises, just reload — the
+// contentVisible logic in loadMessages() checks moonData.isVisible +
+// release_at timing, and the server (masking views + pg_cron release job,
+// migration 043) is the only thing that flips status to 'released', strictly
+// at release_at <= now(). The client deliberately holds NO UPDATE grant on
+// messages/replies anymore: the old direct UPDATEs here were the hole that
+// let a recipient force-release sealed messages early.
 async function autoReleaseInTransitMessages() {
     if (!currentAuthUser) return;
-    const now = new Date().toISOString();
-    console.log('[autoRelease] Moon is up — releasing in_transit messages and updating release_at');
-
-    try {
-        // Release messages where I am the recipient — set BOTH status AND release_at to now
-        // Setting release_at to now prevents the "release_at > now" check from re-flagging them
-        const { data: r1 } = await sb.from('messages')
-            .update({ status: 'released', released_at: now, release_at: now })
-            .eq('recipient_id', currentAuthUser.id)
-            .eq('status', 'in_transit')
-            .select('id');
-        if (r1?.length) console.log('[autoRelease] Released', r1.length, 'messages by ID');
-
-        // Also by email
-        if (currentAuthUser.email) {
-            const { data: r2 } = await sb.from('messages')
-                .update({ status: 'released', released_at: now, release_at: now })
-                .eq('recipient_email', currentAuthUser.email)
-                .eq('status', 'in_transit')
-                .select('id');
-            if (r2?.length) console.log('[autoRelease] Released', r2.length, 'messages by email');
-        }
-
-        // Release in_transit replies on messages addressed to me
-        // IMPORTANT: only release replies sent BY OTHERS to me, not replies I sent to others
-        const { data: myMsgs } = await sb.from('messages')
-            .select('id')
-            .or(`recipient_id.eq.${currentAuthUser.id}${currentAuthUser.email ? `,recipient_email.eq.${currentAuthUser.email}` : ''}`);
-        if (myMsgs?.length) {
-            const ids = myMsgs.map(m => m.id);
-            const { data: r3 } = await sb.from('replies')
-                .update({ status: 'released', release_at: now })
-                .in('message_id', ids)
-                .eq('status', 'in_transit')
-                .neq('sender_id', currentAuthUser.id)
-                .select('id');
-            if (r3?.length) console.log('[autoRelease] Released', r3.length, 'replies');
-        }
-    } catch (err) {
-        console.error('[autoRelease] Error:', err);
-    }
+    console.log('[autoRelease] Moon is up — reloading to pick up server-released messages');
 
     // Reload to get fresh data
     if (typeof loadMessages === 'function') {

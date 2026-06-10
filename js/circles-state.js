@@ -643,9 +643,13 @@ async function loadConversationMetadata() {
             myConvIds.length > 0
                 ? sb.from('read_receipts').select('conversation_id, last_read_at').in('conversation_id', myConvIds).neq('user_id', currentAuthUser.id)
                 : _emptyRes,
-            // 3. Latest replies per conversation for preview + unread
+            // 3. Latest replies per conversation for preview + unread.
+            // replies_v (not replies): the masking view NULLs text/lunar_note_text
+            // while a reply is sealed for me, so an in-transit reply can never
+            // leak into a preview. Base-table content columns are no longer
+            // readable by clients (migration 043).
             allMsgIds.length > 0
-                ? sb.from('replies').select('id, message_id, text, is_lunar_note, lunar_note_text, sender_id, created_at').in('message_id', allMsgIds).order('created_at', { ascending: false }).limit(100)
+                ? sb.from('replies_v').select('id, message_id, text, is_lunar_note, lunar_note_text, sender_id, created_at').in('message_id', allMsgIds).order('created_at', { ascending: false }).limit(100)
                 : _emptyRes,
         ]);
 
@@ -885,8 +889,12 @@ async function loadMessages(retryCount = 0) {
         // received-by-id, received-by-email and my read-receipts only depend on the
         // current user — there's no reason to pay four sequential round-trips. This
         // collapses ~4 serial network waits into one.
+        // messages_v (not messages): the masking view NULLs content columns while
+        // a message is sealed for me — the transit seal is enforced server-side
+        // since migration 043; the contentVisible gate below stays as the
+        // cosmetic moon-up layer on top.
         const _emailQuery = currentAuthUser.email
-            ? sb.from('messages').select('*').eq('recipient_email', currentAuthUser.email).order('created_at', { ascending: false }).range(0, 199)
+            ? sb.from('messages_v').select('*').eq('recipient_email', currentAuthUser.email).order('created_at', { ascending: false }).range(0, 199)
             : Promise.resolve({ data: [], error: null });
         const [
             { data: sent, error: sentErr },
@@ -894,8 +902,8 @@ async function loadMessages(retryCount = 0) {
             { data: recvByEmail, error: err2 },
             { data: _rcpts, error: _rcptErr },
         ] = await Promise.all([
-            sb.from('messages').select('*').eq('sender_id', currentAuthUser.id).order('created_at', { ascending: false }).range(0, 199),
-            sb.from('messages').select('*').eq('recipient_id', currentAuthUser.id).order('created_at', { ascending: false }).range(0, 199),
+            sb.from('messages_v').select('*').eq('sender_id', currentAuthUser.id).order('created_at', { ascending: false }).range(0, 199),
+            sb.from('messages_v').select('*').eq('recipient_id', currentAuthUser.id).order('created_at', { ascending: false }).range(0, 199),
             _emailQuery,
             sb.from('read_receipts').select('conversation_id, last_read_at').eq('user_id', currentAuthUser.id),
         ]);
@@ -1110,8 +1118,10 @@ async function loadMessages(retryCount = 0) {
                     .order('created_at', { ascending: false })
                     .limit(50)
                 : _emptyRes,
+            // replies_v: reads `text`, which clients can no longer select on the
+            // base table (migration 043) — and the view NULLs it while sealed.
             _replyMsgIds.length > 0
-                ? sb.from('replies')
+                ? sb.from('replies_v')
                     .select('message_id, created_at, sender_id, text, status, release_at')
                     .in('message_id', _replyMsgIds)
                     .order('created_at', { ascending: false })
