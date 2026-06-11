@@ -30,11 +30,10 @@ async function getSession(adminClient, anonClient, email) {
     });
     if (error) throw new Error(`generateLink failed for ${email}: ${error.message}`);
 
-    const token = new URL(data.properties.action_link).searchParams.get('token');
-
+    // The action_link's token param carries the HASHED token on current GoTrue,
+    // so the legacy email+token verification rejects it — verify by token_hash.
     const { data: { session }, error: sessionError } = await anonClient.auth.verifyOtp({
-        email,
-        token,
+        token_hash: data.properties.hashed_token,
         type: 'magiclink',
     });
     if (sessionError) throw new Error(`verifyOtp failed for ${email}: ${sessionError.message}`);
