@@ -130,36 +130,54 @@ Deno.serve(async (req: Request) => {
       user_agent: (req.headers.get("user-agent") ?? "").slice(0, 500),
     });
     if (insertErr) {
-      console.error("[contact] insert error:", insertErr);
-      return json({ error: "Internal server error" }, 500);
+      // Don't bail yet: the notification email below becomes the only copy of
+      // the message. Log the full payload so it is recoverable from function
+      // logs even if the email also fails.
+      console.error(
+        "[contact] insert error:", insertErr,
+        "payload:", JSON.stringify({ name, email, subject: safeSubject, message }),
+      );
     }
 
-    // --- Notify the team (best-effort: the message is already stored if this fails) ---
+    // --- Notify the team. Best-effort when the row is stored; when the insert
+    // failed this email is the fallback copy, so its success decides the response.
+    let emailSent = false;
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (resendApiKey) {
       const html = `
         <h2 style="font-family:sans-serif;">New contact message</h2>
+        ${insertErr ? '<p style="font-family:sans-serif;color:#b00;"><strong>Warning:</strong> storing this message in the database failed — this email is the only copy.</p>' : ""}
         <p style="font-family:sans-serif;"><strong>From:</strong> ${esc(name)} &lt;${esc(email)}&gt;</p>
         <p style="font-family:sans-serif;"><strong>Subject:</strong> ${esc(safeSubject)}</p>
         <p style="font-family:sans-serif;white-space:pre-wrap;line-height:1.5;">${esc(message)}</p>
         <hr>
         <p style="font-family:sans-serif;color:#888;font-size:12px;">Sent via the Moon Post Service contact form. Reply directly to this email to respond to the sender.</p>`;
-      await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${resendApiKey}`,
-        },
-        body: JSON.stringify({
-          from: Deno.env.get("EMAIL_FROM") ?? "Moon Post Service <hello@moonpostservice.com>",
-          to: [Deno.env.get("CONTACT_INBOX") ?? TEAM_INBOX],
-          reply_to: email,
-          subject: `[Contact] ${safeSubject} — ${name}`,
-          html,
-        }),
-      }).catch((e) => console.error("[contact] notify email failed:", e));
+      try {
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${resendApiKey}`,
+          },
+          body: JSON.stringify({
+            from: Deno.env.get("EMAIL_FROM") ?? "Moon Post Service <hello@moonpostservice.com>",
+            to: [Deno.env.get("CONTACT_INBOX") ?? TEAM_INBOX],
+            reply_to: email,
+            subject: `[Contact] ${safeSubject} — ${name}`,
+            html,
+          }),
+        });
+        emailSent = res.ok;
+        if (!res.ok) console.error("[contact] notify email failed:", res.status, await res.text());
+      } catch (e) {
+        console.error("[contact] notify email failed:", e);
+      }
     }
 
+    // Fail the request only when BOTH copies were lost.
+    if (insertErr && !emailSent) {
+      return json({ error: "Internal server error" }, 500);
+    }
     return json({ success: true });
   } catch (err) {
     console.error("[contact] unhandled error:", err);
