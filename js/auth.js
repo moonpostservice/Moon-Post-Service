@@ -24,6 +24,41 @@ let authMode = 'login';
 let _signupDraft = null;          // { email, name, city:{name,lat,lon,tz} }
 let _pendingSignupProfile = null; // set on verify success, consumed by initAuth
 
+// The draft must also survive a page reload between "code sent" and "code verified" —
+// on mobile, switching to the email app to read the code routinely evicts the tab, and
+// the in-memory draft dies with it. The user then re-enters (often via the login modal),
+// verifies fine, and initAuth — finding no draft — fell back to a city-less placeholder
+// profile. Persisting the completed draft closes that hole: it is written when the
+// signup reaches the code step, restored by initAuth if the in-memory copy is gone,
+// and cleared once any profile is in place (or after an hour).
+const SIGNUP_DRAFT_KEY = 'moonpop_signup_draft';
+const SIGNUP_DRAFT_TTL_MS = 60 * 60 * 1000;
+function persistSignupDraft() {
+    try {
+        if (_signupDraft) {
+            localStorage.setItem(SIGNUP_DRAFT_KEY, JSON.stringify({ ..._signupDraft, savedAt: Date.now() }));
+        }
+    } catch (e) { /* storage unavailable — degrade to in-memory only */ }
+}
+function takePersistedSignupDraft(email) {
+    try {
+        const raw = localStorage.getItem(SIGNUP_DRAFT_KEY);
+        if (!raw) return null;
+        const d = JSON.parse(raw);
+        if (!d || !d.email) return null;
+        if (Date.now() - (d.savedAt || 0) > SIGNUP_DRAFT_TTL_MS) {
+            localStorage.removeItem(SIGNUP_DRAFT_KEY);
+            return null;
+        }
+        // Only hand the draft to the account it was collected for.
+        if (email && d.email.toLowerCase() !== email.toLowerCase()) return null;
+        return d;
+    } catch (e) { return null; }
+}
+function clearPersistedSignupDraft() {
+    try { localStorage.removeItem(SIGNUP_DRAFT_KEY); } catch (e) { /* ignore */ }
+}
+
 // Auth modal show/close
 function showAuthModal(mode) {
     authMode = mode === 'signup' ? 'signup' : 'login';
@@ -248,6 +283,10 @@ async function sendMoonKey() {
 // already given name + city.
 async function enterVerifyStep() {
     if (!_signupDraft) return;
+    // The draft is complete (name + city) and the account is about to be created —
+    // persist it so a tab reload during the code step can't degrade the signup into
+    // the city-less fallback path.
+    persistSignupDraft();
     document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
     document.getElementById('authStepCode').classList.add('active');
     document.getElementById('authEmailSent').textContent = _signupDraft.email;
@@ -818,6 +857,17 @@ async function initAuth(sessionOverride) {
 
             // New user — create profile row
             if (!profile) {
+                // The in-memory draft dies on any reload between "code sent" and now
+                // (mobile email-app round trips evict the tab). Restore the persisted
+                // copy so the signup still completes with its city instead of falling
+                // through to the city-less placeholder below.
+                if (!_pendingSignupProfile) {
+                    const persisted = takePersistedSignupDraft(session.user.email);
+                    if (persisted) {
+                        console.log('[initAuth] Restored signup draft from storage');
+                        _pendingSignupProfile = persisted;
+                    }
+                }
                 if (_pendingSignupProfile) {
                     // VERIFY LAST: a completed signup draft means name + city are already in
                     // hand. Write the COMPLETE profile in one shot and continue straight into
@@ -844,6 +894,7 @@ async function initAuth(sessionOverride) {
                         console.error('[initAuth] Complete profile creation failed:', createErr);
                         await sb.from('profiles').upsert(completeProfile);
                     }
+                    clearPersistedSignupDraft();
                     localStorage.setItem('moonpop_username', fullName);
                     localStorage.setItem('moonpop_seen', 'true');
                     profile = createdProfile || completeProfile;
@@ -874,6 +925,9 @@ async function initAuth(sessionOverride) {
             }
 
             if (profile) {
+                // Any persisted signup draft is moot once a profile exists — drop it so
+                // it can't linger on a shared browser.
+                clearPersistedSignupDraft();
                 // Ensure email is saved to profile (for contact lookup)
                 if (!profile.email && session.user.email) {
                     await sb.from('profiles').update({ email: session.user.email }).eq('id', session.user.id);
