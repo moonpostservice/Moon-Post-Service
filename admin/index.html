@@ -1496,6 +1496,23 @@ function renderAnalytics(d) {
       ${anCard(t.roulette_opt_in, 'Roulette opt-in')}
     </div>`;
 
+  // ── Incomplete signups — canary for the city-less-profile bug class. Any entry
+  // here is a confirmed user stuck before the location step (rescuable by email).
+  // Migration 045's trigger should keep this list frozen at the legacy rows.
+  const inc = d.incomplete_signups || { count: 0, users: [] };
+  html += `<div class="an-section-title">Incomplete signups</div>`;
+  if (!inc.count) {
+    html += `<div style="color:var(--muter);font-size:13px">None — every confirmed user has a location 🌙</div>`;
+  } else {
+    html += `<div class="an-cities" style="max-width:560px">
+      ${(inc.users || []).map(u => `<div class="an-city-row">
+        <div style="flex:1;color:var(--text);font-size:13px">${escHtml(u.email)}</div>
+        <div style="color:var(--muted);font-size:12px;flex-shrink:0">${u.reason === 'no_profile' ? 'no profile row' : 'no city'} · ${escHtml(new Date(u.created_at).toLocaleDateString())}</div>
+      </div>`).join('')}
+      ${inc.count > (inc.users || []).length ? `<div style="color:var(--muter);font-size:12px">…and ${inc.count - inc.users.length} more</div>` : ''}
+    </div>`;
+  }
+
   // ── Activation funnel
   const base = f.signed_up || 1;
   html += `<div class="an-section-title">Activation funnel</div>

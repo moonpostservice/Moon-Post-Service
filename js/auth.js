@@ -593,12 +593,28 @@ async function saveOnboardingCity(city) {
     localStorage.setItem('moonpop_location', JSON.stringify({ name: city.name, country: city.country }));
     // Save to Supabase profile
     if (currentAuthUser) {
-        await sb.from('profiles').update({
+        const cityFields = {
             city: city.name,
             latitude: city.lat,
             longitude: city.lon,
             timezone: city.tz
-        }).eq('id', currentAuthUser.id);
+        };
+        const { data: updated } = await sb.from('profiles')
+            .update(cityFields).eq('id', currentAuthUser.id).select('id');
+        if (!updated || updated.length === 0) {
+            // No profile row yet: initAuth defers the insert until a city is chosen, so
+            // an abandoned onboarding can't leave a city-less row. Create the row now.
+            // username is NOT NULL — seed the email-prefix placeholder; the profile step
+            // that follows overwrites it with the real name.
+            const placeholder = (currentAuthUser.email || 'moonfriend').split('@')[0];
+            const { error: insertErr } = await sb.from('profiles').insert({
+                id: currentAuthUser.id,
+                email: currentAuthUser.email,
+                username: placeholder,
+                ...cityFields
+            });
+            if (insertErr) console.error('[location] Profile insert failed:', insertErr);
+        }
         console.log('[location] Saved to DB:', city.name);
     }
     // Initialize moon calculations
@@ -900,24 +916,14 @@ async function initAuth(sessionOverride) {
                     profile = createdProfile || completeProfile;
                     // fall through to the if (profile) block below — do NOT return
                 } else {
-                    console.log('[initAuth] New user — creating profile');
-                    // username is NOT NULL with no default. The AFTER-INSERT trigger that used
-                    // to fill it (and created phantom profiles for unconfirmed emails) was
-                    // removed, so we seed a placeholder here; the onboarding steps overwrite
-                    // it with the real name. (Legacy fallback for any auth user without a
-                    // verify-last draft — e.g. an admin-created account.)
-                    const _placeholderUsername = (session.user.email || 'moonfriend').split('@')[0];
-                    const { data: newProfile, error: insertErr } = await sb.from('profiles').insert({
-                        id: session.user.id,
-                        email: session.user.email,
-                        username: _placeholderUsername
-                    }).select().single();
-                    if (insertErr) {
-                        console.error('[initAuth] Profile creation failed:', insertErr);
-                        // Try upsert as fallback
-                        await sb.from('profiles').upsert({ id: session.user.id, email: session.user.email, username: _placeholderUsername });
-                    }
-                    // Show location step for new user
+                    // No draft anywhere — the user verified in a different browser context
+                    // than the one that collected name+city (e.g. Facebook's in-app browser
+                    // wipes localStorage when the webview restarts, or the email was opened
+                    // on another device). Do NOT materialize a city-less row here: the
+                    // insert is deferred to saveOnboardingCity, so an abandoned onboarding
+                    // leaves no incomplete profile behind — just an auth user who resumes
+                    // at this same location step on their next login.
+                    console.log('[initAuth] New user, no draft — deferring profile creation to location step');
                     showLocationStep();
                     _isInitializing = false;
                     return;
@@ -925,6 +931,34 @@ async function initAuth(sessionOverride) {
             }
 
             if (profile) {
+                // If the profile is missing its city, the placeholder fallback ran in a
+                // context that had no draft (cross-browser verify). A draft surviving HERE
+                // is the only remaining copy of the city (and name) the user already chose
+                // — apply it to heal the profile instead of discarding it.
+                if (!profile.city) {
+                    const draft = _pendingSignupProfile || takePersistedSignupDraft(session.user.email);
+                    _pendingSignupProfile = null;
+                    if (draft && draft.city && draft.city.name) {
+                        const heal = {
+                            city: draft.city.name,
+                            latitude: (draft.city.lat != null ? draft.city.lat : null),
+                            longitude: (draft.city.lon != null ? draft.city.lon : null),
+                            timezone: draft.city.tz || null
+                        };
+                        if (!profile.first_name && draft.firstName) {
+                            heal.first_name = draft.firstName;
+                            heal.last_name = draft.lastName || null;
+                            heal.username = [draft.firstName, draft.lastName].filter(Boolean).join(' ').trim();
+                        }
+                        const { error: healErr } = await sb.from('profiles').update(heal).eq('id', session.user.id);
+                        if (healErr) {
+                            console.error('[initAuth] Healing incomplete profile failed:', healErr);
+                        } else {
+                            profile = { ...profile, ...heal };
+                            console.log('[initAuth] Healed incomplete profile from signup draft:', heal.city);
+                        }
+                    }
+                }
                 // Any persisted signup draft is moot once a profile exists — drop it so
                 // it can't linger on a shared browser.
                 clearPersistedSignupDraft();
