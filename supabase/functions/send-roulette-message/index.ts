@@ -197,7 +197,7 @@ Deno.serve(async (req: Request) => {
     // --- 4. Fetch sender's city + suspension state (stored on their profile) ---
     const { data: senderProfile, error: senderErr } = await serviceClient
       .from("profiles")
-      .select("city, suspended_at")
+      .select("city, suspended_at, is_test_account")
       .eq("id", user.id)
       .single();
 
@@ -299,11 +299,16 @@ Deno.serve(async (req: Request) => {
     }
 
     // --- 5. Build eligible recipient pool ---
-    // Step 5a: All opted-in users (excluding sender)
+    // Step 5a: All opted-in users (excluding sender). Test accounts are
+    // isolated from real users in both directions: a real sender never
+    // lands on a test account, and the e2e test-sender never lands on a
+    // real person. The DB trigger trg_roulette_test_isolation enforces
+    // the same invariant on insert.
     const { data: allCandidates, error: candidatesErr } = await serviceClient
       .from("profiles")
       .select("id, city, latitude, longitude, last_active")
       .eq("receive_moon_roulette", true)
+      .eq("is_test_account", senderProfile.is_test_account === true)
       .neq("id", user.id);
 
     if (candidatesErr || !allCandidates?.length) {

@@ -78,7 +78,7 @@ module.exports = async function globalSetup() {
 
     // Sender opts OUT of receiving roulette so they're never picked as a recipient
     await admin.from('profiles').upsert(
-        { id: senderId, city: 'Test City', receive_moon_roulette: false },
+        { id: senderId, city: 'Test City', receive_moon_roulette: false, is_test_account: true },
         { onConflict: 'id' }
     );
 
@@ -99,6 +99,7 @@ module.exports = async function globalSetup() {
             latitude: 35.6762,
             longitude: 139.6503,
             receive_moon_roulette: true,
+            is_test_account: true,
         },
         { onConflict: 'id' }
     );
