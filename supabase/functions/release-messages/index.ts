@@ -161,6 +161,30 @@ interface DigestMessage {
   preview: string;
 }
 
+// --- One-click unsubscribe links ---
+// Personal signed link per recipient: the unsubscribe-email edge function
+// verifies HMAC(uid, INTERNAL_NOTIFY_SECRET) before flipping notify_email,
+// so the link works without login but can't be forged for other users.
+const UNSUBSCRIBE_SECRET = Deno.env.get('INTERNAL_NOTIFY_SECRET') || '';
+
+async function hmacHex(secret: string, msg: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg));
+  return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function buildUnsubscribeUrl(userId: string): Promise<string | null> {
+  if (!UNSUBSCRIBE_SECRET) return null;
+  const sig = await hmacHex(UNSUBSCRIBE_SECRET, userId.toLowerCase());
+  return `${Deno.env.get('SUPABASE_URL')}/functions/v1/unsubscribe-email?uid=${userId.toLowerCase()}&sig=${sig}`;
+}
+
 // Brass-on-navy design system. Email clients can't use CSS variables, so the
 // tokens are inlined as literal hex/rgba: --bg #030A18, --accent #D4B58A,
 // --text #EAD8BF, --text-bright #F0DFC2, --on-accent #0A1422.
@@ -175,7 +199,7 @@ function escHtml(val: unknown): string {
     .replace(/'/g, '&#39;');
 }
 
-function buildDigestEmailHtml(recipientCity: string, messages: DigestMessage[]): string {
+function buildDigestEmailHtml(recipientCity: string, messages: DigestMessage[], unsubscribeUrl: string | null): string {
   const count = messages.length;
   const plural = count === 1 ? 'message' : 'messages';
 
@@ -206,7 +230,11 @@ function buildDigestEmailHtml(recipientCity: string, messages: DigestMessage[]):
           <a href="https://www.moonpostservice.com" style="display:inline-block;background:linear-gradient(135deg,#D4B58A,#C7A678);color:#0A1422;text-decoration:none;padding:14px 40px;border-radius:24px;font-size:15px;font-weight:600;">Read your moon ${plural}</a>
         </td></tr>
         <tr><td style="padding:0 24px 20px;text-align:center;">
-          <p style="color:rgba(234,216,191,0.32);font-size:11px;margin:0;">You can disable email notifications in your settings.</p>
+          <p style="color:rgba(234,216,191,0.32);font-size:11px;margin:0;">${
+            unsubscribeUrl
+              ? `<a href="${unsubscribeUrl}" style="color:rgba(234,216,191,0.45);">Unsubscribe from these emails</a> &#183; or disable them in your settings`
+              : 'You can disable email notifications in your settings.'
+          }</p>
           <p style="color:rgba(234,216,191,0.28);font-size:11px;margin:4px 0 0;">Moon Post Service &#8212; Messages delivered at moonrise</p>
         </td></tr>
       </table>
@@ -216,7 +244,7 @@ function buildDigestEmailHtml(recipientCity: string, messages: DigestMessage[]):
 </html>`;
 }
 
-async function sendDigestEmail(recipientEmail: string, recipientCity: string, messages: DigestMessage[]): Promise<boolean> {
+async function sendDigestEmail(recipientEmail: string, recipientCity: string, messages: DigestMessage[], unsubscribeUrl: string | null): Promise<boolean> {
   if (!RESEND_API_KEY) {
     console.error('RESEND_API_KEY not configured, skipping email');
     return false;
@@ -228,7 +256,7 @@ async function sendDigestEmail(recipientEmail: string, recipientCity: string, me
     ? `${messages[0].senderName} sent you a moon message`
     : `The moon just rose — ${count} ${plural} waiting for you`;
 
-  const html = buildDigestEmailHtml(recipientCity, messages);
+  const html = buildDigestEmailHtml(recipientCity, messages, unsubscribeUrl);
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -242,6 +270,13 @@ async function sendDigestEmail(recipientEmail: string, recipientCity: string, me
         to: [recipientEmail],
         subject,
         html,
+        // Native "Unsubscribe" button in Gmail/Apple Mail (RFC 8058 one-click)
+        ...(unsubscribeUrl ? {
+          headers: {
+            'List-Unsubscribe': `<${unsubscribeUrl}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+        } : {}),
       }),
     });
     const result = await res.json();
@@ -487,7 +522,8 @@ Deno.serve(async (req: Request) => {
         }
 
         if (recipient.notify_email !== false && recipient.email) {
-          await sendDigestEmail(recipient.email, recipient.city || '', data.msgs);
+          const unsubscribeUrl = await buildUnsubscribeUrl(recipientId);
+          await sendDigestEmail(recipient.email, recipient.city || '', data.msgs, unsubscribeUrl);
         }
 
         if (recipient.notify_push !== false) {
