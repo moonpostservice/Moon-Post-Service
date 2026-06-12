@@ -256,6 +256,20 @@ Deno.serve(async (req: Request) => {
       const replyMoonPhase = moonPhaseName(illum.phase);
       const replyMoonIllum = Math.round(illum.fraction * 100) / 100;
 
+      // Email about this reply waits for the recipient's next moonrise so an
+      // active thread doesn't email them once per reply — the reply itself is
+      // visible in-app immediately.
+      let replyNotifyAt = new Date().toISOString();
+      const { data: replyRecipientProfile } = await serviceClient
+        .from("profiles")
+        .select("latitude, longitude")
+        .eq("id", recipientId)
+        .single();
+      if (replyRecipientProfile?.latitude != null && replyRecipientProfile?.longitude != null) {
+        const replyMoonrise = nextMoonrise(replyRecipientProfile.latitude, replyRecipientProfile.longitude);
+        if (replyMoonrise) replyNotifyAt = replyMoonrise.toISOString();
+      }
+
       const { data: replyMessage, error: replyInsertErr } = await serviceClient
         .from("moon_roulette_messages")
         .insert({
@@ -267,6 +281,7 @@ Deno.serve(async (req: Request) => {
           photo_url:          body.photo_url    ?? null,
           status:             "delivered",          // immediate — no moon-phase delay for back-and-forth
           release_at:         new Date().toISOString(),
+          notify_at:          replyNotifyAt,
           moon_phase:         replyMoonPhase,
           moon_illumination:  replyMoonIllum,
           parent_id:          replyToId,
@@ -385,13 +400,13 @@ Deno.serve(async (req: Request) => {
       triedIds.add(recipient.id);
 
       // --- 7. Calculate moonrise at recipient's location ---
-      let releaseAt: string | null = null;
+      let moonriseAt: string | null = null;
       let moonPhase: string | null = null;
       let moonIllumination: number | null = null;
 
       if (recipient.latitude != null && recipient.longitude != null) {
         const moonrise = nextMoonrise(recipient.latitude, recipient.longitude);
-        if (moonrise) releaseAt = moonrise.toISOString();
+        if (moonrise) moonriseAt = moonrise.toISOString();
 
         const illum = SunCalc.getMoonIllumination(new Date());
         moonPhase = moonPhaseName(illum.phase);
@@ -408,7 +423,11 @@ Deno.serve(async (req: Request) => {
         norm(recipient.city) === norm(senderProfile.city);
 
       const status = sameLocation ? "delivered" : "queued";
-      if (sameLocation) releaseAt = new Date().toISOString();
+      const releaseAt = sameLocation ? new Date().toISOString() : moonriseAt;
+      // The email always waits for the recipient's moonrise, even when the
+      // message itself is delivered instantly (same-city) — the moonrise
+      // digest in release-messages picks it up when notify_at comes due.
+      const notifyAt = moonriseAt ?? new Date().toISOString();
 
       // --- 9. Insert roulette message ---
       const { data, error: insertErr } = await serviceClient
@@ -424,6 +443,7 @@ Deno.serve(async (req: Request) => {
           song_title: body.song_title ?? null,
           status,
           release_at: releaseAt,
+          notify_at: notifyAt,
           moon_phase: moonPhase,
           moon_illumination: moonIllumination,
           parent_id: parentId,

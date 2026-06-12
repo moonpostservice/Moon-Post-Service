@@ -164,14 +164,25 @@ interface DigestMessage {
 // Brass-on-navy design system. Email clients can't use CSS variables, so the
 // tokens are inlined as literal hex/rgba: --bg #030A18, --accent #D4B58A,
 // --text #EAD8BF, --text-bright #F0DFC2, --on-accent #0A1422.
+// Escape user-supplied values (usernames, message text) before interpolating
+// into the email HTML, so stored content can't inject markup.
+function escHtml(val: unknown): string {
+  return String(val ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function buildDigestEmailHtml(recipientCity: string, messages: DigestMessage[]): string {
   const count = messages.length;
   const plural = count === 1 ? 'message' : 'messages';
 
   const messageRows = messages.map(m => {
-    const preview = m.preview ? `&ldquo;${m.preview}...&rdquo;` : 'A moon message';
+    const preview = m.preview ? `&ldquo;${escHtml(m.preview)}...&rdquo;` : 'A moon message';
     return `<tr><td style="padding:10px 16px;border-bottom:1px solid rgba(212,181,138,0.12);">
-      <p style="color:#F0DFC2;font-size:15px;font-weight:600;margin:0 0 4px;">${m.senderName}</p>
+      <p style="color:#F0DFC2;font-size:15px;font-weight:600;margin:0 0 4px;">${escHtml(m.senderName)}</p>
       <p style="color:rgba(234,216,191,0.6);font-size:14px;margin:0;font-style:italic;">${preview}</p>
     </td></tr>`;
   }).join('');
@@ -359,12 +370,26 @@ Deno.serve(async (req: Request) => {
       .is('notified_at', null)
       .limit(100);
 
+    // Roulette messages join the same digest instead of firing their own
+    // emails (migration 047 retired the per-message notify trigger/sweep).
+    // notify_at is the recipient's moonrise — instantly-delivered messages
+    // (same-city, replies) are visible in-app right away but only emailed
+    // when the moon rises for them.
+    const { data: unnotifiedRoulette } = await supabase
+      .from('moon_roulette_messages')
+      .select('id, sender_city, recipient_id, message_text')
+      .eq('status', 'delivered')
+      .is('notified_at', null)
+      .or(`notify_at.is.null,notify_at.lte.${now}`)
+      .limit(50);
+
     interface NotifyItem {
-      type: 'message' | 'reply';
+      type: 'message' | 'reply' | 'roulette';
       id: string;
-      senderId: string;
+      senderId: string | null;   // null for roulette — sender stays anonymous
       recipientId: string;
       text: string;
+      senderLabel?: string;      // pre-built display name (roulette)
     }
 
     const notifyItems: NotifyItem[] = [];
@@ -400,12 +425,26 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    if (unnotifiedRoulette) {
+      for (const m of unnotifiedRoulette as any[]) {
+        if (!m.recipient_id) continue;
+        notifyItems.push({
+          type: 'roulette',
+          id: m.id,
+          senderId: null, // anonymous — never resolve to a profile
+          recipientId: m.recipient_id,
+          text: (m.message_text || '').trim(),
+          senderLabel: `A stranger from ${m.sender_city || 'somewhere'}`,
+        });
+      }
+    }
+
     let notifiedCount = 0;
     if (notifyItems.length > 0) {
       const profileIds = new Set<string>();
       notifyItems.forEach(item => {
         profileIds.add(item.recipientId);
-        profileIds.add(item.senderId);
+        if (item.senderId) profileIds.add(item.senderId);
       });
 
       const { data: profiles } = await supabase
@@ -416,30 +455,34 @@ Deno.serve(async (req: Request) => {
       const profileMap: Record<string, any> = {};
       if (profiles) profiles.forEach((p: any) => { profileMap[p.id] = p; });
 
-      const byRecipient: Record<string, { msgs: DigestMessage[]; msgIds: string[]; replyIds: string[] }> = {};
+      const byRecipient: Record<string, { msgs: DigestMessage[]; msgIds: string[]; replyIds: string[]; rouletteIds: string[] }> = {};
       for (const item of notifyItems) {
         const rid = item.recipientId;
-        if (!byRecipient[rid]) byRecipient[rid] = { msgs: [], msgIds: [], replyIds: [] };
+        if (!byRecipient[rid]) byRecipient[rid] = { msgs: [], msgIds: [], replyIds: [], rouletteIds: [] };
 
-        const sender = profileMap[item.senderId];
-        const senderName = sender?.username || 'Someone';
+        const sender = item.senderId ? profileMap[item.senderId] : null;
+        const senderName = item.senderLabel || sender?.username || 'Someone';
         const preview = item.text.split(/\s+/).slice(0, 5).join(' ');
 
         byRecipient[rid].msgs.push({ senderName, preview });
         if (item.type === 'message') {
           byRecipient[rid].msgIds.push(item.id);
-        } else {
+        } else if (item.type === 'reply') {
           byRecipient[rid].replyIds.push(item.id);
+        } else {
+          byRecipient[rid].rouletteIds.push(item.id);
         }
       }
 
       const allMsgIds: string[] = [];
       const allReplyIds: string[] = [];
+      const allRouletteIds: string[] = [];
       for (const [recipientId, data] of Object.entries(byRecipient)) {
         const recipient = profileMap[recipientId];
         if (!recipient) {
           allMsgIds.push(...data.msgIds);
           allReplyIds.push(...data.replyIds);
+          allRouletteIds.push(...data.rouletteIds);
           continue;
         }
 
@@ -453,6 +496,7 @@ Deno.serve(async (req: Request) => {
 
         allMsgIds.push(...data.msgIds);
         allReplyIds.push(...data.replyIds);
+        allRouletteIds.push(...data.rouletteIds);
         notifiedCount++;
       }
 
@@ -461,6 +505,9 @@ Deno.serve(async (req: Request) => {
       }
       if (allReplyIds.length > 0) {
         await supabase.from('replies').update({ notified_at: now }).in('id', allReplyIds);
+      }
+      if (allRouletteIds.length > 0) {
+        await supabase.from('moon_roulette_messages').update({ notified_at: now }).in('id', allRouletteIds);
       }
     }
 
