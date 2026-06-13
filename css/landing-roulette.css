@@ -188,10 +188,9 @@
 }
 .ed-hero-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    gap: 48px;
-    align-items: center;
-    min-height: min(78vh, 720px);
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
 }
 .ed-hero-text {
     position: relative;
@@ -213,23 +212,15 @@
     line-height: 1.55;
     color: var(--muted);
     max-width: 540px;
-    margin: 0 0 44px;
+    margin: 0 auto 44px;
 }
 .ed-hero-cta {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 22px;
 }
 
-/* Hero art (right side) */
-.ed-hero-art {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 360px;
-}
 .ed-hero-moon-svg {
     width: min(460px, 48vw, 46vh);
     height: auto;
@@ -386,9 +377,8 @@
 
 @media (max-width: 880px) {
     .ed-hero { padding: 24px 24px 48px; }
-    .ed-hero-grid { grid-template-columns: 1fr; gap: 0; min-height: auto; text-align: center; }
-    .ed-hero-art { min-height: 200px; order: -1; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 0; }
-    .ed-hero-moon-svg { width: 180px; }
+    .ed-hero-grid { gap: 0; text-align: center; }
+    .ed-compose-moon { width: min(440px, 92vw); }
     .ed-hero-title { font-size: clamp(32px, 10vw, 64px); line-height: 1.04; }
     .ed-hero-sub { font-size: clamp(15px, 4vw, 19px); line-height: 1.55; max-width: 100%; }
     .ed-hero-cta { align-items: center; }
@@ -1448,8 +1438,33 @@
    ============================================================ */
 /* Own section below the horizon */
 .ed-compose-section {
+    position: relative;
+    overflow: hidden;
     padding: var(--space-10) 32px var(--space-9);
     text-align: center;
+}
+/* Moon illustration as a soft backdrop behind the compose card */
+.ed-compose-moon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(720px, 96vw);
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    opacity: 0.6;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+}
+.ed-compose-moon .ed-hero-moon-svg {
+    width: 100%;
+    height: auto;
+}
+.ed-compose-section > .ed-compose-eyebrow,
+.ed-compose-section > .ed-compose-title,
+.ed-compose-section > .hero-compose {
+    position: relative;
+    z-index: 1;
 }
 .ed-compose-eyebrow {
     display: inline-flex;

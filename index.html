@@ -710,6 +710,81 @@
 
                 <!-- WRITE FIRST — compose a real message before signing up (now the hero) -->
                 <section class="ed-compose-section" id="composeSection">
+                    <div class="ed-compose-moon" aria-hidden="true">
+                        <svg class="ed-hero-moon-svg" viewBox="0 0 360 360">
+                            <defs>
+                                <radialGradient id="edHeroOuterGlow" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="rgba(212,181,138,0.10)"/>
+                                    <stop offset="55%" stop-color="rgba(212,181,138,0.03)"/>
+                                    <stop offset="100%" stop-color="rgba(212,181,138,0)"/>
+                                </radialGradient>
+                                <radialGradient id="edHeroCresGlow" cx="68%" cy="50%" r="32%">
+                                    <stop offset="0%" stop-color="rgba(245,225,180,0.22)"/>
+                                    <stop offset="60%" stop-color="rgba(245,225,180,0.04)"/>
+                                    <stop offset="100%" stop-color="rgba(245,225,180,0)"/>
+                                </radialGradient>
+                                <radialGradient id="edHeroEarthshine" cx="40%" cy="40%" r="70%">
+                                    <stop offset="0%" stop-color="rgba(78,62,42,0.55)"/>
+                                    <stop offset="55%" stop-color="rgba(38,30,20,0.70)"/>
+                                    <stop offset="100%" stop-color="rgba(10,7,5,0.85)"/>
+                                </radialGradient>
+                                <linearGradient id="edHeroCresFill" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="rgba(225,205,170,0.85)"/>
+                                    <stop offset="55%" stop-color="rgba(248,232,200,0.96)"/>
+                                    <stop offset="100%" stop-color="rgba(255,245,220,1)"/>
+                                </linearGradient>
+                                <filter id="edMoonNoise" x="-10%" y="-10%" width="120%" height="120%">
+                                    <feTurbulence type="fractalNoise" baseFrequency="2.4" numOctaves="2" seed="3"/>
+                                    <feColorMatrix values="0 0 0 0 0.85  0 0 0 0 0.78  0 0 0 0 0.62  0 0 0 0.18 0"/>
+                                    <feComposite in2="SourceGraphic" operator="in"/>
+                                </filter>
+                            </defs>
+
+                            <!-- Wrapping group so the entire moon drifts as one -->
+                            <g class="ed-hero-moon-grp">
+                                <!-- Outer halo -->
+                                <circle cx="180" cy="180" r="178" fill="url(#edHeroOuterGlow)"/>
+
+                                <!-- Crescent glow halo focused on right edge -->
+                                <circle cx="180" cy="180" r="162" fill="url(#edHeroCresGlow)"/>
+
+                                <!-- The moon disc — earthshine on the dark side -->
+                                <circle cx="180" cy="180" r="125" fill="url(#edHeroEarthshine)"/>
+
+                                <!-- Subtle earthshine maria/craters on dark side (rustic, irregular) -->
+                                <g opacity="0.32">
+                                    <ellipse cx="155" cy="158" rx="16" ry="13" fill="rgba(72,56,38,0.65)"/>
+                                    <ellipse cx="125" cy="205" rx="10" ry="8" fill="rgba(72,56,38,0.55)"/>
+                                    <ellipse cx="172" cy="222" rx="7" ry="5" fill="rgba(72,56,38,0.45)"/>
+                                    <circle cx="195" cy="135" r="3" fill="rgba(72,56,38,0.45)"/>
+                                    <circle cx="100" cy="175" r="2.4" fill="rgba(72,56,38,0.40)"/>
+                                    <circle cx="142" cy="248" r="3.2" fill="rgba(72,56,38,0.40)"/>
+                                    <circle cx="110" cy="140" r="1.8" fill="rgba(72,56,38,0.30)"/>
+                                </g>
+
+                                <!-- Faint rim outline so the full disc is hinted -->
+                                <circle cx="180" cy="180" r="125" fill="none" stroke="rgba(212,181,138,0.20)" stroke-width="0.6"/>
+
+                                <!-- The bright thin crescent on the right (waxing), with rustic gradient -->
+                                <path d="M180,55 A125,125 0 1,1 180,305 A116,125 0 1,0 180,55 Z" fill="url(#edHeroCresFill)"/>
+
+                                <!-- Rustic noise texture on the crescent -->
+                                <path d="M180,55 A125,125 0 1,1 180,305 A116,125 0 1,0 180,55 Z" fill="rgba(180,150,110,0.15)" filter="url(#edMoonNoise)"/>
+
+                                <!-- Tiny crater shadows on the lit crescent -->
+                                <g opacity="0.28">
+                                    <ellipse cx="262" cy="172" rx="3.2" ry="2.4" fill="rgba(120,95,65,0.7)"/>
+                                    <ellipse cx="248" cy="220" rx="2.6" ry="2" fill="rgba(120,95,65,0.65)"/>
+                                    <ellipse cx="255" cy="135" rx="2" ry="1.6" fill="rgba(120,95,65,0.55)"/>
+                                    <ellipse cx="270" cy="195" rx="1.8" ry="1.4" fill="rgba(120,95,65,0.5)"/>
+                                </g>
+
+                            </g>
+
+                            <!-- Faint outer orbit ring — gentle slow rotation only -->
+                            <circle class="ed-hero-moon-orbit" cx="180" cy="180" r="170" fill="none" stroke="rgba(208,180,137,0.12)" stroke-width="0.6" stroke-dasharray="2 7"/>
+                        </svg>
+                    </div>
                     <p class="ed-compose-eyebrow fade-in-up">Start with a message</p>
                     <h2 class="ed-compose-title fade-in-up">The moon is listening.</h2>
                     <div class="hero-compose fade-in-up" id="heroCompose">
@@ -836,81 +911,6 @@
                             <div class="ed-hero-cta fade-in-up" id="heroCta">
                                 <!-- JS populates based on moon state -->
                             </div>
-                        </div>
-                        <div class="ed-hero-art" aria-hidden="true">
-                            <svg class="ed-hero-moon-svg" viewBox="0 0 360 360">
-                                <defs>
-                                    <radialGradient id="edHeroOuterGlow" cx="50%" cy="50%" r="50%">
-                                        <stop offset="0%" stop-color="rgba(212,181,138,0.10)"/>
-                                        <stop offset="55%" stop-color="rgba(212,181,138,0.03)"/>
-                                        <stop offset="100%" stop-color="rgba(212,181,138,0)"/>
-                                    </radialGradient>
-                                    <radialGradient id="edHeroCresGlow" cx="68%" cy="50%" r="32%">
-                                        <stop offset="0%" stop-color="rgba(245,225,180,0.22)"/>
-                                        <stop offset="60%" stop-color="rgba(245,225,180,0.04)"/>
-                                        <stop offset="100%" stop-color="rgba(245,225,180,0)"/>
-                                    </radialGradient>
-                                    <radialGradient id="edHeroEarthshine" cx="40%" cy="40%" r="70%">
-                                        <stop offset="0%" stop-color="rgba(78,62,42,0.55)"/>
-                                        <stop offset="55%" stop-color="rgba(38,30,20,0.70)"/>
-                                        <stop offset="100%" stop-color="rgba(10,7,5,0.85)"/>
-                                    </radialGradient>
-                                    <linearGradient id="edHeroCresFill" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" stop-color="rgba(225,205,170,0.85)"/>
-                                        <stop offset="55%" stop-color="rgba(248,232,200,0.96)"/>
-                                        <stop offset="100%" stop-color="rgba(255,245,220,1)"/>
-                                    </linearGradient>
-                                    <filter id="edMoonNoise" x="-10%" y="-10%" width="120%" height="120%">
-                                        <feTurbulence type="fractalNoise" baseFrequency="2.4" numOctaves="2" seed="3"/>
-                                        <feColorMatrix values="0 0 0 0 0.85  0 0 0 0 0.78  0 0 0 0 0.62  0 0 0 0.18 0"/>
-                                        <feComposite in2="SourceGraphic" operator="in"/>
-                                    </filter>
-                                </defs>
-
-                                <!-- Wrapping group so the entire moon drifts as one -->
-                                <g class="ed-hero-moon-grp">
-                                    <!-- Outer halo -->
-                                    <circle cx="180" cy="180" r="178" fill="url(#edHeroOuterGlow)"/>
-
-                                    <!-- Crescent glow halo focused on right edge -->
-                                    <circle cx="180" cy="180" r="162" fill="url(#edHeroCresGlow)"/>
-
-                                    <!-- The moon disc — earthshine on the dark side -->
-                                    <circle cx="180" cy="180" r="125" fill="url(#edHeroEarthshine)"/>
-
-                                    <!-- Subtle earthshine maria/craters on dark side (rustic, irregular) -->
-                                    <g opacity="0.32">
-                                        <ellipse cx="155" cy="158" rx="16" ry="13" fill="rgba(72,56,38,0.65)"/>
-                                        <ellipse cx="125" cy="205" rx="10" ry="8" fill="rgba(72,56,38,0.55)"/>
-                                        <ellipse cx="172" cy="222" rx="7" ry="5" fill="rgba(72,56,38,0.45)"/>
-                                        <circle cx="195" cy="135" r="3" fill="rgba(72,56,38,0.45)"/>
-                                        <circle cx="100" cy="175" r="2.4" fill="rgba(72,56,38,0.40)"/>
-                                        <circle cx="142" cy="248" r="3.2" fill="rgba(72,56,38,0.40)"/>
-                                        <circle cx="110" cy="140" r="1.8" fill="rgba(72,56,38,0.30)"/>
-                                    </g>
-
-                                    <!-- Faint rim outline so the full disc is hinted -->
-                                    <circle cx="180" cy="180" r="125" fill="none" stroke="rgba(212,181,138,0.20)" stroke-width="0.6"/>
-
-                                    <!-- The bright thin crescent on the right (waxing), with rustic gradient -->
-                                    <path d="M180,55 A125,125 0 1,1 180,305 A116,125 0 1,0 180,55 Z" fill="url(#edHeroCresFill)"/>
-
-                                    <!-- Rustic noise texture on the crescent -->
-                                    <path d="M180,55 A125,125 0 1,1 180,305 A116,125 0 1,0 180,55 Z" fill="rgba(180,150,110,0.15)" filter="url(#edMoonNoise)"/>
-
-                                    <!-- Tiny crater shadows on the lit crescent -->
-                                    <g opacity="0.28">
-                                        <ellipse cx="262" cy="172" rx="3.2" ry="2.4" fill="rgba(120,95,65,0.7)"/>
-                                        <ellipse cx="248" cy="220" rx="2.6" ry="2" fill="rgba(120,95,65,0.65)"/>
-                                        <ellipse cx="255" cy="135" rx="2" ry="1.6" fill="rgba(120,95,65,0.55)"/>
-                                        <ellipse cx="270" cy="195" rx="1.8" ry="1.4" fill="rgba(120,95,65,0.5)"/>
-                                    </g>
-
-                                </g>
-
-                                <!-- Faint outer orbit ring — gentle slow rotation only -->
-                                <circle class="ed-hero-moon-orbit" cx="180" cy="180" r="170" fill="none" stroke="rgba(208,180,137,0.12)" stroke-width="0.6" stroke-dasharray="2 7"/>
-                            </svg>
                         </div>
                     </div>
                 </section>
