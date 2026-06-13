@@ -1479,26 +1479,6 @@
     margin-bottom: var(--space-6);
     text-shadow: 0 0 36px rgba(212, 181, 138, 0.18);
 }
-/* Hero cue that points down to the compose section */
-.ed-hero-cue {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: var(--space-4);
-    color: var(--accent);
-    font-size: var(--fs-small);
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    text-decoration: none;
-    cursor: pointer;
-    transition: color var(--dur-fast) ease;
-}
-.ed-hero-cue:hover { color: var(--accent-bright); }
-.ed-hero-cue-arrow { display: inline-block; animation: edCueBounce 1.8s ease-in-out infinite; }
-@keyframes edCueBounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(4px); }
-}
 
 /* Elevated solid card — no longer a translucent outline that recedes */
 .hero-compose {

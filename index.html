@@ -708,6 +708,125 @@
         <div class="moonrise-scroll editorial-landing" id="moonriseScroll">
             <div class="moonrise-content">
 
+                <!-- WRITE FIRST — compose a real message before signing up (now the hero) -->
+                <section class="ed-compose-section" id="composeSection">
+                    <p class="ed-compose-eyebrow fade-in-up">Start with a message</p>
+                    <h2 class="ed-compose-title fade-in-up">The moon is listening.</h2>
+                    <div class="hero-compose fade-in-up" id="heroCompose">
+                        <div class="hc-modes" role="tablist" aria-label="Message type">
+                            <button type="button" class="hc-mode active" data-mode="roulette" onclick="heroSetMode('roulette')">Moon Roulette</button>
+                            <button type="button" class="hc-mode" data-mode="message" onclick="heroSetMode('message')">Moon Message</button>
+                            <button type="button" class="hc-mode" data-mode="lunar" onclick="heroSetMode('lunar')">Lunar Note</button>
+                        </div>
+                        <p class="hc-hint" id="hcHint">Send a message to a stranger. Only the moon knows who.</p>
+
+                        <!-- Recipient (Moon Message + Lunar Note) -->
+                        <div class="hc-recipient" id="hcRecipient" style="display:none;">
+                            <input type="text" id="hcRecipName" class="hc-input" placeholder="Their name" autocomplete="off">
+                            <input type="email" id="hcRecipEmail" class="hc-input" placeholder="Their email" autocomplete="off">
+                            <div class="hc-city-wrap">
+                                <input type="text" id="hcRecipCity" class="hc-input" placeholder="Their city" autocomplete="off" oninput="heroFilterCities(this.value)">
+                                <div id="hcCityDropdown" class="city-dropdown"></div>
+                            </div>
+                        </div>
+
+                        <!-- Free text (Moon Roulette + Moon Message) -->
+                        <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Whisper your message to the stars…"></textarea>
+
+                        <!-- Lunar Note wizard (Lunar Note only) -->
+                        <div class="hc-lunar" id="hcLunar" style="display:none;">
+                            <div id="hcLunarSteps">
+                                <input type="text" id="hcLunar1" class="hc-input" placeholder="an emotion" autocomplete="off">
+                                <input type="text" id="hcLunar2" class="hc-input" placeholder="a different emotion" autocomplete="off">
+                                <input type="text" id="hcLunar3" class="hc-input" placeholder="something you pretend not to care about" autocomplete="off">
+                                <button type="button" class="hc-ghost" onclick="heroRevealLunar()">Reveal your note 🌙</button>
+                            </div>
+                            <div id="hcLunarResult" style="display:none;">
+                                <div class="hc-lunar-text" id="hcLunarText"></div>
+                                <div class="hc-lunar-closing" id="hcLunarClosing"></div>
+                                <div class="hc-lunar-actions">
+                                    <button type="button" class="hc-ghost sm" onclick="heroRegenLunar()">Try another</button>
+                                    <button type="button" class="hc-ghost sm" onclick="heroEditLunar()">Edit words</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hc-error" id="hcError" style="display:none;"></div>
+                        <button type="button" class="hc-send" id="hcSendBtn" onclick="heroSend()">Send to the moon 🌙</button>
+                        <p class="hc-login-line">Already have an account? <button type="button" class="hc-login-link" onclick="showAuthModal('login')">Log in</button></p>
+                    </div>
+                </section>
+
+                <div class="ed-horizon" aria-hidden="true">
+                    <svg viewBox="0 0 1600 380" preserveAspectRatio="none">
+                        <defs>
+                            <!-- ONE light source — fades fully to 0 well within the viewBox so no hard edge -->
+                            <radialGradient id="edHorizonLight" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%"   stop-color="rgba(255,228,175,0.78)"/>
+                                <stop offset="6%"   stop-color="rgba(250,212,160,0.62)"/>
+                                <stop offset="14%"  stop-color="rgba(235,190,140,0.42)"/>
+                                <stop offset="26%"  stop-color="rgba(215,170,120,0.24)"/>
+                                <stop offset="42%"  stop-color="rgba(195,155,108,0.12)"/>
+                                <stop offset="60%"  stop-color="rgba(180,140,98,0.05)"/>
+                                <stop offset="80%"  stop-color="rgba(170,130,90,0.015)"/>
+                                <stop offset="100%" stop-color="rgba(160,125,85,0)"/>
+                            </radialGradient>
+
+                            <!-- Stroke gradient: line fades to transparent at both edges, brightest at the light source -->
+                            <linearGradient id="edHorizonLine" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%"   stop-color="rgba(245,210,160,0)"/>
+                                <stop offset="8%"   stop-color="rgba(245,210,160,0.18)"/>
+                                <stop offset="30%"  stop-color="rgba(245,210,160,0.55)"/>
+                                <stop offset="62%"  stop-color="rgba(255,232,185,1)"/>
+                                <stop offset="85%"  stop-color="rgba(245,210,160,0.45)"/>
+                                <stop offset="96%"  stop-color="rgba(245,210,160,0.10)"/>
+                                <stop offset="100%" stop-color="rgba(245,210,160,0)"/>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- One holistic light source: center sits AT the ridge, gradient fades fully to 0
+                             before reaching the viewBox edges, so no hard clipping line at top. -->
+                        <ellipse cx="992" cy="270" rx="1050" ry="270" fill="url(#edHorizonLight)"/>
+
+                        <!-- Sparse stars high in the sky (outside the bright zone) -->
+                        <g fill="rgba(255,245,225,0.40)">
+                            <circle cx="180" cy="80" r="0.6"/>
+                            <circle cx="420" cy="58" r="0.5"/>
+                            <circle cx="640" cy="98" r="0.7"/>
+                            <circle cx="1300" cy="62" r="0.5"/>
+                            <circle cx="1480" cy="118" r="0.6"/>
+                        </g>
+
+                        <!-- Hill silhouette — uses the SAME color as the page bg (--bg #030A18) so it
+                             blends seamlessly into the page below, with no visible bottom seam.
+                             The silhouette is still visible against the warm glow above. -->
+                        <path d="M0,295
+                                 C90,265 180,310 280,283
+                                 C380,256 460,308 560,278
+                                 C660,250 760,300 850,270
+                                 C920,247 980,278 1060,260
+                                 C1140,275 1230,310 1320,288
+                                 C1410,266 1490,298 1560,280
+                                 C1580,274 1592,284 1600,282
+                                 L1600,380 L0,380 Z"
+                              fill="#030A18"/>
+
+                        <!-- Glowing rim line — fades at edges via gradient stroke -->
+                        <path d="M0,295
+                                 C90,265 180,310 280,283
+                                 C380,256 460,308 560,278
+                                 C660,250 760,300 850,270
+                                 C920,247 980,278 1060,260
+                                 C1140,275 1230,310 1320,288
+                                 C1410,266 1490,298 1560,280
+                                 C1580,274 1592,284 1600,282"
+                              fill="none"
+                              stroke="url(#edHorizonLine)"
+                              stroke-width="1.5"
+                              stroke-linecap="round"/>
+                    </svg>
+                </div>
+
                 <!-- HERO -->
                 <section class="ed-hero">
                     <div class="ed-hero-grid">
@@ -717,9 +836,6 @@
                             <div class="ed-hero-cta fade-in-up" id="heroCta">
                                 <!-- JS populates based on moon state -->
                             </div>
-
-                            <!-- Cue down to the compose section below the horizon -->
-                            <a class="ed-hero-cue fade-in-up" href="#composeSection" onclick="event.preventDefault();document.getElementById('composeSection').scrollIntoView({behavior:'smooth'});">Write your first message <span class="ed-hero-cue-arrow" aria-hidden="true">↓</span></a>
                         </div>
                         <div class="ed-hero-art" aria-hidden="true">
                             <svg class="ed-hero-moon-svg" viewBox="0 0 360 360">
@@ -796,125 +912,6 @@
                                 <circle class="ed-hero-moon-orbit" cx="180" cy="180" r="170" fill="none" stroke="rgba(208,180,137,0.12)" stroke-width="0.6" stroke-dasharray="2 7"/>
                             </svg>
                         </div>
-                    </div>
-                </section>
-
-                <div class="ed-horizon" aria-hidden="true">
-                    <svg viewBox="0 0 1600 380" preserveAspectRatio="none">
-                        <defs>
-                            <!-- ONE light source — fades fully to 0 well within the viewBox so no hard edge -->
-                            <radialGradient id="edHorizonLight" cx="50%" cy="50%" r="50%">
-                                <stop offset="0%"   stop-color="rgba(255,228,175,0.78)"/>
-                                <stop offset="6%"   stop-color="rgba(250,212,160,0.62)"/>
-                                <stop offset="14%"  stop-color="rgba(235,190,140,0.42)"/>
-                                <stop offset="26%"  stop-color="rgba(215,170,120,0.24)"/>
-                                <stop offset="42%"  stop-color="rgba(195,155,108,0.12)"/>
-                                <stop offset="60%"  stop-color="rgba(180,140,98,0.05)"/>
-                                <stop offset="80%"  stop-color="rgba(170,130,90,0.015)"/>
-                                <stop offset="100%" stop-color="rgba(160,125,85,0)"/>
-                            </radialGradient>
-
-                            <!-- Stroke gradient: line fades to transparent at both edges, brightest at the light source -->
-                            <linearGradient id="edHorizonLine" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%"   stop-color="rgba(245,210,160,0)"/>
-                                <stop offset="8%"   stop-color="rgba(245,210,160,0.18)"/>
-                                <stop offset="30%"  stop-color="rgba(245,210,160,0.55)"/>
-                                <stop offset="62%"  stop-color="rgba(255,232,185,1)"/>
-                                <stop offset="85%"  stop-color="rgba(245,210,160,0.45)"/>
-                                <stop offset="96%"  stop-color="rgba(245,210,160,0.10)"/>
-                                <stop offset="100%" stop-color="rgba(245,210,160,0)"/>
-                            </linearGradient>
-                        </defs>
-
-                        <!-- One holistic light source: center sits AT the ridge, gradient fades fully to 0
-                             before reaching the viewBox edges, so no hard clipping line at top. -->
-                        <ellipse cx="992" cy="270" rx="1050" ry="270" fill="url(#edHorizonLight)"/>
-
-                        <!-- Sparse stars high in the sky (outside the bright zone) -->
-                        <g fill="rgba(255,245,225,0.40)">
-                            <circle cx="180" cy="80" r="0.6"/>
-                            <circle cx="420" cy="58" r="0.5"/>
-                            <circle cx="640" cy="98" r="0.7"/>
-                            <circle cx="1300" cy="62" r="0.5"/>
-                            <circle cx="1480" cy="118" r="0.6"/>
-                        </g>
-
-                        <!-- Hill silhouette — uses the SAME color as the page bg (--bg #030A18) so it
-                             blends seamlessly into the page below, with no visible bottom seam.
-                             The silhouette is still visible against the warm glow above. -->
-                        <path d="M0,295
-                                 C90,265 180,310 280,283
-                                 C380,256 460,308 560,278
-                                 C660,250 760,300 850,270
-                                 C920,247 980,278 1060,260
-                                 C1140,275 1230,310 1320,288
-                                 C1410,266 1490,298 1560,280
-                                 C1580,274 1592,284 1600,282
-                                 L1600,380 L0,380 Z"
-                              fill="#030A18"/>
-
-                        <!-- Glowing rim line — fades at edges via gradient stroke -->
-                        <path d="M0,295
-                                 C90,265 180,310 280,283
-                                 C380,256 460,308 560,278
-                                 C660,250 760,300 850,270
-                                 C920,247 980,278 1060,260
-                                 C1140,275 1230,310 1320,288
-                                 C1410,266 1490,298 1560,280
-                                 C1580,274 1592,284 1600,282"
-                              fill="none"
-                              stroke="url(#edHorizonLine)"
-                              stroke-width="1.5"
-                              stroke-linecap="round"/>
-                    </svg>
-                </div>
-
-                <!-- WRITE FIRST — compose a real message before signing up -->
-                <section class="ed-compose-section" id="composeSection">
-                    <p class="ed-compose-eyebrow fade-in-up">Start with a message</p>
-                    <h2 class="ed-compose-title fade-in-up">The moon is listening.</h2>
-                    <div class="hero-compose fade-in-up" id="heroCompose">
-                        <div class="hc-modes" role="tablist" aria-label="Message type">
-                            <button type="button" class="hc-mode active" data-mode="roulette" onclick="heroSetMode('roulette')">Moon Roulette</button>
-                            <button type="button" class="hc-mode" data-mode="message" onclick="heroSetMode('message')">Moon Message</button>
-                            <button type="button" class="hc-mode" data-mode="lunar" onclick="heroSetMode('lunar')">Lunar Note</button>
-                        </div>
-                        <p class="hc-hint" id="hcHint">Send a message to a stranger. Only the moon knows who.</p>
-
-                        <!-- Recipient (Moon Message + Lunar Note) -->
-                        <div class="hc-recipient" id="hcRecipient" style="display:none;">
-                            <input type="text" id="hcRecipName" class="hc-input" placeholder="Their name" autocomplete="off">
-                            <input type="email" id="hcRecipEmail" class="hc-input" placeholder="Their email" autocomplete="off">
-                            <div class="hc-city-wrap">
-                                <input type="text" id="hcRecipCity" class="hc-input" placeholder="Their city" autocomplete="off" oninput="heroFilterCities(this.value)">
-                                <div id="hcCityDropdown" class="city-dropdown"></div>
-                            </div>
-                        </div>
-
-                        <!-- Free text (Moon Roulette + Moon Message) -->
-                        <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Whisper your message to the stars…"></textarea>
-
-                        <!-- Lunar Note wizard (Lunar Note only) -->
-                        <div class="hc-lunar" id="hcLunar" style="display:none;">
-                            <div id="hcLunarSteps">
-                                <input type="text" id="hcLunar1" class="hc-input" placeholder="an emotion" autocomplete="off">
-                                <input type="text" id="hcLunar2" class="hc-input" placeholder="a different emotion" autocomplete="off">
-                                <input type="text" id="hcLunar3" class="hc-input" placeholder="something you pretend not to care about" autocomplete="off">
-                                <button type="button" class="hc-ghost" onclick="heroRevealLunar()">Reveal your note 🌙</button>
-                            </div>
-                            <div id="hcLunarResult" style="display:none;">
-                                <div class="hc-lunar-text" id="hcLunarText"></div>
-                                <div class="hc-lunar-closing" id="hcLunarClosing"></div>
-                                <div class="hc-lunar-actions">
-                                    <button type="button" class="hc-ghost sm" onclick="heroRegenLunar()">Try another</button>
-                                    <button type="button" class="hc-ghost sm" onclick="heroEditLunar()">Edit words</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="hc-error" id="hcError" style="display:none;"></div>
-                        <button type="button" class="hc-send" id="hcSendBtn" onclick="heroSend()">Send to the moon 🌙</button>
-                        <p class="hc-login-line">Already have an account? <button type="button" class="hc-login-link" onclick="showAuthModal('login')">Log in</button></p>
                     </div>
                 </section>
 
