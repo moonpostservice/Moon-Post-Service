@@ -1623,8 +1623,8 @@
     cursor: pointer;
     transition: background var(--dur-fast) ease, transform var(--dur-fast) ease;
 }
-.hc-send:hover { background: var(--accent-bright); transform: translateY(-1px); }
-.hc-send:disabled { opacity: 0.55; cursor: default; transform: none; }
+.hc-send:not(:disabled):hover { background: var(--accent-bright); transform: translateY(-1px); }
+.hc-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .hc-login-line {
     margin: var(--space-3) 0 0;
     text-align: center;

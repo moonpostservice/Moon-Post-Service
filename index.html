@@ -806,7 +806,7 @@
                         </div>
 
                         <!-- Free text (Moon Roulette + Moon Message) -->
-                        <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Whisper your message to the stars…"></textarea>
+                        <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Whisper your message to the stars…" oninput="heroUpdateSendState()"></textarea>
 
                         <!-- Lunar Note wizard (Lunar Note only) -->
                         <div class="hc-lunar" id="hcLunar" style="display:none;">
@@ -827,7 +827,7 @@
                         </div>
 
                         <div class="hc-error" id="hcError" style="display:none;"></div>
-                        <button type="button" class="hc-send" id="hcSendBtn" onclick="heroSend()">Send to the moon 🌙</button>
+                        <button type="button" class="hc-send" id="hcSendBtn" onclick="heroSend()" disabled>Send to the moon 🌙</button>
                         <p class="hc-login-line">Already have an account? <button type="button" class="hc-login-link" onclick="showAuthModal('login')">Log in</button></p>
                     </div>
                 </section>

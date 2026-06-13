@@ -42,6 +42,21 @@ function heroSetMode(mode) {
     if (lunar) lunar.style.display = (mode === 'lunar') ? 'flex' : 'none';
 
     heroClearError();
+    heroUpdateSendState();
+}
+
+// Enable "Send to the moon" only once there's something to send:
+// at least one character in the compose box, or a revealed lunar note.
+function heroUpdateSendState() {
+    const btn = document.getElementById('hcSendBtn');
+    if (!btn) return;
+    let ready;
+    if (_heroMode === 'lunar') {
+        ready = !!_heroLunar;
+    } else {
+        ready = (document.getElementById('hcText')?.value || '').trim().length >= 1;
+    }
+    btn.disabled = !ready;
 }
 
 // ---- City autocomplete (reuses the global `cities` dataset) ----
@@ -102,6 +117,7 @@ function heroRevealLunar() {
     document.getElementById('hcLunarClosing').textContent = result.closing;
     document.getElementById('hcLunarSteps').style.display = 'none';
     document.getElementById('hcLunarResult').style.display = 'block';
+    heroUpdateSendState();
 }
 
 function heroRegenLunar() {
@@ -174,6 +190,13 @@ function heroSend() {
     }
     // Open the genuine signup flow (showAuthModal sets authMode='signup').
     showAuthModal('signup');
+}
+
+// Sync the send button once the DOM is ready (covers autofill / restored text).
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', heroUpdateSendState);
+} else {
+    heroUpdateSendState();
 }
 
 // ---- Flush: after onboarding/login completes, send the stashed message ----
