@@ -22,6 +22,23 @@ const HERO_MODE_HINTS = {
 let _heroMode = 'roulette';
 let _heroRecipientCity = '';
 let _heroLunar = null; // { inputs:[a,b,c], text, closing, templateIdx }
+let _heroLunarRevealed = false; // lunar step 2 (verse shown, recipient asked) vs step 1
+
+// The recipient block (#hcRecipient) lives at the top for Moon Message, but in
+// Lunar Note it slides down into the verse result as "step 2". These helpers move
+// the single shared node between its home slot and the lunar result slot.
+function heroRecipientHome() {
+    const rec = document.getElementById('hcRecipient');
+    const text = document.getElementById('hcText');
+    if (rec && text && rec.parentElement && rec.nextElementSibling !== text) {
+        text.parentElement.insertBefore(rec, text);
+    }
+}
+function heroRecipientToResult() {
+    const rec = document.getElementById('hcRecipient');
+    const slot = document.getElementById('hcRecipientSlot');
+    if (rec && slot && rec.parentElement !== slot) slot.appendChild(rec);
+}
 
 function heroSetMode(mode) {
     if (!HERO_MODE_HINTS[mode]) return;
@@ -36,8 +53,20 @@ function heroSetMode(mode) {
     const text = document.getElementById('hcText');
     const lunar = document.getElementById('hcLunar');
 
-    // Roulette: text only. Message: recipient + text. Lunar: recipient + wizard.
-    if (recipient) recipient.style.display = (mode === 'roulette') ? 'none' : 'flex';
+    // Always bring the recipient block home first, then decide where it belongs.
+    heroRecipientHome();
+
+    // Lunar always (re)starts at step 1: words only, no recipient, no verse.
+    if (mode === 'lunar') {
+        _heroLunarRevealed = false;
+        const steps = document.getElementById('hcLunarSteps');
+        const result = document.getElementById('hcLunarResult');
+        if (steps) steps.style.display = 'block';
+        if (result) result.style.display = 'none';
+    }
+
+    // Roulette: text only. Message: recipient + text. Lunar: wizard (recipient comes in step 2).
+    if (recipient) recipient.style.display = (mode === 'message') ? 'flex' : 'none';
     if (text) text.style.display = (mode === 'lunar') ? 'none' : 'block';
     if (lunar) lunar.style.display = (mode === 'lunar') ? 'flex' : 'none';
 
@@ -52,8 +81,12 @@ function heroUpdateSendState() {
     if (!btn) return;
     let ready;
     if (_heroMode === 'lunar') {
+        // Send only exists in step 2 (after the verse is revealed and we're asking
+        // who it's for). Step 1's single CTA is "Let the moon write it".
+        btn.style.display = _heroLunarRevealed ? '' : 'none';
         ready = !!_heroLunar;
     } else {
+        btn.style.display = '';
         ready = (document.getElementById('hcText')?.value || '').trim().length >= 1;
     }
     btn.disabled = !ready;
@@ -117,6 +150,11 @@ function heroRevealLunar() {
     document.getElementById('hcLunarClosing').textContent = result.closing;
     document.getElementById('hcLunarSteps').style.display = 'none';
     document.getElementById('hcLunarResult').style.display = 'block';
+    // Step 2: the verse exists — now bring in the recipient block and the Send button.
+    _heroLunarRevealed = true;
+    heroRecipientToResult();
+    const recipient = document.getElementById('hcRecipient');
+    if (recipient) recipient.style.display = 'flex';
     heroUpdateSendState();
 }
 
@@ -132,8 +170,14 @@ function heroRegenLunar() {
 }
 
 function heroEditLunar() {
+    // Back to step 1: hide the verse, pull the recipient block back out, hide Send.
+    _heroLunarRevealed = false;
     document.getElementById('hcLunarResult').style.display = 'none';
     document.getElementById('hcLunarSteps').style.display = 'block';
+    const recipient = document.getElementById('hcRecipient');
+    if (recipient) recipient.style.display = 'none';
+    heroRecipientHome();
+    heroUpdateSendState();
 }
 
 // ---- Error helpers ----

@@ -811,10 +811,13 @@
                         <!-- Lunar Note wizard (Lunar Note only) -->
                         <div class="hc-lunar" id="hcLunar" style="display:none;">
                             <div id="hcLunarSteps">
-                                <input type="text" id="hcLunar1" class="hc-input" placeholder="an emotion" autocomplete="off">
-                                <input type="text" id="hcLunar2" class="hc-input" placeholder="a different emotion" autocomplete="off">
-                                <input type="text" id="hcLunar3" class="hc-input" placeholder="something you pretend not to care about" autocomplete="off">
-                                <button type="button" class="hc-ghost" onclick="heroRevealLunar()">Reveal your note 🌙</button>
+                                <div class="hc-lunar-words">
+                                    <p class="hc-lunar-cue">Give the moon three words — it spins them into a little verse for you.</p>
+                                    <input type="text" id="hcLunar1" class="hc-input" placeholder="an emotion — e.g. restless" autocomplete="off">
+                                    <input type="text" id="hcLunar2" class="hc-input" placeholder="another emotion — e.g. calm" autocomplete="off">
+                                    <input type="text" id="hcLunar3" class="hc-input" placeholder="what you pretend not to care about" autocomplete="off">
+                                </div>
+                                <button type="button" class="hc-reveal" onclick="heroRevealLunar()">Let the moon write it 🌙</button>
                             </div>
                             <div id="hcLunarResult" style="display:none;">
                                 <div class="hc-lunar-text" id="hcLunarText"></div>
@@ -822,6 +825,12 @@
                                 <div class="hc-lunar-actions">
                                     <button type="button" class="hc-ghost sm" onclick="heroRegenLunar()">Try another</button>
                                     <button type="button" class="hc-ghost sm" onclick="heroEditLunar()">Edit words</button>
+                                </div>
+                                <!-- Step 2: who it's for. The recipient block (#hcRecipient) is moved here
+                                     by heroRevealLunar() and moved back out when leaving the result step. -->
+                                <div class="hc-lunar-recipient">
+                                    <p class="hc-lunar-recipient-label">Now — who should the moon carry it to?</p>
+                                    <div id="hcRecipientSlot"></div>
                                 </div>
                             </div>
                         </div>

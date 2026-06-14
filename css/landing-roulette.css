@@ -1574,6 +1574,52 @@
     line-height: 1.5;
 }
 .hc-lunar { display: flex; flex-direction: column; gap: var(--space-2); }
+/* Sets expectations before the three word-fields: the moon composes the verse,
+   the user only supplies three words. Keeps the Mad-Libs mechanic from reading
+   as "write your own note". */
+.hc-lunar-cue {
+    margin: 0 0 var(--space-1);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--accent);
+}
+/* Group the three word-fields into one compact panel so they read as a single
+   small ritual — not three more full-height empty input slabs in the stack. */
+.hc-lunar-words {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    background: rgba(3, 10, 24, 0.4);
+}
+.hc-lunar-words .hc-input {
+    padding: 9px 12px;
+    font-size: 13px;
+    background: rgba(0, 1, 4, 0.55);
+    box-shadow: none;
+}
+/* Step 2 inside the verse result: ask who it's for. Sits under the note, set off
+   by a hairline divider so it reads as a distinct "now address it" beat. */
+.hc-lunar-recipient {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line-soft);
+}
+.hc-lunar-recipient-label {
+    margin: 0 0 var(--space-2);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 13.5px;
+    color: var(--accent);
+}
+.hc-lunar-recipient .hc-input {
+    background: rgba(0, 1, 4, 0.55);
+    box-shadow: none;
+}
 .hc-lunar-text {
     white-space: pre-wrap;
     font-family: var(--serif);
@@ -1603,6 +1649,24 @@
 }
 .hc-ghost.sm { padding: 7px 14px; font-size: 12px; }
 .hc-ghost:hover { border-color: var(--accent); color: var(--accent-bright); }
+/* Reveal-your-note: the single, full-width CTA shown before a lunar note exists.
+   Outlined-accent so it reads as the step's primary action without masquerading
+   as the filled "Send" button that replaces it once the note is revealed. */
+.hc-reveal {
+    width: 100%;
+    margin-top: var(--space-2);
+    padding: 13px 24px;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--accent-bright);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+.hc-reveal:hover { background: rgba(208, 180, 137, 0.08); border-color: var(--accent-bright); }
 .hc-error {
     color: #E89B73;
     font-size: 12px;
