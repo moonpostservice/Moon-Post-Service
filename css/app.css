@@ -752,16 +752,8 @@ body::before {
     font-variant-numeric: tabular-nums;
 }
 
-/* Moon-down standby overrides for dark theme */
-body.moon-down .cta-button {
-    background: rgba(212, 181, 138, 0.18);
-    border-color: var(--line-soft);
-    color: var(--muter);
-    box-shadow: none;
-}
-body.moon-down .new-message-btn {
-    opacity: 0.2;
-}
+/* Compose anytime: no moon-down "standby" greying of the compose CTA or the
+   new-message button. The moon governs delivery, not whether you can write. */
 
 /* ============================================================
    MOON GLOW — when above horizon

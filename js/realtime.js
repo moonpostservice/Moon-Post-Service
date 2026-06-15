@@ -1768,9 +1768,10 @@ function updateOrbitCenter() {
                 ${statusLine}
             `;
         } else {
-            // Moon is DOWN — receiver side
+            // Moon is DOWN — you can still compose (the moon collects at your
+            // next moonrise); the body class only drives cosmetic dimming now.
             document.body.classList.add('moon-down');
-            if (inboxCta) inboxCta.style.display = 'none';
+            if (inboxCta) inboxCta.style.display = '';
 
             // "Carrying" = only in-transit messages (not unread — those are already delivered)
             const totalCarrying = incomingInTransit;
@@ -1781,9 +1782,9 @@ function updateOrbitCenter() {
                 } else if (totalCarrying > 0) {
                     heroTitle.innerHTML = `${greetingPrefix}The moon carries ${totalCarrying} ${totalCarrying === 1 ? 'message' : 'messages'} for you. You'll receive them when the moon reaches your sky.`;
                 } else if (safeWaiting > 0) {
-                    heroTitle.innerHTML = `${greetingPrefix}You have ${safeWaiting} unread ${safeWaiting === 1 ? 'message' : 'messages'}. The Moon Post Service opens when the moon rises.`;
+                    heroTitle.innerHTML = `${greetingPrefix}You have ${safeWaiting} unread ${safeWaiting === 1 ? 'message' : 'messages'}, ready when the moon reaches your sky. Write anytime — the moon collects at moonrise.`;
                 } else {
-                    heroTitle.innerHTML = `${greetingPrefix}The Moon Post Service opens when the moon rises.`;
+                    heroTitle.innerHTML = `${greetingPrefix}Write anytime — the moon collects your messages when it rises in your sky.`;
                 }
             }
 
@@ -1793,7 +1794,7 @@ function updateOrbitCenter() {
                 : '';
             centerEl.innerHTML = `
                 <div class="standby-countdown live-timer" style="opacity:0.6;">${timerCellsHtml(timerStr)}</div>
-                <p class="standby-label">until moonrise</p>
+                <p class="standby-label">until your moon collects</p>
                 ${carryingLine}
             `;
         }

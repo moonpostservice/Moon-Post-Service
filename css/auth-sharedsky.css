@@ -406,16 +406,8 @@
     margin-top: 4px;
 }
 
-/* Standby Mode (moon below horizon) */
-body.moon-down .cta-button {
-    background: #c5c2bb;
-    cursor: not-allowed;
-}
-
-body.moon-down .cta-button:hover {
-    background: #c5c2bb;
-}
-
+/* Moon below horizon — cosmetic dimming only. The compose CTA stays enabled
+   (compose anytime); the moon governs delivery, not whether you can write. */
 body.moon-down .moon-orbit {
     opacity: 0.25;
 }
@@ -449,36 +441,9 @@ body.moon-down .message-dot.releasing {
     margin-bottom: 16px;
 }
 
-/* Disabled compose tooltip */
+/* Compose-anytime: no "messaging opens at moonrise" disabled-compose tooltip. */
 .cta-button[data-tooltip] {
     position: relative;
-}
-
-body.moon-down .cta-button[data-tooltip]:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--blue);
-    color: white;
-    padding: 8px 14px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
-    z-index: 100;
-}
-
-body.moon-down .cta-button[data-tooltip]:hover::before {
-    content: '';
-    position: absolute;
-    bottom: calc(100% + 2px);
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: var(--blue);
-    z-index: 100;
 }
 /* Shared Sky posting disabled */
 

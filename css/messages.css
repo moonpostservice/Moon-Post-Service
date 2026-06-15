@@ -665,11 +665,8 @@
 .new-message-btn:hover {
     background: var(--blue-light);
 }
-body.moon-down .new-message-btn {
-    opacity: 0.3;
-    cursor: not-allowed;
-    pointer-events: none;
-}
+/* Compose anytime: the new-message button stays fully enabled when the moon is
+   down — messages just wait for the moon to collect them at the next moonrise. */
 
 .new-roulette-btn {
     width: 36px;
@@ -706,9 +703,7 @@ body.moon-down .new-message-btn {
     pointer-events: none;
     box-shadow: none;
 }
-body.moon-down .inbox-new-msg-cta {
-    display: none !important;
-}
+/* Inbox compose CTA stays visible when the moon is down (compose anytime). */
 
 .message-list {
     list-style: none;
