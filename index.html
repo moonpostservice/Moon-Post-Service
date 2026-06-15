@@ -563,6 +563,19 @@
             </div>
         </nav>
 
+        <!-- "Sent!" success screen — shown over the loaded inbox once a hero-composed
+             message is actually delivered (flushPendingSend). Turns the landing page
+             into the on-ramp into the app. -->
+        <div id="heroSentOverlay" style="display:none;position:fixed;inset:0;z-index:210;background:rgba(3,10,24,0.80);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:24px;">
+            <div class="onboarding-card" style="max-width:440px;width:90%;text-align:center;">
+                <div style="font-size:46px;margin-bottom:10px;">🌕</div>
+                <h2 style="font-family:var(--serif);color:var(--text-bright);font-size:27px;font-weight:500;margin:0 0 10px;letter-spacing:-0.2px;">Sent!</h2>
+                <p id="heroSentText" style="color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 24px;">Your message is on its way. It'll arrive when the moon rises for them — and we'll tell you if they reply.</p>
+                <button class="onboarding-primary" onclick="heroGoToInbox()" style="width:100%;">Go to your inbox 🌙</button>
+                <button class="hc-login-link" onclick="heroWriteAnother()" style="margin-top:16px;font-size:13px;">Write another message</button>
+            </div>
+        </div>
+
         <!-- Auth modal (popup overlay) -->
         <div id="authModalOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(3,10,24,0.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;overflow-y:auto;padding:24px 0;" onclick="if(event.target===this)closeAuthModal()">
             <div class="onboarding-card" style="position:relative;max-width:440px;width:90%;margin:auto;">
@@ -804,23 +817,29 @@
                             <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Write your message here…" oninput="heroUpdateSendState()"></textarea>
                         </div>
 
-                        <!-- Step 1 — Who is it for? -->
+                        <!-- Step 1 — Who is it for? (everything about the recipient) -->
                         <div class="hc-step" id="hcStep1" style="display:none;">
                             <p class="hc-step-title">Who is it for?</p>
                             <input type="text" id="hcRecipName" class="hc-input" placeholder="Their name" autocomplete="off">
+                            <input type="email" id="hcRecipEmail" class="hc-input" placeholder="Their email" autocomplete="off">
                             <div class="hc-city-wrap">
                                 <input type="text" id="hcRecipCity" class="hc-input" placeholder="Their city" autocomplete="off" oninput="heroFilterCities(this.value)">
                                 <div id="hcCityDropdown" class="city-dropdown"></div>
                             </div>
-                            <p class="hc-step-note">So it arrives when the moon rises where they are.</p>
+                            <p class="hc-step-note">It arrives when the moon rises where they are.</p>
                         </div>
 
-                        <!-- Step 2 — Where should the moon deliver it? -->
+                        <!-- Step 2 — And who's it from? (sender identity; city auto-detected) -->
                         <div class="hc-step" id="hcStep2" style="display:none;">
-                            <p class="hc-step-title">Where should the moon deliver it?</p>
-                            <input type="email" id="hcRecipEmail" class="hc-input" placeholder="Their email" autocomplete="off">
+                            <p class="hc-step-title">And who's it from?</p>
+                            <input type="text" id="hcSenderName" class="hc-input" placeholder="Your name" autocomplete="off">
                             <input type="email" id="hcSenderEmail" class="hc-input" placeholder="Your email" autocomplete="off">
-                            <p class="hc-step-note">We need your email so you can receive their reply.</p>
+                            <!-- Fallback: only shown if we can't detect the sender's city from their timezone. -->
+                            <div class="hc-city-wrap" id="hcSenderCityWrap" style="display:none;">
+                                <input type="text" id="hcSenderCity" class="hc-input" placeholder="Your city" autocomplete="off" oninput="heroFilterSenderCities(this.value)">
+                                <div id="hcSenderCityDropdown" class="city-dropdown"></div>
+                            </div>
+                            <p class="hc-step-note">We'll send a code to confirm it's you — that's how the moon brings their reply back to you.</p>
                         </div>
 
                         <div class="hc-error" id="hcError" style="display:none;"></div>
