@@ -261,10 +261,7 @@ function backToRecipientPicker() {
 }
 
 function openPublicModal() {
-    if (!moonData.isVisible) {
-        openMoonDownModal();
-        return;
-    }
+    // Compose anytime — delivery is moon-timed, not composition.
     document.getElementById('publicModal').classList.add('active');
 }
 
@@ -1077,12 +1074,8 @@ function selectSong(urlOrName, title) {
 // Handle final send
 function handleComposeSend() {
     console.log('[SEND] handleComposeSend called. moonData.isVisible:', moonData.isVisible, 'selectedRecipient:', selectedRecipient);
-    // Bug fix #1: Gate message sending behind moonrise
-    if (!moonData.isVisible) {
-        console.log('[SEND] Moon not visible, showing modal');
-        openMoonDownModal();
-        return;
-    }
+    // Compose anytime: the moon courier collects at the sender's next moonrise
+    // (handled in completeSend's two-hop timing). No send-time moon gate.
 
     // Validate recipient (WhatsApp-style: selectedRecipient always set)
     if (!selectedRecipient) {
@@ -1316,52 +1309,32 @@ async function completeSend(isNewRecipient) {
         }
     }
 
-    // Determine if recipient's moon is up using multiple methods
+    // === Two-hop moon courier ====================================
+    // Composing is never gated by the sender's moon. The message rides two
+    // moonrises: COLLECTED at the sender's next moonrise (pickup — now if the
+    // sender's moon is already up), then DELIVERED at the recipient's first
+    // moonrise on/after pickup. Both instants are deterministic, stamped now.
     console.log('[send] location:', pendingMessage.location);
-    let recipientMoonUp = false;
-
-    // Method 1: Direct altitude check (most reliable)
-    const recipientMoonStatus = getContactMoonStatus(pendingMessage.location);
-
-    if (recipientMoonStatus) {
-        recipientMoonUp = recipientMoonStatus.isUp;
-        console.log('[send] getContactMoonStatus:', recipientMoonUp);
-    } else {
-        // Method 2: No city data — if sender's moon is up, assume same sky
-        recipientMoonUp = !!moonData.isVisible;
-        console.log('[send] no city data for', pendingMessage.location, '— using sender moon:', recipientMoonUp);
-    }
-
-    // Get release time (next moonrise) for in_transit messages
-    const recipientMoonrise = getRecipientMoonrise(pendingMessage.location);
-    let releaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
-
-    // If moon is down and no moonrise data, use 12h fallback
-    if (!releaseAt && !recipientMoonUp) {
-        releaseAt = new Date(Date.now() + 12 * 3600000).toISOString();
-        console.warn('[send] No moonrise data for', pendingMessage.location, '— using 12h fallback releaseAt');
-    }
-    const instantDeliver = recipientMoonUp === true;
-    const messageStatus = instantDeliver ? 'released' : 'in_transit';
-
-    // If instant delivery, set releaseAt to now (not future moonrise)
-    // so orbit dots don't show for already-delivered messages
-    if (instantDeliver) {
-        releaseAt = new Date().toISOString();
-    }
-    console.log('[send] instantDeliver:', instantDeliver, 'status:', messageStatus, 'releaseAt:', releaseAt);
+    const now = new Date();
+    const courier = computeCourierTiming(pendingMessage.location);
+    const { awaitingPickup, instantDeliver, pickupIso } = courier;
+    const messageStatus = courier.status;
+    let releaseAt = courier.releaseAt;
+    console.log('[send] awaitingPickup:', awaitingPickup, 'instantDeliver:', instantDeliver,
+        'status:', messageStatus, 'pickupAt:', pickupIso, 'releaseAt:', releaseAt);
 
     // Store send diagnostics for visible panel
     const hoursUntilRise = releaseAt ? ((new Date(releaseAt).getTime() - Date.now()) / 3600000) : null;
     window._lastSendDiag = {
         location: pendingMessage.location,
-        recipientMoonUp,
+        awaitingPickup,
+        pickupAt: pickupIso,
         hoursUntilRise: hoursUntilRise?.toFixed(2) || 'N/A',
         instantDeliver,
         releaseAt,
         messageStatus,
         dbReleaseAt: '(pending)',
-        sentAt: new Date().toISOString()
+        sentAt: now.toISOString()
     };
 
     // Safety: if somehow still in_transit but no release_at, set a 24h fallback
@@ -1399,8 +1372,9 @@ async function completeSend(isNewRecipient) {
             moon_phase: phaseName,
             moon_illumination: moonData.illumination || null,
             status: messageStatus,
-            release_at: instantDeliver ? new Date().toISOString() : releaseAt,
-            released_at: instantDeliver ? new Date().toISOString() : null,
+            pickup_at: pickupIso,
+            release_at: releaseAt,
+            released_at: instantDeliver ? now.toISOString() : null,
             photo_url: messagePhotoUrl || null
         };
 
@@ -1460,7 +1434,9 @@ async function completeSend(isNewRecipient) {
         sender: pendingMessage.recipient,
         senderAvatar: null,
         preview: '',
-        status: instantDeliver ? 'Released' : 'In Transit',
+        status: instantDeliver ? 'Released' : (awaitingPickup ? 'Awaiting Pickup' : 'In Transit'),
+        awaitingPickup: awaitingPickup,
+        pickupAt: pickupIso,
         type: 'sent',
         location: pendingMessage.location,
         isNewRecipient: isNewRecipient,

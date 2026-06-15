@@ -57,11 +57,12 @@ function usernameFromEmail(email, fallback = '') {
 
 // A reply someone ELSE sent me is still sealed (in transit) until its release
 // time passes — same rule as top-level messages: release_at in the future OR
-// the DB still says in_transit, with the same 24h hard cap so nothing can get
-// stuck sealed forever. Replies I sent are never sealed for me.
+// the DB still says in_transit, with a 72h hard cap so nothing can get stuck
+// sealed forever (two-hop courier delivery can legitimately exceed 24h: up to a
+// full pickup cycle + a full recipient cycle). Replies I sent are never sealed.
 function replyStillSealed(r, myUserId) {
     if (!r || r.sender_id === myUserId) return false;
-    const tooOld = r.created_at && new Date(r.created_at) < new Date(Date.now() - 24 * 3600000);
+    const tooOld = r.created_at && new Date(r.created_at) < new Date(Date.now() - 72 * 3600000);
     if (tooOld) return false;
     return (r.release_at && new Date(r.release_at) > new Date()) || r.status === 'in_transit';
 }

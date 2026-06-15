@@ -1224,8 +1224,9 @@ function _renderRouletteDetailBody(msg, role) {
 function _renderRouletteDetailFooter(msg, role) {
     const isReceived  = role === 'recipient';
     const iRevealed   = _myRevealedMessages.has(msg.id);
-    const moonUp      = moonData?.isVisible === true;
-    const canChat     = (msg.status === 'delivered' || msg.status === 'revealed') && moonUp;
+    // Compose anytime: the reply box is available on any active thread; the moon
+    // governs delivery (server-side), not whether you can write.
+    const canChat     = (msg.status === 'delivered' || msg.status === 'revealed');
 
     // Inline anonymous reply input — shown whenever the conversation is active
     const replyInput = canChat ? `
@@ -1296,7 +1297,7 @@ function _renderRouletteDetailFooter(msg, role) {
 }
 
 async function handleInlineRouletteReply(messageId) {
-    if (!moonData?.isVisible) { openMoonDownModal(); return; }
+    // Compose anytime — roulette delivery is moon-timed server-side, not gated here.
 
     const textarea = document.getElementById(`rouletteInlineText_${messageId}`);
     if (!textarea) return;

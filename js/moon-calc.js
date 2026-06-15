@@ -395,8 +395,74 @@ function getRecipientMoonrise(cityName) {
     
     const timeStr = formatTimeInZone(rise, city.tz);
     const hoursUntil = Math.max(0, (rise - now) / 3600000);
-    
+
     return { date: rise, timeStr, hoursUntil, tz: city.tz };
+}
+
+// === Two-hop "moon courier" timing =========================================
+// Composing is never gated by the sender's moon. Instead a message rides two
+// moonrises: it is COLLECTED at the sender's next moonrise (pickup), then
+// DELIVERED at the recipient's first moonrise on/after pickup. Both instants
+// are deterministic (SunCalc), so we stamp them at send time.
+
+// When the sender's moon next "collects" outgoing mail. If the sender's moon is
+// already up, collection is immediate (now). Returns a Date.
+function getSenderPickupTime() {
+    const now = new Date();
+    if (moonData.isVisible) return now;
+    if (moonData.userLat != null && moonData.userLon != null) {
+        for (let d = 0; d <= 3; d++) {
+            const probe = new Date(now.getTime() + d * 86400000);
+            const r = findMoonRiseSet(probe, moonData.userLat, moonData.userLon);
+            if (r && r.rise && r.rise > now) return r.rise;
+        }
+    }
+    // Fallback: assume the courier comes within ~12h.
+    return new Date(now.getTime() + 12 * 3600000);
+}
+
+// The delivery instant at the recipient's city: the first moment at/after
+// `pickupAt` that the recipient's moon is up. If it's already up at pickup,
+// delivery == pickup. Returns a Date, or null if the city is unknown.
+function getRecipientDeliveryTime(cityName, pickupAt) {
+    if (!cityName || cityName === 'Unknown') return null;
+    const city = cities.find(c => c.name.toLowerCase() === cityName.toLowerCase());
+    if (!city) return null;
+    const from = pickupAt instanceof Date ? pickupAt : new Date(pickupAt);
+    // Already under the moon at pickup → deliver as soon as it's collected.
+    if (isMoonVisible(from, city.lat, city.lon)) return new Date(from);
+    // Otherwise, the next moonrise at/after pickup.
+    const dayStart0 = getCityDayStart(from, city.tz);
+    for (let d = 0; d <= 3; d++) {
+        const ds = new Date(dayStart0.getTime() + d * 86400000);
+        const { rise } = findMoonRiseSet(ds, city.lat, city.lon);
+        if (rise && rise >= from) return rise;
+    }
+    return null;
+}
+
+// Full two-hop courier timing for a send to `recipientCity`. Single source of
+// truth used by message + reply send paths. Returns ISO strings ready to insert.
+//   awaitingPickup — sender's moon is down, message waits for the courier
+//   instantDeliver — collected now AND recipient already under the moon
+function computeCourierTiming(recipientCity) {
+    const now = new Date();
+    const pickupAt = getSenderPickupTime();                          // Date
+    let deliveryAt = getRecipientDeliveryTime(recipientCity, pickupAt); // Date|null
+    if (!deliveryAt) {
+        // No recipient city data: shared-sky guess if our moon is up, else +12h.
+        deliveryAt = moonData.isVisible
+            ? new Date(pickupAt.getTime())
+            : new Date(pickupAt.getTime() + 12 * 3600000);
+    }
+    const awaitingPickup = pickupAt > now;
+    const instantDeliver = !awaitingPickup && deliveryAt <= now;
+    return {
+        pickupAt, deliveryAt, awaitingPickup, instantDeliver,
+        status: instantDeliver ? 'released' : 'in_transit',
+        pickupIso: awaitingPickup ? pickupAt.toISOString() : now.toISOString(),
+        releaseAt: instantDeliver ? now.toISOString() : deliveryAt.toISOString(),
+    };
 }
 
 // Calculate moon status for a contact's city (for transit bar)
@@ -839,11 +905,9 @@ function updateLocationDisplay(cityName, countryName) {
 function updateRouletteButtonState() {
     const btn = document.querySelector('.new-roulette-btn');
     if (!btn) return;
-    const up = moonData.isVisible;
-    btn.disabled = !up;
-    btn.title = up
-        ? 'Send a Moon Roulette message'
-        : 'Moon Roulette is only available when the moon is in your sky';
+    // Compose anytime — the moon courier collects at the sender's next moonrise.
+    btn.disabled = false;
+    btn.title = 'Send a Moon Roulette message';
 }
 
 function onLocationObtained(lat, lon, tz) {

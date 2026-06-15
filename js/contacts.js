@@ -1324,11 +1324,8 @@ function contactDetailSendMessage() {
     const contact = currentContactDetail;
     closeContactDetail();
     closeContactsPage();
-    // WhatsApp-style: go directly to compose with recipient pre-filled
-    if (!moonData.isVisible) {
-        openMoonDownModal();
-        return;
-    }
+    // WhatsApp-style: go directly to compose with recipient pre-filled.
+    // Compose anytime — delivery is moon-timed (two-hop courier), not composition.
     selectedRecipient = {
         name: contact.name,
         email: contact.email,
@@ -1495,10 +1492,7 @@ function handlePublicMoonUpload(e) {
 // NEW MESSAGE PICKER (WhatsApp-style: pick contact first, then compose)
 // ========================
 function openNewMessagePicker() {
-    if (!moonData.isVisible) {
-        openMoonDownModal();
-        return;
-    }
+    // Compose anytime — the moon courier collects at the sender's next moonrise.
     closeAllPanels();
 
     renderNewMsgContactList();

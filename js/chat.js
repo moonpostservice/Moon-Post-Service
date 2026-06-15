@@ -100,7 +100,8 @@ async function loadFullConversationThread(conv) {
             // Sent messages always visible; received: moon MUST be in sky AND message released
             // Defense-in-depth: also check DB status for received messages
             const stillInTransit = !isSent && ((m.release_at && new Date(m.release_at) > new Date()) || m.status === 'in_transit');
-            const tooOld = m.created_at && new Date(m.created_at) < new Date(Date.now() - 24 * 3600000);
+            // 72h cap (two-hop courier can exceed 24h: pickup cycle + recipient cycle).
+            const tooOld = m.created_at && new Date(m.created_at) < new Date(Date.now() - 72 * 3600000);
             const actuallyInTransit = stillInTransit && !tooOld;
             // Once a message has been read it stays readable — the moon-gate only
             // seals genuinely new/unread incoming messages, never re-hides history
@@ -146,6 +147,7 @@ async function loadFullConversationThread(conv) {
                 photoUrl: contentVisible ? (m.photo_url || null) : null,
                 contentVisible: contentVisible,
                 releaseAt: m.release_at,
+                pickupAt: m.pickup_at || null,
                 reactions: [],
                 replies: []
             };
@@ -317,6 +319,7 @@ async function openConversation(convIndex) {
                         status: r.sender_id === currentAuthUser.id ? (r.status === 'in_transit' ? 'In Transit' : 'Released') : (sealed ? 'Arriving' : ''),
                         stillInTransit: sealed,
                         releaseAt: r.release_at || null,
+                        pickupAt: r.pickup_at || null,
                         recipientCity: r.recipient_city || null,
                         reactions: []
                     });
@@ -503,6 +506,53 @@ function getReadReceiptStatus(messageCreatedAt, conv) {
     return new Date(conv.otherReadAt) >= new Date(messageCreatedAt) ? 'read' : 'delivered';
 }
 
+// Two-hop courier timeline for a SENT message in flight. Three stages —
+// 🌑 awaiting the sender's moon (pickup) → 🌘 in transit → 🌕 delivered — with a
+// live countdown to the next hop. Derives stage from pickupAt/releaseAt vs now.
+function courierTimeline(item) {
+    const brass = '212,181,138';
+    const now = Date.now();
+    const pickup  = item.pickupAt  ? new Date(item.pickupAt).getTime()  : null;
+    const release = item.releaseAt ? new Date(item.releaseAt).getTime() : null;
+    const fmt = (ms) => {
+        const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
+        return h > 0 ? `${h}h ${m}m` : `${Math.max(1, m)}m`;
+    };
+
+    let stage, label;
+    if (pickup && pickup > now) {
+        // Hop 1: still waiting for the sender's moon to collect it.
+        stage = 0;
+        const del = (release && release > now) ? ` · delivers ~${fmt(release - now)}` : '';
+        label = `Awaiting your moon — collected in ${fmt(pickup - now)}${del}`;
+    } else if (release && release > now) {
+        // Hop 2: collected, riding toward the recipient's sky.
+        stage = 1;
+        const loc = (item.location && item.location !== 'Unknown') ? ` toward ${item.location}` : '';
+        label = `On its way${loc} — arrives in ${fmt(release - now)}`;
+    } else {
+        stage = 2;
+        label = 'Delivered';
+    }
+
+    const node = (i, glyph) => {
+        const op = stage === i ? 1 : (stage > i ? 0.5 : 0.25);
+        const glow = stage === i ? `text-shadow:0 0 6px rgba(${brass},0.85);` : '';
+        return `<span style="font-size:11px;line-height:1;opacity:${op};${glow}transition:opacity .3s;">${glyph}</span>`;
+    };
+    const bar = (passed) => `<span style="width:16px;height:1px;background:rgba(${brass},${passed ? 0.5 : 0.16});"></span>`;
+
+    return `
+        <div class="courier-timeline" style="display:flex;flex-direction:column;gap:3px;margin-top:5px;">
+            <div style="display:flex;align-items:center;gap:4px;">
+                ${node(0, '🌑')}${bar(stage > 0)}${node(1, '🌘')}${bar(stage > 1)}${node(2, '🌕')}
+            </div>
+            <div style="font-size:12px;color:rgba(${brass},0.7);font-style:italic;display:flex;align-items:center;gap:5px;">
+                ${iconSvg('lunar-note', 'sm')} ${label}
+            </div>
+        </div>`;
+}
+
 // Update reply row visibility based on moon state — JS-driven (no CSS !important)
 function updateReplyRowMoonGate() {
     const replyRow = document.querySelector('.reply-row');
@@ -515,31 +565,15 @@ function updateReplyRowMoonGate() {
     const noteToggleBar = document.querySelector('#messagePageView .note-toggle-bar');
     const openNotePanel = document.getElementById('openNotePanel');
 
-    if (!moonData.isVisible) {
-        // Moon is DOWN — hide ALL compose elements, show gate
-        if (replyRow) replyRow.style.display = 'none';
-        if (lunarLink) lunarLink.style.display = 'none';
-        if (photoPreview) photoPreview.style.display = 'none';
-        if (lunarPanel) lunarPanel.style.display = 'none';
-        if (noteToggle) noteToggle.style.display = 'none';
-        if (noteToggleBar) noteToggleBar.style.display = 'none';
-        if (openNotePanel) openNotePanel.style.display = 'none';
-        if (moonGate) moonGate.style.display = 'block';
-        if (gateTime) {
-            const riseTime = moonData.moonrise !== '--:--' ? moonData.moonrise : '';
-            gateTime.textContent = riseTime
-                ? `Messaging opens at moonrise (${riseTime})`
-                : 'Messaging opens when the moon rises';
-        }
-    } else {
-        // Moon is UP — show compose, hide gate
-        if (replyRow) replyRow.style.display = '';
-        if (lunarLink) lunarLink.style.display = '';
-        if (noteToggle) noteToggle.style.display = '';
-        if (noteToggleBar) noteToggleBar.style.display = '';
-        if (openNotePanel) openNotePanel.style.display = '';
-        if (moonGate) moonGate.style.display = 'none';
-    }
+    // Compose anytime. Replies are collected at the sender's next moonrise and
+    // delivered at the recipient's — so the box is always open; the moon-down
+    // "Messaging opens at moonrise" gate is retired.
+    if (replyRow) replyRow.style.display = '';
+    if (lunarLink) lunarLink.style.display = '';
+    if (noteToggle) noteToggle.style.display = '';
+    if (noteToggleBar) noteToggleBar.style.display = '';
+    if (openNotePanel) openNotePanel.style.display = '';
+    if (moonGate) moonGate.style.display = 'none';
 }
 
 // Update inbox transmission button based on moon state
@@ -648,6 +682,7 @@ function renderConversationThread() {
                 isMessage: true,
                 status: msg.status,
                 releaseAt: msg.releaseAt,
+                pickupAt: msg.pickupAt || null,
                 location: msg.location
             });
         }
@@ -659,6 +694,7 @@ function renderConversationThread() {
                 sent: true,
                 location: msg.location,
                 releaseAt: msg.releaseAt,
+                pickupAt: msg.pickupAt || null,
                 msgIndex,
                 msgDbId: msg.dbId,
                 isMessage: true
@@ -700,6 +736,7 @@ function renderConversationThread() {
                     sent: r.sent,
                     status: r.status || undefined,
                     releaseAt: r.releaseAt || null,
+                    pickupAt: r.pickupAt || null,
                     location: r.recipientCity || msg.location,
                     msgIndex,
                     msgDbId: r.dbId || msg.dbId,
@@ -893,19 +930,7 @@ function renderConversationThread() {
             const textPreview = (item.text || '').substring(0, 40) + ((item.text || '').length > 40 ? '...' : '');
             const textIsTransit = item.sent && (item.status === 'In Transit' || item.status === 'in_transit');
             if (textIsTransit) {
-                // In-transit sent message — orbital glow design
-                let etaStr = '';
-                let etaLabel = '';
-                if (item.releaseAt) {
-                    const diff = new Date(item.releaseAt).getTime() - Date.now();
-                    if (diff > 0) {
-                        const h = Math.floor(diff / 3600000);
-                        const m = Math.floor((diff % 3600000) / 60000);
-                        etaLabel = h > 0 ? `Arrives in ${h}h ${m}m` : `Arrives in ${m}m`;
-                    }
-                }
-                const loc = item.location || '';
-                if (!etaLabel) etaLabel = loc ? `Traveling toward ${loc}` : 'Arriving at moonrise';
+                // In-transit sent message — orbital glow + two-hop courier timeline
                 html += `
                     <div class="message-bubble-transit-wrap">
                         <div class="message-bubble sent">
@@ -917,7 +942,7 @@ function renderConversationThread() {
                                 <button class="msg-comments-link" onclick="event.stopPropagation(); setReplyContext('${textPreview.replace(/'/g, "\\'")}')">↩ Reply</button>
                             </div>
                         </div>
-                        <div class="transit-eta-label">${iconSvg('lunar-note', 'sm')} ${etaLabel}</div>
+                        ${courierTimeline(item)}
                     </div>
                 `;
             } else {
@@ -938,16 +963,8 @@ function renderConversationThread() {
                 `;
             }
         } else if (item.type === 'transit') {
-            let transitEta = '';
-            if (item.releaseAt) {
-                const diff = new Date(item.releaseAt).getTime() - Date.now();
-                if (diff > 0) {
-                    const h = Math.floor(diff / 3600000);
-                    const m = Math.floor((diff % 3600000) / 60000);
-                    transitEta = h > 0 ? `Arrives in ${h}h ${m}m` : `Arrives in ${m}m`;
-                }
-            }
-            if (!transitEta) transitEta = item.location ? `Traveling toward ${item.location}` : 'Arriving at moonrise';
+            const awaitingPickup = item.pickupAt && new Date(item.pickupAt).getTime() > Date.now();
+            const transitWord = awaitingPickup ? 'Awaiting your moon' : 'Message in transit';
             html += `
                 <div class="message-bubble-transit-wrap">
                     <div class="transit-orbit-track">
@@ -956,10 +973,10 @@ function renderConversationThread() {
                         <div class="transit-orbit-dot" style="--orbit-dur:5s;--orbit-delay:-1s;width:3px;height:3px;opacity:0.5;"></div>
                     </div>
                     <div class="message-bubble sent" style="text-align:center;">
-                        <p style="color:rgba(212,181,138,0.6);font-style:italic;font-size:13px;">Message in transit</p>
+                        <p style="color:rgba(212,181,138,0.6);font-style:italic;font-size:13px;">${transitWord}</p>
                         <div class="message-bubble-time">${item.time}</div>
                     </div>
-                    <div class="transit-eta-label">${iconSvg('lunar-note', 'sm')} ${transitEta}</div>
+                    ${courierTimeline(item)}
                 </div>
             `;
         } else if (item.type === 'arriving') {
@@ -1599,25 +1616,12 @@ async function sendThreadLunarNote() {
     if (currentAuthUser && msg.dbId) {
         // Check recipient's moon: use rise/set times as definitive source
         const recipientCity = currentConversation?.location || msg.location || 'Unknown';
-        // Determine if recipient's moon is up using direct altitude check
-        const lunarMoonStatus = getContactMoonStatus(recipientCity);
-        let lunarMoonUp = false;
-        if (lunarMoonStatus) {
-            lunarMoonUp = lunarMoonStatus.isUp;
-        } else {
-            lunarMoonUp = !!moonData.isVisible;
-        }
-        const recipientMoonrise = getRecipientMoonrise(recipientCity);
-        let lunarReleaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
-        console.log('[lunarReply] city:', recipientCity, 'moonStatus.isUp:', lunarMoonStatus?.isUp, 'moonUp:', lunarMoonUp, 'status:', lunarMoonUp ? 'released' : 'in_transit');
-
-        if (!lunarReleaseAt && !lunarMoonUp) {
-            lunarReleaseAt = new Date(Date.now() + 12 * 3600000).toISOString();
-        }
-        const lunarInstant = lunarMoonUp === true;
-        const lunarStatus = lunarInstant ? 'released' : 'in_transit';
-        const lunarFinalRelease = lunarInstant ? new Date().toISOString() : lunarReleaseAt;
-        console.log('[lunarReply] city:', recipientCity, 'moonUp:', lunarMoonUp, 'status:', lunarStatus);
+        // Two-hop courier: collected at the sender's moonrise, delivered at the
+        // recipient's. Compose is never gated by the sender's moon.
+        const lunarCourier = computeCourierTiming(recipientCity);
+        const lunarStatus = lunarCourier.status;
+        const lunarFinalRelease = lunarCourier.releaseAt;
+        console.log('[lunarReply] city:', recipientCity, 'awaitingPickup:', lunarCourier.awaitingPickup, 'status:', lunarStatus);
 
         const { data: lunarData, error } = await sb.from('replies').insert({
             message_id: msg.dbId,
@@ -1627,6 +1631,7 @@ async function sendThreadLunarNote() {
             lunar_note_text: threadLunarGenerated.lines,
             lunar_note_closing: threadLunarGenerated.closing,
             status: lunarStatus,
+            pickup_at: lunarCourier.pickupIso,
             release_at: lunarFinalRelease,
             recipient_city: recipientCity
         }).select('id, created_at').single();
@@ -1870,12 +1875,8 @@ function clearReplyPhoto() {
 }
 
 async function sendReply() {
-    // Bug fix #1: Gate replies behind moonrise
-    if (!moonData.isVisible) {
-        openMoonDownModal();
-        return;
-    }
-
+    // Compose anytime: the two-hop courier (computeCourierTiming) collects this
+    // reply at the sender's next moonrise. No send-time moon gate.
     const input = document.getElementById('replyInput');
     const hasPhoto = !!window['_pendingPhotoFile_reply'];
     const hasSong = !!(document.getElementById('replySongInput')?.value.trim());
@@ -1969,27 +1970,13 @@ async function sendReply() {
             // Get recipient city and compute next moonrise
             // Use raw SunCalc altitude (simpler & more reliable than isMoonVisible)
             const recipientCity = currentConversation?.location || targetMsg.location || 'Unknown';
-            // Determine if recipient's moon is up using direct altitude check
-            const replyMoonStatus = getContactMoonStatus(recipientCity);
-            let replyMoonUp = false;
-            if (replyMoonStatus) {
-                replyMoonUp = replyMoonStatus.isUp;
-            } else {
-                replyMoonUp = !!moonData.isVisible;
-            }
-            const recipientMoonrise = getRecipientMoonrise(recipientCity);
-            let replyReleaseAt = recipientMoonrise ? recipientMoonrise.date.toISOString() : null;
-            console.log('[sendReply] city:', recipientCity, 'moonStatus.isUp:', replyMoonStatus?.isUp, 'moonUp:', replyMoonUp);
-
-            // If moon is down and no moonrise data, use 12h fallback
-            if (!replyReleaseAt && !replyMoonUp) {
-                replyReleaseAt = new Date(Date.now() + 12 * 3600000).toISOString();
-                console.warn('[sendReply] No moonrise data for', recipientCity, '— using 12h fallback');
-            }
-            const replyInstantDeliver = replyMoonUp === true;
-            const replyStatus = replyInstantDeliver ? 'released' : 'in_transit';
-            const finalReleaseAt = replyInstantDeliver ? new Date().toISOString() : replyReleaseAt;
-            console.log('[sendReply] city:', recipientCity, 'moonUp:', replyMoonUp, 'instant:', replyInstantDeliver);
+            // Two-hop courier: collected at the sender's next moonrise, delivered
+            // at the recipient's. Compose is never gated by the sender's moon.
+            const replyCourier = computeCourierTiming(recipientCity);
+            const replyInstantDeliver = replyCourier.instantDeliver;
+            const replyStatus = replyCourier.status;
+            const finalReleaseAt = replyCourier.releaseAt;
+            console.log('[sendReply] city:', recipientCity, 'awaitingPickup:', replyCourier.awaitingPickup, 'instant:', replyInstantDeliver);
 
             const replySongUrl = document.getElementById('replySongInput')?.value.trim() || null;
             const insertData = {
@@ -1997,6 +1984,7 @@ async function sendReply() {
                 sender_id: currentAuthUser.id,
                 text: replyText || '🌕',
                 status: replyStatus,
+                pickup_at: replyCourier.pickupIso,
                 release_at: finalReleaseAt,
                 recipient_city: recipientCity
             };
@@ -2045,7 +2033,8 @@ async function sendReply() {
                 // Store send diagnostics
                 window._lastSendDiag = {
                     location: recipientCity,
-                    recipientMoonUp: replyMoonUp,
+                    awaitingPickup: replyCourier.awaitingPickup,
+                    pickupAt: replyCourier.pickupIso,
                     hoursUntilRise: finalReleaseAt ? ((new Date(finalReleaseAt).getTime() - Date.now()) / 3600000).toFixed(2) : 'N/A',
                     instantDeliver: replyInstantDeliver,
                     releaseAt: finalReleaseAt,

@@ -447,8 +447,8 @@ function buildConversations() {
             if (m.type !== 'sent' || m.status !== 'In Transit') return false;
             // If release_at has passed, this message should have been released
             if (m.releaseAt && new Date(m.releaseAt) <= now) return false;
-            // 24h hard cutoff: messages are guaranteed released within one full cycle
-            if (m.createdAt && new Date(m.createdAt) < new Date(now.getTime() - 24 * 3600000)) return false;
+            // 72h hard cutoff: two-hop courier (pickup cycle + recipient cycle) can exceed 24h
+            if (m.createdAt && new Date(m.createdAt) < new Date(now.getTime() - 72 * 3600000)) return false;
             return true;
         });
         // Also check for in-transit reply dots (synthetic entries from sendReply)
@@ -1021,6 +1021,7 @@ async function loadMessages(retryCount = 0) {
                     songTitle: m.song_title,
                     photoUrl: m.photo_url || null,
                     releaseAt: m.release_at,
+                    pickupAt: m.pickup_at || null,
                     reactions: [],
                     replies: []
                 });
@@ -1049,8 +1050,8 @@ async function loadMessages(retryCount = 0) {
             const releaseFuture = m.release_at && new Date(m.release_at) > new Date();
             const noReleaseButTransit = !m.release_at && m.status === 'in_transit';
             const stillInTransit = releaseFuture || noReleaseButTransit;
-            // 24h hard cutoff: any message older than 24h is guaranteed released
-            const tooOld = m.created_at && new Date(m.created_at) < new Date(Date.now() - 24 * 3600000);
+            // 72h hard cutoff (two-hop courier can exceed 24h: pickup + recipient cycle)
+            const tooOld = m.created_at && new Date(m.created_at) < new Date(Date.now() - 72 * 3600000);
             const actuallyInTransit = stillInTransit && !tooOld;
             // Once a message has been read it stays readable — the moon-gate only
             // seals genuinely new/unread incoming messages, never re-hides history
@@ -1088,6 +1089,7 @@ async function loadMessages(retryCount = 0) {
                 photoUrl: contentVisible ? (m.photo_url || null) : null,
                 contentVisible: contentVisible,
                 releaseAt: m.release_at,
+                pickupAt: m.pickup_at || null,
                 reactions: [],
                 replies: []
             });
