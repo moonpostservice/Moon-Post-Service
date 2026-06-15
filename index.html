@@ -578,7 +578,7 @@
                     <div id="signupIntroHead" style="text-align:center;display:none;">
                         <div style="font-size:30px;margin-bottom:6px;opacity:0.92;">🌙</div>
                         <h2 style="font-family:var(--serif);color:var(--text-bright);font-size:24px;font-weight:500;margin:0 0 6px;letter-spacing:-0.2px;">Who's this message from?</h2>
-                        <p style="color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.5;">Setting this up creates your free Moon Post account — so the moon can deliver your message and bring you any replies.</p>
+                        <p style="color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.5;">Tell us where to send their reply. We'll set up your free moon inbox so the moon can deliver your message and bring you any answer.</p>
                     </div>
                     <div class="onboarding-form" style="text-align:left;">
                         <div id="signupNameFields" style="display:none;">
@@ -785,58 +785,49 @@
                             <circle class="ed-hero-moon-orbit" cx="180" cy="180" r="170" fill="none" stroke="rgba(208,180,137,0.12)" stroke-width="0.6" stroke-dasharray="2 7"/>
                         </svg>
                     </div>
-                    <p class="ed-compose-eyebrow fade-in-up">Start with a message</p>
-                    <h2 class="ed-compose-title fade-in-up">The moon is listening.</h2>
+                    <h2 class="ed-compose-title fade-in-up">Write your first message.<br>The moon will carry it.</h2>
+                    <p class="ed-compose-sub fade-in-up">Send something slowly to someone you miss. It will arrive when the moon rises for them.</p>
                     <div class="hero-compose fade-in-up" id="heroCompose">
-                        <div class="hc-modes" role="tablist" aria-label="Message type">
-                            <button type="button" class="hc-mode active" data-mode="roulette" onclick="heroSetMode('roulette')">Moon Roulette</button>
-                            <button type="button" class="hc-mode" data-mode="message" onclick="heroSetMode('message')">Moon Message</button>
-                            <button type="button" class="hc-mode" data-mode="lunar" onclick="heroSetMode('lunar')">Lunar Note</button>
-                        </div>
-                        <p class="hc-hint" id="hcHint">Send a message to a stranger. Only the moon knows who.</p>
 
-                        <!-- Recipient (Moon Message + Lunar Note) -->
-                        <div class="hc-recipient" id="hcRecipient" style="display:none;">
+                        <!-- Persistent "Your message" preview — shown on steps 1–2 so the user keeps
+                             seeing what they're sending while they finish the delivery ritual. -->
+                        <div class="hc-preview" id="hcPreview" style="display:none;">
+                            <div class="hc-preview-head">
+                                <span class="hc-preview-label">Your message</span>
+                                <button type="button" class="hc-preview-edit" onclick="heroGoStep(0)">Edit</button>
+                            </div>
+                            <p class="hc-preview-text" id="hcPreviewText"></p>
+                        </div>
+
+                        <!-- Step 0 — Write -->
+                        <div class="hc-step" id="hcStep0">
+                            <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Write your message here…" oninput="heroUpdateSendState()"></textarea>
+                        </div>
+
+                        <!-- Step 1 — Who is it for? -->
+                        <div class="hc-step" id="hcStep1" style="display:none;">
+                            <p class="hc-step-title">Who is it for?</p>
                             <input type="text" id="hcRecipName" class="hc-input" placeholder="Their name" autocomplete="off">
-                            <input type="email" id="hcRecipEmail" class="hc-input" placeholder="Their email" autocomplete="off">
                             <div class="hc-city-wrap">
                                 <input type="text" id="hcRecipCity" class="hc-input" placeholder="Their city" autocomplete="off" oninput="heroFilterCities(this.value)">
                                 <div id="hcCityDropdown" class="city-dropdown"></div>
                             </div>
+                            <p class="hc-step-note">So it arrives when the moon rises where they are.</p>
                         </div>
 
-                        <!-- Free text (Moon Roulette + Moon Message) -->
-                        <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Whisper your message to the stars…" oninput="heroUpdateSendState()"></textarea>
-
-                        <!-- Lunar Note wizard (Lunar Note only) -->
-                        <div class="hc-lunar" id="hcLunar" style="display:none;">
-                            <div id="hcLunarSteps">
-                                <div class="hc-lunar-words">
-                                    <p class="hc-lunar-cue">Give the moon three words — it spins them into a little verse for you.</p>
-                                    <input type="text" id="hcLunar1" class="hc-input" placeholder="an emotion — e.g. restless" autocomplete="off">
-                                    <input type="text" id="hcLunar2" class="hc-input" placeholder="another emotion — e.g. calm" autocomplete="off">
-                                    <input type="text" id="hcLunar3" class="hc-input" placeholder="what you pretend not to care about" autocomplete="off">
-                                </div>
-                                <button type="button" class="hc-reveal" onclick="heroRevealLunar()">Let the moon write it 🌙</button>
-                            </div>
-                            <div id="hcLunarResult" style="display:none;">
-                                <div class="hc-lunar-text" id="hcLunarText"></div>
-                                <div class="hc-lunar-closing" id="hcLunarClosing"></div>
-                                <div class="hc-lunar-actions">
-                                    <button type="button" class="hc-ghost sm" onclick="heroRegenLunar()">Try another</button>
-                                    <button type="button" class="hc-ghost sm" onclick="heroEditLunar()">Edit words</button>
-                                </div>
-                                <!-- Step 2: who it's for. The recipient block (#hcRecipient) is moved here
-                                     by heroRevealLunar() and moved back out when leaving the result step. -->
-                                <div class="hc-lunar-recipient">
-                                    <p class="hc-lunar-recipient-label">Now — who should the moon carry it to?</p>
-                                    <div id="hcRecipientSlot"></div>
-                                </div>
-                            </div>
+                        <!-- Step 2 — Where should the moon deliver it? -->
+                        <div class="hc-step" id="hcStep2" style="display:none;">
+                            <p class="hc-step-title">Where should the moon deliver it?</p>
+                            <input type="email" id="hcRecipEmail" class="hc-input" placeholder="Their email" autocomplete="off">
+                            <input type="email" id="hcSenderEmail" class="hc-input" placeholder="Your email" autocomplete="off">
+                            <p class="hc-step-note">We need your email so you can receive their reply.</p>
                         </div>
 
                         <div class="hc-error" id="hcError" style="display:none;"></div>
-                        <button type="button" class="hc-send" id="hcSendBtn" onclick="heroSend()" disabled>Send to the moon 🌙</button>
+                        <div class="hc-nav">
+                            <button type="button" class="hc-back" id="hcBackBtn" style="display:none;" onclick="heroBack()">Back</button>
+                            <button type="button" class="hc-send" id="hcSendBtn" onclick="heroNext()">Continue</button>
+                        </div>
                         <p class="hc-login-line">Already have an account? <button type="button" class="hc-login-link" onclick="showAuthModal('login')">Log in</button></p>
                     </div>
                 </section>

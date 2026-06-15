@@ -1462,6 +1462,7 @@
 }
 .ed-compose-section > .ed-compose-eyebrow,
 .ed-compose-section > .ed-compose-title,
+.ed-compose-section > .ed-compose-sub,
 .ed-compose-section > .hero-compose {
     position: relative;
     z-index: 1;
@@ -1491,8 +1492,16 @@
     font-weight: 500;
     color: var(--text-bright);
     letter-spacing: -0.3px;
-    margin-bottom: var(--space-6);
+    line-height: 1.18;
+    margin-bottom: var(--space-3);
     text-shadow: 0 0 36px rgba(212, 181, 138, 0.18);
+}
+.ed-compose-sub {
+    max-width: 30rem;
+    margin: 0 auto var(--space-6);
+    color: var(--muted);
+    font-size: var(--fs-body);
+    line-height: 1.55;
 }
 
 /* Elevated solid card — no longer a translucent outline that recedes */
@@ -1546,6 +1555,93 @@
     margin-bottom: var(--space-3);
 }
 .hc-city-wrap { position: relative; }
+
+/* ---- Stepped delivery ritual (write → who → where) ---- */
+.hc-step { display: block; }
+.hc-step .hc-input { margin-bottom: var(--space-2); }
+.hc-step .hc-input:last-of-type { margin-bottom: 0; }
+.hc-step-title {
+    margin: 0 0 var(--space-3);
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 500;
+    color: var(--text-bright);
+    letter-spacing: -0.2px;
+}
+.hc-step-note {
+    margin: var(--space-2) 0 0;
+    color: var(--muter);
+    font-size: 12.5px;
+    font-style: italic;
+    line-height: 1.45;
+}
+
+/* Persistent "Your message" preview that rides along through steps 1–2. */
+.hc-preview {
+    margin-bottom: var(--space-4);
+    padding: var(--space-3);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    background: rgba(3, 10, 24, 0.4);
+}
+.hc-preview-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-1);
+}
+.hc-preview-label {
+    font-size: var(--fs-caption);
+    font-weight: 700;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--accent);
+}
+.hc-preview-edit {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.hc-preview-edit:hover { color: var(--accent-bright); text-decoration: underline; }
+.hc-preview-text {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 15px;
+    font-style: italic;
+    line-height: 1.5;
+    color: var(--text-bright);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Back + primary on one row. The primary never reads as disabled — it's always
+   clickable; empty/invalid fields are caught on click with an inline hint. */
+.hc-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+}
+.hc-nav .hc-send { margin-top: 0; flex: 1; }
+.hc-back {
+    flex: 0 0 auto;
+    padding: 14px 20px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.hc-back:hover { border-color: var(--accent); color: var(--accent-bright); }
 .hc-input,
 .hc-textarea {
     width: 100%;

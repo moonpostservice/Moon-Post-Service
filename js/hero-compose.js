@@ -1,95 +1,97 @@
 // Landing-hero "write first, sign up to send" hook.
 //
 // Lets a logged-out visitor compose a real message in the hero before signing up.
-// On "Send" we stash the draft, open the signup flow, and once onboarding completes
-// initAuth() calls flushPendingSend() to actually deliver it into the new user's inbox.
+// It's a single calm delivery ritual (one Moon Message), staged across three steps:
+//   0) Write the message
+//   1) Who is it for?  (name + city — the city is the clock: it sets the moonrise)
+//   2) Where should the moon deliver it?  (their email + your email for replies)
+// On the final step we stash the draft, open the email/verify flow prefilled with the
+// sender's email, and once onboarding completes initAuth() calls flushPendingSend()
+// to actually deliver it into the new user's inbox.
 //
 // This file loads last, so it can rely on app globals: cities (realtime.js),
-// generateLunarNote (effects.js), completeSend/pendingMessage (effects.js),
-// send-roulette-message via roulette.js's pattern, sb/currentAuthUser (auth.js),
+// completeSend/pendingMessage (effects.js), sb/currentAuthUser/showAuthModal (auth.js),
 // showNotificationToast, renderMessages, loadRouletteMessages.
 
 const HERO_DRAFT_KEY = 'moonpop_pending_send';
 const HERO_DRAFT_TTL_MS = 24 * 3600000;
 
-const HERO_MODE_HINTS = {
-    roulette: 'Send a message to a stranger. Only the moon knows who.',
-    message: 'Write to someone you know. It unlocks when the moon rises where they are.',
-    lunar: 'A short lunar note for someone you have in mind — three words become a verse.',
-};
-
 // In-memory hero state. recipientCity holds the *validated* city name (from the list).
-let _heroMode = 'roulette';
+let _heroStep = 0;          // 0 = write, 1 = recipient, 2 = delivery/send
 let _heroRecipientCity = '';
-let _heroLunar = null; // { inputs:[a,b,c], text, closing, templateIdx }
-let _heroLunarRevealed = false; // lunar step 2 (verse shown, recipient asked) vs step 1
 
-// The recipient block (#hcRecipient) lives at the top for Moon Message, but in
-// Lunar Note it slides down into the verse result as "step 2". These helpers move
-// the single shared node between its home slot and the lunar result slot.
-function heroRecipientHome() {
-    const rec = document.getElementById('hcRecipient');
-    const text = document.getElementById('hcText');
-    if (rec && text && rec.parentElement && rec.nextElementSibling !== text) {
-        text.parentElement.insertBefore(rec, text);
-    }
-}
-function heroRecipientToResult() {
-    const rec = document.getElementById('hcRecipient');
-    const slot = document.getElementById('hcRecipientSlot');
-    if (rec && slot && rec.parentElement !== slot) slot.appendChild(rec);
-}
+const HERO_LAST_STEP = 2;
 
-function heroSetMode(mode) {
-    if (!HERO_MODE_HINTS[mode]) return;
-    _heroMode = mode;
-    document.querySelectorAll('.hc-mode').forEach(b => {
-        b.classList.toggle('active', b.dataset.mode === mode);
-    });
-    const hint = document.getElementById('hcHint');
-    if (hint) hint.textContent = HERO_MODE_HINTS[mode];
-
-    const recipient = document.getElementById('hcRecipient');
-    const text = document.getElementById('hcText');
-    const lunar = document.getElementById('hcLunar');
-
-    // Always bring the recipient block home first, then decide where it belongs.
-    heroRecipientHome();
-
-    // Lunar always (re)starts at step 1: words only, no recipient, no verse.
-    if (mode === 'lunar') {
-        _heroLunarRevealed = false;
-        const steps = document.getElementById('hcLunarSteps');
-        const result = document.getElementById('hcLunarResult');
-        if (steps) steps.style.display = 'block';
-        if (result) result.style.display = 'none';
-    }
-
-    // Roulette: text only. Message: recipient + text. Lunar: wizard (recipient comes in step 2).
-    if (recipient) recipient.style.display = (mode === 'message') ? 'flex' : 'none';
-    if (text) text.style.display = (mode === 'lunar') ? 'none' : 'block';
-    if (lunar) lunar.style.display = (mode === 'lunar') ? 'flex' : 'none';
-
+// ---- Step navigation ----------------------------------------------------
+// Steps are plain show/hide panels. The single primary button advances ("Continue")
+// until the last step, where it becomes the one and only "Send with the moon".
+function heroGoStep(n) {
+    _heroStep = Math.max(0, Math.min(HERO_LAST_STEP, n));
     heroClearError();
-    heroUpdateSendState();
+
+    for (let i = 0; i <= HERO_LAST_STEP; i++) {
+        const panel = document.getElementById('hcStep' + i);
+        if (panel) panel.style.display = (i === _heroStep) ? 'block' : 'none';
+    }
+
+    // The "Your message" preview rides along on every step after the first.
+    const preview = document.getElementById('hcPreview');
+    if (preview) preview.style.display = _heroStep >= 1 ? 'block' : 'none';
+    if (_heroStep >= 1) heroRenderPreview();
+
+    const back = document.getElementById('hcBackBtn');
+    if (back) back.style.display = _heroStep > 0 ? '' : 'none';
+
+    const btn = document.getElementById('hcSendBtn');
+    if (btn) btn.textContent = _heroStep === HERO_LAST_STEP ? 'Send with the moon 🌙' : 'Continue';
+
+    // Move focus to the first field of the new step (skip on the very first paint).
+    const firstField = {
+        0: 'hcText', 1: 'hcRecipName', 2: 'hcRecipEmail',
+    }[_heroStep];
+    setTimeout(() => document.getElementById(firstField)?.focus(), 60);
 }
 
-// Enable "Send to the moon" only once there's something to send:
-// at least one character in the compose box, or a revealed lunar note.
-function heroUpdateSendState() {
-    const btn = document.getElementById('hcSendBtn');
-    if (!btn) return;
-    let ready;
-    if (_heroMode === 'lunar') {
-        // Send only exists in step 2 (after the verse is revealed and we're asking
-        // who it's for). Step 1's single CTA is "Let the moon write it".
-        btn.style.display = _heroLunarRevealed ? '' : 'none';
-        ready = !!_heroLunar;
-    } else {
-        btn.style.display = '';
-        ready = (document.getElementById('hcText')?.value || '').trim().length >= 1;
+function heroBack() {
+    if (_heroStep > 0) heroGoStep(_heroStep - 1);
+}
+
+// Primary button: validate the current step, then advance — or send on the last step.
+function heroNext() {
+    heroClearError();
+    if (_heroStep === 0) {
+        const text = (document.getElementById('hcText')?.value || '').trim();
+        if (!text) {
+            document.getElementById('hcText')?.focus();
+            return heroError('Write a few words first.');
+        }
+        return heroGoStep(1);
     }
-    btn.disabled = !ready;
+    if (_heroStep === 1) {
+        const name = (document.getElementById('hcRecipName')?.value || '').trim();
+        const cityTyped = (document.getElementById('hcRecipCity')?.value || '').trim();
+        if (!name) return heroError('Who is this for? Add their name.');
+        const city = _heroRecipientCity || cityTyped;
+        if (!city) return heroError('Pick their city so it arrives at their moonrise.');
+        return heroGoStep(2);
+    }
+    // Last step → actually send.
+    heroSend();
+}
+
+// Keep the preview text in sync (called live as the message is typed, and on each
+// step change). Truncates to a calm one-glance reminder.
+function heroRenderPreview() {
+    const el = document.getElementById('hcPreviewText');
+    if (!el) return;
+    const text = (document.getElementById('hcText')?.value || '').trim();
+    el.textContent = text.length > 140 ? text.slice(0, 140).trimEnd() + '…' : text;
+}
+
+// Kept for the textarea's oninput + the DOM-ready sync below. The primary button is
+// always active (it never reads as disabled); we just keep the live preview fresh.
+function heroUpdateSendState() {
+    if (_heroStep >= 1) heroRenderPreview();
 }
 
 // ---- City autocomplete (reuses the global `cities` dataset) ----
@@ -126,60 +128,6 @@ function heroSelectCity(name) {
     if (dropdown) { dropdown.style.display = 'none'; dropdown.innerHTML = ''; }
 }
 
-// ---- Lunar Note wizard (reuses generateLunarNote from effects.js) ----
-function heroRevealLunar() {
-    const v1 = (document.getElementById('hcLunar1')?.value || '').trim();
-    const v2 = (document.getElementById('hcLunar2')?.value || '').trim();
-    const v3 = (document.getElementById('hcLunar3')?.value || '').trim();
-    if (!v1 || !v2 || !v3) {
-        heroError('Fill in all three words to reveal your note.');
-        return;
-    }
-    heroClearError();
-    // Some templates read these moon globals via closure; set them defensively.
-    try { if (typeof getMoonPhase === 'function') _lunarMoonPhase = getMoonPhase().phaseName.toLowerCase(); } catch (e) {}
-    try { if (typeof getMoonZodiac === 'function') _lunarZodiac = getMoonZodiac().sign; } catch (e) {}
-
-    if (typeof generateLunarNote !== 'function') {
-        heroError('Something went wrong generating your note. Please try again.');
-        return;
-    }
-    const result = generateLunarNote(v1, v2, v3); // random template
-    _heroLunar = { inputs: [v1, v2, v3], text: result.lines, closing: result.closing, templateIdx: result.templateIdx };
-    document.getElementById('hcLunarText').textContent = result.lines;
-    document.getElementById('hcLunarClosing').textContent = result.closing;
-    document.getElementById('hcLunarSteps').style.display = 'none';
-    document.getElementById('hcLunarResult').style.display = 'block';
-    // Step 2: the verse exists — now bring in the recipient block and the Send button.
-    _heroLunarRevealed = true;
-    heroRecipientToResult();
-    const recipient = document.getElementById('hcRecipient');
-    if (recipient) recipient.style.display = 'flex';
-    heroUpdateSendState();
-}
-
-function heroRegenLunar() {
-    if (!_heroLunar) return heroRevealLunar();
-    const [v1, v2, v3] = _heroLunar.inputs;
-    let idx = _heroLunar.templateIdx;
-    // Pick a different template than the current one.
-    const result = generateLunarNote(v1, v2, v3);
-    _heroLunar = { inputs: [v1, v2, v3], text: result.lines, closing: result.closing, templateIdx: result.templateIdx };
-    document.getElementById('hcLunarText').textContent = result.lines;
-    document.getElementById('hcLunarClosing').textContent = result.closing;
-}
-
-function heroEditLunar() {
-    // Back to step 1: hide the verse, pull the recipient block back out, hide Send.
-    _heroLunarRevealed = false;
-    document.getElementById('hcLunarResult').style.display = 'none';
-    document.getElementById('hcLunarSteps').style.display = 'block';
-    const recipient = document.getElementById('hcRecipient');
-    if (recipient) recipient.style.display = 'none';
-    heroRecipientHome();
-    heroUpdateSendState();
-}
-
 // ---- Error helpers ----
 function heroError(msg) {
     const el = document.getElementById('hcError');
@@ -190,41 +138,28 @@ function heroClearError() {
     if (el) { el.style.display = 'none'; el.textContent = ''; }
 }
 
-// ---- Send: validate, stash draft, open signup ----
+// ---- Send: validate everything, stash draft, open the email/verify flow ----
 function heroSend() {
     heroClearError();
     const text = (document.getElementById('hcText')?.value || '').trim();
+    const name = (document.getElementById('hcRecipName')?.value || '').trim();
+    const cityTyped = (document.getElementById('hcRecipCity')?.value || '').trim();
+    const recipEmail = (document.getElementById('hcRecipEmail')?.value || '').trim();
+    const senderEmail = (document.getElementById('hcSenderEmail')?.value || '').trim();
 
-    let recipient = null;
-    if (_heroMode === 'message' || _heroMode === 'lunar') {
-        const name = (document.getElementById('hcRecipName')?.value || '').trim();
-        const email = (document.getElementById('hcRecipEmail')?.value || '').trim();
-        const cityTyped = (document.getElementById('hcRecipCity')?.value || '').trim();
-        if (!name) return heroError('Who is this for? Add their name.');
-        if (!email || !email.includes('@')) return heroError('Add a valid email so the moon can deliver it.');
-        const city = _heroRecipientCity || cityTyped;
-        if (!city) return heroError('Pick their city so the message arrives at their moonrise.');
-        recipient = { name, email, city };
-    }
-
-    let lunar = null;
-    if (_heroMode === 'lunar') {
-        if (!_heroLunar) return heroError('Reveal your lunar note before sending.');
-        lunar = _heroLunar;
-    } else {
-        if (!text) {
-            const ta = document.getElementById('hcText');
-            if (ta) ta.focus();
-            return heroError('Write a few words first.');
-        }
-    }
+    // Defensive re-validation (the step gates should already have caught these).
+    if (!text) { heroGoStep(0); return heroError('Write a few words first.'); }
+    const city = _heroRecipientCity || cityTyped;
+    if (!name || !city) { heroGoStep(1); return heroError('Add their name and city first.'); }
+    if (!recipEmail || !recipEmail.includes('@')) return heroError('Add their email so the moon can deliver it.');
+    if (!senderEmail || !senderEmail.includes('@')) return heroError('Add your email so you can receive their reply.');
 
     const draft = {
         v: 1,
-        mode: _heroMode,
-        text: _heroMode === 'lunar' ? '' : text,
-        recipient,
-        lunar,
+        mode: 'message',
+        text,
+        recipient: { name, email: recipEmail, city },
+        lunar: null,
         createdAt: new Date().toISOString(),
     };
     try {
@@ -232,15 +167,21 @@ function heroSend() {
     } catch (e) {
         console.error('[hero] could not persist draft', e);
     }
-    // Open the genuine signup flow (showAuthModal sets authMode='signup').
+
+    // Open the email/verify flow. It's framed as "your email so replies reach you",
+    // not "sign up" — but mechanically it still creates the account that delivers the
+    // message. Prefill the sender's email so they don't retype it (showAuthModal
+    // clears the field on open, so set the value *after* the call).
     showAuthModal('signup');
+    const emailInput = document.getElementById('authEmail');
+    if (emailInput) emailInput.value = senderEmail;
 }
 
-// Sync the send button once the DOM is ready (covers autofill / restored text).
+// Initialise the hero UI once the DOM is ready (sets button label, hides Back/preview).
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', heroUpdateSendState);
+    document.addEventListener('DOMContentLoaded', () => heroGoStep(0));
 } else {
-    heroUpdateSendState();
+    heroGoStep(0);
 }
 
 // ---- Flush: after onboarding/login completes, send the stashed message ----
@@ -261,6 +202,8 @@ async function flushPendingSend() {
     localStorage.removeItem(HERO_DRAFT_KEY);
 
     try {
+        // Back-compat: a roulette draft could still be sitting in an old visitor's
+        // localStorage from a previous build. Keep flushing it so nothing is lost.
         if (draft.mode === 'roulette') {
             const { data, error } = await sb.functions.invoke('send-roulette-message', {
                 body: { message_text: draft.text }
@@ -273,7 +216,8 @@ async function flushPendingSend() {
             return;
         }
 
-        // Moon Message / Lunar Note → drive the existing send path.
+        // Moon Message → drive the existing send path. (Old builds also produced a
+        // 'lunar' mode; fold any lunar verse into the message body for safety.)
         const r = draft.recipient || {};
         let fullMessage = draft.text || '';
         let lunarText = '', lunarClosing = '';
@@ -314,7 +258,7 @@ async function flushPendingSend() {
         await completeSend(true);
         if (typeof renderMessages === 'function') renderMessages();
         if (typeof showNotificationToast === 'function') showNotificationToast('🌕 Your moon message is on its way');
-        console.log('[hero] message/lunar draft sent');
+        console.log('[hero] message draft sent');
     } catch (err) {
         console.error('[hero] flushPendingSend failed:', err);
         if (draft.mode === 'roulette') {
