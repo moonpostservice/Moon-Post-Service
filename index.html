@@ -542,7 +542,24 @@
     </div>
 
     <!-- First-time Onboarding Overlay -->
-    <div class="onboarding-overlay hidden" id="onboardingOverlay">
+    <div class="onboarding-overlay" id="onboardingOverlay">
+        <script>
+        // Fail-closed gating: the landing overlay ships VISIBLE so a logged-out visitor
+        // can never fall through to the app shell — even if JS errors before initAuth()
+        // runs. To avoid flashing the landing at an already-authenticated user, we
+        // synchronously peek at the persisted Supabase session token here and hide the
+        // overlay optimistically. initAuth() remains the source of truth: it re-shows the
+        // landing (showOnboarding) if the session turns out to be missing/expired.
+        try {
+            for (var _i = 0; _i < localStorage.length; _i++) {
+                var _k = localStorage.key(_i);
+                if (_k && _k.indexOf('sb-') === 0 && _k.indexOf('-auth-token') !== -1 && localStorage.getItem(_k)) {
+                    document.getElementById('onboardingOverlay').classList.add('hidden');
+                    break;
+                }
+            }
+        } catch (e) {}
+        </script>
         <!-- Twinkling stars for landing page -->
         <div class="onboarding-stars" id="onboardingStars"></div>
         <!-- Sticky header -->
@@ -2592,7 +2609,7 @@
     <script src="/js/captcha.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/router.js"></script>
-    <script src="/js/realtime.js?v=20260615"></script>
+    <script src="/js/realtime.js?v=20260615b"></script>
     <script src="/js/chat.js?v=20260615"></script>
     <script src="/js/reactions.js"></script>
     <script src="/js/media.js"></script>

@@ -1043,8 +1043,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         autoDetectFromTimezone();
     }
 
-    // Demo mode: ?demo=1 bypasses auth and shows sample inbox data
-    if (new URLSearchParams(window.location.search).get('demo') === '1') {
+    // Demo mode: ?demo=1 shows sample inbox data WITHOUT auth — a dev/screenshot tool.
+    // Gated to localhost so it can never be used to peek inside the app shell in
+    // production (anyone could otherwise append ?demo=1 to the live URL).
+    const _demoAllowed = ['localhost', '127.0.0.1', '0.0.0.0', ''].includes(window.location.hostname);
+    if (_demoAllowed && new URLSearchParams(window.location.search).get('demo') === '1') {
         initDemoMode();
     } else if (!_appDataLoaded && !_isInitializing) {
         // Initialize auth (loads data and renders everything)
