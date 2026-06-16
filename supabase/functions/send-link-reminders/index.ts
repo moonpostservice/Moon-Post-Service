@@ -98,7 +98,7 @@ Deno.serve(async (req: Request) => {
           continue;
         }
         const senderName = names[r.messages?.sender_id] || 'Someone';
-        const link = `${APP_URL}/?g=${encodeURIComponent(token)}&o=${r.id}`;
+        const link = `${APP_URL}/m/${encodeURIComponent(token)}?o=${r.id}`;
         const ok = await sendEmail(r.reminder_email, `${senderName}'s moon message is ready 🌙`, reminderHtml(senderName, link));
         // Stamp regardless so a bad address can't wedge the cron into retrying.
         await supabase.from('message_link_opens').update({ reminder_sent_at: now }).eq('id', r.id);

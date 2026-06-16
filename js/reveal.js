@@ -6,8 +6,10 @@ let revealCountdownInterval = null;
 
 async function checkMessageLink() {
     const params = new URLSearchParams(window.location.search);
-    // Send-by-link share links (?g=<token>) take priority over ?m=<id>.
-    const shareToken = params.get('g');
+    // Send-by-link share links take priority over ?m=<id>. Canonical form is the
+    // path /m/<token> (Vercel injects OG tags there); ?g=<token> stays supported.
+    const pathMatch = window.location.pathname.match(/^\/m\/([A-Za-z0-9_-]{16,64})$/);
+    const shareToken = (pathMatch && pathMatch[1]) || params.get('g');
     if (shareToken) return await checkShareLink(shareToken);
     const messageId = params.get('m');
     if (!messageId) return false;
@@ -138,13 +140,29 @@ function _fmtHMS(ms) {
     return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
 }
 
-// This opener's moonrise = their first moonrise on/after the sender's pickup.
-function _claimReleaseFor(city) {
+// Moonrise (first rise on/after `from`) for explicit coordinates — works for an
+// IP-detected city that isn't in the curated `cities` list, unlike the
+// name-keyed getRecipientDeliveryTime. Mirrors that function's logic using the
+// low-level SunCalc helpers from moon-calc.js.
+function deliveryTimeForCoords(lat, lon, tz, from) {
     try {
-        const from = (_shareState && _shareState.pickupAt) ? new Date(_shareState.pickupAt) : new Date();
-        if (typeof getRecipientDeliveryTime === 'function') return getRecipientDeliveryTime(city.name, from) || null;
+        const f = from instanceof Date ? from : new Date(from);
+        if (typeof isMoonVisible === 'function' && isMoonVisible(f, lat, lon)) return new Date(f);
+        const dayStart0 = (typeof getCityDayStart === 'function') ? getCityDayStart(f, tz || 'UTC') : f;
+        for (let d = 0; d <= 3; d++) {
+            const ds = new Date(dayStart0.getTime() + d * 86400000);
+            const r = (typeof findMoonRiseSet === 'function') ? findMoonRiseSet(ds, lat, lon) : null;
+            if (r && r.rise && r.rise >= f) return r.rise;
+        }
     } catch (e) {}
     return null;
+}
+
+// This opener's moonrise = their first moonrise on/after the sender's pickup.
+function _claimReleaseFor(city) {
+    if (!city || city.lat == null || city.lon == null) return null;
+    const from = (_shareState && _shareState.pickupAt) ? new Date(_shareState.pickupAt) : new Date();
+    return deliveryTimeForCoords(city.lat, city.lon, city.tz, from);
 }
 
 function _revealShow(idOn) {
@@ -216,23 +234,43 @@ async function checkShareLink(token) {
     }
 
     // Fresh open → invite them to lock their sky.
-    showShareClaim(msg);
+    await showShareClaim(msg);
     return true;
 }
 
-function showShareClaim(msg) {
+async function showShareClaim(msg) {
     _revealShow('revealClaim');
     const who = document.getElementById('shareClaimSender');
     if (who) who.textContent = _shareState.senderName;
     const teaserEl = document.getElementById('shareClaimTeaser');
     if (teaserEl) teaserEl.textContent = msg.teaser ? `“${msg.teaser}”` : '';
 
-    // Auto-detect the opener's city from their timezone (confirmable below).
-    _claimCity = detectClaimCity();
+    // Auto-detect the opener's location (confirmable below). Render the card
+    // immediately with the timezone guess, then upgrade to the precise IP city.
+    _claimCity = detectClaimCityByTz();
     renderClaimCity();
+    const precise = await detectClaimCityByIp();
+    if (precise) { _claimCity = precise; renderClaimCity(); }
 }
 
-function detectClaimCity() {
+// Precise: Vercel edge geolocation (actual city). Returns {name,lat,lon,tz} or
+// null. Falls through silently in local dev / if the endpoint is absent.
+async function detectClaimCityByIp() {
+    try {
+        const r = await fetch('/api/geo', { cache: 'no-store' });
+        if (!r.ok) return null;
+        const g = await r.json();
+        if (g && typeof g.lat === 'number' && typeof g.lon === 'number') {
+            let tz = g.tz;
+            if (!tz) { try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) {} }
+            return { name: g.city || 'your area', lat: g.lat, lon: g.lon, tz: tz || 'UTC' };
+        }
+    } catch (e) {}
+    return null;
+}
+
+// Fallback: timezone → nearest curated city.
+function detectClaimCityByTz() {
     let tz = '';
     try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
     if (tz && typeof cities !== 'undefined') {
@@ -312,7 +350,7 @@ async function doRevealClaim() {
     let releaseAt = new Date().toISOString();
     try {
         const from = _shareState.pickupAt ? new Date(_shareState.pickupAt) : new Date();
-        const d = (typeof getRecipientDeliveryTime === 'function') ? getRecipientDeliveryTime(city.name, from) : null;
+        const d = deliveryTimeForCoords(city.lat, city.lon, city.tz, from);
         if (d) releaseAt = d.toISOString();
     } catch (e) { /* fall back to now */ }
 

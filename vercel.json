@@ -19,6 +19,7 @@
   ],
   "rewrites": [
     { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/m/:token", "destination": "/api/share-preview?token=:token" },
     { "source": "/chat/:id", "destination": "/index.html" },
     { "source": "/roulette", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }

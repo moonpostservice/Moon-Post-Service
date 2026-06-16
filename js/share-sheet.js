@@ -14,10 +14,12 @@
 // currentAuthUser, moonData, getSenderPickupTime/getMoonPhase (moon-calc.js),
 // showNotificationToast.
 
-// Build the canonical public link for a share token. Uses the current origin so
-// it works on prod (www) and any preview deploy without hardcoding the domain.
+// Build the canonical public link for a share token. Path form (/m/<token>) so
+// Vercel can inject per-link Open Graph tags for a beautiful unfurl; reveal.js
+// also still accepts the legacy ?g=<token> form. Uses the current origin so it
+// works on prod (www) and any preview deploy without hardcoding the domain.
 function shareLinkFor(token) {
-    return `${window.location.origin}/?g=${encodeURIComponent(token)}`;
+    return `${window.location.origin}/m/${encodeURIComponent(token)}`;
 }
 
 // Create a recipient-less, shareable moon message and return { link, message }.
