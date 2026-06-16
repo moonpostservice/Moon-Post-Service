@@ -73,6 +73,7 @@ async function createShareableMessage(draft) {
 // ---- Share sheet UI ----------------------------------------------------
 
 let _shareSheetLink = '';
+let _shareSheetSender = '';
 
 // The line the SENDER hands to their friend (first person — they're the author).
 // The recipient-facing "Jacky wrote you a moon message…" framing lives on the
@@ -83,6 +84,13 @@ function shareMessageText() {
 
 function openShareSheet({ link, senderName, previewText }) {
     _shareSheetLink = link || '';
+    _shareSheetSender = senderName || '';
+
+    // Reset the email sub-form each open.
+    const ef = document.getElementById('shareSheetEmailForm');
+    if (ef) ef.style.display = 'none';
+    const em = document.getElementById('shareSheetEmailMsg');
+    if (em) em.style.display = 'none';
 
     const linkField = document.getElementById('shareSheetLink');
     if (linkField) linkField.value = _shareSheetLink;
@@ -129,10 +137,42 @@ function shareSheetWhatsApp() {
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
 }
 
+// Email opens an inline form → we send a branded moon email (Resend) carrying
+// the share link, rather than dumping the user into a raw mailto draft.
 function shareSheetEmail() {
-    const subject = 'I wrote you a moon message 🌙';
-    const bodyText = `${shareMessageText()}\n\n${_shareSheetLink}`;
-    window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(bodyText);
+    const form = document.getElementById('shareSheetEmailForm');
+    if (form) form.style.display = form.style.display === 'block' ? 'none' : 'block';
+    if (form && form.style.display === 'block') {
+        setTimeout(() => document.getElementById('shareSheetEmailInput')?.focus(), 50);
+    }
+}
+
+async function shareSheetEmailSend() {
+    const inp = document.getElementById('shareSheetEmailInput');
+    const msg = document.getElementById('shareSheetEmailMsg');
+    const btn = document.getElementById('shareSheetEmailSendBtn');
+    const email = (inp?.value || '').trim();
+    const show = (text, ok) => { if (msg) { msg.textContent = text; msg.style.color = ok ? 'var(--accent)' : '#E89B73'; msg.style.display = 'block'; } };
+
+    if (!email || !email.includes('@')) return show('Enter a valid email.', false);
+    if (typeof sb === 'undefined' || typeof currentAuthUser === 'undefined' || !currentAuthUser) {
+        return show('Please finish signing in first.', false);
+    }
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+    try {
+        const { data, error } = await sb.functions.invoke('send-email', {
+            body: { type: 'share_link', recipientEmail: email, senderName: _shareSheetSender || 'Someone', revealLink: _shareSheetLink }
+        });
+        if (error || (data && data.error)) throw (error || new Error(data.error));
+        show('Sent ✓ — the moon will carry it to them.', true);
+        if (inp) inp.value = '';
+        if (btn) btn.style.display = 'none';
+    } catch (e) {
+        console.error('share email failed:', e);
+        show('Could not send — try copying the link instead.', false);
+        if (btn) { btn.disabled = false; btn.textContent = 'Send moon email 🌙'; }
+    }
 }
 
 async function shareSheetCopy() {
@@ -155,5 +195,56 @@ function shareSheetDone() {
     closeShareSheet();
     if (typeof showNotificationToast === 'function') {
         showNotificationToast('🌕 Your moon message is ready to share');
+    }
+}
+
+// ---- In-app composer "Create a shareable link" -------------------------
+// Logged-in equivalent of the landing's share-first flow: mint a shareable
+// message from the composer's text and open the share sheet. Keeps the
+// existing "send to a specific person" path intact alongside it.
+async function composeShareLink() {
+    if (window.composeIsRoulette) return; // roulette has its own send
+
+    const textMessage = (document.getElementById('messageText')?.value || '').trim();
+
+    // Share links carry a written message for now. A Lunar Note or photo routes
+    // through the recipient flow instead (kept simple, avoids half-features).
+    if (typeof lunarNoteActive !== 'undefined' && lunarNoteActive) {
+        const v1 = (document.getElementById('lunarInput1')?.value || '').trim();
+        const v2 = (document.getElementById('lunarInput2')?.value || '').trim();
+        const v3 = (document.getElementById('lunarInput3')?.value || '').trim();
+        if (v1 || v2 || v3) {
+            alert('Share links carry a written message for now — remove the Lunar Note, or use “send to a specific person”.');
+            return;
+        }
+    }
+    if (window['_pendingPhotoFile_compose']) {
+        alert('Photos can’t go on a share link yet — use “send to a specific person” to include the photo.');
+        return;
+    }
+    if (!textMessage) { alert('Write a message first.'); return; }
+
+    const btn = document.getElementById('composeShareBtn');
+    if (btn) btn.disabled = true;
+
+    // Best-effort sender name for the share card + email "from" (recipients
+    // always get the real name from the DB regardless).
+    let senderName = 'Someone';
+    try {
+        if (typeof currentAuthUser !== 'undefined' && currentAuthUser) {
+            const { data } = await sb.from('profiles').select('username').eq('id', currentAuthUser.id).maybeSingle();
+            if (data && data.username) senderName = data.username;
+        }
+    } catch (e) {}
+
+    try {
+        const { link } = await createShareableMessage({ text: textMessage, lunar: null });
+        if (typeof closeModal === 'function') closeModal();
+        openShareSheet({ link, senderName, previewText: textMessage });
+    } catch (e) {
+        console.error('composeShareLink failed:', e);
+        alert('Could not create a link. Please try again.');
+    } finally {
+        if (btn) btn.disabled = false;
     }
 }

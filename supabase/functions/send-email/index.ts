@@ -10,7 +10,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const VALID_EMAIL_TYPES = ["message", "invite", "roulette_received", "roulette_returned"] as const;
+const VALID_EMAIL_TYPES = ["message", "invite", "roulette_received", "roulette_returned", "share_link"] as const;
 type EmailType = (typeof VALID_EMAIL_TYPES)[number];
 
 function isValidEmailType(type: unknown): type is EmailType {
@@ -219,6 +219,21 @@ Deno.serve(async (req: Request) => {
         para(`It will be revealed when the moon rises over <strong>${recipientLocation}</strong> (around ${moonriseTime}).`) +
         (messagePreview ? quote(messagePreview, true) : "");
       htmlBody = emailShell(`${senderName} sent you a moon message`, inner, link ? "View your message" : "", link);
+
+    } else if (emailType === "share_link") {
+      // "Send by link" via email: a branded card carrying the share link.
+      // The recipient's moonrise is locked when THEY open it, so no city/time here.
+      const senderName = esc(body.senderName, "Someone");
+      const link = safeLink(body.revealLink, appUrl);
+      if (!link) {
+        return new Response(
+          JSON.stringify({ error: "Missing or invalid field: revealLink" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      subject = `🌙 ${senderName} sent you a moon message`;
+      const inner = para(`${senderName} wrote you a moon message. Open it and it will reveal when the moon rises over you.`);
+      htmlBody = emailShell(`${senderName} sent you a moon message`, inner, "Open your moon message", link);
 
     } else if (emailType === "invite") {
       const senderName = esc(body.senderName, "Someone");
