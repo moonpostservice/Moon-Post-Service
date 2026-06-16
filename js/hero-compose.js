@@ -245,11 +245,38 @@ function heroWriteAnother() {
     if (typeof openModal === 'function') openModal(); // in-app "New Moon Message" compose
 }
 
-// Initialise the hero UI once the DOM is ready (button label, hide Back/preview).
+// ---- Rotating hero prompt ----------------------------------------------
+// The empty message box shouldn't ask the visitor to "write a message" — it should
+// already have them picturing a particular person. Each visit we drop in a different
+// poetic prompt so the box feels alive and the question lands fresh every time.
+const HERO_PROMPTS = [
+    'Who do you miss tonight? Write to them as if they were listening…',
+    'Someone has been on your mind. Tell them the thing you keep meaning to say…',
+    'Picture the person you wish were closer. Now write to them…',
+    'Who do you carry with you? Send them a few words across the dark…',
+    'There is something you have never quite said. Say it here…',
+    'Write to the one you think of when the sky goes quiet…',
+    'Name the person you miss — then tell them why…',
+    'What would you say to them, if the distance were nothing? Write it here…',
+    'Who would you reach for, if it were not too far or too late? Write to them instead…',
+    'Think of someone you love and rarely tell. Begin with them…',
+];
+
+function heroRotatePrompt() {
+    const ta = document.getElementById('hcText');
+    if (!ta) return;
+    // Math.random() is fine here — purely cosmetic, no need for crypto.
+    const prompt = HERO_PROMPTS[Math.floor(Math.random() * HERO_PROMPTS.length)];
+    ta.setAttribute('placeholder', prompt);
+}
+
+// Initialise the hero UI once the DOM is ready (button label, hide Back/preview,
+// and a fresh prompt in the message box).
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => heroGoStep(0));
+    document.addEventListener('DOMContentLoaded', () => { heroGoStep(0); heroRotatePrompt(); });
 } else {
     heroGoStep(0);
+    heroRotatePrompt();
 }
 
 // ---- Flush: after the code is verified, send the stashed message ----
