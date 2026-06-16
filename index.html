@@ -593,6 +593,33 @@
             </div>
         </div>
 
+        <!-- Send-by-link share sheet — shown after the sender confirms identity and
+             the shareable moon message is minted. Hand the link to anyone; each
+             opener locks their own moonrise. -->
+        <div id="shareSheetOverlay" style="display:none;position:fixed;inset:0;z-index:215;background:rgba(3,10,24,0.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:24px;" onclick="if(event.target===this)closeShareSheet()">
+            <div class="onboarding-card" style="position:relative;max-width:440px;width:90%;text-align:center;">
+                <button onclick="closeShareSheet()" style="position:absolute;top:14px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;color:var(--muted);">✕</button>
+                <div style="font-size:42px;margin-bottom:8px;">🌙</div>
+                <h2 style="font-family:var(--serif);color:var(--text-bright);font-size:25px;font-weight:500;margin:0 0 8px;letter-spacing:-0.2px;">It's written. Now send it.</h2>
+                <p style="color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 4px;">Hand it to someone you're thinking of. When they open it, it'll reveal at <em>their</em> moonrise.</p>
+                <p id="shareSheetPreview" style="color:var(--muter);font-size:12.5px;line-height:1.5;font-style:italic;margin:10px 0 20px;"></p>
+
+                <button class="onboarding-primary" id="shareSheetNativeBtn" onclick="shareSheetNative()" style="width:100%;display:none;margin-bottom:10px;">Share 🌙</button>
+
+                <div style="display:flex;gap:10px;margin-bottom:14px;">
+                    <button onclick="shareSheetWhatsApp()" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.4);color:var(--text-bright);font-family:var(--sans);font-size:13px;cursor:pointer;">WhatsApp</button>
+                    <button onclick="shareSheetEmail()" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.4);color:var(--text-bright);font-family:var(--sans);font-size:13px;cursor:pointer;">Email</button>
+                </div>
+
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:18px;">
+                    <input type="text" id="shareSheetLink" readonly onclick="this.select()" style="flex:1;min-width:0;padding:11px 12px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.6);color:var(--muted);font-family:var(--sans);font-size:12.5px;box-sizing:border-box;">
+                    <button id="shareSheetCopyBtn" onclick="shareSheetCopy()" style="flex-shrink:0;padding:11px 16px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(212,181,138,0.10);color:var(--accent);font-family:var(--sans);font-size:13px;cursor:pointer;white-space:nowrap;">Copy link</button>
+                </div>
+
+                <button class="hc-login-link" onclick="shareSheetDone()" style="font-size:13px;">Done — go to my inbox</button>
+            </div>
+        </div>
+
         <!-- Auth modal (popup overlay) -->
         <div id="authModalOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(3,10,24,0.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;overflow-y:auto;padding:24px 0;" onclick="if(event.target===this)closeAuthModal()">
             <div class="onboarding-card" style="position:relative;max-width:440px;width:90%;margin:auto;">
@@ -834,21 +861,12 @@
                             <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Write your message here…" oninput="heroUpdateSendState()"></textarea>
                         </div>
 
-                        <!-- Step 1 — Who is it for? (everything about the recipient) -->
+                        <!-- Step 1 — Who's it from? (sender identity; city auto-detected).
+                             "Who's it for?" is no longer asked here: after confirming, the
+                             sender gets a shareable link and hands it to whoever they like —
+                             each opener locks their own moonrise. -->
                         <div class="hc-step" id="hcStep1" style="display:none;">
-                            <p class="hc-step-title">Who is it for?</p>
-                            <input type="text" id="hcRecipName" class="hc-input" placeholder="Their name" autocomplete="off">
-                            <input type="email" id="hcRecipEmail" class="hc-input" placeholder="Their email" autocomplete="off">
-                            <div class="hc-city-wrap">
-                                <input type="text" id="hcRecipCity" class="hc-input" placeholder="Their city" autocomplete="off" oninput="heroFilterCities(this.value)">
-                                <div id="hcCityDropdown" class="city-dropdown"></div>
-                            </div>
-                            <p class="hc-step-note">It arrives when the moon rises where they are.</p>
-                        </div>
-
-                        <!-- Step 2 — And who's it from? (sender identity; city auto-detected) -->
-                        <div class="hc-step" id="hcStep2" style="display:none;">
-                            <p class="hc-step-title">And who's it from?</p>
+                            <p class="hc-step-title">Who's it from?</p>
                             <input type="text" id="hcSenderName" class="hc-input" placeholder="Your name" autocomplete="off">
                             <input type="email" id="hcSenderEmail" class="hc-input" placeholder="Your email" autocomplete="off">
                             <!-- Fallback: only shown if we can't detect the sender's city from their timezone. -->
@@ -856,7 +874,7 @@
                                 <input type="text" id="hcSenderCity" class="hc-input" placeholder="Your city" autocomplete="off" oninput="heroFilterSenderCities(this.value)">
                                 <div id="hcSenderCityDropdown" class="city-dropdown"></div>
                             </div>
-                            <p class="hc-step-note">We'll send a code to confirm it's you — that's how the moon brings their reply back to you.</p>
+                            <p class="hc-step-note">We'll send a code to confirm it's you — then you choose how to send it.</p>
                         </div>
 
                         <div class="hc-error" id="hcError" style="display:none;"></div>
@@ -2311,15 +2329,7 @@
         <button class="close-reveal-page" onclick="closeMoonRevealPage()">&times;</button>
 
         <div class="moon-reveal-header">
-            <svg class="moon-reveal-logo" viewBox="0 0 529.49 72.65" xmlns="http://www.w3.org/2000/svg">
-                <path fill="var(--accent)" d="M196.78,72.65h-10.63c-.57-1.25-1.89-1.37-3.52-1.85-18.75-5.51-29.64-24-25.22-43.08C161.43,10.41,178.37-1.89,197.26.25s32.95,17.82,32.4,37.06c-.52,18.14-14.48,32.13-32.89,35.34Z"/>
-                <path fill="var(--accent)" d="M425.49,72.65h-11.63c-.58-1.24-1.89-1.38-3.51-1.86-18.73-5.51-29.64-23.96-25.22-43.06,4-17.28,20.89-29.61,39.82-27.49,18.05,2.02,32.47,17.24,32.45,36.09-.02,18.32-13.64,32.32-31.91,36.32Z"/>
-                <path fill="var(--accent)" d="M118.88,72.65h-10.99c-.57-1.15-1.87-1.22-3.42-1.64-18.85-5.13-30.12-23.35-26.13-42.49C81.95,11.14,98.55-1.5,117.38.14c18.55,1.62,33.42,16.98,33.41,36.19-.01,18.31-13.66,32.32-31.91,36.32Z"/>
-                <polygon fill="var(--accent)" points="306.61 71.76 260.34 59.26 259.73 70.65 236.71 70.65 236.75 .38 283.01 13.03 283.64 1.62 306.66 1.61 306.61 71.76"/>
-                <polygon fill="var(--accent)" points="69.64 2.09 70.01 70.68 0 70.69 .05 1.92 34.97 21.62 69.64 2.09"/>
-                <path fill="var(--accent)" d="M495.04,59c-1.08,4.08-.07,7.51-.63,11.66h-28.97s0-69.08,0-69.08l35.96.14c16.98.07,29.35,15.19,27.99,31.03-1.44,16.8-16.49,28.68-34.35,26.25Z"/>
-                <path fill="var(--accent)" d="M346.23,59c-1.09,4.08-.07,7.5-.63,11.65h-28.97s0-69.08,0-69.08l35.96.15c17,.07,29.34,15.16,28,31.03-1.42,16.78-16.5,28.68-34.35,26.26Z"/>
-            </svg>
+            <img class="moon-reveal-logo" src="assests/logo.svg" alt="Moon Post Service" style="height:52px;width:auto;display:block;margin:0 auto 4px;">
             <div class="moon-reveal-visual" id="revealMoonVisual"></div>
             <p class="moon-reveal-tagline">This message was written for this moon.</p>
         </div>
@@ -2344,6 +2354,31 @@
                 <p style="color:var(--muter);font-size:11px;margin-top:16px;text-transform:uppercase;letter-spacing:2.5px;">Free &middot; No app download needed</p>
             </div>
 
+            <!-- Send-by-link CLAIM state: a shareable link was opened. Confirm the
+                 opener's sky, then lock the message to their moonrise. -->
+            <div id="revealClaim" style="display:none;text-align:center;padding:8px 4px 24px;">
+                <p style="font-family:var(--serif);color:var(--text-bright);font-size:23px;font-weight:500;letter-spacing:-0.2px;line-height:1.35;"><strong id="shareClaimSender">Someone</strong> wrote you a moon message</p>
+                <p id="shareClaimTeaser" style="font-family:var(--serif);font-style:italic;color:var(--muted);font-size:15px;margin-top:10px;line-height:1.5;"></p>
+
+                <div style="margin:22px auto 0;max-width:340px;background:rgba(212,181,138,0.06);border:1px solid var(--line-soft);border-radius:var(--radius-md);padding:18px 16px;">
+                    <p style="color:var(--muter);font-size:11px;margin:0 0 6px;text-transform:uppercase;letter-spacing:2.5px;">It looks like you're in</p>
+                    <h2 id="shareClaimCityName" style="font-family:var(--serif);color:var(--text-bright);font-size:24px;font-weight:500;margin:0;letter-spacing:-0.2px;">your city</h2>
+                    <a href="#" onclick="event.preventDefault();document.getElementById('shareClaimCityPicker').style.display='block';this.style.display='none';" style="display:inline-block;margin-top:8px;color:var(--accent);font-size:12.5px;text-decoration:none;font-style:italic;">I'm somewhere else</a>
+                    <div id="shareClaimCityPicker" style="display:none;margin-top:12px;position:relative;text-align:left;">
+                        <input type="text" id="shareClaimCityInput" placeholder="Search for your city…" autocomplete="off" oninput="filterClaimCities(this.value)" style="width:100%;padding:11px 13px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.6);color:var(--text-bright);font-family:var(--sans);font-size:14px;box-sizing:border-box;">
+                        <div id="shareClaimCityDropdown" class="city-dropdown" style="max-height:180px;"></div>
+                    </div>
+                </div>
+
+                <!-- Live preview of THIS opener's wait before they commit to reveal. -->
+                <p id="shareClaimMoonrise" style="color:var(--muted);font-size:13.5px;margin:16px 0 0;line-height:1.5;"></p>
+
+                <div id="shareClaimError" style="display:none;color:#E89B73;font-size:12.5px;margin:12px 0 0;font-style:italic;"></div>
+
+                <button class="cta-primary" id="shareClaimRevealBtn" onclick="doRevealClaim()" style="font-size:14.5px;padding:14px 32px;margin-top:20px;">Reveal at my moonrise 🌙</button>
+                <p style="color:var(--muter);font-size:12px;margin-top:14px;line-height:1.5;">It opens when the moon rises over you — then you can reply.</p>
+            </div>
+
             <!-- Real content (hidden until loaded) -->
             <div id="revealLoaded" style="display:none;">
                 <p class="moon-reveal-sender">From <strong id="revealSenderName">A Friend</strong></p>
@@ -2353,8 +2388,20 @@
                     <div class="countdown-label-reveal">Your moon message arrives in</div>
                     <div class="countdown-time-reveal" id="revealCountdownTime">--:--:--</div>
                     <div class="countdown-note">The message will be revealed at moonrise over <span id="revealCity">your city</span></div>
+
+                    <!-- Remind me at moonrise (send-by-link openers only; shown by JS) -->
+                    <div id="revealReminder" style="display:none;margin-top:22px;">
+                        <button id="revealReminderBtn" class="cta-primary" onclick="openReminderForm()" style="font-size:13.5px;padding:11px 26px;">🔔 Remind me when my moon rises</button>
+                        <div id="revealReminderForm" style="display:none;max-width:320px;margin:14px auto 0;">
+                            <input type="email" id="revealReminderEmail" placeholder="you@email.com" autocomplete="email" style="width:100%;padding:11px 13px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.6);color:var(--text-bright);font-family:var(--sans);font-size:14px;box-sizing:border-box;">
+                            <button class="cta-primary" onclick="submitReminder()" style="font-size:13.5px;padding:11px 26px;margin-top:10px;width:100%;">Set my moonrise reminder 🌙</button>
+                            <div id="revealReminderError" style="display:none;color:#E89B73;font-size:12px;margin-top:8px;font-style:italic;"></div>
+                        </div>
+                        <p id="revealReminderDone" style="display:none;color:var(--accent);font-size:13.5px;margin:12px 0 0;line-height:1.5;">✓ We'll email you the moment your moon rises — then you can read it and reply.</p>
+                    </div>
+
                     <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--line-soft);">
-                        <p style="font-family:var(--serif);font-style:italic;color:var(--muted);font-size:14px;margin-bottom:14px;">While you wait — join Moon Post Service so you can reply when it arrives</p>
+                        <p style="font-family:var(--serif);font-style:italic;color:var(--muted);font-size:14px;margin-bottom:14px;">Or join Moon Post Service so you can reply when it arrives</p>
                         <button class="cta-primary" onclick="revealSignupToReply()" style="font-size:13.5px;padding:11px 28px;">Sign up now</button>
                     </div>
                 </div>
@@ -2607,7 +2654,7 @@
     <script src="/js/moon-calc.js?v=20260615"></script>
     <script src="/js/circles-state.js?v=20260615"></script>
     <script src="/js/captcha.js"></script>
-    <script src="/js/auth.js"></script>
+    <script src="/js/auth.js?v=20260616"></script>
     <script src="/js/router.js"></script>
     <script src="/js/realtime.js?v=20260615b"></script>
     <script src="/js/chat.js?v=20260615"></script>
@@ -2615,9 +2662,10 @@
     <script src="/js/media.js"></script>
     <script src="/js/contacts.js?v=20260615"></script>
     <script src="/js/effects.js?v=20260615"></script>
-    <script src="/js/reveal.js"></script>
+    <script src="/js/reveal.js?v=20260616"></script>
     <script src="/js/circles-functions.js"></script>
     <script src="/js/roulette.js?v=20260615"></script>
-    <script src="/js/hero-compose.js?v=20260615b"></script>
+    <script src="/js/share-sheet.js?v=20260616"></script>
+    <script src="/js/hero-compose.js?v=20260616"></script>
 </body>
 </html>

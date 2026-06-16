@@ -22,11 +22,11 @@ const HERO_DRAFT_KEY = 'moonpop_pending_send';
 const HERO_DRAFT_TTL_MS = 24 * 3600000;
 
 // In-memory hero state.
-let _heroStep = 0;             // 0 = write, 1 = recipient, 2 = sender identity
-let _heroRecipientCity = '';   // validated recipient city name (from the list)
+let _heroStep = 0;             // 0 = write, 1 = sender identity
+let _heroRecipientCity = '';   // (legacy, unused) recipient city — kept so old helpers don't throw
 let _heroSenderCity = null;    // validated sender city object {name,lat,lon,tz} (detected or picked)
 
-const HERO_LAST_STEP = 2;
+const HERO_LAST_STEP = 1;
 
 // ---- Step navigation ----------------------------------------------------
 // Steps are plain show/hide panels. The single primary button advances ("Continue")
@@ -47,7 +47,7 @@ function heroGoStep(n) {
 
     // Entering the sender step: detect their city silently so it's ready by the time
     // they hit "Confirm" (reveals the manual fallback only if detection misses).
-    if (_heroStep === 2) heroDetectSenderCity();
+    if (_heroStep === 1) heroDetectSenderCity();
 
     const back = document.getElementById('hcBackBtn');
     if (back) back.style.display = _heroStep > 0 ? '' : 'none';
@@ -55,7 +55,7 @@ function heroGoStep(n) {
     const btn = document.getElementById('hcSendBtn');
     if (btn) btn.textContent = _heroStep === HERO_LAST_STEP ? "Confirm it's you 🌙" : 'Continue';
 
-    const firstField = { 0: 'hcText', 1: 'hcRecipName', 2: 'hcSenderName' }[_heroStep];
+    const firstField = { 0: 'hcText', 1: 'hcSenderName' }[_heroStep];
     setTimeout(() => document.getElementById(firstField)?.focus(), 60);
 }
 
@@ -73,15 +73,6 @@ function heroNext() {
             return heroError('Write a few words first.');
         }
         return heroGoStep(1);
-    }
-    if (_heroStep === 1) {
-        const name = (document.getElementById('hcRecipName')?.value || '').trim();
-        const email = (document.getElementById('hcRecipEmail')?.value || '').trim();
-        const cityTyped = (document.getElementById('hcRecipCity')?.value || '').trim();
-        if (!name) return heroError('Who is this for? Add their name.');
-        if (!email || !email.includes('@')) return heroError('Add their email so the moon can deliver it.');
-        if (!(_heroRecipientCity || cityTyped)) return heroError('Pick their city so it arrives at their moonrise.');
-        return heroGoStep(2);
     }
     // Last step → confirm identity and start verification.
     const sName = (document.getElementById('hcSenderName')?.value || '').trim();
@@ -186,21 +177,20 @@ function heroClearError() {
 function heroConfirmIdentity() {
     heroClearError();
     const msg = (document.getElementById('hcText')?.value || '').trim();
-    const rName = (document.getElementById('hcRecipName')?.value || '').trim();
-    const rEmail = (document.getElementById('hcRecipEmail')?.value || '').trim();
-    const rCity = _heroRecipientCity || (document.getElementById('hcRecipCity')?.value || '').trim();
     const sName = (document.getElementById('hcSenderName')?.value || '').trim();
     const sEmail = (document.getElementById('hcSenderEmail')?.value || '').trim();
     const sCity = _heroSenderCity;
-    if (!msg || !rName || !rEmail || !rCity || !sName || !sEmail || !sCity) return; // guarded in heroNext
+    if (!msg || !sName || !sEmail || !sCity) return; // guarded in heroNext
 
-    // 1) Message draft — flushPendingSend() delivers this once the account exists.
+    // 1) Message draft — flushPendingSend() mints the shareable message once the
+    //    account exists. No recipient: it's a "send by link" message (each opener
+    //    binds their own location later).
     const draft = {
         v: 1,
-        mode: 'message',
+        mode: 'share',
         fromHero: true,
         text: msg,
-        recipient: { name: rName, email: rEmail, city: rCity },
+        senderName: sName,
         lunar: null,
         createdAt: new Date().toISOString(),
     };
@@ -307,6 +297,17 @@ async function flushPendingSend() {
             if (typeof loadRouletteMessages === 'function') await loadRouletteMessages();
             if (typeof renderMessages === 'function') renderMessages();
             if (typeof showNotificationToast === 'function') showNotificationToast('🌕 Your message is on its way to a stranger');
+            return;
+        }
+
+        // Send-by-link → mint a recipient-less shareable message, then show the
+        // share sheet so the sender can hand the link to whoever they like.
+        if (draft.mode === 'share') {
+            const { link } = await createShareableMessage({ text: draft.text, lunar: draft.lunar });
+            if (typeof renderMessages === 'function') renderMessages();
+            const am = document.getElementById('authModalOverlay');
+            if (am) am.style.display = 'none';
+            openShareSheet({ link, senderName: draft.senderName, previewText: draft.text });
             return;
         }
 

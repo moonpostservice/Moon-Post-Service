@@ -25,8 +25,20 @@ interface MessagePayload {
   // message (now if their moon is up, else their next moonrise); release_at =
   // when it lands in the recipient's sky. Both stamped client-side at send.
   pickup_at?: string | null;
-  release_at: string;
+  release_at?: string | null;
   released_at?: string | null;
+  // "Send by link": a recipient-less, shareable message. No recipient_* and no
+  // release_at at send time — each opener locks their own location + moonrise
+  // later (message_link_opens). We mint a secret share_token server-side.
+  shareable?: boolean;
+}
+
+// URL-safe, unguessable token for shareable links (~22 chars of base64url).
+function makeShareToken(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 Deno.serve(async (req: Request) => {
@@ -84,17 +96,28 @@ Deno.serve(async (req: Request) => {
       errors.push('lunar_note_text must be 500 characters or less');
     }
 
-    // Recipient validation
-    if (!body.recipient_id && !body.recipient_email) {
-      errors.push('Either recipient_id or recipient_email is required');
-    }
-    if (body.recipient_email && !body.recipient_email.includes('@')) {
-      errors.push('recipient_email must be a valid email address');
+    // Recipient validation — skipped for a shareable "send by link" message,
+    // which has no recipient yet (each opener binds themselves later).
+    if (!body.shareable) {
+      if (!body.recipient_id && !body.recipient_email) {
+        errors.push('Either recipient_id or recipient_email is required');
+      }
+      if (body.recipient_email && !body.recipient_email.includes('@')) {
+        errors.push('recipient_email must be a valid email address');
+      }
+      if (!body.release_at) {
+        errors.push('release_at is required');
+      }
     }
 
-    // Status validation
+    // Status validation. A shareable message is always 'in_transit' until an
+    // opener claims it (release_at lives per-open, not on the row).
     const validStatuses = ['in_transit', 'released'];
-    if (!validStatuses.includes(body.status)) {
+    if (body.shareable) {
+      if (body.status && body.status !== 'in_transit') {
+        errors.push('a shareable message must have status in_transit');
+      }
+    } else if (!validStatuses.includes(body.status)) {
       errors.push('status must be one of: ' + validStatuses.join(', '));
     }
 
@@ -123,12 +146,15 @@ Deno.serve(async (req: Request) => {
     }
 
     // === INSERT MESSAGE ===
+    const shareable = !!body.shareable;
     const insertData = {
       sender_id: user.id,
-      recipient_name: body.recipient_name || null,
-      recipient_email: body.recipient_email || null,
-      recipient_id: body.recipient_id || null,
-      recipient_city: body.recipient_city || null,
+      // A shareable message is recipient-less; ignore any recipient_* the client
+      // may have sent so the link can't be silently bound at send time.
+      recipient_name: shareable ? null : (body.recipient_name || null),
+      recipient_email: shareable ? null : (body.recipient_email || null),
+      recipient_id: shareable ? null : (body.recipient_id || null),
+      recipient_city: shareable ? null : (body.recipient_city || null),
       message_text: body.message_text || null,
       lunar_note_text: body.lunar_note_text || null,
       lunar_note_closing: body.lunar_note_closing || null,
@@ -137,10 +163,13 @@ Deno.serve(async (req: Request) => {
       moon_phase: body.moon_phase || null,
       moon_illumination: body.moon_illumination || null,
       photo_url: body.photo_url || null,
-      status: body.status,
+      status: shareable ? 'in_transit' : body.status,
       pickup_at: body.pickup_at || null,
-      release_at: body.release_at,
-      released_at: body.released_at || null,
+      // No recipient yet → no delivery time yet (each opener stamps their own).
+      release_at: shareable ? null : body.release_at,
+      released_at: shareable ? null : (body.released_at || null),
+      shareable,
+      share_token: shareable ? makeShareToken() : null,
     };
 
     const { data: msgData, error: insertError } = await serviceClient
@@ -157,7 +186,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`Message ${msgData.id} sent from ${user.id} to ${body.recipient_id || body.recipient_email}`);
+    console.log(`Message ${msgData.id} sent from ${user.id} to ${shareable ? 'link:' + msgData.share_token : (body.recipient_id || body.recipient_email)}`);
 
     return new Response(
       JSON.stringify({ success: true, message: msgData }),

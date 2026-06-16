@@ -12,7 +12,101 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { id } = await req.json();
+    const body = await req.json();
+    const { id } = body;
+
+    // ===== SHARE-LINK PATH (?g=<token>) =====================================
+    // A reusable, recipient-less message. The first open returns the sender +
+    // a short teaser (no content); content only crosses the wire once THIS
+    // opener's moonrise (their message_link_opens.release_at) has passed, keyed
+    // by the opaque open_id the client stored when it claimed.
+    if (body.token) {
+      const TOKEN_RE = /^[A-Za-z0-9_-]{16,64}$/;
+      if (typeof body.token !== 'string' || !TOKEN_RE.test(body.token)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid link' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data: msg, error: msgError } = await serviceClient
+        .from('messages')
+        .select('id, message_text, lunar_note_text, lunar_note_closing, moon_phase, moon_illumination, song_url, song_title, photo_url, pickup_at, sender_id')
+        .eq('share_token', body.token)
+        .eq('shareable', true)
+        .maybeSingle();
+
+      if (msgError || !msg) {
+        return new Response(
+          JSON.stringify({ error: 'Message not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Resolve this opener's claim (if they've already claimed) to decide seal.
+      const nowMs = Date.now();
+      let openRelease: string | null = null;
+      let sealed = true;
+      if (typeof body.open_id === 'string') {
+        const { data: open } = await serviceClient
+          .from('message_link_opens')
+          .select('id, release_at')
+          .eq('id', body.open_id)
+          .eq('message_id', msg.id)
+          .maybeSingle();
+        if (open) {
+          openRelease = open.release_at;
+          sealed = !open.release_at || new Date(open.release_at).getTime() > nowMs;
+          if (!sealed) {
+            await serviceClient.from('message_link_opens')
+              .update({ revealed_at: new Date(nowMs).toISOString() })
+              .eq('id', open.id).is('revealed_at', null);
+          }
+        }
+      }
+
+      // Sender's public identity for the "X wrote you a moon message" framing.
+      let senderUsername: string | null = null;
+      let senderCity: string | null = null;
+      if (msg.sender_id) {
+        const { data: profile } = await serviceClient
+          .from('profiles').select('username, city').eq('id', msg.sender_id).maybeSingle();
+        if (profile) { senderUsername = profile.username; senderCity = profile.city; }
+      }
+
+      // A short hook shown before reveal (a few words, never the whole note).
+      const source = (msg.message_text || msg.lunar_note_text || '').trim();
+      const teaser = source ? source.split(/\s+/).slice(0, 8).join(' ') + (source.split(/\s+/).length > 8 ? '…' : '') : '';
+
+      return new Response(
+        JSON.stringify({
+          shareable: true,
+          message: {
+            id: msg.id,
+            shareable: true,
+            teaser,
+            moon_phase: msg.moon_phase,
+            moon_illumination: msg.moon_illumination,
+            pickup_at: msg.pickup_at,
+            release_at: openRelease,
+            sealed,
+            message_text: sealed ? null : msg.message_text,
+            lunar_note_text: sealed ? null : msg.lunar_note_text,
+            lunar_note_closing: sealed ? null : msg.lunar_note_closing,
+            song_url: sealed ? null : msg.song_url,
+            song_title: sealed ? null : msg.song_title,
+            photo_url: sealed ? null : msg.photo_url,
+          },
+          sender: { username: senderUsername, city: senderCity },
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    // ===== END SHARE-LINK PATH ==============================================
 
     if (!id || typeof id !== 'string') {
       return new Response(
