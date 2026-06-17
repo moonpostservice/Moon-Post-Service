@@ -110,7 +110,16 @@ function openShareSheet({ link, senderName, previewText }) {
     if (nativeBtn) nativeBtn.style.display = (navigator && typeof navigator.share === 'function') ? '' : 'none';
 
     const overlay = document.getElementById('shareSheetOverlay');
-    if (overlay) overlay.style.display = 'flex';
+    if (overlay) {
+        // The markup lives inside #onboardingOverlay (the landing/auth layer),
+        // which is display:none once the user is in the app — that hides every
+        // descendant regardless of their own display/z-index, so the in-app
+        // composer's share sheet rendered to nothing ("press it, nothing
+        // happens"). Promote it to a direct child of <body> so it's a true
+        // top-level overlay in both the landing AND the in-app flow.
+        if (overlay.parentElement !== document.body) document.body.appendChild(overlay);
+        overlay.style.display = 'flex';
+    }
 }
 
 function closeShareSheet() {
@@ -239,7 +248,13 @@ async function composeShareLink() {
 
     try {
         const { link } = await createShareableMessage({ text: textMessage, lunar: null });
+        // Tear down the whole compose stack — both the compose panel AND the
+        // recipient picker underneath it (.message-page overlays at z-index 500).
+        // Otherwise the share sheet opens behind them and looks like nothing
+        // happened (the sheet now sits above at z-index 600, but the picker
+        // shouldn't linger behind it either).
         if (typeof closeModal === 'function') closeModal();
+        if (typeof closeNewMessagePicker === 'function') closeNewMessagePicker();
         openShareSheet({ link, senderName, previewText: textMessage });
     } catch (e) {
         console.error('composeShareLink failed:', e);

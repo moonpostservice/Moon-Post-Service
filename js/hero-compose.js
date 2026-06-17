@@ -350,6 +350,12 @@ async function flushPendingSend() {
             if (sentText && r.name) {
                 sentText.textContent = `Your message is on its way to ${r.name}. It’ll arrive when the moon rises for them — and we’ll tell you if they reply.`;
             }
+            // This screen lives inside #onboardingOverlay, which is display:none once
+            // the user is in the app — that hides every descendant regardless of its own
+            // display/z-index. We show "Sent!" AFTER the inbox loads (onboarding hidden),
+            // so it'd render to nothing. Promote it to a direct child of <body> so it's a
+            // true top-level overlay in both the landing AND the in-app flow.
+            if (overlay.parentElement !== document.body) document.body.appendChild(overlay);
             overlay.style.display = 'flex';
         } else if (typeof showNotificationToast === 'function') {
             showNotificationToast('🌕 Your moon message is on its way');
