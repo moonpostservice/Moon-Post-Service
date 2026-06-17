@@ -1874,6 +1874,112 @@ function clearReplyPhoto() {
     document.getElementById('replyPhotoInput').value = '';
 }
 
+// Re-seed an emptied conversation. When a thread has been wiped (new-moon
+// erasure) or its messages otherwise vanished, conv.messages is [] — there is
+// no message object to hang a reply off, so sendReply() used to silently bail
+// and the send button looked dead. Instead we send a fresh TOP-LEVEL message to
+// the same person via the send-message edge function, which recreates content
+// in the existing conversation.
+async function sendFreshMessageIntoConversation(conv) {
+    const input = document.getElementById('replyInput');
+    const replyText = input.value.trim();
+    const hasPhoto = !!window['_pendingPhotoFile_reply'];
+    const songUrl = document.getElementById('replySongInput')?.value.trim() || null;
+    if (!replyText && !hasPhoto && !songUrl) return;
+    if (!currentAuthUser) return;
+    if (!conv.otherProfileId && !conv.otherEmail) {
+        alert('This conversation can no longer receive messages.');
+        return;
+    }
+
+    const recipientCity = conv.location || 'Unknown';
+    const courier = computeCourierTiming(recipientCity);
+    const phase = (typeof moonData !== 'undefined' && moonData.phase) ? moonData.phase
+        : (typeof getMoonPhase === 'function' ? getMoonPhase() : null);
+
+    // Clear the input immediately for a snappy feel; restore on failure.
+    input.value = '';
+    autoGrowInput(input);
+
+    let photoUrl = null;
+    try {
+        if (hasPhoto) photoUrl = await compressAndUpload('reply', 'messages');
+    } catch (e) { console.error('Photo upload failed:', e); }
+    clearReplyPhoto();
+    clearReplySong();
+
+    const payload = {
+        sender_id: currentAuthUser.id,
+        recipient_id: conv.otherProfileId || null,
+        recipient_email: conv.otherEmail || null,
+        recipient_name: conv.otherName || conv.otherUsername || null,
+        recipient_city: recipientCity,
+        message_text: replyText || (photoUrl ? null : '🌕'),
+        song_url: songUrl,
+        song_title: songUrl,
+        moon_phase: phase?.phaseName || null,
+        moon_illumination: (typeof moonData !== 'undefined' ? (moonData.illumination || null) : null),
+        photo_url: photoUrl || null,
+        status: courier.status,
+        pickup_at: courier.pickupIso,
+        release_at: courier.releaseAt,
+        released_at: courier.instantDeliver ? new Date().toISOString() : null,
+    };
+
+    isReloadingMessages = true;
+    try {
+        const { data: fnData, error: fnError } = await sb.functions.invoke('send-message', { body: payload });
+        if (fnError || !fnData || !fnData.message) {
+            console.error('Re-seed send failed:', fnError || fnData);
+            input.value = replyText; // restore so the user doesn't lose their text
+            autoGrowInput(input);
+            alert('Message could not be sent. Please try again.');
+            return;
+        }
+        const dbMessage = fnData.message;
+        const now = new Date().toISOString();
+        const newMsg = {
+            dbId: dbMessage.id,
+            id: dbMessage.id,
+            senderId: currentAuthUser.id,
+            recipientId: conv.otherProfileId || null,
+            recipientProfileId: conv.otherProfileId || null,
+            sender: conv.otherName || 'Unknown',
+            type: 'sent',
+            location: recipientCity,
+            status: courier.instantDeliver ? 'Released' : (courier.awaitingPickup ? 'Awaiting Pickup' : 'In Transit'),
+            awaitingPickup: courier.awaitingPickup,
+            pickupAt: courier.pickupIso,
+            releaseAt: courier.releaseAt,
+            createdAt: now,
+            time: 'Just now',
+            messageText: replyText || '',
+            preview: '',
+            photoUrl: photoUrl || null,
+            songUrl: songUrl || null,
+            conversationId: dbMessage.conversation_id || conv.dbConversationId || null,
+            contentVisible: true,
+            reactions: [],
+            replies: []
+        };
+        // Seed both the open thread and the global messages array so the bubble
+        // shows immediately and the conversation stops looking "wiped".
+        conv.messages = conv.messages || [];
+        conv.messages.push(newMsg);
+        conv.wipedAt = null;
+        conv.latestCreatedAt = now;
+        conv.latestTime = 'Just now';
+        conv.latestPreview = 'You: ' + (replyText || '🌙');
+        messages.unshift(newMsg);
+        renderConversationThread();
+        renderMessages();
+        const detail = document.getElementById('detailContent');
+        if (detail) detail.scrollTop = detail.scrollHeight;
+    } finally {
+        setTimeout(() => { isReloadingMessages = false; }, 1500);
+    }
+}
+
 async function sendReply() {
     // Compose anytime: the two-hop courier (computeCourierTiming) collects this
     // reply at the sender's next moonrise. No send-time moon gate.
@@ -1881,6 +1987,14 @@ async function sendReply() {
     const hasPhoto = !!window['_pendingPhotoFile_reply'];
     const hasSong = !!(document.getElementById('replySongInput')?.value.trim());
     if (!input.value.trim() && !hasPhoto && !hasSong) return;
+
+    // Wiped/empty thread (new-moon erasure, or the other side deleted their
+    // account): there's no message to reply to, so re-seed with a fresh
+    // top-level message instead of silently dying (the "dead send button" bug).
+    if (currentConversation && (!currentConversation.messages || currentConversation.messages.length === 0)) {
+        await sendFreshMessageIntoConversation(currentConversation);
+        return;
+    }
 
     // Save conversation key BEFORE any mutations
     const prevKey = currentConversation?.otherKey;
