@@ -860,9 +860,13 @@
                         <div class="hc-step" id="hcStep0">
                             <!-- Write-it-yourself mode (default) -->
                             <div id="hcWriteMode">
-                                <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Write your message here…" oninput="heroUpdateSendState()"></textarea>
-                                <!-- A blank box is intimidating. Offer to let the moon write it instead. -->
-                                <button type="button" class="hc-moon-help" id="hcMoonHelpBtn" onclick="heroUseLunar()">Can’t find the words? <span>Let the moon write it</span></button>
+                                <!-- A blank box is intimidating. While it's empty, a quiet chip inside
+                                     the box offers to let the moon write it; it fades the moment you type
+                                     (toggled by heroUpdateSendState). -->
+                                <div class="hc-textarea-wrap">
+                                    <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Write your message here…" oninput="heroUpdateSendState()"></textarea>
+                                    <button type="button" class="hc-moon-help" id="hcMoonHelpBtn" onclick="heroUseLunar()">Let the moon write it</button>
+                                </div>
                             </div>
 
                             <!-- Let-the-moon-write-it mode: a Lunar Note. Three words become a verse. -->
@@ -892,7 +896,7 @@
 
                         <div class="hc-error" id="hcError" style="display:none;"></div>
                         <div class="hc-nav">
-                            <button type="button" class="hc-send" id="hcSendBtn" onclick="heroNext()">Create the link</button>
+                            <button type="button" class="hc-send" id="hcSendBtn" onclick="heroNext()">Cast a link to the moon</button>
                         </div>
                         <p class="hc-step-note" style="text-align:center;">Anyone you send it to can read it when the moon rises over them.</p>
                         <p class="hc-login-line">Already have an account? <button type="button" class="hc-login-link" onclick="showAuthModal('login')">Log in</button></p>
@@ -2648,6 +2652,6 @@
     <script src="/js/circles-functions.js"></script>
     <script src="/js/roulette.js?v=20260615"></script>
     <script src="/js/share-sheet.js?v=20260618c"></script>
-    <script src="/js/hero-compose.js?v=20260618d"></script>
+    <script src="/js/hero-compose.js?v=20260618e"></script>
 </body>
 </html>

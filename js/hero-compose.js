@@ -57,6 +57,7 @@ function heroUseWrite() {
     if (write) write.style.display = 'block';
     if (lunar) lunar.style.display = 'none';
     if (sendBtn) sendBtn.style.display = '';
+    heroUpdateSendState(); // restore the in-box chip if the message is still empty
     setTimeout(() => document.getElementById('hcText')?.focus(), 60);
 }
 
@@ -149,13 +150,18 @@ async function heroNext() {
             : 'We couldn’t create your link just now. Please try again.';
         heroError(msg);
     } finally {
-        if (btn) { btn.disabled = false; btn.textContent = prevLabel || 'Create the link'; }
+        if (btn) { btn.disabled = false; btn.textContent = prevLabel || 'Cast a link to the moon'; }
     }
 }
 
-// Kept for the textarea's oninput (no live preview anymore — the button is the
-// whole ritual). Left as a no-op hook so the markup never throws.
-function heroUpdateSendState() {}
+// The textarea's oninput hook: the in-box "Let the moon write it" chip is only an
+// offer for the blank page, so it shows while the box is empty and fades the moment
+// there's anything to send.
+function heroUpdateSendState() {
+    const ta = document.getElementById('hcText');
+    const chip = document.getElementById('hcMoonHelpBtn');
+    if (ta && chip) chip.style.display = ta.value.trim() ? 'none' : '';
+}
 
 // ---- Error helpers ----
 function heroError(msg) {
@@ -208,6 +214,7 @@ function heroRotatePrompt() {
 function heroInit() {
     heroClearError();
     heroRotatePrompt();
+    heroUpdateSendState(); // show the in-box chip for the empty box
     setTimeout(() => document.getElementById('hcText')?.focus(), 60);
 }
 if (document.readyState === 'loading') {

@@ -1669,32 +1669,30 @@
     min-height: 120px;
     line-height: 1.5;
 }
-/* "Can't find the words?" — a quiet line of text under the box, not a button.
-   The question sits in muted ink; only the offer is brass, with a hairline that
-   appears on hover. Reads as a gentle suggestion, never competes with Send. */
+/* "Let the moon write it" — a quiet chip that lives INSIDE the message box while
+   it's empty, anchored bottom-left (clear of the resize grabber). It fades the
+   moment the visitor starts typing (heroUpdateSendState toggles display). A soft
+   brass tint keeps it legible over the near-black textarea without shouting. */
+.hc-textarea-wrap { position: relative; }
 .hc-moon-help {
-    display: block;
-    width: 100%;
-    margin-top: var(--space-3);
-    padding: 2px 0;
-    border: none;
-    background: none;
-    color: var(--muted);
-    font-family: var(--sans);
-    font-size: 13px;
-    text-align: center;
-    cursor: pointer;
-    transition: color var(--dur-fast) ease;
-}
-.hc-moon-help span {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    padding: 6px 12px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-pill);
+    background: rgba(212, 181, 138, 0.08);
     color: var(--accent);
-    border-bottom: 1px solid transparent;
-    padding-bottom: 1px;
-    transition: color var(--dur-fast) ease, border-color var(--dur-fast) ease;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
 }
-.hc-moon-help:hover span {
+.hc-moon-help:hover {
+    background: rgba(212, 181, 138, 0.16);
+    border-color: var(--accent);
     color: var(--accent-bright);
-    border-bottom-color: var(--accent-bright);
 }
 /* Quiet "← I'll write it myself" escape hatch back to the free-write box. */
 .hc-write-instead {
