@@ -858,8 +858,36 @@
                              person who opens the link locks their own moonrise; the message
                              vanishes at the next new moon. -->
                         <div class="hc-step" id="hcStep0">
-                            <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Write your message here…" oninput="heroUpdateSendState()"></textarea>
-                            <input type="text" id="hcSenderName" class="hc-input" placeholder="Sign it? — from (optional)" autocomplete="off" maxlength="40">
+                            <!-- Write-it-yourself mode (default) -->
+                            <div id="hcWriteMode">
+                                <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Write your message here…" oninput="heroUpdateSendState()"></textarea>
+                                <!-- A blank box is intimidating. Offer to let the moon write it instead. -->
+                                <button type="button" class="hc-moon-help" id="hcMoonHelpBtn" onclick="heroUseLunar()">🌙 Can’t find the words? Let the moon write it</button>
+                            </div>
+
+                            <!-- Let-the-moon-write-it mode: a Lunar Note. Three words become a verse. -->
+                            <div class="hc-lunar" id="hcLunar" style="display:none;">
+                                <div id="hcLunarSteps">
+                                    <div class="hc-lunar-words">
+                                        <p class="hc-lunar-cue">Give the moon three words — it spins them into a little verse for you.</p>
+                                        <input type="text" id="hcLunar1" class="hc-input" placeholder="an emotion — e.g. restless" autocomplete="off">
+                                        <input type="text" id="hcLunar2" class="hc-input" placeholder="another emotion — e.g. calm" autocomplete="off">
+                                        <input type="text" id="hcLunar3" class="hc-input" placeholder="what you pretend not to care about" autocomplete="off">
+                                    </div>
+                                    <button type="button" class="hc-reveal" onclick="heroRevealLunar()">Let the moon write it 🌙</button>
+                                    <button type="button" class="hc-write-instead" onclick="heroUseWrite()">← I’ll write it myself</button>
+                                </div>
+                                <div id="hcLunarResult" style="display:none;">
+                                    <div class="hc-lunar-text" id="hcLunarText"></div>
+                                    <div class="hc-lunar-closing" id="hcLunarClosing"></div>
+                                    <div class="hc-lunar-actions">
+                                        <button type="button" class="hc-ghost sm" onclick="heroRegenLunar()">Try another</button>
+                                        <button type="button" class="hc-ghost sm" onclick="heroEditLunar()">Edit words</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <input type="text" id="hcSenderName" class="hc-input" placeholder="Sign it? — from (optional)" autocomplete="off" maxlength="40" style="margin-top:var(--space-2);">
                         </div>
 
                         <div class="hc-error" id="hcError" style="display:none;"></div>
@@ -2620,6 +2648,6 @@
     <script src="/js/circles-functions.js"></script>
     <script src="/js/roulette.js?v=20260615"></script>
     <script src="/js/share-sheet.js?v=20260618b"></script>
-    <script src="/js/hero-compose.js?v=20260618b"></script>
+    <script src="/js/hero-compose.js?v=20260618c"></script>
 </body>
 </html>

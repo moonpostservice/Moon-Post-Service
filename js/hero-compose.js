@@ -21,17 +21,118 @@
 const HERO_DRAFT_KEY = 'moonpop_pending_send';
 const HERO_DRAFT_TTL_MS = 24 * 3600000;
 
+// ---- "Let the moon write it" — Lunar Note mode --------------------------
+// A blank box is the hardest part of writing. This mode swaps the textarea for a
+// three-word ritual: the visitor gives the moon three words and generateLunarNote()
+// (effects.js) spins them into a little verse, which becomes the message body.
+let _heroLunarMode = false;
+let _heroLunar = null; // { text, closing } once a verse is revealed
+
+function heroUseLunar() {
+    heroClearError();
+    _heroLunarMode = true;
+    _heroLunar = null;
+    const write = document.getElementById('hcWriteMode');
+    const lunar = document.getElementById('hcLunar');
+    const steps = document.getElementById('hcLunarSteps');
+    const result = document.getElementById('hcLunarResult');
+    const sendBtn = document.getElementById('hcSendBtn');
+    if (write) write.style.display = 'none';
+    if (lunar) lunar.style.display = 'flex';
+    if (steps) steps.style.display = 'block';
+    if (result) result.style.display = 'none';
+    if (sendBtn) sendBtn.style.display = 'none'; // returns once the verse is revealed
+    heroRandomizeLunarPrompts();
+    for (let i = 1; i <= 3; i++) { const el = document.getElementById('hcLunar' + i); if (el) el.value = ''; }
+    setTimeout(() => document.getElementById('hcLunar1')?.focus(), 60);
+}
+
+function heroUseWrite() {
+    heroClearError();
+    _heroLunarMode = false;
+    _heroLunar = null;
+    const write = document.getElementById('hcWriteMode');
+    const lunar = document.getElementById('hcLunar');
+    const sendBtn = document.getElementById('hcSendBtn');
+    if (write) write.style.display = 'block';
+    if (lunar) lunar.style.display = 'none';
+    if (sendBtn) sendBtn.style.display = '';
+    setTimeout(() => document.getElementById('hcText')?.focus(), 60);
+}
+
+// Freshen the three word-prompts from the global pools (effects.js) so the ritual
+// feels alive each time; falls back to the static placeholders if pools are absent.
+function heroRandomizeLunarPrompts() {
+    try {
+        if (typeof LUNAR_POOL_1 === 'undefined') return;
+        const pick = (pool) => pool[Math.floor(Math.random() * pool.length)];
+        const set = (id, p) => { const el = document.getElementById(id); if (el && p) el.placeholder = `${p.label} — ${p.placeholder}`; };
+        set('hcLunar1', pick(LUNAR_POOL_1));
+        set('hcLunar2', pick(LUNAR_POOL_2));
+        set('hcLunar3', pick(LUNAR_POOL_3));
+    } catch (e) { /* keep static placeholders */ }
+}
+
+function heroRevealLunar() {
+    const v1 = (document.getElementById('hcLunar1')?.value || '').trim();
+    const v2 = (document.getElementById('hcLunar2')?.value || '').trim();
+    const v3 = (document.getElementById('hcLunar3')?.value || '').trim();
+    if (!v1 || !v2 || !v3) return heroError('Give the moon all three words to reveal your note.');
+    heroClearError();
+    // Some templates read these moon globals via closure; set them defensively.
+    try { if (typeof getMoonPhase === 'function') _lunarMoonPhase = getMoonPhase().phaseName.toLowerCase(); } catch (e) {}
+    try { if (typeof getMoonZodiac === 'function') _lunarZodiac = getMoonZodiac().sign; } catch (e) {}
+    if (typeof generateLunarNote !== 'function') return heroError('Couldn’t reach the moon just now. Please try again.');
+
+    const result = generateLunarNote(v1, v2, v3); // random template
+    _heroLunar = { text: result.lines, closing: result.closing };
+    document.getElementById('hcLunarText').textContent = result.lines;
+    document.getElementById('hcLunarClosing').textContent = result.closing;
+    document.getElementById('hcLunarSteps').style.display = 'none';
+    document.getElementById('hcLunarResult').style.display = 'block';
+    const sendBtn = document.getElementById('hcSendBtn');
+    if (sendBtn) sendBtn.style.display = '';
+}
+
+function heroRegenLunar() {
+    const v1 = (document.getElementById('hcLunar1')?.value || '').trim();
+    const v2 = (document.getElementById('hcLunar2')?.value || '').trim();
+    const v3 = (document.getElementById('hcLunar3')?.value || '').trim();
+    if (!v1 || !v2 || !v3) return;
+    const result = generateLunarNote(v1, v2, v3); // a fresh random template
+    _heroLunar = { text: result.lines, closing: result.closing };
+    document.getElementById('hcLunarText').textContent = result.lines;
+    document.getElementById('hcLunarClosing').textContent = result.closing;
+}
+
+function heroEditLunar() {
+    _heroLunar = null;
+    document.getElementById('hcLunarResult').style.display = 'none';
+    document.getElementById('hcLunarSteps').style.display = 'block';
+    const sendBtn = document.getElementById('hcSendBtn');
+    if (sendBtn) sendBtn.style.display = 'none';
+    setTimeout(() => document.getElementById('hcLunar1')?.focus(), 60);
+}
+
 // ---- Primary button: validate, then mint the link anonymously -----------
-// No steps, no signup, no OTP. A visitor writes, optionally signs it, and gets
-// a shareable link straight away. createShareableMessage() (share-sheet.js)
-// posts to the send-message edge function in anonymous shareable mode.
+// No steps, no signup, no OTP. A visitor writes (or lets the moon write), optionally
+// signs it, and gets a shareable link straight away. createShareableMessage()
+// (share-sheet.js) posts to the send-message edge function in anonymous shareable mode.
 async function heroNext() {
     heroClearError();
-    const text = (document.getElementById('hcText')?.value || '').trim();
     const fromName = (document.getElementById('hcSenderName')?.value || '').trim();
-    if (!text) {
-        document.getElementById('hcText')?.focus();
-        return heroError('Write a few words first.');
+
+    // The message body is either the free-written text or the moon-written verse.
+    let text;
+    if (_heroLunarMode) {
+        if (!_heroLunar) return heroError('Let the moon write your note first.');
+        text = _heroLunar.text + (_heroLunar.closing ? '\n\n' + _heroLunar.closing : '');
+    } else {
+        text = (document.getElementById('hcText')?.value || '').trim();
+        if (!text) {
+            document.getElementById('hcText')?.focus();
+            return heroError('Write a few words first.');
+        }
     }
 
     const btn = document.getElementById('hcSendBtn');
