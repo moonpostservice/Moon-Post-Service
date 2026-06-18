@@ -1665,7 +1665,7 @@
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45), 0 0 0 3px rgba(212, 181, 138, 0.12);
 }
 .hc-textarea {
-    resize: vertical;
+    resize: none; /* no corner grabber — keeps the bottom-right moon chip clean */
     min-height: 120px;
     line-height: 1.5;
 }
@@ -1676,7 +1676,7 @@
 .hc-textarea-wrap { position: relative; }
 .hc-moon-help {
     position: absolute;
-    left: 12px;
+    right: 12px;
     bottom: 12px;
     padding: 6px 12px;
     border: 1px solid var(--line-soft);
