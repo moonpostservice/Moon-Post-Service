@@ -596,7 +596,7 @@
         <!-- Send-by-link share sheet — shown after the sender confirms identity and
              the shareable moon message is minted. Hand the link to anyone; each
              opener locks their own moonrise. -->
-        <div id="shareSheetOverlay" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(3,10,24,0.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:24px;" onclick="if(event.target===this)closeShareSheet()">
+        <div id="shareSheetOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(3,10,24,0.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:24px;" onclick="if(event.target===this)closeShareSheet()">
             <div class="onboarding-card" style="position:relative;max-width:440px;width:90%;text-align:center;">
                 <button onclick="closeShareSheet()" style="position:absolute;top:14px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;color:var(--muted);">✕</button>
                 <div style="font-size:42px;margin-bottom:8px;">🌙</div>
@@ -623,7 +623,7 @@
                     <button id="shareSheetCopyBtn" onclick="shareSheetCopy()" style="flex-shrink:0;padding:11px 16px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(212,181,138,0.10);color:var(--accent);font-family:var(--sans);font-size:13px;cursor:pointer;white-space:nowrap;">Copy link</button>
                 </div>
 
-                <button class="hc-login-link" onclick="shareSheetDone()" style="font-size:13px;">Done — go to my inbox</button>
+                <button class="hc-login-link" onclick="shareSheetDone()" style="font-size:13px;">Done</button>
             </div>
         </div>
 
