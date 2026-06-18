@@ -23,47 +23,41 @@ function shareLinkFor(token) {
 }
 
 // Create a recipient-less, shareable moon message and return { link, message }.
-// `draft` carries the composed content: { text, lunar:{text,closing} }.
+// `draft` carries the composed content: { text, senderName }.
+//
+// Anonymous: no account, no sender location. There's no sender "pickup" hop —
+// each opener's OWN moonrise (computed from when they open) is the only gate.
+// The server mints the share_token, stores the optional signed name, and sets
+// expires_at to the next new moon (the whole link vanishes then).
 async function createShareableMessage(draft) {
-    if (typeof currentAuthUser === 'undefined' || !currentAuthUser) {
-        throw new Error('not_authenticated');
-    }
-
-    // Hop 1 (pickup): when the SENDER's moon collects the note — now if their
-    // moon is up, else their next moonrise. Same deterministic SunCalc timing as
-    // the normal send path; there is no hop-2 release_at yet (each opener stamps
-    // their own at claim time).
-    const now = new Date();
-    let pickupAt = now;
+    let phaseName = null, illumination = null;
     try {
-        if (typeof getSenderPickupTime === 'function') pickupAt = getSenderPickupTime() || now;
-    } catch (e) { /* fall back to now */ }
-    const pickupIso = (pickupAt > now ? pickupAt : now).toISOString();
-
-    let phaseName = null;
-    try {
-        const phase = (moonData && moonData.phase) || (typeof getMoonPhase === 'function' ? getMoonPhase() : null);
+        const phase = (typeof moonData !== 'undefined' && moonData && moonData.phase)
+            || (typeof getMoonPhase === 'function' ? getMoonPhase() : null);
         phaseName = phase && phase.phaseName ? phase.phaseName.toLowerCase() : null;
+        if (typeof moonData !== 'undefined' && moonData) illumination = moonData.illumination || null;
     } catch (e) { /* phase is optional */ }
 
-    const lunarText = draft && draft.lunar ? (draft.lunar.text || '') : '';
-    const lunarClosing = draft && draft.lunar ? (draft.lunar.closing || '') : '';
+    const senderName = (draft && draft.senderName ? String(draft.senderName) : '').trim().slice(0, 40);
 
     const body = {
-        sender_id: currentAuthUser.id,
         message_text: (draft && draft.text) || null,
-        lunar_note_text: lunarText || null,
-        lunar_note_closing: lunarClosing || null,
+        sender_display_name: senderName || null,
         moon_phase: phaseName,
-        moon_illumination: (moonData && moonData.illumination) || null,
+        moon_illumination: illumination,
         status: 'in_transit',
-        pickup_at: pickupIso,
         shareable: true,
     };
 
     const { data: fnData, error: fnError } = await sb.functions.invoke('send-message', { body });
-    if (fnError) throw fnError;
+    if (fnError) {
+        // Surface the server's rate-limit signal so the hero can word it gently.
+        const m = (fnError && fnError.message) || '';
+        if (m.includes('429') || m.toLowerCase().includes('rate')) throw new Error('rate_limited');
+        throw fnError;
+    }
     if (!fnData || !fnData.message || !fnData.message.share_token) {
+        if (fnData && /rate/i.test(fnData.error || '')) throw new Error('rate_limited');
         throw new Error((fnData && fnData.error) || 'no_share_token');
     }
 

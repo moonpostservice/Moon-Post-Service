@@ -15,11 +15,14 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const { id } = body;
 
-    // ===== SHARE-LINK PATH (?g=<token>) =====================================
-    // A reusable, recipient-less message. The first open returns the sender +
-    // a short teaser (no content); content only crosses the wire once THIS
-    // opener's moonrise (their message_link_opens.release_at) has passed, keyed
-    // by the opaque open_id the client stored when it claimed.
+    // ===== SHARE-LINK PATH (/m/<token>, ?g=<token>) =========================
+    // An anonymous, one-way moon message. Anyone with the link can open it; the
+    // moon-up gate + per-opener moonrise countdown are computed CLIENT-SIDE from
+    // the opener's silently-detected location (it's a ritual, not a security
+    // boundary — link-holders are meant to read it). The server's only gate is
+    // EXPIRY: once the message's new moon has passed it has vanished (and the
+    // vanish sweep has nulled its content), so we return an `expired` flag and
+    // no content. There are no replies.
     if (body.token) {
       const TOKEN_RE = /^[A-Za-z0-9_-]{16,64}$/;
       if (typeof body.token !== 'string' || !TOKEN_RE.test(body.token)) {
@@ -35,7 +38,7 @@ Deno.serve(async (req: Request) => {
 
       const { data: msg, error: msgError } = await serviceClient
         .from('messages')
-        .select('id, message_text, lunar_note_text, lunar_note_closing, moon_phase, moon_illumination, song_url, song_title, photo_url, pickup_at, sender_id')
+        .select('id, message_text, lunar_note_text, lunar_note_closing, moon_phase, moon_illumination, song_url, song_title, photo_url, expires_at, sender_id, sender_display_name')
         .eq('share_token', body.token)
         .eq('shareable', true)
         .maybeSingle();
@@ -47,61 +50,41 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Resolve this opener's claim (if they've already claimed) to decide seal.
-      const nowMs = Date.now();
-      let openRelease: string | null = null;
-      let sealed = true;
-      if (typeof body.open_id === 'string') {
-        const { data: open } = await serviceClient
-          .from('message_link_opens')
-          .select('id, release_at')
-          .eq('id', body.open_id)
-          .eq('message_id', msg.id)
-          .maybeSingle();
-        if (open) {
-          openRelease = open.release_at;
-          sealed = !open.release_at || new Date(open.release_at).getTime() > nowMs;
-          if (!sealed) {
-            await serviceClient.from('message_link_opens')
-              .update({ revealed_at: new Date(nowMs).toISOString() })
-              .eq('id', open.id).is('revealed_at', null);
-          }
-        }
+      // Vanished with the new moon → no content, ever again.
+      if (msg.expires_at && new Date(msg.expires_at).getTime() <= Date.now()) {
+        return new Response(
+          JSON.stringify({ shareable: true, expired: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
-      // Sender's public identity for the "X wrote you a moon message" framing.
-      let senderUsername: string | null = null;
-      let senderCity: string | null = null;
-      if (msg.sender_id) {
+      // Who signed it: the free-text signature for an anonymous link, or the
+      // sender's username for a link minted by a logged-in account.
+      let senderUsername: string | null = msg.sender_display_name || null;
+      if (!senderUsername && msg.sender_id) {
         const { data: profile } = await serviceClient
-          .from('profiles').select('username, city').eq('id', msg.sender_id).maybeSingle();
-        if (profile) { senderUsername = profile.username; senderCity = profile.city; }
+          .from('profiles').select('username').eq('id', msg.sender_id).maybeSingle();
+        if (profile) senderUsername = profile.username;
       }
-
-      // A short hook shown before reveal (a few words, never the whole note).
-      const source = (msg.message_text || msg.lunar_note_text || '').trim();
-      const teaser = source ? source.split(/\s+/).slice(0, 8).join(' ') + (source.split(/\s+/).length > 8 ? '…' : '') : '';
 
       return new Response(
         JSON.stringify({
           shareable: true,
+          expired: false,
           message: {
             id: msg.id,
             shareable: true,
-            teaser,
             moon_phase: msg.moon_phase,
             moon_illumination: msg.moon_illumination,
-            pickup_at: msg.pickup_at,
-            release_at: openRelease,
-            sealed,
-            message_text: sealed ? null : msg.message_text,
-            lunar_note_text: sealed ? null : msg.lunar_note_text,
-            lunar_note_closing: sealed ? null : msg.lunar_note_closing,
-            song_url: sealed ? null : msg.song_url,
-            song_title: sealed ? null : msg.song_title,
-            photo_url: sealed ? null : msg.photo_url,
+            expires_at: msg.expires_at,
+            message_text: msg.message_text,
+            lunar_note_text: msg.lunar_note_text,
+            lunar_note_closing: msg.lunar_note_closing,
+            song_url: msg.song_url,
+            song_title: msg.song_title,
+            photo_url: msg.photo_url,
           },
-          sender: { username: senderUsername, city: senderCity },
+          sender: { username: senderUsername },
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

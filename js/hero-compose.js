@@ -21,147 +21,40 @@
 const HERO_DRAFT_KEY = 'moonpop_pending_send';
 const HERO_DRAFT_TTL_MS = 24 * 3600000;
 
-// In-memory hero state.
-let _heroStep = 0;             // 0 = write, 1 = sender identity
-let _heroRecipientCity = '';   // (legacy, unused) recipient city — kept so old helpers don't throw
-let _heroSenderCity = null;    // validated sender city object {name,lat,lon,tz} (detected or picked)
-
-const HERO_LAST_STEP = 1;
-
-// ---- Step navigation ----------------------------------------------------
-// Steps are plain show/hide panels. The single primary button advances ("Continue")
-// until the last step, where it becomes "Confirm it's you" and kicks off verification.
-function heroGoStep(n) {
-    _heroStep = Math.max(0, Math.min(HERO_LAST_STEP, n));
+// ---- Primary button: validate, then mint the link anonymously -----------
+// No steps, no signup, no OTP. A visitor writes, optionally signs it, and gets
+// a shareable link straight away. createShareableMessage() (share-sheet.js)
+// posts to the send-message edge function in anonymous shareable mode.
+async function heroNext() {
     heroClearError();
-
-    for (let i = 0; i <= HERO_LAST_STEP; i++) {
-        const panel = document.getElementById('hcStep' + i);
-        if (panel) panel.style.display = (i === _heroStep) ? 'block' : 'none';
+    const text = (document.getElementById('hcText')?.value || '').trim();
+    const fromName = (document.getElementById('hcSenderName')?.value || '').trim();
+    if (!text) {
+        document.getElementById('hcText')?.focus();
+        return heroError('Write a few words first.');
     }
-
-    // The "Your message" preview rides along on every step after the first.
-    const preview = document.getElementById('hcPreview');
-    if (preview) preview.style.display = _heroStep >= 1 ? 'block' : 'none';
-    if (_heroStep >= 1) heroRenderPreview();
-
-    // Entering the sender step: detect their city silently so it's ready by the time
-    // they hit "Confirm" (reveals the manual fallback only if detection misses).
-    if (_heroStep === 1) heroDetectSenderCity();
-
-    const back = document.getElementById('hcBackBtn');
-    if (back) back.style.display = _heroStep > 0 ? '' : 'none';
 
     const btn = document.getElementById('hcSendBtn');
-    if (btn) btn.textContent = _heroStep === HERO_LAST_STEP ? "Confirm it's you 🌙" : 'Continue';
+    const prevLabel = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Casting it to the moon…'; }
 
-    const firstField = { 0: 'hcText', 1: 'hcSenderName' }[_heroStep];
-    setTimeout(() => document.getElementById(firstField)?.focus(), 60);
-}
-
-function heroBack() {
-    if (_heroStep > 0) heroGoStep(_heroStep - 1);
-}
-
-// Primary button: validate the current step, then advance — or confirm on the last step.
-function heroNext() {
-    heroClearError();
-    if (_heroStep === 0) {
-        const text = (document.getElementById('hcText')?.value || '').trim();
-        if (!text) {
-            document.getElementById('hcText')?.focus();
-            return heroError('Write a few words first.');
-        }
-        return heroGoStep(1);
-    }
-    // Last step → confirm identity and start verification.
-    const sName = (document.getElementById('hcSenderName')?.value || '').trim();
-    const sEmail = (document.getElementById('hcSenderEmail')?.value || '').trim();
-    if (!sName) return heroError('Add your name so they know who it’s from.');
-    if (!sEmail || !sEmail.includes('@')) return heroError('Add your email so their reply can reach you.');
-    if (!_heroSenderCity) return heroError('Pick your city so we can set your moon times.');
-    heroConfirmIdentity();
-}
-
-// Keep the preview text in sync (live as the message is typed, and on each step change).
-function heroRenderPreview() {
-    const el = document.getElementById('hcPreviewText');
-    if (!el) return;
-    const t = (document.getElementById('hcText')?.value || '').trim();
-    el.textContent = t.length > 140 ? t.slice(0, 140).trimEnd() + '…' : t;
-}
-
-// Kept for the textarea's oninput + the DOM-ready sync. The primary button is always
-// active (never reads as disabled); we just keep the live preview fresh.
-function heroUpdateSendState() {
-    if (_heroStep >= 1) heroRenderPreview();
-}
-
-// ---- Sender city: silent timezone detection (mirrors the auth onboarding logic) ----
-function heroDetectSenderCity() {
-    const wrap = document.getElementById('hcSenderCityWrap');
-    if (_heroSenderCity) { if (wrap) wrap.style.display = 'none'; return; }
-    let tz = '';
-    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
-    let detected = null;
-    if (tz && typeof cities !== 'undefined') {
-        detected = cities.find(c => c.tz === tz) ||
-                   cities.find(c => c.tz && c.tz.split('/')[0] === tz.split('/')[0]);
-    }
-    if (detected) {
-        _heroSenderCity = detected;
-        if (wrap) wrap.style.display = 'none';
-    } else if (wrap) {
-        // Couldn't detect — reveal the manual picker as a graceful fallback.
-        wrap.style.display = 'block';
+    try {
+        const { link } = await createShareableMessage({ text, senderName: fromName });
+        openShareSheet({ link, senderName: fromName || 'You', previewText: text });
+    } catch (err) {
+        console.error('[hero] createShareableMessage failed:', err);
+        const msg = (err && err.message === 'rate_limited')
+            ? 'You’ve created a lot of links just now — give it a moment and try again.'
+            : 'We couldn’t create your link just now. Please try again.';
+        heroError(msg);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = prevLabel || 'Create the link 🌙'; }
     }
 }
 
-// ---- City autocomplete (reuses the global `cities` dataset) ----
-function heroCityOptions(query, onPick) {
-    const q = (query || '').trim().toLowerCase();
-    if (q.length < 2 || typeof cities === 'undefined') return '';
-    const matches = cities.filter(c =>
-        c.name.toLowerCase().includes(q) || (c.country && c.country.toLowerCase().includes(q))
-    ).slice(0, 8);
-    return matches.map(c =>
-        `<div class="city-option" onclick="${onPick}('${c.name.replace(/'/g, "\\'")}')">` +
-        `<b>${c.name}</b> <span style="color:var(--muter);font-size:12px;">${c.country || ''}</span></div>`
-    ).join('');
-}
-
-function heroFilterCities(query) {
-    const dropdown = document.getElementById('hcCityDropdown');
-    if (!dropdown) return;
-    _heroRecipientCity = ''; // invalidate until a list item is chosen
-    const html = heroCityOptions(query, 'heroSelectCity');
-    dropdown.innerHTML = html;
-    dropdown.style.display = html ? 'block' : 'none';
-}
-function heroSelectCity(name) {
-    _heroRecipientCity = name;
-    const input = document.getElementById('hcRecipCity');
-    const dropdown = document.getElementById('hcCityDropdown');
-    if (input) input.value = name;
-    if (dropdown) { dropdown.style.display = 'none'; dropdown.innerHTML = ''; }
-}
-
-function heroFilterSenderCities(query) {
-    const dropdown = document.getElementById('hcSenderCityDropdown');
-    if (!dropdown) return;
-    _heroSenderCity = null; // invalidate until a list item is chosen
-    const html = heroCityOptions(query, 'heroSelectSenderCity');
-    dropdown.innerHTML = html;
-    dropdown.style.display = html ? 'block' : 'none';
-}
-function heroSelectSenderCity(name) {
-    const city = (typeof cities !== 'undefined') ? cities.find(c => c.name === name) : null;
-    _heroSenderCity = city || null;
-    const input = document.getElementById('hcSenderCity');
-    const dropdown = document.getElementById('hcSenderCityDropdown');
-    if (input) input.value = name;
-    if (dropdown) { dropdown.style.display = 'none'; dropdown.innerHTML = ''; }
-}
+// Kept for the textarea's oninput (no live preview anymore — the button is the
+// whole ritual). Left as a no-op hook so the markup never throws.
+function heroUpdateSendState() {}
 
 // ---- Error helpers ----
 function heroError(msg) {
@@ -171,57 +64,6 @@ function heroError(msg) {
 function heroClearError() {
     const el = document.getElementById('hcError');
     if (el) { el.style.display = 'none'; el.textContent = ''; }
-}
-
-// ---- Confirm: seed the drafts, then jump straight to the code step ----
-function heroConfirmIdentity() {
-    heroClearError();
-    const msg = (document.getElementById('hcText')?.value || '').trim();
-    const sName = (document.getElementById('hcSenderName')?.value || '').trim();
-    const sEmail = (document.getElementById('hcSenderEmail')?.value || '').trim();
-    const sCity = _heroSenderCity;
-    if (!msg || !sName || !sEmail || !sCity) return; // guarded in heroNext
-
-    // 1) Message draft — flushPendingSend() mints the shareable message once the
-    //    account exists. No recipient: it's a "send by link" message (each opener
-    //    binds their own location later).
-    const draft = {
-        v: 1,
-        mode: 'share',
-        fromHero: true,
-        text: msg,
-        senderName: sName,
-        lunar: null,
-        createdAt: new Date().toISOString(),
-    };
-    try { localStorage.setItem(HERO_DRAFT_KEY, JSON.stringify(draft)); }
-    catch (e) { console.error('[hero] could not persist message draft', e); }
-
-    // 2) Verify-last signup draft — verifyMoonKey() promotes this to _pendingSignupProfile
-    //    and initAuth writes the complete profile in one shot (name + auto-detected city).
-    authMode = 'signup';
-    _signupDraft = {
-        email: sEmail,
-        firstName: sName,
-        lastName: '',
-        city: { name: sCity.name, lat: sCity.lat, lon: sCity.lon, tz: sCity.tz },
-    };
-    pendingAuthEmail = sEmail;
-    if (typeof persistSignupDraft === 'function') persistSignupDraft();
-
-    // 3) Jump to the code step. Show the auth modal but only its code screen ever
-    //    appears — enterVerifyStep() warms nothing of the email/location screens, it
-    //    just sends the OTP (with the visible captcha) and reveals the 6 boxes.
-    const overlay = document.getElementById('authModalOverlay');
-    if (overlay) overlay.style.display = 'flex';
-    const title = document.getElementById('authModalTitle');
-    if (title) { title.textContent = ''; title.style.display = 'none'; }
-    if (typeof warmCaptcha === 'function') warmCaptcha();
-    if (typeof enterVerifyStep === 'function') {
-        enterVerifyStep();
-    } else {
-        heroError('Something went wrong — please try again.');
-    }
 }
 
 // ---- "Sent!" success screen actions ----
@@ -262,11 +104,15 @@ function heroRotatePrompt() {
 
 // Initialise the hero UI once the DOM is ready (button label, hide Back/preview,
 // and a fresh prompt in the message box).
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => { heroGoStep(0); heroRotatePrompt(); });
-} else {
-    heroGoStep(0);
+function heroInit() {
+    heroClearError();
     heroRotatePrompt();
+    setTimeout(() => document.getElementById('hcText')?.focus(), 60);
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', heroInit);
+} else {
+    heroInit();
 }
 
 // ---- Flush: after the code is verified, send the stashed message ----

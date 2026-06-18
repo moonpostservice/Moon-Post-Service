@@ -1137,12 +1137,6 @@ async function initAuth(sessionOverride) {
         if (typeof flushPendingSend === 'function') {
             try { await flushPendingSend(); } catch (e) { console.error('[initAuth] flushPendingSend failed:', e); }
         }
-
-        // Send-by-link "reply" hook: an opener who tapped "reply" then signed up
-        // gets their open graduated into a real conversation with the sender.
-        if (typeof flushPendingShareReply === 'function') {
-            try { await flushPendingShareReply(); } catch (e) { console.error('[initAuth] flushPendingShareReply failed:', e); }
-        }
     } else {
         console.log('[initAuth] No session found, showing onboarding');
         showOnboarding();
