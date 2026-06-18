@@ -149,7 +149,7 @@ async function heroNext() {
             : 'We couldn’t create your link just now. Please try again.';
         heroError(msg);
     } finally {
-        if (btn) { btn.disabled = false; btn.textContent = prevLabel || 'Create the link 🌙'; }
+        if (btn) { btn.disabled = false; btn.textContent = prevLabel || 'Create the link'; }
     }
 }
 
@@ -243,7 +243,7 @@ async function flushPendingSend() {
             if (error) throw error;
             if (typeof loadRouletteMessages === 'function') await loadRouletteMessages();
             if (typeof renderMessages === 'function') renderMessages();
-            if (typeof showNotificationToast === 'function') showNotificationToast('🌕 Your message is on its way to a stranger');
+            if (typeof showNotificationToast === 'function') showNotificationToast('Your message is on its way to a stranger');
             return;
         }
 
@@ -305,7 +305,7 @@ async function flushPendingSend() {
             if (overlay.parentElement !== document.body) document.body.appendChild(overlay);
             overlay.style.display = 'flex';
         } else if (typeof showNotificationToast === 'function') {
-            showNotificationToast('🌕 Your moon message is on its way');
+            showNotificationToast('Your moon message is on its way');
         }
     } catch (err) {
         console.error('[hero] flushPendingSend failed:', err);

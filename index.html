@@ -588,7 +588,7 @@
                 <div style="font-size:46px;margin-bottom:10px;">🌕</div>
                 <h2 style="font-family:var(--serif);color:var(--text-bright);font-size:27px;font-weight:500;margin:0 0 10px;letter-spacing:-0.2px;">Sent!</h2>
                 <p id="heroSentText" style="color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 24px;">Your message is on its way. It'll arrive when the moon rises for them — and we'll tell you if they reply.</p>
-                <button class="onboarding-primary" onclick="heroGoToInbox()" style="width:100%;">Go to your inbox 🌙</button>
+                <button class="onboarding-primary" onclick="heroGoToInbox()" style="width:100%;">Go to your inbox</button>
                 <button class="hc-login-link" onclick="heroWriteAnother()" style="margin-top:16px;font-size:13px;">Write another message</button>
             </div>
         </div>
@@ -604,7 +604,7 @@
                 <p style="color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 4px;">Hand it to someone you're thinking of. When they open it, it'll reveal at <em>their</em> moonrise.</p>
                 <p id="shareSheetPreview" style="color:var(--muter);font-size:12.5px;line-height:1.5;font-style:italic;margin:10px 0 20px;"></p>
 
-                <button class="onboarding-primary" id="shareSheetNativeBtn" onclick="shareSheetNative()" style="width:100%;display:none;margin-bottom:10px;">Share 🌙</button>
+                <button class="onboarding-primary" id="shareSheetNativeBtn" onclick="shareSheetNative()" style="width:100%;display:none;margin-bottom:10px;">Share</button>
 
                 <div style="display:flex;gap:10px;margin-bottom:14px;">
                     <button onclick="shareSheetWhatsApp()" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.4);color:var(--text-bright);font-family:var(--sans);font-size:13px;cursor:pointer;">WhatsApp</button>
@@ -614,7 +614,7 @@
                 <!-- Branded email send (inline, opened by the Email button) -->
                 <div id="shareSheetEmailForm" style="display:none;margin-bottom:14px;text-align:left;">
                     <input type="email" id="shareSheetEmailInput" placeholder="their@email.com" autocomplete="off" style="width:100%;padding:11px 13px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);background:rgba(3,10,24,0.6);color:var(--text-bright);font-family:var(--sans);font-size:14px;box-sizing:border-box;margin-bottom:8px;">
-                    <button id="shareSheetEmailSendBtn" onclick="shareSheetEmailSend()" style="width:100%;padding:11px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(212,181,138,0.10);color:var(--accent);font-family:var(--sans);font-size:13px;cursor:pointer;">Send moon email 🌙</button>
+                    <button id="shareSheetEmailSendBtn" onclick="shareSheetEmailSend()" style="width:100%;padding:11px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:rgba(212,181,138,0.10);color:var(--accent);font-family:var(--sans);font-size:13px;cursor:pointer;">Send moon email</button>
                 </div>
                 <div id="shareSheetEmailMsg" style="display:none;font-size:12.5px;margin:-4px 0 12px;font-style:italic;"></div>
 
@@ -862,7 +862,7 @@
                             <div id="hcWriteMode">
                                 <textarea id="hcText" class="hc-textarea" rows="3" placeholder="Write your message here…" oninput="heroUpdateSendState()"></textarea>
                                 <!-- A blank box is intimidating. Offer to let the moon write it instead. -->
-                                <button type="button" class="hc-moon-help" id="hcMoonHelpBtn" onclick="heroUseLunar()">🌙 Can’t find the words? Let the moon write it</button>
+                                <button type="button" class="hc-moon-help" id="hcMoonHelpBtn" onclick="heroUseLunar()">Can’t find the words? <span>Let the moon write it</span></button>
                             </div>
 
                             <!-- Let-the-moon-write-it mode: a Lunar Note. Three words become a verse. -->
@@ -874,7 +874,7 @@
                                         <input type="text" id="hcLunar2" class="hc-input" placeholder="another emotion — e.g. calm" autocomplete="off">
                                         <input type="text" id="hcLunar3" class="hc-input" placeholder="what you pretend not to care about" autocomplete="off">
                                     </div>
-                                    <button type="button" class="hc-reveal" onclick="heroRevealLunar()">Let the moon write it 🌙</button>
+                                    <button type="button" class="hc-reveal" onclick="heroRevealLunar()">Let the moon write it</button>
                                     <button type="button" class="hc-write-instead" onclick="heroUseWrite()">← I’ll write it myself</button>
                                 </div>
                                 <div id="hcLunarResult" style="display:none;">
@@ -892,7 +892,7 @@
 
                         <div class="hc-error" id="hcError" style="display:none;"></div>
                         <div class="hc-nav">
-                            <button type="button" class="hc-send" id="hcSendBtn" onclick="heroNext()">Create the link 🌙</button>
+                            <button type="button" class="hc-send" id="hcSendBtn" onclick="heroNext()">Create the link</button>
                         </div>
                         <p class="hc-step-note" style="text-align:center;">Anyone you send it to can read it when the moon rises over them.</p>
                         <p class="hc-login-line">Already have an account? <button type="button" class="hc-login-link" onclick="showAuthModal('login')">Log in</button></p>
@@ -2407,7 +2407,7 @@
                 <div class="moon-reveal-cta" id="revealCta">
                     <p>This message traveled through lunar time.<br>Send one of your own, across the dark.</p>
                     <div class="moon-reveal-cta-buttons">
-                        <button class="cta-primary" id="revealReplyBtn" onclick="revealStartOwn()">Send your own moon message 🌙</button>
+                        <button class="cta-primary" id="revealReplyBtn" onclick="revealStartOwn()">Send your own moon message</button>
                     </div>
                 </div>
             </div>
@@ -2647,7 +2647,7 @@
     <script src="/js/reveal.js?v=20260618b"></script>
     <script src="/js/circles-functions.js"></script>
     <script src="/js/roulette.js?v=20260615"></script>
-    <script src="/js/share-sheet.js?v=20260618b"></script>
-    <script src="/js/hero-compose.js?v=20260618c"></script>
+    <script src="/js/share-sheet.js?v=20260618c"></script>
+    <script src="/js/hero-compose.js?v=20260618d"></script>
 </body>
 </html>

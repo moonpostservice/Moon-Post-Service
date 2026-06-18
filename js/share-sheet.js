@@ -73,7 +73,7 @@ let _shareSheetSender = '';
 // The recipient-facing "Jacky wrote you a moon message…" framing lives on the
 // open page + the link's social preview, not here.
 function shareMessageText() {
-    return '🌙 I wrote you a moon message. Open it and it’ll reveal when the moon rises over you:';
+    return 'I wrote you a moon message. Open it and it’ll reveal when the moon rises over you:';
 }
 
 function openShareSheet({ link, senderName, previewText }) {
@@ -174,7 +174,7 @@ async function shareSheetEmailSend() {
     } catch (e) {
         console.error('share email failed:', e);
         show('Could not send — try copying the link instead.', false);
-        if (btn) { btn.disabled = false; btn.textContent = 'Send moon email 🌙'; }
+        if (btn) { btn.disabled = false; btn.textContent = 'Send moon email'; }
     }
 }
 
@@ -197,7 +197,7 @@ async function shareSheetCopy() {
 function shareSheetDone() {
     closeShareSheet();
     if (typeof showNotificationToast === 'function') {
-        showNotificationToast('🌕 Your moon message is ready to share');
+        showNotificationToast('Your moon message is ready to share');
     }
 }
 
