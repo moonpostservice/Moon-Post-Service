@@ -2234,20 +2234,12 @@
                     </div>
                 </div>
 
-                <!-- Send buttons. Share-by-link is the primary action for a Moon
-                     Message (matches the landing); "send to a specific person"
-                     keeps the recipient flow. In roulette mode the share button
-                     is hidden and the main button reverts to "Send to the Moon". -->
+                <!-- Send to the Moon button -->
                 <div class="compose-send-container">
-                    <button class="compose-send-btn" id="composeShareBtn" onclick="composeShareLink()">
-                        Create a shareable link
+                    <button class="compose-send-btn" id="composeMainBtn" onclick="composeMainAction()">
+                        Send to the Moon
                         <span class="compose-send-icons">
-                            <svg width="20" height="20" style="color:white"><use href="#icon-moon-send"/></svg>
-                        </span>
-                    </button>
-                    <button class="compose-send-btn" id="composeMainBtn" onclick="composeMainAction()" style="margin-top:10px;opacity:0.82;">
-                        <span id="composeMainBtnLabel">Send to a specific person</span>
-                        <span class="compose-send-icons">
+                            <svg width="22" height="22" style="color:white"><use href="#icon-rocket"/></svg>
                             <svg width="18" height="18" style="color:white"><use href="#icon-moon-send"/></svg>
                         </span>
                     </button>
@@ -2675,7 +2667,7 @@
     <script src="/js/reactions.js"></script>
     <script src="/js/media.js"></script>
     <script src="/js/contacts.js?v=20260615"></script>
-    <script src="/js/effects.js?v=20260616b"></script>
+    <script src="/js/effects.js?v=20260618"></script>
     <script src="/js/reveal.js?v=20260616b"></script>
     <script src="/js/circles-functions.js"></script>
     <script src="/js/roulette.js?v=20260615"></script>

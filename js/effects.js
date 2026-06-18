@@ -275,12 +275,6 @@ function showDefaultCompose() {
     document.getElementById('composeStep1').style.display = 'block';
     document.getElementById('composeStep2').style.display = 'none';
     document.getElementById('composeNewContact').style.display = 'none';
-    // Share-by-link is the primary action for a normal Moon Message; hidden in
-    // roulette mode (a stranger send has no link to share).
-    const shareBtn = document.getElementById('composeShareBtn');
-    if (shareBtn) shareBtn.style.display = window.composeIsRoulette ? 'none' : '';
-    const sendLabel = document.getElementById('composeMainBtnLabel');
-    if (sendLabel) sendLabel.textContent = window.composeIsRoulette ? 'Send to the Moon' : 'Send to a specific person';
 }
 
 function showNewContactForm() {
