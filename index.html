@@ -81,7 +81,7 @@
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/auth-sharedsky.css?v=20260615">
     <link rel="stylesheet" href="/css/messages.css?v=20260615">
-    <link rel="stylesheet" href="/css/compose-circles.css">
+    <link rel="stylesheet" href="/css/compose-circles.css?v=20260622d">
     <link rel="stylesheet" href="/css/app.css?v=20260615">
     <link rel="stylesheet" href="/css/landing-roulette.css?v=20260622a">
     <!-- EmailJS removed — email now sent via Supabase Edge Function (send-email) -->
@@ -2410,8 +2410,36 @@
         <button class="close-reveal-page" onclick="closeMoonRevealPage()">&times;</button>
 
         <div class="moon-reveal-header">
-            <img class="moon-reveal-logo" src="/assests/logo.svg" alt="Moon Post Service" style="height:52px;width:auto;display:block;margin:0 auto 4px;">
-            <div class="moon-reveal-visual" id="revealMoonVisual"></div>
+            <!-- The full moon with the Moon Post mark knocked OUT of it (negative
+                 space): a white field minus the black logo paths forms the mask,
+                 so the gold moon shows everywhere except the logo, where the dark
+                 page shows through. One inside the other, not stacked. -->
+            <div class="moon-reveal-visual" id="revealMoonVisual" role="img" aria-label="Moon Post Service">
+                <svg viewBox="0 0 132 132" width="132" height="132" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <defs>
+                        <radialGradient id="mrMoonGrad" cx="32%" cy="32%" r="72%">
+                            <stop offset="0%" stop-color="#F0DFC2"/>
+                            <stop offset="70%" stop-color="#C9A874"/>
+                            <stop offset="100%" stop-color="#8B6F45"/>
+                        </radialGradient>
+                        <mask id="mrLogoKnockout">
+                            <rect width="132" height="132" fill="#fff"/>
+                            <g transform="translate(20.7 21.6) scale(0.5)" fill="#000">
+                                <path d="M37.61,116.54c.08-.74.83-2.19,2.18-2.11,10.79.63,19.45-2.97,28.66-6.24-1.17-2.92-2.24-6.03-3.12-9.33-.41.18-.81.36-1.22.55-5.05,2.37-27.06,7.38-26.5,2.17.08-.74.83-2.19,2.18-2.11,9.18.54,16.81-1.99,24.56-4.77-.73-3.47-1.25-7.11-1.45-10.89-5.95,2.37-12.32,4.4-23.08,4.2-1.44-.03-2.28-1.17-2.28-2.08,0-.73.97-2.2,2.23-2.14,8.4.39,15.61-1.97,23.05-4.63.05-3.71.39-7.53,1.14-11.44,0,0,0-.04,0-.09-7.32,2.57-14.73,4.83-24.07,4.42-1.46-.06-2.06-.95-2.19-1.72-.22-1.28.3-2.68,1.95-2.56,9.12.68,17.04-1.91,25.25-5.1,3.12-12.66,15.43-45.55,56.78-56.37,0,0-15.62-7.68-38.92-6.09-.79-.53-47.63.84-69.89,42.09-.53,0-17.47,30.71-11.65,61.68,0-.53,4.61,34.8,37.2,58.9,0,0,29.25,20.79,69.76,13.11.53-.53,22.77-6.35,29.65-13.24.26,0-32.3-2.38-54.8-29.91,0-.14-7.19-8.14-13-20.97-1.92.72-3.88,1.55-5.91,2.5-5.05,2.37-27.06,7.38-26.5,2.17Z"/>
+                                <path d="M129.34,67.42c1.21-.42,1.94-1.61,2.39-2.88-16.48-7.74-35.68-9.24-53.15-2.32-1.24.49-2.47.98-3.69,1.45-.68,2.76-.93,4.56-.94,4.96,14.3-5.03,28.23-11.27,55.39-1.21Z"/>
+                                <path d="M129.34,67.42c15.34,8.21,33.35,6.81,49.7.16,1.29-.53,1.89-1.32,1.85-2.27-.05-1.26-1.47-2.72-3.12-1.99-14.94,6.6-30.33,6.65-46.05,1.23,2.82,3.78,1.38,3.77-2.39,2.88Z"/>
+                                <path d="M133.12,100.31l.09-2.97c-28.21-13.45-43.74-7.05-58.85-1.63.3,1.41.62,2.8.98,4.16,21.44-9.66,36.23-5.87,57.78.44Z"/>
+                                <path d="M133.12,100.31c8.09,8.05,52.05,2.56,47.65-4.53-.34-.55-1.67-1.4-2.74-.92-14.49,6.46-29.19,6.52-44.83,2.48,3.48,1.17,3.45,1.79-.09,2.97Z"/>
+                                <path d="M78.46,109.19c.51,1.27,1.03,2.5,1.56,3.68,19-7.14,33.15-3.45,53.09,2.39l.09-2.97c-25.66-12.23-40.84-8.04-54.75-3.1Z"/>
+                                <path d="M178.03,109.81c-14.49,6.46-29.19,6.52-44.83,2.48,3.48,1.17,3.45,1.79-.09,2.97,8.09,8.05,52.05,2.56,47.65-4.53-.34-.55-1.67-1.4-2.74-.92Z"/>
+                                <path d="M72.9,84.82c5.78-2.3,11.16-4.91,19.79-6.12,5.97-1.16,11.89-1.16,17.77,0,8.29,1.27,15.62,3.49,22.65,6.17,1.42-.17,2.82-1.1,2.74-2.86-30.79-14.37-47.42-7.44-63.03-1.85-.02,1.57,0,3.13.08,4.65Z"/>
+                                <path d="M133.11,84.87c15.58,5.94,32.8,5.28,47.6-3.02,1.15-.65-2.29-3.27-3.71-2.63-13.5,6.15-27.56,6.02-41.15,2.79,3.59,3.63,1.38,3.54-2.74,2.86Z"/>
+                            </g>
+                        </mask>
+                    </defs>
+                    <circle cx="66" cy="66" r="66" fill="url(#mrMoonGrad)" mask="url(#mrLogoKnockout)"/>
+                </svg>
+            </div>
             <p class="moon-reveal-tagline">This message was written for this moon.</p>
         </div>
 

@@ -434,10 +434,14 @@
     height: 132px;
     margin: 0 auto var(--space-5);
     border-radius: 50%;
-    background: radial-gradient(circle at 32% 32%, #F0DFC2, #C9A874 70%, #8B6F45);
-    box-shadow:
-        0 0 80px rgba(212, 181, 138, 0.32),
-        inset -10px -12px 30px rgba(120, 95, 65, 0.22);
+    /* The gold disc + 3D shading now live in the inline SVG (so the logo can be
+       knocked out of it as negative space). The div only carries the outer glow. */
+    box-shadow: 0 0 80px rgba(212, 181, 138, 0.32);
+}
+.moon-reveal-visual svg {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .moon-reveal-tagline {
