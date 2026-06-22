@@ -42,9 +42,45 @@ function heroUseLunar() {
     if (steps) steps.style.display = 'block';
     if (result) result.style.display = 'none';
     if (sendBtn) sendBtn.style.display = 'none'; // returns once the verse is revealed
+    const sign = document.getElementById('hcSenderName');
+    if (sign) sign.style.display = 'none'; // "Sign it?" belongs with the revealed verse, not the wizard
     heroRandomizeLunarPrompts();
-    for (let i = 1; i <= 3; i++) { const el = document.getElementById('hcLunar' + i); if (el) el.value = ''; }
-    setTimeout(() => document.getElementById('hcLunar1')?.focus(), 60);
+    for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById('hcLunar' + i);
+        if (el) el.value = '';
+        const nb = document.getElementById('hcLunarNext' + i);
+        if (nb) nb.disabled = true; // re-locked until each stage is answered
+    }
+    heroLunarStep(1); // rewind the wizard to the first stage (also focuses it)
+}
+
+// Reveal one wizard stage at a time. Each stage is a single big question; the
+// visitor answers, presses Next, and only the third answer unlocks the reveal.
+function heroLunarStep(step) {
+    heroClearError();
+    for (let i = 1; i <= 3; i++) {
+        const card = document.getElementById('hcLunarCard' + i);
+        if (card) card.classList.toggle('active', i === step);
+    }
+    // Focus immediately (no artificial delay) and don't let it scroll the page.
+    document.getElementById('hcLunar' + step)?.focus({ preventScroll: true });
+}
+
+// A stage's Next/Reveal button stays disabled until that stage has a word.
+function heroLunarValidate(step) {
+    const val = (document.getElementById('hcLunar' + step)?.value || '').trim();
+    const btn = document.getElementById('hcLunarNext' + step);
+    if (btn) btn.disabled = !val;
+}
+
+// Enter advances a filled stage (and triggers the reveal on the last one), so the
+// ritual flows from the keyboard without reaching for the mouse.
+function heroLunarKey(e, step) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if ((document.getElementById('hcLunar' + step)?.value || '').trim() === '') return;
+    if (step < 3) heroLunarStep(step + 1);
+    else heroRevealLunar();
 }
 
 function heroUseWrite() {
@@ -57,6 +93,8 @@ function heroUseWrite() {
     if (write) write.style.display = 'block';
     if (lunar) lunar.style.display = 'none';
     if (sendBtn) sendBtn.style.display = '';
+    const sign = document.getElementById('hcSenderName');
+    if (sign) sign.style.display = ''; // always offered alongside the free-write box
     heroUpdateSendState(); // restore the in-box chip if the message is still empty
     setTimeout(() => document.getElementById('hcText')?.focus(), 60);
 }
@@ -67,11 +105,18 @@ function heroRandomizeLunarPrompts() {
     try {
         if (typeof LUNAR_POOL_1 === 'undefined') return;
         const pick = (pool) => pool[Math.floor(Math.random() * pool.length)];
-        const set = (id, p) => { const el = document.getElementById(id); if (el && p) el.placeholder = `${p.label} — ${p.placeholder}`; };
-        set('hcLunar1', pick(LUNAR_POOL_1));
-        set('hcLunar2', pick(LUNAR_POOL_2));
-        set('hcLunar3', pick(LUNAR_POOL_3));
-    } catch (e) { /* keep static placeholders */ }
+        // The label is the stage's big question; the placeholder is the quiet hint.
+        const set = (n, p) => {
+            if (!p) return;
+            const label = document.getElementById('hcLunarLabel' + n);
+            const input = document.getElementById('hcLunar' + n);
+            if (label) label.textContent = p.label;
+            if (input) input.placeholder = p.placeholder;
+        };
+        set(1, pick(LUNAR_POOL_1));
+        set(2, pick(LUNAR_POOL_2));
+        set(3, pick(LUNAR_POOL_3));
+    } catch (e) { /* keep static label + placeholder */ }
 }
 
 function heroRevealLunar() {
@@ -93,6 +138,8 @@ function heroRevealLunar() {
     document.getElementById('hcLunarResult').style.display = 'block';
     const sendBtn = document.getElementById('hcSendBtn');
     if (sendBtn) sendBtn.style.display = '';
+    const sign = document.getElementById('hcSenderName');
+    if (sign) sign.style.display = ''; // now sign the verse, just before sending
 }
 
 function heroRegenLunar() {
@@ -112,7 +159,11 @@ function heroEditLunar() {
     document.getElementById('hcLunarSteps').style.display = 'block';
     const sendBtn = document.getElementById('hcSendBtn');
     if (sendBtn) sendBtn.style.display = 'none';
-    setTimeout(() => document.getElementById('hcLunar1')?.focus(), 60);
+    const sign = document.getElementById('hcSenderName');
+    if (sign) sign.style.display = 'none'; // hidden again while editing the words
+    // Answers are kept — re-enable each stage's button and rewind to the first.
+    for (let i = 1; i <= 3; i++) heroLunarValidate(i);
+    heroLunarStep(1);
 }
 
 // ---- Primary button: validate, then mint the link anonymously -----------

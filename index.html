@@ -83,7 +83,7 @@
     <link rel="stylesheet" href="/css/messages.css?v=20260615">
     <link rel="stylesheet" href="/css/compose-circles.css">
     <link rel="stylesheet" href="/css/app.css?v=20260615">
-    <link rel="stylesheet" href="/css/landing-roulette.css">
+    <link rel="stylesheet" href="/css/landing-roulette.css?v=20260622a">
     <!-- EmailJS removed — email now sent via Supabase Edge Function (send-email) -->
 </head>
 <body>
@@ -869,16 +869,53 @@
                                 </div>
                             </div>
 
-                            <!-- Let-the-moon-write-it mode: a Lunar Note. Three words become a verse. -->
+                            <!-- Let-the-moon-write-it mode: a Lunar Note. One word per stage,
+                                 a 1·2·3 stepper, advancing to the reveal only after the third
+                                 answer — mirrors the in-app "Go Lunar" wizard. -->
                             <div class="hc-lunar" id="hcLunar" style="display:none;">
                                 <div id="hcLunarSteps">
-                                    <div class="hc-lunar-words">
-                                        <p class="hc-lunar-cue">Give the moon three words — it spins them into a little verse for you.</p>
-                                        <input type="text" id="hcLunar1" class="hc-input" placeholder="an emotion — e.g. restless" autocomplete="off">
-                                        <input type="text" id="hcLunar2" class="hc-input" placeholder="another emotion — e.g. calm" autocomplete="off">
-                                        <input type="text" id="hcLunar3" class="hc-input" placeholder="what you pretend not to care about" autocomplete="off">
+                                    <p class="hc-lunar-cue">Give the moon three words. It spins them into a little verse for you.</p>
+                                    <div class="hc-lunar-wizard" id="hcLunarWizard">
+                                        <!-- Stage 1 -->
+                                        <div class="hc-lunar-card active" id="hcLunarCard1">
+                                            <div class="hc-lunar-dots">
+                                                <span class="hc-lunar-num active">1</span>
+                                                <span class="hc-lunar-num">2</span>
+                                                <span class="hc-lunar-num">3</span>
+                                            </div>
+                                            <label class="hc-lunar-q" id="hcLunarLabel1" for="hcLunar1">an emotion</label>
+                                            <input type="text" id="hcLunar1" class="hc-input" placeholder="anything that comes to mind" autocomplete="off" oninput="heroLunarValidate(1)" onkeydown="heroLunarKey(event,1)">
+                                            <button type="button" class="hc-lunar-next" id="hcLunarNext1" onclick="heroLunarStep(2)" disabled>Next →</button>
+                                        </div>
+                                        <!-- Stage 2 -->
+                                        <div class="hc-lunar-card" id="hcLunarCard2">
+                                            <div class="hc-lunar-dots">
+                                                <span class="hc-lunar-num done">1</span>
+                                                <span class="hc-lunar-num active">2</span>
+                                                <span class="hc-lunar-num">3</span>
+                                            </div>
+                                            <label class="hc-lunar-q" id="hcLunarLabel2" for="hcLunar2">a different emotion</label>
+                                            <input type="text" id="hcLunar2" class="hc-input" placeholder="something else entirely" autocomplete="off" oninput="heroLunarValidate(2)" onkeydown="heroLunarKey(event,2)">
+                                            <div class="hc-lunar-nav">
+                                                <button type="button" class="hc-lunar-back" onclick="heroLunarStep(1)">← Back</button>
+                                                <button type="button" class="hc-lunar-next" id="hcLunarNext2" onclick="heroLunarStep(3)" disabled>Next →</button>
+                                            </div>
+                                        </div>
+                                        <!-- Stage 3 -->
+                                        <div class="hc-lunar-card" id="hcLunarCard3">
+                                            <div class="hc-lunar-dots">
+                                                <span class="hc-lunar-num done">1</span>
+                                                <span class="hc-lunar-num done">2</span>
+                                                <span class="hc-lunar-num active">3</span>
+                                            </div>
+                                            <label class="hc-lunar-q" id="hcLunarLabel3" for="hcLunar3">something you pretend not to care about</label>
+                                            <input type="text" id="hcLunar3" class="hc-input" placeholder="you know the one" autocomplete="off" oninput="heroLunarValidate(3)" onkeydown="heroLunarKey(event,3)">
+                                            <div class="hc-lunar-nav">
+                                                <button type="button" class="hc-lunar-back" onclick="heroLunarStep(2)">← Back</button>
+                                                <button type="button" class="hc-lunar-next" id="hcLunarNext3" onclick="heroRevealLunar()" disabled>Let the moon write it ✨</button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <button type="button" class="hc-reveal" onclick="heroRevealLunar()">Let the moon write it</button>
                                     <button type="button" class="hc-write-instead" onclick="heroUseWrite()">← I’ll write it myself</button>
                                 </div>
                                 <div id="hcLunarResult" style="display:none;">
@@ -2652,6 +2689,6 @@
     <script src="/js/circles-functions.js"></script>
     <script src="/js/roulette.js?v=20260622b"></script>
     <script src="/js/share-sheet.js?v=20260618c"></script>
-    <script src="/js/hero-compose.js?v=20260618e"></script>
+    <script src="/js/hero-compose.js?v=20260622a"></script>
 </body>
 </html>
