@@ -1318,6 +1318,22 @@ async function handleInlineRouletteReply(messageId) {
         textarea.value = '';
         showNotificationToast('🌙 Anonymous reply sent');
         await loadRouletteMessages();
+
+        // Re-render the open detail panel so the just-sent reply appears
+        // immediately. loadRouletteMessages() refreshes the global arrays but
+        // the panel still shows the pre-send thread until we redraw it.
+        if (_currentRouletteMsg) {
+            const refreshedMsgs = _currentRouletteRole === 'sender'
+                ? rouletteMessages.sent
+                : rouletteMessages.received;
+            const refreshed = refreshedMsgs.find(m => m.id === _currentRouletteMsg.id) || _currentRouletteMsg;
+            _currentRouletteMsg = refreshed;
+            const body = document.getElementById('rouletteDetailBody');
+            if (body) body.innerHTML = _renderRouletteDetailBody(refreshed, _currentRouletteRole);
+            if (_currentRouletteMsg.status === 'revealed') {
+                requestAnimationFrame(() => _resolveRevealedSenders());
+            }
+        }
     } catch (err) {
         console.error('[roulette] inline reply error:', err);
         showNotificationToast('Something went wrong. Please try again.');
