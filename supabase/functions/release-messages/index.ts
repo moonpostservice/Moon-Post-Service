@@ -202,14 +202,28 @@ function buildDigestEmailHtml(recipientCity: string, messages: DigestMessage[], 
   const count = messages.length;
   const plural = count === 1 ? 'message' : 'messages';
 
+  // Honest headline whether the message arrived instantly (recipient's moon
+  // already up) or waited for moonrise: name the sender when it's one, count
+  // when it's several. Never claim "the moon just rose" — it may have risen
+  // hours ago and the message only just landed.
+  const headline = count === 1
+    ? `${escHtml(messages[0].senderName)} sent you a moon message`
+    : `${count} moon messages waiting`;
+
   // The message stays sealed — the digest only names the sender, never the
-  // contents. It can only be read under the moon, in-app.
-  const messageRows = messages.map(m => {
-    return `<tr><td style="padding:10px 16px;border-bottom:1px solid rgba(212,181,138,0.12);">
+  // contents. It can only be read under the moon, in-app. For a single message
+  // the headline already names the sender, so show a gentle subline instead of
+  // repeating it; for several, list who they're from.
+  const messageRows = count === 1
+    ? `<tr><td style="padding:10px 16px;">
+      <p style="color:rgba(234,216,191,0.6);font-size:14px;margin:0;font-style:italic;">Read it under tonight's moon.</p>
+    </td></tr>`
+    : messages.map(m => {
+        return `<tr><td style="padding:10px 16px;border-bottom:1px solid rgba(212,181,138,0.12);">
       <p style="color:#F0DFC2;font-size:15px;font-weight:600;margin:0 0 4px;">${escHtml(m.senderName)}</p>
       <p style="color:rgba(234,216,191,0.6);font-size:14px;margin:0;font-style:italic;">sent you a moon message</p>
     </td></tr>`;
-  }).join('');
+      }).join('');
 
   return `<!DOCTYPE html>
 <html>
@@ -219,7 +233,7 @@ function buildDigestEmailHtml(recipientCity: string, messages: DigestMessage[], 
     <tr><td align="center">
       <table width="100%" style="max-width:480px;background:linear-gradient(135deg,#030A18 0%,#0A1422 100%);border-radius:16px;border:1px solid rgba(212,181,138,0.28);">
         <tr><td style="padding:32px 24px 16px;text-align:center;">
-          <h1 style="color:#F0DFC2;font-size:20px;font-weight:600;margin:0 0 6px;">Welcome back</h1>
+          <h1 style="color:#F0DFC2;font-size:20px;font-weight:600;margin:0 0 6px;">${headline}</h1>
         </td></tr>
         <tr><td style="padding:0 24px 20px;">
           <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(212,181,138,0.06);border:1px solid rgba(212,181,138,0.18);border-radius:12px;overflow:hidden;">
@@ -254,7 +268,7 @@ async function sendDigestEmail(recipientEmail: string, recipientCity: string, me
   const plural = count === 1 ? 'message' : 'messages';
   const subject = count === 1
     ? `${messages[0].senderName} sent you a moon message`
-    : `The moon just rose — ${count} ${plural} waiting for you`;
+    : `${count} moon messages waiting for you`;
 
   const html = buildDigestEmailHtml(recipientCity, messages, unsubscribeUrl);
 
@@ -346,6 +360,12 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const now = new Date().toISOString();
+    const nowMs = Date.parse(now);
+
+    // Fatigue guard: a recipient gets at most one notification per this window.
+    // The first message still lands instantly (no prior stamp); a flurry that
+    // follows is held and batched into the next digest once the window clears.
+    const NOTIFY_COOLDOWN_MS = 60 * 60 * 1000;
 
     // --- Phase 1: Release in_transit messages whose release_at has passed ---
     const { data: toRelease, error: fetchError } = await supabase
@@ -484,7 +504,7 @@ Deno.serve(async (req: Request) => {
 
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, email, username, city, notify_email, notify_push')
+        .select('id, email, username, city, notify_email, notify_push, last_notified_at')
         .in('id', Array.from(profileIds));
 
       const profileMap: Record<string, any> = {};
@@ -520,13 +540,30 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        if (recipient.notify_email !== false && recipient.email) {
+        const willEmail = recipient.notify_email !== false && !!recipient.email;
+        const willPush = recipient.notify_push !== false;
+
+        // Cooldown applies only when we'd actually notify. If the recipient was
+        // notified within the window, hold these items (leave notified_at
+        // unstamped) so they fold into the next cycle's digest once it clears.
+        if (willEmail || willPush) {
+          const last = recipient.last_notified_at ? Date.parse(recipient.last_notified_at) : 0;
+          if (last && (nowMs - last) < NOTIFY_COOLDOWN_MS) {
+            continue;
+          }
+        }
+
+        if (willEmail) {
           const unsubscribeUrl = await buildUnsubscribeUrl(recipientId);
           await sendDigestEmail(recipient.email, recipient.city || '', data.msgs, unsubscribeUrl);
         }
 
-        if (recipient.notify_push !== false) {
+        if (willPush) {
           await sendPushDigest(supabase, recipientId, data.msgs);
+        }
+
+        if (willEmail || willPush) {
+          await supabase.from('profiles').update({ last_notified_at: now }).eq('id', recipientId);
         }
 
         allMsgIds.push(...data.msgIds);
