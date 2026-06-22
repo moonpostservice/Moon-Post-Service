@@ -1,5 +1,32 @@
 // URL Routing & Resize Handler
 
+// CLICK THE LOGO → GO HOME
+// ========================
+// Wired to every persistent logo (in-app header + landing nav). Returns the
+// user to their "main page": the inbox/orbit when signed in, the top of the
+// landing when signed out. Mirrors the popstate "back to inbox" teardown.
+function goHome() {
+    // Close any open full-screen sub-page overlays.
+    ['philosophyPage', 'contactsPage', 'roulettePage', 'faqPage', 'termsPage'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    if (typeof currentAuthUser !== 'undefined' && currentAuthUser) {
+        // Signed in → tear down any chat / detail / shared-sky and show the inbox.
+        if (typeof _closeMessageDetailUI === 'function') _closeMessageDetailUI();
+        if (typeof closeSharedSkyModal === 'function') closeSharedSkyModal();
+        if (window.location.pathname !== '/') history.pushState({}, '', '/');
+        document.body.style.overflow = '';
+        if (typeof renderMessages === 'function') renderMessages();
+        window.scrollTo(0, 0);
+    } else {
+        // Signed out → the landing itself is home; just return to the top.
+        if (window.location.pathname !== '/') history.pushState({}, '', '/');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
 // URL ROUTING (popstate)
 // ========================
 
