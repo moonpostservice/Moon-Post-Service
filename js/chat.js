@@ -90,6 +90,18 @@ async function loadFullConversationThread(conv) {
             if (profiles) profiles.forEach(p => { profileMap[p.id] = p; });
         }
 
+        // Preserve any client-held releaseAt before we overwrite the message objects.
+        // The two-hop pickup cron / edge function frequently leaves release_at NULL
+        // (awaiting pickup) or stamps a value the client's future moonrise time beats,
+        // so the inbox (loadMessages → debouncedReloadMessages, realtime.js) restores
+        // the client value. Without doing the same here, opening a conversation refetches
+        // the stripped DB row and an "On Its Way" message regresses to a plain delivered
+        // preview once the chatbox closes and renderMessages() rebuilds from these rows.
+        const prevReleaseAt = {};
+        [...conv.messages, ...messages].forEach(pm => {
+            if (pm && pm.dbId && pm.releaseAt && !prevReleaseAt[pm.dbId]) prevReleaseAt[pm.dbId] = pm.releaseAt;
+        });
+
         // Map DB rows to local message format
         const fullMessages = convMessages.map(m => {
             const isSent = m.sender_id === currentAuthUser.id;
@@ -97,12 +109,30 @@ async function loadFullConversationThread(conv) {
             const rp = m.recipient_id ? profileMap[m.recipient_id] : null;
             const otherProfile = isSent ? rp : sp;
 
-            // Sent messages always visible; received: moon MUST be in sky AND message released
-            // Defense-in-depth: also check DB status for received messages
-            const stillInTransit = !isSent && ((m.release_at && new Date(m.release_at) > new Date()) || m.status === 'in_transit');
+            // Restore the client-held releaseAt if the DB lost it or returned a past
+            // value while the client still had a future moonrise time (same guard as
+            // debouncedReloadMessages: only restore when it's strictly later AND future,
+            // so a genuinely released message can never get stuck sealed).
+            let effRelease = m.release_at;
+            if (prevReleaseAt[m.id]) {
+                const dbRel = m.release_at ? new Date(m.release_at) : null;
+                const prevRel = new Date(prevReleaseAt[m.id]);
+                if (!dbRel || (prevRel > dbRel && prevRel > new Date())) effRelease = prevReleaseAt[m.id];
+            }
+
+            // Transit state computed identically to loadMessages (circles-state.js) so
+            // the inbox and the post-open rebuild can never disagree: release_at is the
+            // source of truth, with status='in_transit' only counting while release_at
+            // is still unset (awaiting pickup). A past release_at means released.
+            const releaseFuture = effRelease && new Date(effRelease) > new Date();
+            const stillInTransit = !isSent && (releaseFuture || (!effRelease && m.status === 'in_transit'));
             // 72h cap (two-hop courier can exceed 24h: pickup cycle + recipient cycle).
             const tooOld = m.created_at && new Date(m.created_at) < new Date(Date.now() - 72 * 3600000);
             const actuallyInTransit = stillInTransit && !tooOld;
+            // Sent status mirrors loadMessages: future release_at OR (still in_transit and
+            // not past) → In Transit; otherwise Released.
+            const releasePast = effRelease && new Date(effRelease) <= new Date();
+            const sentInTransit = isSent && ((effRelease && !releasePast) || (m.status === 'in_transit' && !releasePast));
             // Once a message has been read it stays readable — the moon-gate only
             // seals genuinely new/unread incoming messages, never re-hides history
             // the recipient has already seen. "Read" = my read_receipt for this
@@ -114,7 +144,7 @@ async function loadFullConversationThread(conv) {
             // stamps a receipt immediately, so comparing against created_at would
             // unseal messages that are still in transit (receipt "now" > created_at
             // even though release_at is hours away).
-            const _readGate = m.release_at || m.created_at;
+            const _readGate = effRelease || m.created_at;
             const alreadyRead = !isSent && !!(_lastRead && _readGate && new Date(_lastRead) >= new Date(_readGate));
             const contentVisible = isSent || alreadyRead || (!!moonData.isVisible && !actuallyInTransit);
 
@@ -132,8 +162,8 @@ async function loadFullConversationThread(conv) {
                 senderAvatar: otherProfile?.avatar_url || null,
                 recipientEmail: m.recipient_email,
                 preview: contentVisible ? (m.message_text || '') : '',
-                status: isSent ? (m.status === 'in_transit' ? 'In Transit' : 'Released') : (contentVisible ? '' : 'Arriving'),
-                stillInTransit: !isSent ? actuallyInTransit : (m.status === 'in_transit'),
+                status: isSent ? (sentInTransit ? 'In Transit' : 'Released') : (contentVisible ? '' : 'Arriving'),
+                stillInTransit: isSent ? sentInTransit : actuallyInTransit,
                 type: isSent ? 'sent' : 'received',
                 location: otherProfile?.city || m.recipient_city || 'Unknown',
                 time: timeAgo(m.created_at),
@@ -146,7 +176,7 @@ async function loadFullConversationThread(conv) {
                 songTitle: contentVisible ? m.song_title : null,
                 photoUrl: contentVisible ? (m.photo_url || null) : null,
                 contentVisible: contentVisible,
-                releaseAt: m.release_at,
+                releaseAt: effRelease,
                 pickupAt: m.pickup_at || null,
                 reactions: [],
                 replies: []
