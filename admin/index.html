@@ -1528,24 +1528,27 @@ function renderAnalytics(d) {
     <div class="an-grid">
       ${anCard(m.dm_total, 'Direct messages', `${m.dm_7d} in last 7d · ${m.dm_senders} senders`)}
       ${anCard(m.roulette_total, 'Roulette messages', `${m.roulette_7d} in last 7d · ${m.roulette_senders} senders`)}
+      ${anCard(m.anon_links_total ?? 0, 'Landing sends · no signup', `${m.anon_links_7d ?? 0} in last 7d · ${m.anon_people ?? 0} people`)}
     </div>`;
 
   // ── Messages per day (last 30d), dm + roulette stacked
   const mbd = d.messages_by_day || [];
-  const maxTot = Math.max(1, ...mbd.map(r => (r.dm || 0) + (r.roulette || 0)));
+  const maxTot = Math.max(1, ...mbd.map(r => (r.dm || 0) + (r.roulette || 0) + (r.anon || 0)));
   html += `<div class="an-section-title">Messages per day · 30d</div>
     <div class="an-chart">
       <div class="an-chart-legend">
         <span><span class="dot" style="background:var(--t-delivered)"></span>Direct</span>
         <span><span class="dot" style="background:var(--accent)"></span>Roulette</span>
+        <span><span class="dot" style="background:var(--t-relaunched)"></span>Landing · no signup</span>
       </div>
       <div class="an-bars">
         ${mbd.map(r => {
-          const dm = r.dm || 0, rl = r.roulette || 0;
+          const dm = r.dm || 0, rl = r.roulette || 0, an = r.anon || 0;
           return `<div class="an-bar-col">
-            <div class="an-bar-tip">${anDay(r.day)} — ${dm} DM · ${rl} roulette</div>
+            <div class="an-bar-tip">${anDay(r.day)} — ${dm} DM · ${rl} roulette · ${an} landing</div>
             <div class="an-bar dm" style="height:${(dm / maxTot) * 100}%"></div>
             <div class="an-bar roulette" style="height:${(rl / maxTot) * 100}%"></div>
+            <div class="an-bar anon" style="height:${(an / maxTot) * 100}%;background:var(--t-relaunched)"></div>
           </div>`;
         }).join('')}
       </div>
