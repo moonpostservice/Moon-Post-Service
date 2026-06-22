@@ -126,6 +126,61 @@ test('inline roulette reply renders in the open chatbox without reopening', asyn
     await expect(page.locator('#rouletteDetailBody'))
         .toContainText(MY_REPLY_TEXT, { timeout: 8_000 });
 
+    // REGRESSION GUARD: the prior conversation must NOT vanish when the reply
+    // is shown. (The first re-render-based fix rebuilt the thread from reloaded
+    // arrays and dropped history that wasn't reloadable, e.g. graduated msgs.)
+    await expect(page.locator('#rouletteDetailBody')).toContainText(STRANGER_TEXT);
+
     // And the panel never closed.
     await expect(page.locator('#rouletteMessagePage')).toHaveClass(/active/);
+});
+
+// Mirrors the real-world break: a revealed thread graduates into a normal
+// conversation, so its earlier messages are filtered out of the roulette
+// arrays (graduated_at IS NULL). The detail panel may still display that
+// history (rendered before reload), and sending a reply must NOT wipe it.
+// We simulate "history the reload can't reconstruct" by seeding the panel body
+// directly, then asserting the optimistic append preserves it.
+test('reply preserves on-screen history that reload cannot reconstruct', async ({ page }) => {
+    const FAKE_ID = '00000000-0000-0000-0000-0000000000c0';
+    // Reload returns an EMPTY thread (as if every prior message graduated away).
+    await page.route('**/functions/v1/send-roulette-message', (route) =>
+        route.fulfill({ status: 200, contentType: 'application/json',
+            body: JSON.stringify({ message: { id: '00000000-0000-0000-0000-0000000000c1', status: 'delivered' } }) }));
+    await page.route('**/rest/v1/roulette_recipient_view**', (route) =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+    await page.route('**/rest/v1/moon_roulette_messages**', async (route) => {
+        const req = route.request();
+        if (req.method() === 'GET' && req.url().includes('sender_id'))
+            return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+        return route.continue();
+    });
+    await page.route('**/rest/v1/moon_roulette_reveals**', (route) =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+
+    await gotoInbox(page);
+
+    // Build a detail panel by hand: graduated history + an active reply box.
+    await page.evaluate((id) => {
+        const page = document.getElementById('rouletteMessagePage');
+        document.getElementById('rouletteDetailBody').innerHTML =
+            '<div class="roulette-detail-content">' +
+            '<div class="message-bubble roulette-bubble"><p>GRADUATED-HISTORY-LINE</p></div>' +
+            '</div>';
+        document.getElementById('rouletteDetailFooter').innerHTML =
+            '<div class="roulette-detail-actions"><div class="roulette-inline-reply">' +
+            `<textarea id="rouletteInlineText_${id}" class="roulette-inline-textarea"></textarea>` +
+            `<button class="roulette-inline-send" onclick="handleInlineRouletteReply('${id}')">↩</button>` +
+            '</div></div>';
+        page.classList.add('active');
+    }, FAKE_ID);
+
+    await expect(page.locator('#rouletteDetailBody')).toContainText('GRADUATED-HISTORY-LINE');
+
+    await page.locator(`#rouletteInlineText_${FAKE_ID}`).fill('BRAND-NEW-LINE');
+    await page.locator('.roulette-inline-send').click();
+
+    // New reply shows AND the graduated history is still there.
+    await expect(page.locator('#rouletteDetailBody')).toContainText('BRAND-NEW-LINE', { timeout: 8_000 });
+    await expect(page.locator('#rouletteDetailBody')).toContainText('GRADUATED-HISTORY-LINE');
 });

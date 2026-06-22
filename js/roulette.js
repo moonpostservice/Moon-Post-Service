@@ -1317,23 +1317,28 @@ async function handleInlineRouletteReply(messageId) {
 
         textarea.value = '';
         showNotificationToast('🌙 Anonymous reply sent');
-        await loadRouletteMessages();
 
-        // Re-render the open detail panel so the just-sent reply appears
-        // immediately. loadRouletteMessages() refreshes the global arrays but
-        // the panel still shows the pre-send thread until we redraw it.
-        if (_currentRouletteMsg) {
-            const refreshedMsgs = _currentRouletteRole === 'sender'
-                ? rouletteMessages.sent
-                : rouletteMessages.received;
-            const refreshed = refreshedMsgs.find(m => m.id === _currentRouletteMsg.id) || _currentRouletteMsg;
-            _currentRouletteMsg = refreshed;
+        // Show the just-sent reply immediately by APPENDING a bubble to the open
+        // thread — do NOT re-derive the thread from reloaded data. A revealed
+        // thread graduates into a normal conversation, and graduated messages are
+        // filtered out of the roulette arrays; rebuilding the body via
+        // _collectRouletteThread would therefore drop the visible history. An
+        // optimistic append (as in normal chat) preserves whatever is shown.
+        const detailContent = document.querySelector('#rouletteDetailBody .roulette-detail-content');
+        if (detailContent) {
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble roulette-bubble sent';
+            const p = document.createElement('p');
+            p.textContent = text;            // textContent → XSS-safe, no escaping needed
+            bubble.appendChild(p);
+            detailContent.appendChild(bubble);
             const body = document.getElementById('rouletteDetailBody');
-            if (body) body.innerHTML = _renderRouletteDetailBody(refreshed, _currentRouletteRole);
-            if (_currentRouletteMsg.status === 'revealed') {
-                requestAnimationFrame(() => _resolveRevealedSenders());
-            }
+            if (body) body.scrollTop = body.scrollHeight;   // keep newest in view
         }
+
+        // Refresh the inbox list/badges (preview + ordering). This does not touch
+        // the open detail panel, so the appended bubble and history both remain.
+        await loadRouletteMessages();
     } catch (err) {
         console.error('[roulette] inline reply error:', err);
         showNotificationToast('Something went wrong. Please try again.');
