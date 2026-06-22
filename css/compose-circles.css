@@ -535,6 +535,10 @@
     color: #1a1a2e;
     margin-bottom: var(--space-4);
     letter-spacing: -0.005em;
+    /* Preserve the writer's line breaks. A Lunar Note verse (and any message
+       composed with line breaks) is flattened into message_text on the
+       anonymous share path — without this it collapses into one paragraph. */
+    white-space: pre-line;
 }
 
 .reveal-message-meta {
