@@ -1737,7 +1737,7 @@ async function sendSharedSkyMessage() {
         location: locName,
         time: 'Just now',
         createdAt: new Date().toISOString(),
-        message: text ? '"' + text + '"' : '',
+        message: text || '',
         photo: pendingSharedSkyPhoto || null,
         lunarNoteText: hasLunar ? ssLunarText : null,
         lunarNoteClosing: hasLunar ? ssLunarClosing : null
@@ -1776,7 +1776,7 @@ async function sendSharedSkyMessage() {
     // Update inbox preview
     const previewEl = document.getElementById('sharedSkyPreview');
     const previewName = userName || locName;
-    if (previewEl) previewEl.textContent = previewName + ': ' + (hasLunar ? '🌙 Lunar Note' : text ? '"' + text + '"' : '🌕 Photo');
+    if (previewEl) previewEl.textContent = previewName + ': ' + (hasLunar ? '🌙 Lunar Note' : text ? text : '🌕 Photo');
     localStorage.setItem('moonpop_shared_sky_seen', new Date().toISOString());
     updateSharedSkyBadge();
 }

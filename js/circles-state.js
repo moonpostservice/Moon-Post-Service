@@ -1351,7 +1351,7 @@ async function loadSharedSky() {
                 location: s.city || 'Unknown',
                 time: timeAgo(s.created_at),
                 createdAt: s.created_at,
-                message: s.message ? '"' + s.message + '"' : '',
+                message: s.message || '',
                 photo: s.photo_url || null,
                 lunarNoteText: s.lunar_note_text || null,
                 lunarNoteClosing: s.lunar_note_closing || null,

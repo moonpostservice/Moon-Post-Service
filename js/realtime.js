@@ -668,7 +668,7 @@ function setupRealtimeMessages() {
                     location: s.city || 'Unknown',
                     time: 'Just now',
                     createdAt: s.created_at,
-                    message: s.message ? '"' + s.message + '"' : '',
+                    message: s.message || '',
                     photo: s.photo_url || null,
                     lunarNoteText: s.lunar_note_text || null,
                     lunarNoteClosing: s.lunar_note_closing || null,
@@ -678,7 +678,7 @@ function setupRealtimeMessages() {
                 updateSharedSkyBadge();
                 const previewEl = document.getElementById('sharedSkyPreview');
                 const previewName = senderName || s.city || 'Unknown';
-                if (previewEl) previewEl.textContent = previewName + ': ' + (s.lunar_note_text ? '🌙 Lunar Note' : '"' + s.message + '"');
+                if (previewEl) previewEl.textContent = previewName + ': ' + (s.lunar_note_text ? '🌙 Lunar Note' : s.message);
             }
         })
         .subscribe((status) => {
