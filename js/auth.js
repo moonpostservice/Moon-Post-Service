@@ -1137,6 +1137,13 @@ async function initAuth(sessionOverride) {
         if (typeof flushPendingSend === 'function') {
             try { await flushPendingSend(); } catch (e) { console.error('[initAuth] flushPendingSend failed:', e); }
         }
+
+        // "Witness the arrival": if the user signed up via the share sheet's "Save it
+        // to your sky" hook, bind their just-cast anonymous note to this account and
+        // show where it has landed. No-ops when there's nothing pending.
+        if (typeof flushPendingClaim === 'function') {
+            try { await flushPendingClaim(); } catch (e) { console.error('[initAuth] flushPendingClaim failed:', e); }
+        }
     } else {
         console.log('[initAuth] No session found, showing onboarding');
         showOnboarding();

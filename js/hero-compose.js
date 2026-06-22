@@ -189,11 +189,11 @@ async function heroNext() {
 
     const btn = document.getElementById('hcSendBtn');
     const prevLabel = btn ? btn.textContent : '';
-    if (btn) { btn.disabled = true; btn.textContent = 'Casting it to the moon…'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Sealing your note…'; }
 
     try {
-        const { link } = await createShareableMessage({ text, senderName: fromName });
-        openShareSheet({ link, senderName: fromName || 'You', previewText: text });
+        const { link, message } = await createShareableMessage({ text, senderName: fromName });
+        openShareSheet({ link, senderName: fromName || 'You', previewText: text, token: message && message.share_token });
     } catch (err) {
         console.error('[hero] createShareableMessage failed:', err);
         const msg = (err && err.message === 'rate_limited')
@@ -201,7 +201,7 @@ async function heroNext() {
             : 'We couldn’t create your link just now. Please try again.';
         heroError(msg);
     } finally {
-        if (btn) { btn.disabled = false; btn.textContent = prevLabel || 'Cast a link to the moon'; }
+        if (btn) { btn.disabled = false; btn.textContent = prevLabel || 'Seal your note'; }
     }
 }
 

@@ -68,6 +68,21 @@ async function createShareableMessage(draft) {
 
 let _shareSheetLink = '';
 let _shareSheetSender = '';
+let _shareSheetToken = ''; // the cast note's share_token — used by the "Save it to your sky" hook
+
+// Where the logged-out sender stashes the just-cast note so we can bind it to
+// their account after signup ("witness the arrival"). Read by flushPendingClaim
+// (witness.js) once a session exists.
+const PENDING_CLAIM_KEY = 'moonpop_pending_claim';
+
+// Pull the share_token out of a /m/<token> link as a fallback when it wasn't
+// passed explicitly (e.g. the legacy logged-in flush path).
+function tokenFromLink(link) {
+    try {
+        const m = String(link || '').match(/\/m\/([^/?#]+)/);
+        return m ? decodeURIComponent(m[1]) : '';
+    } catch (e) { return ''; }
+}
 
 // The line the SENDER hands to their friend (first person — they're the author).
 // The recipient-facing "Jacky wrote you a moon message…" framing lives on the
@@ -76,9 +91,17 @@ function shareMessageText() {
     return 'I wrote you a moon message. Open it and it’ll reveal when the moon rises over you:';
 }
 
-function openShareSheet({ link, senderName, previewText }) {
+function openShareSheet({ link, senderName, previewText, token }) {
     _shareSheetLink = link || '';
     _shareSheetSender = senderName || '';
+    _shareSheetToken = token || tokenFromLink(link);
+
+    // "Witness the arrival" hook — the one reason the act itself creates a reason
+    // to sign up: closure. Offered to logged-OUT senders only; a logged-in user
+    // (composeShareLink) already has a sky to watch it land in.
+    const loggedOut = (typeof currentAuthUser === 'undefined' || !currentAuthUser);
+    const witness = document.getElementById('shareSheetWitness');
+    if (witness) witness.style.display = (loggedOut && _shareSheetToken) ? 'block' : 'none';
 
     // Reset the email sub-form each open.
     const ef = document.getElementById('shareSheetEmailForm');
@@ -199,6 +222,26 @@ function shareSheetDone() {
     if (typeof showNotificationToast === 'function') {
         showNotificationToast('Your moon message is ready to share');
     }
+}
+
+// "Save it to your sky →" — the logged-out sender's signup hook. Stash the cast
+// note's token (durably, so it survives the multi-step signup + an OTP tab
+// reload), then open the signup modal. After the account exists, initAuth runs
+// flushPendingClaim() (witness.js), which binds the note and shows the arrival
+// card. If localStorage is wiped mid-signup (e.g. an in-app webview), the note
+// still exists anonymously — we just lose the watch link, which is graceful.
+function shareSheetSaveToSky() {
+    if (_shareSheetToken) {
+        try {
+            localStorage.setItem(PENDING_CLAIM_KEY, JSON.stringify({
+                token: _shareSheetToken,
+                previewText: (document.getElementById('shareSheetPreview')?.textContent || ''),
+                savedAt: Date.now(),
+            }));
+        } catch (e) { /* private mode — the hook just won't auto-claim */ }
+    }
+    closeShareSheet();
+    if (typeof showAuthModal === 'function') showAuthModal('signup');
 }
 
 // ---- In-app composer "Create a shareable link" -------------------------

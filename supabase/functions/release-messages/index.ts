@@ -156,8 +156,14 @@ async function sendSinglePush(endpoint: string, p256dh: string, auth: string, pa
 }
 
 // --- Moonrise Digest Email ---
+// A digest line is either an incoming message ("X sent you a moon message") or
+// an ARRIVAL of a note the user themselves cast ("someone opened your note from
+// Paris") — the "witness the arrival" hook folded into the same moonrise email,
+// never its own always-on path.
 interface DigestMessage {
   senderName: string;
+  kind?: 'arrival';
+  place?: string; // opener's city, for arrival lines
 }
 
 // --- One-click unsubscribe links ---
@@ -202,23 +208,43 @@ function buildDigestEmailHtml(recipientCity: string, messages: DigestMessage[], 
   const count = messages.length;
   const plural = count === 1 ? 'message' : 'messages';
 
-  // Honest headline whether the message arrived instantly (recipient's moon
-  // already up) or waited for moonrise: name the sender when it's one, count
-  // when it's several. Never claim "the moon just rose" — it may have risen
-  // hours ago and the message only just landed.
-  const headline = count === 1
-    ? `${escHtml(messages[0].senderName)} sent you a moon message`
-    : `${count} moon messages waiting`;
+  // Two flavours of line: incoming messages, and arrivals of notes the user cast.
+  const arrivals = messages.filter(m => m.kind === 'arrival');
+  const incoming = messages.filter(m => m.kind !== 'arrival');
+  const allArrivals = arrivals.length === count;
+  const arrivalLabel = (m: DigestMessage) =>
+    `Someone opened your moon note${m.place ? ` from ${escHtml(m.place)}` : ''}`;
 
-  // The message stays sealed — the digest only names the sender, never the
-  // contents. It can only be read under the moon, in-app. For a single message
-  // the headline already names the sender, so show a gentle subline instead of
-  // repeating it; for several, list who they're from.
-  const messageRows = count === 1
+  // Honest headline. Never claim "the moon just rose" — it may have risen hours
+  // ago and the message only just landed. Name the sender for a single incoming
+  // message; describe arrivals plainly; fall back to a neutral count for a mix.
+  let headline: string;
+  if (allArrivals) {
+    headline = count === 1
+      ? arrivalLabel(arrivals[0])
+      : `${count} people opened your moon notes`;
+  } else if (incoming.length === count) {
+    headline = count === 1
+      ? `${escHtml(incoming[0].senderName)} sent you a moon message`
+      : `${count} moon messages waiting`;
+  } else {
+    headline = `${count} things waiting under your moon`;
+  }
+
+  // Each row: a sealed incoming message (sender named, contents never shown) or
+  // an arrival line. For a single incoming message the headline already names
+  // the sender, so show a gentle subline instead of repeating it.
+  const messageRows = (count === 1 && incoming.length === 1)
     ? `<tr><td style="padding:10px 16px;">
       <p style="color:rgba(234,216,191,0.6);font-size:14px;margin:0;font-style:italic;">Read it under tonight's moon.</p>
     </td></tr>`
     : messages.map(m => {
+        if (m.kind === 'arrival') {
+          return `<tr><td style="padding:10px 16px;border-bottom:1px solid rgba(212,181,138,0.12);">
+      <p style="color:#F0DFC2;font-size:15px;font-weight:600;margin:0 0 4px;">${arrivalLabel(m)}</p>
+      <p style="color:rgba(234,216,191,0.6);font-size:14px;margin:0;font-style:italic;">your note reached them — they read it under their moon</p>
+    </td></tr>`;
+        }
         return `<tr><td style="padding:10px 16px;border-bottom:1px solid rgba(212,181,138,0.12);">
       <p style="color:#F0DFC2;font-size:15px;font-weight:600;margin:0 0 4px;">${escHtml(m.senderName)}</p>
       <p style="color:rgba(234,216,191,0.6);font-size:14px;margin:0;font-style:italic;">sent you a moon message</p>
@@ -266,9 +292,21 @@ async function sendDigestEmail(recipientEmail: string, recipientCity: string, me
 
   const count = messages.length;
   const plural = count === 1 ? 'message' : 'messages';
-  const subject = count === 1
-    ? `${messages[0].senderName} sent you a moon message`
-    : `${count} moon messages waiting for you`;
+  const arrivals = messages.filter(m => m.kind === 'arrival');
+  const allArrivals = arrivals.length === count;
+  const incoming = messages.filter(m => m.kind !== 'arrival');
+  let subject: string;
+  if (allArrivals) {
+    subject = count === 1
+      ? `Someone opened your moon note${arrivals[0].place ? ` from ${arrivals[0].place}` : ''}`
+      : `${count} people opened your moon notes`;
+  } else if (incoming.length === count) {
+    subject = count === 1
+      ? `${messages[0].senderName} sent you a moon message`
+      : `${count} moon messages waiting for you`;
+  } else {
+    subject = `${count} things waiting under your moon`;
+  }
 
   const html = buildDigestEmailHtml(recipientCity, messages, unsubscribeUrl);
 
@@ -315,9 +353,15 @@ async function sendPushDigest(supabase: any, userId: string, messages: DigestMes
     if (!subs || subs.length === 0) return;
 
     const count = messages.length;
-    const body = count === 1
-      ? `${messages[0].senderName} sent you a moon message`
-      : `${count} moon messages are waiting for you`;
+    const arrivals = messages.filter(m => m.kind === 'arrival');
+    const allArrivals = arrivals.length === count;
+    const body = allArrivals
+      ? (count === 1
+          ? `Someone opened your moon note${arrivals[0].place ? ` from ${arrivals[0].place}` : ''}`
+          : `${count} people opened your moon notes`)
+      : (count === 1
+          ? `${messages[0].senderName} sent you a moon message`
+          : `${count} moon messages are waiting for you`);
 
     const payload = JSON.stringify({
       title: 'Moon Post Service',
@@ -438,13 +482,25 @@ Deno.serve(async (req: Request) => {
       .or(`notify_at.is.null,notify_at.lte.${now}`)
       .limit(50);
 
+    // "Witness the arrival": a shareable note has been opened+read by someone, and
+    // its sender (who claimed it by signing up) hasn't been told yet. The note's
+    // sender is the recipient of THIS notification. Only claimed notes
+    // (sender_id NOT NULL) can notify; anonymous casts have no one to tell.
+    const { data: unnotifiedArrivals } = await supabase
+      .from('message_link_opens')
+      .select('id, recipient_city, messages!inner(sender_id, shareable)')
+      .not('revealed_at', 'is', null)
+      .is('sender_notified_at', null)
+      .limit(100);
+
     interface NotifyItem {
-      type: 'message' | 'reply' | 'roulette';
+      type: 'message' | 'reply' | 'roulette' | 'arrival';
       id: string;
-      senderId: string | null;   // null for roulette — sender stays anonymous
+      senderId: string | null;   // null for roulette/arrival — opener stays anonymous
       recipientId: string;
       text: string;
       senderLabel?: string;      // pre-built display name (roulette)
+      place?: string;            // opener city (arrival)
     }
 
     const notifyItems: NotifyItem[] = [];
@@ -494,6 +550,21 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    if (unnotifiedArrivals) {
+      for (const a of unnotifiedArrivals as any[]) {
+        const noteSenderId = a.messages?.sender_id;
+        if (!noteSenderId) continue; // unclaimed note — no one to notify
+        notifyItems.push({
+          type: 'arrival',
+          id: a.id,
+          senderId: null, // the opener is anonymous
+          recipientId: noteSenderId, // the note's author hears about it
+          text: '',
+          place: (a.recipient_city || '').trim() || undefined,
+        });
+      }
+    }
+
     let notifiedCount = 0;
     if (notifyItems.length > 0) {
       const profileIds = new Set<string>();
@@ -510,10 +581,16 @@ Deno.serve(async (req: Request) => {
       const profileMap: Record<string, any> = {};
       if (profiles) profiles.forEach((p: any) => { profileMap[p.id] = p; });
 
-      const byRecipient: Record<string, { msgs: DigestMessage[]; msgIds: string[]; replyIds: string[]; rouletteIds: string[] }> = {};
+      const byRecipient: Record<string, { msgs: DigestMessage[]; msgIds: string[]; replyIds: string[]; rouletteIds: string[]; arrivalIds: string[] }> = {};
       for (const item of notifyItems) {
         const rid = item.recipientId;
-        if (!byRecipient[rid]) byRecipient[rid] = { msgs: [], msgIds: [], replyIds: [], rouletteIds: [] };
+        if (!byRecipient[rid]) byRecipient[rid] = { msgs: [], msgIds: [], replyIds: [], rouletteIds: [], arrivalIds: [] };
+
+        if (item.type === 'arrival') {
+          byRecipient[rid].msgs.push({ senderName: 'Someone', kind: 'arrival', place: item.place });
+          byRecipient[rid].arrivalIds.push(item.id);
+          continue;
+        }
 
         const sender = item.senderId ? profileMap[item.senderId] : null;
         const senderName = item.senderLabel || sender?.username || 'Someone';
@@ -531,12 +608,14 @@ Deno.serve(async (req: Request) => {
       const allMsgIds: string[] = [];
       const allReplyIds: string[] = [];
       const allRouletteIds: string[] = [];
+      const allArrivalIds: string[] = [];
       for (const [recipientId, data] of Object.entries(byRecipient)) {
         const recipient = profileMap[recipientId];
         if (!recipient) {
           allMsgIds.push(...data.msgIds);
           allReplyIds.push(...data.replyIds);
           allRouletteIds.push(...data.rouletteIds);
+          allArrivalIds.push(...data.arrivalIds);
           continue;
         }
 
@@ -569,6 +648,7 @@ Deno.serve(async (req: Request) => {
         allMsgIds.push(...data.msgIds);
         allReplyIds.push(...data.replyIds);
         allRouletteIds.push(...data.rouletteIds);
+        allArrivalIds.push(...data.arrivalIds);
         notifiedCount++;
       }
 
@@ -580,6 +660,9 @@ Deno.serve(async (req: Request) => {
       }
       if (allRouletteIds.length > 0) {
         await supabase.from('moon_roulette_messages').update({ notified_at: now }).in('id', allRouletteIds);
+      }
+      if (allArrivalIds.length > 0) {
+        await supabase.from('message_link_opens').update({ sender_notified_at: now }).in('id', allArrivalIds);
       }
     }
 
