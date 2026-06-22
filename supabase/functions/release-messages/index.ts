@@ -158,7 +158,6 @@ async function sendSinglePush(endpoint: string, p256dh: string, auth: string, pa
 // --- Moonrise Digest Email ---
 interface DigestMessage {
   senderName: string;
-  preview: string;
 }
 
 // --- One-click unsubscribe links ---
@@ -203,11 +202,12 @@ function buildDigestEmailHtml(recipientCity: string, messages: DigestMessage[], 
   const count = messages.length;
   const plural = count === 1 ? 'message' : 'messages';
 
+  // The message stays sealed — the digest only names the sender, never the
+  // contents. It can only be read under the moon, in-app.
   const messageRows = messages.map(m => {
-    const preview = m.preview ? `&ldquo;${escHtml(m.preview)}...&rdquo;` : 'A moon message';
     return `<tr><td style="padding:10px 16px;border-bottom:1px solid rgba(212,181,138,0.12);">
       <p style="color:#F0DFC2;font-size:15px;font-weight:600;margin:0 0 4px;">${escHtml(m.senderName)}</p>
-      <p style="color:rgba(234,216,191,0.6);font-size:14px;margin:0;font-style:italic;">${preview}</p>
+      <p style="color:rgba(234,216,191,0.6);font-size:14px;margin:0;font-style:italic;">sent you a moon message</p>
     </td></tr>`;
   }).join('');
 
@@ -497,9 +497,8 @@ Deno.serve(async (req: Request) => {
 
         const sender = item.senderId ? profileMap[item.senderId] : null;
         const senderName = item.senderLabel || sender?.username || 'Someone';
-        const preview = item.text.split(/\s+/).slice(0, 5).join(' ');
 
-        byRecipient[rid].msgs.push({ senderName, preview });
+        byRecipient[rid].msgs.push({ senderName });
         if (item.type === 'message') {
           byRecipient[rid].msgIds.push(item.id);
         } else if (item.type === 'reply') {

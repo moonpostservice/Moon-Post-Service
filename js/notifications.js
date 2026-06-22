@@ -17,10 +17,8 @@ async function sendMoonPostEmail(recipientEmail, recipientLocation, messageText,
         }
     }
 
-    // Get first 3 words for preview
-    const words = (messageText || '').trim().split(/\s+/);
-    const preview = words.slice(0, 3).join(' ');
-
+    // The message stays sealed until moonrise — never leak its contents into the
+    // notification email. No preview is sent; it can only be read under the moon.
     const messageId = dbMessageId || (Date.now().toString(36) + Math.random().toString(36).substr(2, 5));
     const revealLink = window.location.origin + '?m=' + messageId;
 
@@ -32,7 +30,6 @@ async function sendMoonPostEmail(recipientEmail, recipientLocation, messageText,
                 senderName,
                 recipientLocation,
                 moonriseTime,
-                messagePreview: preview,
                 revealLink
             }
         });

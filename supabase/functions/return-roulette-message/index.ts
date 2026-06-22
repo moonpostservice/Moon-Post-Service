@@ -158,10 +158,8 @@ Deno.serve(async (req: Request) => {
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
       if (resendApiKey) {
-        const preview = message.message_text
-          ? message.message_text.slice(0, 80) + (message.message_text.length > 80 ? "…" : "")
-          : null;
-
+        // The message text stays sealed — never quote it in the email. It is
+        // read in-app, consistent with every other delivery path.
         await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
@@ -174,7 +172,6 @@ Deno.serve(async (req: Request) => {
             subject: "🌙 Your Moon Roulette message found its way back to you",
             html: `
               <h2>Your Moon Roulette message has returned</h2>
-              ${preview ? `<p><em>"${preview}"</em></p>` : ""}
               <p>The recipient chose not to connect this time. You can re-launch it to someone new, or let it rest.</p>
               <p><a href="${appUrl}/roulette">Open Moon Roulette</a></p>
             `,

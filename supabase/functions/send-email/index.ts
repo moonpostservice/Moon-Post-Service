@@ -55,9 +55,6 @@ function safeLink(val: unknown, allowedOrigin: string): string {
 function para(html: string): string {
   return `<p style="color:rgba(234,216,191,0.7);font-size:15px;line-height:1.55;margin:0 0 12px;">${html}</p>`;
 }
-function quote(text: string, ellipsis = false): string {
-  return `<p style="color:rgba(234,216,191,0.6);font-size:15px;font-style:italic;margin:0 0 12px;">&ldquo;${text}${ellipsis ? "..." : ""}&rdquo;</p>`;
-}
 function emailShell(heading: string, innerHtml: string, ctaText: string, ctaHref: string): string {
   const cta = ctaText && ctaHref
     ? `
@@ -211,13 +208,13 @@ Deno.serve(async (req: Request) => {
       const senderName = esc(body.senderName, "Someone");
       const recipientLocation = esc(body.recipientLocation, "your location");
       const moonriseTime = esc(body.moonriseTime, "soon");
-      const messagePreview = esc(body.messagePreview);
       const link = safeLink(body.revealLink, appUrl);
 
+      // The message itself stays sealed — never quote its contents in the email.
+      // It can only be read under the moon, in-app (messagePreview is ignored).
       subject = `🌙 ${senderName} sent you a moon message!`;
       const inner =
-        para(`It will be revealed when the moon rises over <strong>${recipientLocation}</strong> (around ${moonriseTime}).`) +
-        (messagePreview ? quote(messagePreview, true) : "");
+        para(`It will be revealed when the moon rises over <strong>${recipientLocation}</strong> (around ${moonriseTime}).`);
       htmlBody = emailShell(`${senderName} sent you a moon message`, inner, link ? "View your message" : "", link);
 
     } else if (emailType === "share_link") {
@@ -258,12 +255,10 @@ Deno.serve(async (req: Request) => {
       htmlBody = emailShell("A mystery moon message is on its way", inner, "Open Moon Roulette", `${appUrl}/roulette`);
 
     } else {
-      // roulette_returned
-      const messagePreview = esc(body.messagePreview);
-
+      // roulette_returned — goes back to the SENDER. We don't quote the message
+      // text; it stays sealed and is read in-app, consistent with every other path.
       subject = "🌙 Your Moon Roulette message found its way back to you";
       const inner =
-        (messagePreview ? quote(messagePreview) : "") +
         para("The recipient chose not to connect this time. You can re-launch it to someone new, or let it rest.");
       htmlBody = emailShell("Your message found its way back to you", inner, "Open Moon Roulette", `${appUrl}/roulette`);
     }
